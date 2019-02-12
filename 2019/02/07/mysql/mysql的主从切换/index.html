@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh_CN">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2">
+
+<link rel="stylesheet" href="/css/main.css?v=7.0.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.0.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.0.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    version: '7.0.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="MySql的主从切换大部分业务数据库都是读多写少，我们在实际使用情况上往往会遇到读性能，本章主要讲述如何解决读延迟 一主多从的架构我们一般会采取一主多从架构，主库承担所有的写和一部分读的任务，丛库根据承担读的任务。 如图：  A和A’互为主备 B、C、D是A的从库  下面我们来通论下当主库A发生故障后，A’成为主库，BCD的主库也要都指向A’，下面我们来讨论下遇到这种情况，mysql是如何做主从切">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Hexo">
+<meta property="og:url" content="http://yoursite.com/2019/02/07/mysql/mysql的主从切换/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="MySql的主从切换大部分业务数据库都是读多写少，我们在实际使用情况上往往会遇到读性能，本章主要讲述如何解决读延迟 一主多从的架构我们一般会采取一主多从架构，主库承担所有的写和一部分读的任务，丛库根据承担读的任务。 如图：  A和A’互为主备 B、C、D是A的从库  下面我们来通论下当主库A发生故障后，A’成为主库，BCD的主库也要都指向A’，下面我们来讨论下遇到这种情况，mysql是如何做主从切">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://yoursite.com/images/mysql/mysql一主多从架构.png">
+<meta property="og:image" content="http://yoursite.com/images/mysql/mysql一主多从故障.png">
+<meta property="og:updated_time" content="2019-02-07T07:51:12.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Hexo">
+<meta name="twitter:description" content="MySql的主从切换大部分业务数据库都是读多写少，我们在实际使用情况上往往会遇到读性能，本章主要讲述如何解决读延迟 一主多从的架构我们一般会采取一主多从架构，主库承担所有的写和一部分读的任务，丛库根据承担读的任务。 如图：  A和A’互为主备 B、C、D是A的从库  下面我们来通论下当主库A发生故障后，A’成为主库，BCD的主库也要都指向A’，下面我们来讨论下遇到这种情况，mysql是如何做主从切">
+<meta name="twitter:image" content="http://yoursite.com/images/mysql/mysql一主多从架构.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+
+
+
+
+  <link rel="canonical" href="http://yoursite.com/2019/02/07/mysql/mysql的主从切换/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title> | Hexo</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh_CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">Hexo</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+    
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://yoursite.com/2019/02/07/mysql/mysql的主从切换/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Hexo">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-07 14:10:33 / Modified: 15:51:12" itemprop="dateCreated datePublished" datetime="2019-02-07T14:10:33+08:00">2019-02-07</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="MySql的主从切换"><a href="#MySql的主从切换" class="headerlink" title="MySql的主从切换"></a>MySql的主从切换</h1><p>大部分业务数据库都是读多写少，我们在实际使用情况上往往会遇到读性能，本章主要讲述如何解决读延迟</p>
+<h2 id="一主多从的架构"><a href="#一主多从的架构" class="headerlink" title="一主多从的架构"></a>一主多从的架构</h2><p>我们一般会采取一主多从架构，主库承担所有的写和一部分读的任务，丛库根据承担读的任务。</p>
+<p>如图：<br><img src="/images/mysql/mysql一主多从架构.png" alt="avatar"></p>
+<ol>
+<li>A和A’互为主备</li>
+<li>B、C、D是A的从库</li>
+</ol>
+<p>下面我们来通论下当主库A发生故障后，A’成为主库，BCD的主库也要都指向A’，下面我们来讨论下遇到这种情况，mysql是如何做主从切换的。<br>如图：<br><img src="/images/mysql/mysql一主多从故障.png" alt="avatar"></p>
+<h3 id="基于位点的主备切换"><a href="#基于位点的主备切换" class="headerlink" title="基于位点的主备切换"></a>基于位点的主备切换</h3><p>当把B置为A’的从库时候要执行如下命令</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CHANGE</span> <span class="keyword">MASTER</span> <span class="keyword">TO</span></span><br><span class="line">MASTER_HOST=$host_name</span><br><span class="line">MASTER_PORT=$port</span><br><span class="line">MASTER_USER=$user_name</span><br><span class="line">MASTER_PASSWORD=$<span class="keyword">password</span></span><br><span class="line">MASTER_LOG_FILE=$master_log_name</span><br><span class="line">MASTER_LOG_POS=$master_log_pos</span><br></pre></td></tr></table></figure>
+<ul>
+<li>host_name、port、user_name、password主库的IP、端口、用于主从同步的数据库用户名、密码</li>
+<li>master_log_name，和master_log_pos就是A’库binlog的文件名和位置成为位点；</li>
+</ul>
+<p>原来的B是A的从库，所以B中记录的是A的位点，在change master之后，B要将位点置为A’的位点，由于A和A’记录的位点不一样，所以要大概估算出一个靠前一点的位点，在忽略掉主从不同步的情况。为什么要靠前一点的主要是有下面这种情况，下面语句是分析mysqlbinlog找到位点</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mysqlbinlog File <span class="comment">--stop-datetime=T --start-datetime=T</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#比如这是看到了pos是123，我们B在chenagemaster时候可以往前一点比如110；</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>在A插入了一行R，同时同步给B和A’这时候A出现故障，B和A’都已经有了R行数据，如果这时候changemaster会提示主键冲突，停止同步。</p>
+</blockquote>
+<p>解决的方案：</p>
+<ol>
+<li>主动跳过1个事务,如下的命令，每次遇到这样的错误都跳过知道最后没有错误为止</li>
+<li>通过设置slave_skip_errors参数，直接跳过指定错误，常见的错误如下，可以直接跳过“1062，1032”<ol>
+<li>1062 错误是插入数据时唯一键冲突；</li>
+<li>1032 错误是删除数据时找不到行。</li>
+</ol>
+</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> <span class="keyword">global</span> sql_slave_skip_counter=N;</span><br><span class="line"><span class="keyword">start</span> <span class="keyword">slave</span>;</span><br></pre></td></tr></table></figure>
+<p>注意：前提是这俩种操作是对业务无损的。</p>
+<h3 id="GTID–-since-v5-6"><a href="#GTID–-since-v5-6" class="headerlink" title="GTID– since v5.6"></a>GTID– since v5.6</h3><p>基于位面做主从切换比较复杂且很容易出错，所以mysql在5.6后引入了gtid彻底解决了这个问题。</p>
+<p>GTID全程是Global Transaction Identifier,即全局事物ID，即一个事物提交后生成的全局唯一ID，他有俩个部分组成</p>
+<blockquote>
+<p>GTID=server_uuid:gno（官方定义：GTID=source_id:transaction_id）<br>其中：</p>
+</blockquote>
+<ol>
+<li>server_uuid是mysql的实例ID</li>
+<li>gno是一个递增的整数，</li>
+</ol>
+<p>如何启动gtid呢？</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gtid_mode=on</span><br><span class="line">enforce_gtid_consistency=on</span><br></pre></td></tr></table></figure>
+<p>下图就是我在主库上执行了一条插入看到的binlog,其中SET @@SESSION.GTID_NEXT= ‘b01b34d1-25cf-11e9-8e68-9ec1c2413262:1’就是这条事物的GTID</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show binlog events IN 'mysql-bin.000028';</span><br><span class="line">+<span class="comment">------------------+-----+----------------+-----------+-------------+-------------------------------------------------------------------+</span></span><br><span class="line">| Log_name         | Pos | Event_type     | Server_id | End_log_pos | Info                                                              |</span><br><span class="line">+<span class="comment">------------------+-----+----------------+-----------+-------------+-------------------------------------------------------------------+</span></span><br><span class="line">| mysql-bin.000028 |   4 | Format_desc    |         1 |         123 | Server ver: 5.7.25-log, Binlog ver: 4                             |</span><br><span class="line">| mysql-bin.000028 | 123 | Previous_gtids |         1 |         154 |                                                                   |</span><br><span class="line">| mysql-bin.000028 | 154 | Gtid           |         1 |         219 | <span class="keyword">SET</span> @@SESSION.GTID_NEXT= <span class="string">'b01b34d1-25cf-11e9-8e68-9ec1c2413262:1'</span> |</span><br><span class="line">| mysql-<span class="keyword">bin</span><span class="number">.000028</span> | <span class="number">219</span> | <span class="keyword">Query</span>          |         <span class="number">1</span> |         <span class="number">293</span> | <span class="keyword">BEGIN</span>                                                             |</span><br><span class="line">| mysql-<span class="keyword">bin</span><span class="number">.000028</span> | <span class="number">293</span> | Table_map      |         <span class="number">1</span> |         <span class="number">340</span> | table_id: <span class="number">108</span> (liuhao.t)                                          |</span><br><span class="line">| mysql-<span class="keyword">bin</span><span class="number">.000028</span> | <span class="number">340</span> | Write_rows     |         <span class="number">1</span> |         <span class="number">384</span> | table_id: <span class="number">108</span> flags: STMT_END_F                                   |</span><br><span class="line">| mysql-<span class="keyword">bin</span><span class="number">.000028</span> | <span class="number">384</span> | Xid            |         <span class="number">1</span> |         <span class="number">415</span> | <span class="keyword">COMMIT</span> <span class="comment">/* xid=23 */</span>                                               |</span><br><span class="line">+<span class="comment">------------------+-----+----------------+-----------+-------------+-------------------------------------------------------------------+</span></span><br></pre></td></tr></table></figure>
+<p>gtid的分配方式:</p>
+<ol>
+<li>当gtid_next=automatic时候，代表使用默认值:<ol>
+<li>记录binlog时候先记录一行SET @@SESSION.GTID_NEXT=</li>
+<li>把这个gtid加入到本地实例的gtid集合中（Executed_Gtid_set）</li>
+</ol>
+</li>
+<li>如果gtid_next=是一个指定的gtid值时候，比如通过set gtid_next=’current_gtid’指定为当前的current_gtid时候，<ol>
+<li>如果current_gtid已经存在于gtid集合，接下来执行这个事务会跳过这个事务；</li>
+<li>如果current_gtid不存在于gtid这个集合中，将这个current_gtid分配给新的事务，说明系统不需要分配新的gtid,gno也不需要加1</li>
+</ol>
+</li>
+</ol>
+<p>gtid的使用方法</p>
+<p>加入一个库X是有一条数据（1,1),他的的gtid=aaaaaaaa-cccc-dddd-eeee-0000000000000:1<br>同时X作为了Y的从库，Y写入了一条数据（1,1）,他的gtid=aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10</p>
+<p>我们在X上执行如下的命令</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#将X的gtid_next置为Y库的aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10</span></span><br><span class="line"><span class="keyword">set</span> gtid_next=<span class="string">'aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10'</span>;</span><br><span class="line"><span class="comment">#提交一个空事物，把“aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10”这个gtid置为X的Executed_Gtid_set中，遇到冲突可以跳过</span></span><br><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">commit</span>;</span><br><span class="line"><span class="comment">#置gtid_next为automatic,下一个事物就变为了“aaaaaaaa-cccc-dddd-eeee-ffffffffffff:11”</span></span><br><span class="line"><span class="keyword">set</span> gtid_next=<span class="keyword">automatic</span>;</span><br><span class="line"><span class="comment">#开启从库</span></span><br><span class="line"><span class="keyword">start</span> <span class="keyword">slave</span>;</span><br></pre></td></tr></table></figure>
+<h4 id="基于GTID的主备切换"><a href="#基于GTID的主备切换" class="headerlink" title="基于GTID的主备切换"></a>基于GTID的主备切换</h4><p>执行如下命令注意,master_auto_position表示的这个主备关系支持GTID协议，我们之前的MASTER_LOG_FILE和MASTER_LOG_POS已经不需要指定了。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CHANGE</span> <span class="keyword">MASTER</span> <span class="keyword">TO</span></span><br><span class="line">MASTER_HOST=$host_name</span><br><span class="line">MASTER_PORT=$port</span><br><span class="line">MASTER_USER=$user_name</span><br><span class="line">MASTER_PASSWORD=$<span class="keyword">password</span></span><br><span class="line">master_auto_position=<span class="number">1</span></span><br></pre></td></tr></table></figure>
+<p>B通过CHANGE MASTER变为A’的从库，B的gtid_set为set_b，A的gtid_set为set_a，在start slave时候逻辑如下：</p>
+<ol>
+<li>A和B建立主备关系;</li>
+<li>B把set_b发个A’;</li>
+<li>A’计算set_a和set_b的差集，差集说明是B需要执行的binlog,同时判断A是否包含了这些binlog<ol>
+<li>不包含，直接报错，说明A已经把这些BINLOG删除了</li>
+<li>如果全部包含，A’从自己的binlog里找出第一个差集中的binlog开始同步</li>
+</ol>
+</li>
+<li>之后从这个事务开始一直往B同步</li>
+</ol>
+<p>这种方式，由之前通过位点同步的，由从库来决定从哪里同步，到主库通过获取从库的gtid来计算出从哪里开始同步。</p>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/02/07/mysql/mysql是怎么保证高可用的/" rel="next" title="">
+                <i class="fa fa-chevron-left"></i> 
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2019/02/12/mysql/如何判断mysql的主从出现问题/" rel="prev" title="">
+                 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Liu hao</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">41</span>
+                    <span class="site-state-item-name">posts</span>
+                  </a>
+                </div>
+              
+
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  
+                    
+                    
+                      
+                    
+                    <span class="site-state-item-count">1</span>
+                    <span class="site-state-item-name">tags</span>
+                  
+                </div>
+              
+            </nav>
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#MySql的主从切换"><span class="nav-number">1.</span> <span class="nav-text">MySql的主从切换</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#一主多从的架构"><span class="nav-number">1.1.</span> <span class="nav-text">一主多从的架构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#基于位点的主备切换"><span class="nav-number">1.1.1.</span> <span class="nav-text">基于位点的主备切换</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#GTID–-since-v5-6"><span class="nav-number">1.1.2.</span> <span class="nav-text">GTID– since v5.6</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#基于GTID的主备切换"><span class="nav-number">1.1.2.1.</span> <span class="nav-text">基于GTID的主备切换</span></a></li></ol></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Liu hao</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> v7.0.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/src/utils.js?v=7.0.0"></script>
+
+  <script src="/js/src/motion.js?v=7.0.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/src/schemes/muse.js?v=7.0.0"></script>
+
+
+
+  
+  <script src="/js/src/scrollspy.js?v=7.0.0"></script>
+<script src="/js/src/post-details.js?v=7.0.0"></script>
+
+
+
+  
+
+
+  <script src="/js/src/bootstrap.js?v=7.0.0"></script>
+
+
+
+  
+
+
+  
+
+
+  
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

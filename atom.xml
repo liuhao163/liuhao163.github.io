@@ -1,0 +1,438 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Hexo</title>
+  
+  
+  <link href="/atom.xml" rel="self"/>
+  
+  <link href="http://yoursite.com/"/>
+  <updated>2019-02-12T16:22:50.000Z</updated>
+  <id>http://yoursite.com/</id>
+  
+  <author>
+    <name>Liu hao</name>
+    
+  </author>
+  
+  <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>目录</title>
+    <link href="http://yoursite.com/2019/02/13/hello-world/"/>
+    <id>http://yoursite.com/2019/02/13/hello-world/</id>
+    <published>2019-02-12T16:19:46.000Z</published>
+    <updated>2019-02-12T16:22:50.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="作者"><a href="#作者" class="headerlink" title="作者"></a>作者</h1><p><a href="mailto:liu67224657@qq.com" target="_blank" rel="noopener">liu67224657@qq.com</a></p><h2 id="spring相关"><a href="#spring相关" class="headerlink" title="spring相关"></a>spring相关</h2><p><a href="./spring">spring</a></p><h2 id="mysql"><a href="#mysql" class="headerlink" title="mysql"></a>mysql</h2><p><a href="./mysql/">mysql</a></p><h2 id="shell"><a href="#shell" class="headerlink" title="shell"></a>shell</h2><p><a href="./shell/">shell</a></p><h2 id="java基础"><a href="#java基础" class="headerlink" title="java基础"></a>java基础</h2><p><a href="./java/">java</a></p><h2 id="netty"><a href="#netty" class="headerlink" title="netty"></a>netty</h2><p><a href="./netty/">netty</a></p><h2 id="mq"><a href="#mq" class="headerlink" title="mq"></a>mq</h2><p>todo rocketmq</p><p><a href="./mq">mq</a></p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;作者&quot;&gt;&lt;a href=&quot;#作者&quot; class=&quot;headerlink&quot; title=&quot;作者&quot;&gt;&lt;/a&gt;作者&lt;/h1&gt;&lt;p&gt;&lt;a href=&quot;mailto:liu67224657@qq.com&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;liu
+      
+    
+    </summary>
+    
+    
+      <category term="技术" scheme="http://yoursite.com/tags/%E6%8A%80%E6%9C%AF/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>test</title>
+    <link href="http://yoursite.com/2019/02/13/test/"/>
+    <id>http://yoursite.com/2019/02/13/test/</id>
+    <published>2019-02-12T16:19:46.000Z</published>
+    <updated>2019-02-12T16:19:46.000Z</updated>
+    
+    <summary type="html">
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title></title>
+    <link href="http://yoursite.com/2019/02/12/mysql/mysql%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB%E7%9A%84%E9%82%A3%E4%BA%9B%E5%9D%91/"/>
+    <id>http://yoursite.com/2019/02/12/mysql/mysql读写分离的那些坑/</id>
+    <published>2019-02-11T17:13:53.000Z</published>
+    <updated>2019-02-12T15:23:14.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="mysql读写分离的坑"><a href="#mysql读写分离的坑" class="headerlink" title="mysql读写分离的坑"></a>mysql读写分离的坑</h1><p>本章主要介绍mysql读写分离的架构，读写分离遇到的问题，以及解决方案。</p><h2 id="mysql读写分离结构介绍"><a href="#mysql读写分离结构介绍" class="headerlink" title="mysql读写分离结构介绍"></a>mysql读写分离结构介绍</h2><h3 id="直连架构"><a href="#直连架构" class="headerlink" title="直连架构"></a>直连架构</h3><p>见图：<br><img src="/images/mysql/mysql读写分离架构直连.png" alt="avator"></p><h3 id="proxy"><a href="#proxy" class="headerlink" title="proxy"></a>proxy</h3><p>见图：<br><img src="/images/mysql/mysql读写分离架构proxy.png" alt="avator"></p><p>小结：</p><ul><li>直连的架构，往往后端会有一个管理器（zookeeper）来管理所有的节点，动态的做主从切换，踢掉失联节点，和动态更新节点。</li><li>客户端链接proxy，业务往往只关注业务逻辑即可。<em>现在大多采用此方案</em></li></ul><h2 id="mysql读写分离架构遇到的挑战以及解决方案"><a href="#mysql读写分离架构遇到的挑战以及解决方案" class="headerlink" title="mysql读写分离架构遇到的挑战以及解决方案"></a>mysql读写分离架构遇到的挑战以及解决方案</h2><p>无论采用直连还是proxy架构都会遇到主从不同步的问题，这里我们叫过期读，我们该采用什么方式解决呢？</p><h3 id="强制走主库"><a href="#强制走主库" class="headerlink" title="强制走主库"></a>强制走主库</h3><p>业务方自己判断某些查询走主库某些查询走备库。比如：刚修改的数据立刻就获取的最新的数据从主库查询；数据分析等离线的情况走从库；</p><ul><li>优点：比较简单，由业务自己掌控，大部分情况都可以用此种方式解决；</li><li>缺点：可能会遇到所有查询都需要从主库查询的情况，这样一主多从的架构就失去了作用；</li></ul><h3 id="sleep方案"><a href="#sleep方案" class="headerlink" title="sleep方案"></a>sleep方案</h3><p>修改和插入数据时候等待一段时间，然后在从备库查询，例如：页面ajax提交了修改请求，页面直接返回结果，当下次刷新时候从从库取出数据；</p><ul><li>优点：业务方决定，比较简单，且可以利用一主多从</li><li>缺点：过期时间的不确定性，可能会导致数据一致性有问题</li></ul><h3 id="判断主备无延迟方案"><a href="#判断主备无延迟方案" class="headerlink" title="判断主备无延迟方案"></a>判断主备无延迟方案</h3><p>在sql语句执行前线判断主库和从库是否有延迟，没延迟读取从库，有延迟读取主库。</p><h4 id="判断seconds-behind-master参数"><a href="#判断seconds-behind-master参数" class="headerlink" title="判断seconds_behind_master参数"></a>判断seconds_behind_master参数</h4><p>当参数为0说明无延迟，可以从从库读取，但是时间不精确只能精确到秒</p><h4 id="通过位点来判断"><a href="#通过位点来判断" class="headerlink" title="通过位点来判断"></a>通过位点来判断</h4><p>从库通过show slave status命令取得如下俩对参数：Master_Log_File和Read_Master_Log_Pos，Relay_Master_Log_File和Exec_Master_Log_Pos，当这俩对参数相等说明主备无延迟，</p><h4 id="通过gtid来判断"><a href="#通过gtid来判断" class="headerlink" title="通过gtid来判断"></a>通过gtid来判断</h4><ul><li>Auto_Position=1 ，表示这对主备关系使用了GTID</li><li>Retrieved_Gtid_Set，表示备库收到的日志GTID_SET</li><li>Executed_Gtid_Set，表示备库执行完成的GTID_SET</li></ul><p>当着俩个集合相等说明主备无延迟</p><p>但是，这种方案有个缺点就是，备库判断的是自己的,relaylog和binlog的差异，但是如果这时候主库提交了个事物，备库还没有转成relaylog，备库会认为没有延迟，但是依然从备库差不到刚才主库刚提交的事务的数据，如下图：</p><p><img src="/images/mysql/判断主备无延迟方案badcase.png" alt="avator"></p><p>tx3事务的数据主库提交了，但是备库会看不到</p><h3 id="结合semi-sync方案"><a href="#结合semi-sync方案" class="headerlink" title="结合semi-sync方案"></a>结合semi-sync方案</h3><p>上图的问题，结合semi-sync（办同步）方案可解决，semi-sync原理是什么呢？</p><ol><li>开启semi-sync后，主库在提交时候后会发送binlog给备库</li><li>备库收到binlog以后，发给主库一个ack信号，说明已经收到</li><li>主库收到这个信号后才能给客户端返回事务已经提交</li></ol><p>这种方案会有如下俩个缺点：</p><ol><li>对于一主多从的结构，当一个从库发送ack信号给主库，主库会返回一个事务已经提交，这时候如果从其他从库查询还是有可能出现过期读；</li><li>如果数据库更新频繁，你会发现g</li><li>tid或者位点主从会一直不相等，这样就失去了从库读写分离的意义。</li></ol><h3 id="等主库位点（gtid）"><a href="#等主库位点（gtid）" class="headerlink" title="等主库位点（gtid）"></a>等主库位点（gtid）</h3><p>我们针对上面的痛点可以采用等主库位点或者gtid的方式来处理这种情况</p><h4 id="等主库位点"><a href="#等主库位点" class="headerlink" title="等主库位点"></a>等主库位点</h4><p>命令:select master_pos_wait(file, pos[, timeout]);</p><ul><li>该命令含义：返回从命令执行开始，经过timeout秒后，从库执行到file（binlog）的pos位置执行了多少个事物。</li><li>返回值含义:<ul><li>NULL:失联</li><li>-1：超时</li><li>0：执行即到了改位置。执行了0个事物</li><li>N：从库到这个位置执行了N个事物。</li></ul></li></ul><p>具体流程如图:<br><img src="/images/mysql/等主库位点case.png" alt="avator"></p><ol><li>tx1提交后，在master上执行show master status;获取主库的binlog和binlog_pos。</li><li>在从库上执行查询语句前，先执行select master_pos_wait(file, pos[, timeout]);</li><li>如果返回&gt;=0,slect在从库执行，否则主库执行</li></ol><h4 id="等GTID"><a href="#等GTID" class="headerlink" title="等GTID"></a>等GTID</h4><p>命令:select wait_for_executed_gtid_set(gtid_set, timeout);</p><ul><li>该命令含义：等待从库timeout秒后，执行的gtid_set包含了gtid_set</li><li>返回值含义:<ul><li>0：包含</li><li>1：超时</li></ul></li></ul><p>具体流程如图:<br><img src="/images/mysql/等主库gtidcase.png" alt="avator"></p><ol><li>tx1提交后，在master上执行show master status;获取主库的gtid_set。（5.7后可以通过函数直接获取该事务返回的gtid,具体见后面）</li><li>在从库上执行查询语句前，先执行select wait_for_executed_gtid_set(gtid_set, timeout);</li><li>如果返回0从库，1主库</li></ol><p>注：5.7之后获取事务提交后gtid的方法</p><blockquote><p>set session_track_gtids=OWN_GTID<br>执行事务并且提交<br>客户端通过函数：mysql_session_track_get_first <em>这个函数只针对客户端调用</em></p></blockquote><p>注：开启semi-sync<em>待完善</em></p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;mysql读写分离的坑&quot;&gt;&lt;a href=&quot;#mysql读写分离的坑&quot; class=&quot;headerlink&quot; title=&quot;mysql读写分离的坑&quot;&gt;&lt;/a&gt;mysql读写分离的坑&lt;/h1&gt;&lt;p&gt;本章主要介绍mysql读写分离的架构，读写分离遇到的问题，以及解决方
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title></title>
+    <link href="http://yoursite.com/2019/02/12/mysql/index/"/>
+    <id>http://yoursite.com/2019/02/12/mysql/index/</id>
+    <published>2019-02-11T17:13:53.000Z</published>
+    <updated>2019-02-11T20:39:26.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="mysql-读书笔记"><a href="#mysql-读书笔记" class="headerlink" title="mysql-读书笔记"></a>mysql-读书笔记</h1><p>mysql是应用最广泛的数据库之一，也是大部分互联网应用都离不开的基础服务，所以Mysql的优化和原理的理解变得尤为重要。</p><h2 id="MySql基础"><a href="#MySql基础" class="headerlink" title="MySql基础"></a>MySql基础</h2><p><a href="./mysql的锁.html">MySql的锁</a></p><p><a href="./mysql事务隔离级别.html">MySql的事务隔离级别</a></p><p><a href="./mysql的索引.html">MySql的索引</a></p><p><a href="./mysql的排序.html">MySql的排序</a></p><h2 id="MySql的高可用架构"><a href="#MySql的高可用架构" class="headerlink" title="MySql的高可用架构"></a>MySql的高可用架构</h2><p><a href="./mysql是怎么保证高可用的.html">MySql是怎么保证高可用的</a></p><p><a href="./mysql是如何降低主备延迟的.html">MySql是如何降低主备延迟的</a></p><p><a href="./mysql的主从切换.html">MySql的主从切换</a></p><p><a href="./mysql读写分离的那些坑.html">Mysql读写分离的那些坑</a></p><p><a href="./如何判断mysql的主从出现问题.html">如何判断MySql的主从出现问题</a>–MySql的健康检查</p><h2 id="todo"><a href="#todo" class="headerlink" title="todo"></a>todo</h2><p>草稿<br><a href="./mysql的排序.html">Mysql的更新</a></p><p><a href="./mysql的redolog.html">Mysql的redolog</a></p><p><a href="./mysql的数据页更新.html">Mysql的数据页更新</a></p><p><a href="./mysql是如何保证主从同步的（binlog）.html">Mysql是如何保证主从同步的（binlog）</a></p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;mysql-读书笔记&quot;&gt;&lt;a href=&quot;#mysql-读书笔记&quot; class=&quot;headerlink&quot; title=&quot;mysql-读书笔记&quot;&gt;&lt;/a&gt;mysql-读书笔记&lt;/h1&gt;&lt;p&gt;mysql是应用最广泛的数据库之一，也是大部分互联网应用都离不开的基础服务，
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title></title>
+    <link href="http://yoursite.com/2019/02/12/mysql/%E5%A6%82%E4%BD%95%E5%88%A4%E6%96%ADmysql%E7%9A%84%E4%B8%BB%E4%BB%8E%E5%87%BA%E7%8E%B0%E9%97%AE%E9%A2%98/"/>
+    <id>http://yoursite.com/2019/02/12/mysql/如何判断mysql的主从出现问题/</id>
+    <published>2019-02-11T17:13:53.000Z</published>
+    <updated>2019-02-11T17:13:53.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="如何判断MySql的主从出现问题"><a href="#如何判断MySql的主从出现问题" class="headerlink" title="如何判断MySql的主从出现问题"></a>如何判断MySql的主从出现问题</h1><p>本章主要介绍如何对MySql主从进行健康检查</p><h2 id="SELECT-1"><a href="#SELECT-1" class="headerlink" title="SELECT 1"></a>SELECT 1</h2><p>定期在数据库上执行“SELECT 1”,缺点是指能判断MySql的进程是否存在，不能判断实际的使用情况，因为Mysql的并发度往往受参数innodb_thread_concurrency影响：</p><blockquote><p>innodb_thread_concurrency代表数据库的并发度，即同一时间有多少线程并发执行任务；默认是0即无限制，但是为了防止CPU被打满我们往往设置64~1·28中的一个值；<br>注意一下俩点：</p><ul><li>innodb_thread_concurrency和最大连接数不一样，最大连接数只是保持了链接状态，并没有多消耗CPU资源；</li><li>当链接进入sleep状态的时候，innodb_thread_concurrency参数会减一，即释放一个并发度；</li></ul></blockquote><h2 id="查表"><a href="#查表" class="headerlink" title="查表"></a>查表</h2><p>我们可以在mysql中创建一个表比如讲heal_check，定期执行下面的语句：</p><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; select * from mysql.health_check;</span><br></pre></td></tr></table></figure><p>但是依然有个缺点，我们不能检查出MySql写的能力。</p><h2 id="定期执行修改的方式"><a href="#定期执行修改的方式" class="headerlink" title="定期执行修改的方式"></a>定期执行修改的方式</h2><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; update mysql.health_check set t_modified=now();</span><br></pre></td></tr></table></figure><p>缺点从库无法判断,我们可以修改下我们的语句用如下的方式定期轮训</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; CREATE TABLE `health_check` (</span><br><span class="line">  `id` int(11) NOT NULL,</span><br><span class="line">  `t_modified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,</span><br><span class="line">  PRIMARY KEY (`id`)</span><br><span class="line">) ENGINE=InnoDB;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 检测命令 */</span></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> mysql.health_check(<span class="keyword">id</span>, t_modified) <span class="keyword">values</span> (@@server_id, <span class="keyword">now</span>()) <span class="keyword">on</span> <span class="keyword">duplicate</span> <span class="keyword">key</span> <span class="keyword">update</span> t_modified=<span class="keyword">now</span>();</span><br></pre></td></tr></table></figure><p>缺点，只能被动的轮询无法及时发现问题。</p><h2 id="内部统计–performance-schema库"><a href="#内部统计–performance-schema库" class="headerlink" title="内部统计–performance_schema库"></a>内部统计–performance_schema库</h2><p>我们可以利用performance_schema，注意如果打开会因为检测导致性能下降10%左右。</p><p>我们执行语句可以看到如下内容</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> performance_schema.file_summary_by_event_name <span class="keyword">where</span> event_name=<span class="string">'wait/io/file/innodb/innodb_log_file'</span>\G</span><br><span class="line"></span><br><span class="line">*************************** <span class="number">1.</span> <span class="keyword">row</span> ***************************</span><br><span class="line">               EVENT_NAME: <span class="keyword">wait</span>/io/<span class="keyword">file</span>/<span class="keyword">innodb</span>/innodb_log_file</span><br><span class="line">               COUNT_STAR: <span class="number">107</span>  <span class="comment">#IO总次数</span></span><br><span class="line">           SUM_TIMER_WAIT: <span class="number">101355337720</span> <span class="comment">#单位皮秒</span></span><br><span class="line">           MIN_TIMER_WAIT: <span class="number">498680</span></span><br><span class="line">           AVG_TIMER_WAIT: <span class="number">947245845</span></span><br><span class="line">           MAX_TIMER_WAIT: <span class="number">81456567920</span></span><br><span class="line">               COUNT_READ: <span class="number">7</span> <span class="comment">#读</span></span><br><span class="line">           SUM_TIMER_READ: <span class="number">1321141640</span></span><br><span class="line">           MIN_TIMER_READ: <span class="number">498680</span></span><br><span class="line">           AVG_TIMER_READ: <span class="number">188734455</span></span><br><span class="line">           MAX_TIMER_READ: <span class="number">790074740</span></span><br><span class="line"> SUM_NUMBER_OF_BYTES_READ: <span class="number">70144</span> <span class="comment">#字节</span></span><br><span class="line">              COUNT_WRITE: <span class="number">47</span> <span class="comment">#写</span></span><br><span class="line">          SUM_TIMER_WRITE: <span class="number">874801200</span></span><br><span class="line">          MIN_TIMER_WRITE: <span class="number">12836460</span></span><br><span class="line">          AVG_TIMER_WRITE: <span class="number">18612685</span></span><br><span class="line">          MAX_TIMER_WRITE: <span class="number">33429760</span></span><br><span class="line">SUM_NUMBER_OF_BYTES_WRITE: <span class="number">40960</span></span><br><span class="line">               COUNT_MISC: <span class="number">53</span> <span class="comment">#fsync次数--其他</span></span><br><span class="line">           SUM_TIMER_MISC: <span class="number">99159394880</span></span><br><span class="line">           MIN_TIMER_MISC: <span class="number">891800</span></span><br><span class="line">           AVG_TIMER_MISC: <span class="number">1870931790</span></span><br><span class="line">           MAX_TIMER_MISC: <span class="number">81456567920</span></span><br></pre></td></tr></table></figure><p>为了节省性能，我们可以只打开我们需要的统计项，执行如下命令，打开redolog和binlog的统计项</p><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; update setup_instruments set ENABLED='YES', Timed='YES' where name like '%wait/io/file/innodb/innodb_log_file%';</span><br></pre></td></tr></table></figure><p>检测性能方式如下，比如监控binlog和redolog超过200ms时，即监控MAX_TIMER_WAIT值</p><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; select event_name,MAX_TIMER_WAIT  FROM performance_schema.file_summary_by_event_name where event_name in ('wait/io/file/innodb/innodb_log_file','wait/io/file/sql/binlog') and MAX_TIMER_WAIT&gt;200*1000000000;</span><br><span class="line"></span><br><span class="line"><span class="comment">#获取异常信息时候可以清空表，继续累计</span></span><br><span class="line">mysql&gt; truncate table performance_schema.file_summary_by_event_name;</span><br></pre></td></tr></table></figure>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;如何判断MySql的主从出现问题&quot;&gt;&lt;a href=&quot;#如何判断MySql的主从出现问题&quot; class=&quot;headerlink&quot; title=&quot;如何判断MySql的主从出现问题&quot;&gt;&lt;/a&gt;如何判断MySql的主从出现问题&lt;/h1&gt;&lt;p&gt;本章主要介绍如何对MySql
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title></title>
+    <link href="http://yoursite.com/2019/02/07/mysql/mysql%E7%9A%84%E4%B8%BB%E4%BB%8E%E5%88%87%E6%8D%A2/"/>
+    <id>http://yoursite.com/2019/02/07/mysql/mysql的主从切换/</id>
+    <published>2019-02-07T06:10:33.000Z</published>
+    <updated>2019-02-07T07:51:12.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="MySql的主从切换"><a href="#MySql的主从切换" class="headerlink" title="MySql的主从切换"></a>MySql的主从切换</h1><p>大部分业务数据库都是读多写少，我们在实际使用情况上往往会遇到读性能，本章主要讲述如何解决读延迟</p><h2 id="一主多从的架构"><a href="#一主多从的架构" class="headerlink" title="一主多从的架构"></a>一主多从的架构</h2><p>我们一般会采取一主多从架构，主库承担所有的写和一部分读的任务，丛库根据承担读的任务。</p><p>如图：<br><img src="/images/mysql/mysql一主多从架构.png" alt="avatar"></p><ol><li>A和A’互为主备</li><li>B、C、D是A的从库</li></ol><p>下面我们来通论下当主库A发生故障后，A’成为主库，BCD的主库也要都指向A’，下面我们来讨论下遇到这种情况，mysql是如何做主从切换的。<br>如图：<br><img src="/images/mysql/mysql一主多从故障.png" alt="avatar"></p><h3 id="基于位点的主备切换"><a href="#基于位点的主备切换" class="headerlink" title="基于位点的主备切换"></a>基于位点的主备切换</h3><p>当把B置为A’的从库时候要执行如下命令</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CHANGE</span> <span class="keyword">MASTER</span> <span class="keyword">TO</span></span><br><span class="line">MASTER_HOST=$host_name</span><br><span class="line">MASTER_PORT=$port</span><br><span class="line">MASTER_USER=$user_name</span><br><span class="line">MASTER_PASSWORD=$<span class="keyword">password</span></span><br><span class="line">MASTER_LOG_FILE=$master_log_name</span><br><span class="line">MASTER_LOG_POS=$master_log_pos</span><br></pre></td></tr></table></figure><ul><li>host_name、port、user_name、password主库的IP、端口、用于主从同步的数据库用户名、密码</li><li>master_log_name，和master_log_pos就是A’库binlog的文件名和位置成为位点；</li></ul><p>原来的B是A的从库，所以B中记录的是A的位点，在change master之后，B要将位点置为A’的位点，由于A和A’记录的位点不一样，所以要大概估算出一个靠前一点的位点，在忽略掉主从不同步的情况。为什么要靠前一点的主要是有下面这种情况，下面语句是分析mysqlbinlog找到位点</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mysqlbinlog File <span class="comment">--stop-datetime=T --start-datetime=T</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#比如这是看到了pos是123，我们B在chenagemaster时候可以往前一点比如110；</span></span><br></pre></td></tr></table></figure><blockquote><p>在A插入了一行R，同时同步给B和A’这时候A出现故障，B和A’都已经有了R行数据，如果这时候changemaster会提示主键冲突，停止同步。</p></blockquote><p>解决的方案：</p><ol><li>主动跳过1个事务,如下的命令，每次遇到这样的错误都跳过知道最后没有错误为止</li><li>通过设置slave_skip_errors参数，直接跳过指定错误，常见的错误如下，可以直接跳过“1062，1032”<ol><li>1062 错误是插入数据时唯一键冲突；</li><li>1032 错误是删除数据时找不到行。</li></ol></li></ol><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> <span class="keyword">global</span> sql_slave_skip_counter=N;</span><br><span class="line"><span class="keyword">start</span> <span class="keyword">slave</span>;</span><br></pre></td></tr></table></figure><p>注意：前提是这俩种操作是对业务无损的。</p><h3 id="GTID–-since-v5-6"><a href="#GTID–-since-v5-6" class="headerlink" title="GTID– since v5.6"></a>GTID– since v5.6</h3><p>基于位面做主从切换比较复杂且很容易出错，所以mysql在5.6后引入了gtid彻底解决了这个问题。</p><p>GTID全程是Global Transaction Identifier,即全局事物ID，即一个事物提交后生成的全局唯一ID，他有俩个部分组成</p><blockquote><p>GTID=server_uuid:gno（官方定义：GTID=source_id:transaction_id）<br>其中：</p></blockquote><ol><li>server_uuid是mysql的实例ID</li><li>gno是一个递增的整数，</li></ol><p>如何启动gtid呢？</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gtid_mode=on</span><br><span class="line">enforce_gtid_consistency=on</span><br></pre></td></tr></table></figure><p>下图就是我在主库上执行了一条插入看到的binlog,其中SET @@SESSION.GTID_NEXT= ‘b01b34d1-25cf-11e9-8e68-9ec1c2413262:1’就是这条事物的GTID</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show binlog events IN 'mysql-bin.000028';</span><br><span class="line">+<span class="comment">------------------+-----+----------------+-----------+-------------+-------------------------------------------------------------------+</span></span><br><span class="line">| Log_name         | Pos | Event_type     | Server_id | End_log_pos | Info                                                              |</span><br><span class="line">+<span class="comment">------------------+-----+----------------+-----------+-------------+-------------------------------------------------------------------+</span></span><br><span class="line">| mysql-bin.000028 |   4 | Format_desc    |         1 |         123 | Server ver: 5.7.25-log, Binlog ver: 4                             |</span><br><span class="line">| mysql-bin.000028 | 123 | Previous_gtids |         1 |         154 |                                                                   |</span><br><span class="line">| mysql-bin.000028 | 154 | Gtid           |         1 |         219 | <span class="keyword">SET</span> @@SESSION.GTID_NEXT= <span class="string">'b01b34d1-25cf-11e9-8e68-9ec1c2413262:1'</span> |</span><br><span class="line">| mysql-<span class="keyword">bin</span><span class="number">.000028</span> | <span class="number">219</span> | <span class="keyword">Query</span>          |         <span class="number">1</span> |         <span class="number">293</span> | <span class="keyword">BEGIN</span>                                                             |</span><br><span class="line">| mysql-<span class="keyword">bin</span><span class="number">.000028</span> | <span class="number">293</span> | Table_map      |         <span class="number">1</span> |         <span class="number">340</span> | table_id: <span class="number">108</span> (liuhao.t)                                          |</span><br><span class="line">| mysql-<span class="keyword">bin</span><span class="number">.000028</span> | <span class="number">340</span> | Write_rows     |         <span class="number">1</span> |         <span class="number">384</span> | table_id: <span class="number">108</span> flags: STMT_END_F                                   |</span><br><span class="line">| mysql-<span class="keyword">bin</span><span class="number">.000028</span> | <span class="number">384</span> | Xid            |         <span class="number">1</span> |         <span class="number">415</span> | <span class="keyword">COMMIT</span> <span class="comment">/* xid=23 */</span>                                               |</span><br><span class="line">+<span class="comment">------------------+-----+----------------+-----------+-------------+-------------------------------------------------------------------+</span></span><br></pre></td></tr></table></figure><p>gtid的分配方式:</p><ol><li>当gtid_next=automatic时候，代表使用默认值:<ol><li>记录binlog时候先记录一行SET @@SESSION.GTID_NEXT=</li><li>把这个gtid加入到本地实例的gtid集合中（Executed_Gtid_set）</li></ol></li><li>如果gtid_next=是一个指定的gtid值时候，比如通过set gtid_next=’current_gtid’指定为当前的current_gtid时候，<ol><li>如果current_gtid已经存在于gtid集合，接下来执行这个事务会跳过这个事务；</li><li>如果current_gtid不存在于gtid这个集合中，将这个current_gtid分配给新的事务，说明系统不需要分配新的gtid,gno也不需要加1</li></ol></li></ol><p>gtid的使用方法</p><p>加入一个库X是有一条数据（1,1),他的的gtid=aaaaaaaa-cccc-dddd-eeee-0000000000000:1<br>同时X作为了Y的从库，Y写入了一条数据（1,1）,他的gtid=aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10</p><p>我们在X上执行如下的命令</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#将X的gtid_next置为Y库的aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10</span></span><br><span class="line"><span class="keyword">set</span> gtid_next=<span class="string">'aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10'</span>;</span><br><span class="line"><span class="comment">#提交一个空事物，把“aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10”这个gtid置为X的Executed_Gtid_set中，遇到冲突可以跳过</span></span><br><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">commit</span>;</span><br><span class="line"><span class="comment">#置gtid_next为automatic,下一个事物就变为了“aaaaaaaa-cccc-dddd-eeee-ffffffffffff:11”</span></span><br><span class="line"><span class="keyword">set</span> gtid_next=<span class="keyword">automatic</span>;</span><br><span class="line"><span class="comment">#开启从库</span></span><br><span class="line"><span class="keyword">start</span> <span class="keyword">slave</span>;</span><br></pre></td></tr></table></figure><h4 id="基于GTID的主备切换"><a href="#基于GTID的主备切换" class="headerlink" title="基于GTID的主备切换"></a>基于GTID的主备切换</h4><p>执行如下命令注意,master_auto_position表示的这个主备关系支持GTID协议，我们之前的MASTER_LOG_FILE和MASTER_LOG_POS已经不需要指定了。</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CHANGE</span> <span class="keyword">MASTER</span> <span class="keyword">TO</span></span><br><span class="line">MASTER_HOST=$host_name</span><br><span class="line">MASTER_PORT=$port</span><br><span class="line">MASTER_USER=$user_name</span><br><span class="line">MASTER_PASSWORD=$<span class="keyword">password</span></span><br><span class="line">master_auto_position=<span class="number">1</span></span><br></pre></td></tr></table></figure><p>B通过CHANGE MASTER变为A’的从库，B的gtid_set为set_b，A的gtid_set为set_a，在start slave时候逻辑如下：</p><ol><li>A和B建立主备关系;</li><li>B把set_b发个A’;</li><li>A’计算set_a和set_b的差集，差集说明是B需要执行的binlog,同时判断A是否包含了这些binlog<ol><li>不包含，直接报错，说明A已经把这些BINLOG删除了</li><li>如果全部包含，A’从自己的binlog里找出第一个差集中的binlog开始同步</li></ol></li><li>之后从这个事务开始一直往B同步</li></ol><p>这种方式，由之前通过位点同步的，由从库来决定从哪里同步，到主库通过获取从库的gtid来计算出从哪里开始同步。</p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;MySql的主从切换&quot;&gt;&lt;a href=&quot;#MySql的主从切换&quot; class=&quot;headerlink&quot; title=&quot;MySql的主从切换&quot;&gt;&lt;/a&gt;MySql的主从切换&lt;/h1&gt;&lt;p&gt;大部分业务数据库都是读多写少，我们在实际使用情况上往往会遇到读性能，本章主要
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title></title>
+    <link href="http://yoursite.com/2019/02/07/mysql/mysql%E6%98%AF%E6%80%8E%E4%B9%88%E4%BF%9D%E8%AF%81%E9%AB%98%E5%8F%AF%E7%94%A8%E7%9A%84/"/>
+    <id>http://yoursite.com/2019/02/07/mysql/mysql是怎么保证高可用的/</id>
+    <published>2019-02-07T06:09:00.000Z</published>
+    <updated>2019-02-07T06:13:29.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="mysql是怎么保证高可用的–如何解决主备延迟"><a href="#mysql是怎么保证高可用的–如何解决主备延迟" class="headerlink" title="mysql是怎么保证高可用的–如何解决主备延迟"></a>mysql是怎么保证高可用的–如何解决主备延迟</h1><p>mysql的主从同步会保证主库到从库的最终一致性，但是mysql的高可用，光有最终一致性是远远不够的。下面会讨论影响mysql主备高可用的因素以及解决方法。</p><h2 id="主备延迟"><a href="#主备延迟" class="headerlink" title="主备延迟"></a>主备延迟</h2><ul><li>我们在备库上可以执行命令：seconds_behind_master来查看备库的状态，会显示备库同步数据和主库的时间差（单位：秒），这个时间差计算方式是：同一事物，备库执行完binlog的时间-主库产生binlog的时间备库执行的binlog的时间，当然这个值越小越好。</li><li>在网络正常的情况下，主备同步binlog的时间往往很短，真正造成主备延迟的原因往往是relylog的消费赶不上binlog的生产。那么是什么造成主备延迟的呢</li></ul><h3 id="主备延迟的原因"><a href="#主备延迟的原因" class="headerlink" title="主备延迟的原因"></a>主备延迟的原因</h3><ol><li>主备库，备库的性能要不主库所在的的机器性能差；–目前很少见了，因为大多是双M配置，所以备库可能会变为主，所以在部署时候都会选择对称部署；</li><li>备库压力大，备库上很多的查询需求，比如备份数据，运营统计等会放在备库执行。在同步binlog时候往往也会占用查询的资源，导致备库的眼里很大，引起主备延迟</li><li>大事物，由于mysql是在主库上事物提交之后才开始传输binlog给备库，这样如果1个很大的事物在主库执行N长时间后，在同步给备库，备库在执行这个事物时候就会造成主从不一致。<ol><li>一次删除很多的数据，如：数据库快满了删除数据；</li><li>大表的DDL</li></ol></li><li>库的并行复制能力,具体放在<a href="./mysql是如何降低主备延迟的.html">mysql是如何降低主备延迟的</a></li></ol><h3 id="主备延迟的解决方案"><a href="#主备延迟的解决方案" class="headerlink" title="主备延迟的解决方案"></a>主备延迟的解决方案</h3><ol><li>首先对于双M架构，主备库建议对称部署，保证切换朱备库时候性能没有打的差别</li><li>建议根据需要一主多从，比如说：一个主备做为切换，一个从库作为数据备份，一个从库作为数据分析以及运营支持；</li><li>根本上杜绝大事物，对于删除可以考虑分批删除数据；DDL可以采用开源的工具进行入：gh-ost方案</li></ol><h2 id="主备切换的几种策略"><a href="#主备切换的几种策略" class="headerlink" title="主备切换的几种策略"></a>主备切换的几种策略</h2><h3 id="可靠性优先"><a href="#可靠性优先" class="headerlink" title="可靠性优先"></a>可靠性优先</h3><p>该策略可能会有一段时间服务不可用，流程如下：</p><ol><li>判断备库的seconds_behind_master的值，当相于一个值的时候进行第二步，否则一直重试；</li><li>主库设置readonly=true，即只读；</li><li>备库等待seconds_behind_master=0为止；</li><li>备库设置readonly=fase，即可写；</li><li>切换业务到备库；</li></ol><p>注：第一步的作用实际上是希望主库和从库的延时在小于一个阈值时候开始做切换，否则如果相差30分钟，直接切换，那么服务就会有30分钟不可用，业务方一般是不可忍受的。（当然。。。。某些时候我也作为业务方我也就忍了）</p><h3 id="可用性优先"><a href="#可用性优先" class="headerlink" title="可用性优先"></a>可用性优先</h3><p>和上面相比，保证业务的可用，但是会牺牲掉数据的一致性</p><ol><li>备库设置readonly=fase，即可写；</li><li>切换业务到备库；</li><li>主库设置eadonly=true</li></ol><p>注：在下面的情况会导致数据不一致，原因如下：（老的主库是A,备库是B）</p><ol><li>A插入了数据c(4)，还没有同步到B时候进行切换</li><li>这时候B变为主，B库插入数据c(5)，这条数据是（4，5）</li><li>然后B从A通过relylog重放数据是c(4)那条数据，这时候B库中(5，4)</li><li>A库通过重放relylog获取刚才c(5)的数据，这时候数据是（5，5）</li></ol><p><img src="/images/mysql/主备_高可用性切换_数据不一致.png" alt="avatar"></p><p>总结，Mysql作为数据的存储，还是应该优先保证数据的一致性，所以建议采用可靠性优先方案保证数据的一致性。否则，对于一些依赖写入的业务，可能因为在切换主备时候数据不一致引起逻辑的错误，而且由于往往写入不是一个单一的操作，这一次的不一致会导致后续的引发更多的问题，最终导致数据无法修复。</p><p>其他的好的建议：如果业务不依赖mysql的写入可以针对写入进行降级，比如：让数据先写到临时文件中，然后切换后慢慢的同步到mysql中。</p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;mysql是怎么保证高可用的–如何解决主备延迟&quot;&gt;&lt;a href=&quot;#mysql是怎么保证高可用的–如何解决主备延迟&quot; class=&quot;headerlink&quot; title=&quot;mysql是怎么保证高可用的–如何解决主备延迟&quot;&gt;&lt;/a&gt;mysql是怎么保证高可用的–如何
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title></title>
+    <link href="http://yoursite.com/2019/02/07/mysql/mysql%E6%98%AF%E5%A6%82%E4%BD%95%E9%99%8D%E4%BD%8E%E4%B8%BB%E5%A4%87%E5%BB%B6%E8%BF%9F%E7%9A%84/"/>
+    <id>http://yoursite.com/2019/02/07/mysql/mysql是如何降低主备延迟的/</id>
+    <published>2019-02-07T06:09:00.000Z</published>
+    <updated>2019-02-07T06:42:22.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="MySql是如何降低主备延迟的"><a href="#MySql是如何降低主备延迟的" class="headerlink" title="MySql是如何降低主备延迟的"></a>MySql是如何降低主备延迟的</h1><p>上一章<a href="./mysql是怎么保证高可用的.html">MySQL是怎么保证高可用的</a>，中提到了主库的并行复制能力会影响主备的延迟。在mysql5.6之前，rely_log被sql_thread重放写入备库，这里的sql_thread只能单线程消费，所以会很大程度降低mysql数据库的吞吐，在TPS高的时候就会有很大的延迟。如果想增强吞吐就要多sql_thread并行处理relay_log，如图：</p><p><img src="/images/mysql/mysql_多sqlthread.png" alt="avatar"></p><p>但是mysql并行的主从并行复制要遵守如下原则：</p><ol><li>对于不同的事务的binlog如果修改同一行数据，为了避免相互覆盖，不能并行运行只能串行</li><li>对于相同事务的binlog，为了保证事务的完整性，不能并行复制，</li></ol><h2 id="5-5之前的主从复制策略"><a href="#5-5之前的主从复制策略" class="headerlink" title="5.5之前的主从复制策略"></a>5.5之前的主从复制策略</h2><p>在5.5的时候，为了增强mysql的从库消费relay_log的吞吐，使用者自己实现了主从复制的策略主要有俩种：</p><h3 id="按表并行复制"><a href="#按表并行复制" class="headerlink" title="按表并行复制"></a>按表并行复制</h3><ul><li>每个work维护一个hash_table，key是binlog的dbname+tablename；</li><li>当一个binlog分配给coordainator，coordainator会循环检查这个binlog的key(dbname+tablename)，是否在work的hash_table中，如果出现说明这个binlog和这个worker冲突；<ul><li>如果只有一个冲突，交给这个work处理；</li><li>如果大于一个冲突，coordainator进入等待；</li><li>如果没有冲突，交给空闲的worker处理；</li></ul></li><li>当worker处理完后会把key从hash_table中删掉；</li></ul><h3 id="按行并行复制"><a href="#按行并行复制" class="headerlink" title="按行并行复制"></a>按行并行复制</h3><p>和上面类似，只不过这次并行控制的粒度更细，只要保证binlog不是修改的同一行数据即可并行复制，那么hash_table的key就变为binlog的dbname+table+唯一健的值（主键+唯一索引），光有主键不够一定要带上唯一索引的值，否则如下情况会报唯一建冲突。</p><p>注：c=原有的值是1,当备库并行复制时候先执行sessionB,由于这时候sessionA还没执行，会报唯一建冲突<br>| sessionA | sessionB |<br>| —— | —— |<br>| update t set c=5 where id=1 ; | - |<br>| - | update t set c=1 where id=1; |</p><h3 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h3><ol><li>必须要能通过解析binlog获取dbname,tablename,pk,uniqekey，所以binlog要是row类型；</li><li>必须有主键；</li><li>不能有外键；(因为外键的级联更新不在binlog中，所以建冲突就不准确)</li><li>按表的策略：在对热点表的时候coordainator会频繁进入等待，又变成了单线程复制；</li><li>按行的策略：要计算hashtable的key需要额外解析pk和uniquekey所以需要额外的开销；</li></ol><h2 id="Mysql5-6的并行复制策略"><a href="#Mysql5-6的并行复制策略" class="headerlink" title="Mysql5.6的并行复制策略"></a>Mysql5.6的并行复制策略</h2><h3 id="按照库名并行复制"><a href="#按照库名并行复制" class="headerlink" title="按照库名并行复制"></a>按照库名并行复制</h3><p>优点：</p><ol><li>构造hash很快，只需要库名；</li><li>binlog即使不是row也能很方便获取库名；</li></ol><p>缺点：</p><ol><li>若果服务器上只有一个库，优化效果不明显；</li></ol><h2 id="MariaDB的并行复制策略"><a href="#MariaDB的并行复制策略" class="headerlink" title="MariaDB的并行复制策略"></a>MariaDB的并行复制策略</h2><p>它的思想是思想是模拟主库运行：利用group commit,每一组事务能同时提交一定是不冲突的；那么主库commit之后就将一组的binlog一起并行执行</p><ul><li>为每个group commit分配个递增的commit_id；</li><li>将commit_id写入到binlog中</li><li>同一个commit_id的binglog分到不同的worker上去。</li><li>执行完这个commit_id后在执行下一个commit_id的binlog。</li></ul><p>缺点：</p><ol><li>并不是真正的象主库并行，主库当一组事物在commit阶段时候，下一组事物是在运行中的。而从库消费的时候只能是一组一组的消费，所以还是会造成主备的延迟。</li><li>当一组有一个很大的事物在worker中运行时候看，其他的worker先运行完了也只能等在哪里。</li></ol><h2 id="MySql5-7的并行复制的策略"><a href="#MySql5-7的并行复制的策略" class="headerlink" title="MySql5.7的并行复制的策略"></a>MySql5.7的并行复制的策略</h2><p>采用类似的MariaDb的类似的赋值策略由slave-parallel-type参数控制：</p><ul><li>DATABASE时候采用类似5.6的并行复制策略</li><li>LOGICAL_CLOCK时候采用MariaDb的并行复制策略，但是做了优化；</li></ul><p>和MariaDb相比，将binlog的执行时期从commit阶段放到了2PC的redolog的prepare阶段，mysql认为事物进入prepare阶段就说明数据是可靠的可以进行主从复制了。</p><ul><li>同时处于 prepare 状态的事务，在备库执行时是可以并行的</li><li>处于 prepare 状态的事务，与处于 commit 状态之间，在备库执行时也是可以并行的。</li></ul><p>我们可以通过binlog_group_commit_sync_delay和binlog_group_commit_sync_no_delay参数故意拉长主库的binlog从write到fsync的时间，减少binlog的写盘次数，制造更多同时在prepare时期的binlog，加大并行度。</p><h3 id="MySql5-7-22的并行复制优化"><a href="#MySql5-7-22的并行复制优化" class="headerlink" title="MySql5.7.22的并行复制优化"></a>MySql5.7.22的并行复制优化</h3><p>增加参数binlog-transaction-dependency-tracking。</p><ol><li>COMMIT_ORDER:和上面说的策略一样；但是如果是追历史数据还是会退化成单线程，所以适合线上库。</li><li>WRITESET：对于事务更新的每一行计算hash值，组成集合writeset，如果俩个事务没有操作相同的行，也就是writeset没有交集，就可以并行。</li><li>WRITESET_SESSION：多了一个约束，即在主库上同一个线程先后执行的事务，在从库上也要保证同样的顺序。</li></ol><p>和之前5.5的按行并行复制策略很类似但是有几点优化：</p><ol><li>hash值提前算好了，减少了主从同步时候的压力；</li><li>不需要在从库每次都把所有woker遍历一遍找出是否冲突；</li><li>备库不用解析binlog对备库的binlog格式无要求；</li></ol><p>思考如下：<br>假设一个 MySQL 5.7.22 版本的主库，单线程插入了很多数据，3小时候，搭建从库开始同步数据binlog-transaction-dependency-tracking改如何设置？<br>答：建议采用 WRITESET，因为是单线程插入，如果采用WRITESET_SESSION，那么会退化成单线程同步relaylog。COMMIT_ORDER因为是追历史数据，所以会退化成单线程</p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;MySql是如何降低主备延迟的&quot;&gt;&lt;a href=&quot;#MySql是如何降低主备延迟的&quot; class=&quot;headerlink&quot; title=&quot;MySql是如何降低主备延迟的&quot;&gt;&lt;/a&gt;MySql是如何降低主备延迟的&lt;/h1&gt;&lt;p&gt;上一章&lt;a href=&quot;./mysq
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title></title>
+    <link href="http://yoursite.com/2019/02/07/mysql/mysql%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/"/>
+    <id>http://yoursite.com/2019/02/07/mysql/mysql基础知识/</id>
+    <published>2019-02-07T06:09:00.000Z</published>
+    <updated>2019-02-07T06:09:00.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="Mysql的基础知识"><a href="#Mysql的基础知识" class="headerlink" title="Mysql的基础知识"></a>Mysql的基础知识</h1><p> Mysql的基础知识</p><h2 id="一条sql语句从提交到返回结果经过哪几步"><a href="#一条sql语句从提交到返回结果经过哪几步" class="headerlink" title="一条sql语句从提交到返回结果经过哪几步"></a>一条sql语句从提交到返回结果经过哪几步</h2><p>客户端–&gt;连接器–&gt;查询缓存（如果有直接返回，8.0会被废除）–&gt;分析器–&gt;优化器–&gt;执行器–&gt;存储引擎–&gt;server数据。</p><h2 id="我们经常用到的查询语句"><a href="#我们经常用到的查询语句" class="headerlink" title="我们经常用到的查询语句"></a>我们经常用到的查询语句</h2><p>select * from t where t=1 ordey by date desc limit 0 ,1;</p><h3 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h3>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;Mysql的基础知识&quot;&gt;&lt;a href=&quot;#Mysql的基础知识&quot; class=&quot;headerlink&quot; title=&quot;Mysql的基础知识&quot;&gt;&lt;/a&gt;Mysql的基础知识&lt;/h1&gt;&lt;p&gt; Mysql的基础知识&lt;/p&gt;
+&lt;h2 id=&quot;一条sql语句从提交到返回结
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title></title>
+    <link href="http://yoursite.com/2019/01/29/mysql/mysql%E6%98%AF%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E4%B8%BB%E4%BB%8E%E5%90%8C%E6%AD%A5%E7%9A%84%EF%BC%88binlog%EF%BC%89/"/>
+    <id>http://yoursite.com/2019/01/29/mysql/mysql是如何保证主从同步的（binlog）/</id>
+    <published>2019-01-29T14:42:41.000Z</published>
+    <updated>2019-01-29T15:02:34.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="mysql是如何保证主从同步的（binlog）–草稿"><a href="#mysql是如何保证主从同步的（binlog）–草稿" class="headerlink" title="mysql是如何保证主从同步的（binlog）–草稿"></a>mysql是如何保证主从同步的（binlog）–草稿</h1><ol><li><p>mysql的主从搭建</p></li><li><p>mysql的主从数据同步的流程（图）</p></li><li><p>查看binlog方式：mysql&gt; show binlog events in ‘master.000001’;</p></li><li><p>mysql的binlog的几种形式</p><ol><li>row。<ol><li>优点：可做数据恢复</li><li>缺点：可能会很大，因为是每一条数据一个log,所以如果一个涉及很多行修改的sql语句会有很多row的log。</li><li>恢复的话：相应的事件逆序即可</li><li>查看用：mysqlbinlog  -vv data/master.000001 –start-position=8900;</li></ol></li><li>statement。（优点：节省空间只是一条sql语句，缺点：无法做数据恢复）线上不会用<ol><li>在某些情况下可能会导致数据不一致比如limit和默认排序根据选择的索引不同数据会不一样。（warn）</li></ol></li><li>mixed（前两种混合 一般用这种）</li></ol></li><li><p>数据重放的方法</p><ol><li>badcase:mysqlbinlog解析日志，直接copy出statement重发，由于mysql语句是依赖上下文的所以会有风险。</li><li>goodcase:mysqlbinlog解析日志，吧解析结果发给mysql执行，如：<ol><li>mysqlbinlog master.000001  –start-position=2738 –stop-position=2973 | mysql -h127.0.0.1 -P13000 -u$user -p$pwd;</li></ol></li></ol></li><li><p>mysql的双M架构（对比M-S）(如何解决主从循环复制的问题)</p><ol><li>生产上使用较多的数据库，好处是主从切换不用修改节点状态，因为都是主</li><li>如何解决循环复制的：因为双M,所以另一个主一般会开启log_slave_updates(on)<ol><li>说明情况：server1写一条binlog,同步到server2这时候server2也会产生一条binlog，这时候如果同步到server1就会循环同步，mysql如何解决？</li><li>解决方案：<ol><li>俩个server的serverid不一样，一样的话不能成为主备；</li><li>第一次生产binlog的库带着serverid</li><li>备库接到binlog在重放的时候带着主库的serverid</li><li>这条log同步到主库时候，主库发现这个serverid和自己一样说明是自己产生的直接丢弃</li></ol></li></ol></li></ol></li></ol>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;mysql是如何保证主从同步的（binlog）–草稿&quot;&gt;&lt;a href=&quot;#mysql是如何保证主从同步的（binlog）–草稿&quot; class=&quot;headerlink&quot; title=&quot;mysql是如何保证主从同步的（binlog）–草稿&quot;&gt;&lt;/a&gt;mysql是如何
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title></title>
+    <link href="http://yoursite.com/2019/01/27/mysql/mysql%E7%B4%A2%E5%BC%95/"/>
+    <id>http://yoursite.com/2019/01/27/mysql/mysql索引/</id>
+    <published>2019-01-27T03:23:38.000Z</published>
+    <updated>2019-01-27T03:23:38.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="mysql的索引-草稿"><a href="#mysql的索引-草稿" class="headerlink" title="mysql的索引-草稿"></a>mysql的索引-草稿</h1><p>唯一索引和普通索引区别<br>  读：<br>    唯一索引在查询上和普通索引的差距不大<br>    原因：mysql是将整个数据页加载到内存中，1个数据页有16KB，可以加载很多数据（都是索引和主键指针），儿唯一索引和普通索引的区别就是查询完后是break还是continue<br>  写：<br>    唯一索引，需要在每次写入时候读取数据判断是否唯一，所以不能利用changebuffer。所以更新需要将数据页cp到内存中更新。（如果数据页不巧没在内存中，性能消耗就会很大，数据页加载涉及到随机读）<br>    数据更新，只需要将数据写到changebuffer中，然后在下次用到数据（或者定时）将changebuffer，merge到数据页，所以会很快。</p><p>索引的使用上<br>  索引使用是在优化器上进行的。优化器使用索引的依据是索引的基数（不重复的数据，可以用show index xxx看索引基数），使用基数大的索引。当频繁的删除，有可能导致基数不准选错索引。<br>  同时优化器在判断索引时候回考虑，会表的可能有可能会因为回表导致，选错索引</p><p>  方法<br>  用ANALYZE TABLE table;优化索引<br>  删除不需要的索引</p><p>有什么情况用不到索引<br>  原则：对于索引字段进行计算不会走上索引，会采用全索引遍历或者全表扫描<br>  例如：</p><pre><code>1. 索引字段加减；a+1=10002. 字段类型转化 比如 id=&apos;1111&apos;---&gt;CAST(id ,varchar)=&apos;1111&apos;3. 字段隐式类型转化：比如CAST(id,utf8mb4)=&apos;xxx&apos;</code></pre>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;mysql的索引-草稿&quot;&gt;&lt;a href=&quot;#mysql的索引-草稿&quot; class=&quot;headerlink&quot; title=&quot;mysql的索引-草稿&quot;&gt;&lt;/a&gt;mysql的索引-草稿&lt;/h1&gt;&lt;p&gt;唯一索引和普通索引区别&lt;br&gt;  读：&lt;br&gt;    唯一索引在查询
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title></title>
+    <link href="http://yoursite.com/2019/01/27/mysql/mysql%E7%9A%84%E9%94%81/"/>
+    <id>http://yoursite.com/2019/01/27/mysql/mysql的锁/</id>
+    <published>2019-01-27T03:23:38.000Z</published>
+    <updated>2019-01-27T03:23:38.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="mysql的锁"><a href="#mysql的锁" class="headerlink" title="mysql的锁"></a>mysql的锁</h1><h2 id="全局锁（FTWRL）"><a href="#全局锁（FTWRL）" class="headerlink" title="全局锁（FTWRL）"></a>全局锁（FTWRL）</h2><p>Mysql提供的针对数据库级别的对数据加读锁的功能:Flush tables with read lock。之后针对这个数据库的增删改、DDL、事物提交语句都会被堵塞住。他主要的用途是用于数据库全库的逻辑备份。</p><ul><li>优点：<ul><li>全局锁是数据库级别的，所有表引擎都支持，在数据的导出对库实例加锁，保持导出数据逻辑的一致性。</li><li>和设置数据库只读（set global readonly=true）相比，全局锁在当前链接异常或者中断的情况下可以自动释放，而设置数据库只读不能。</li></ul></li><li>缺点：导出操作如果对数据库加锁，数据库的变更操作会被lock住，解决方案：对于Innodb引擎，可以用mysql自带的mysqldump工具使用参数–single-transaction.</li></ul><h2 id="表级锁"><a href="#表级锁" class="headerlink" title="表级锁"></a>表级锁</h2><p>mysql的表级锁分俩种，一种是表锁，一种是元数据锁（meta data lock MDL）</p><h3 id="表锁"><a href="#表锁" class="headerlink" title="表锁"></a>表锁</h3><p>预发是 lock tables … read/write。可以用unlock主动释放锁。也可以在链接中断时候自动释放。<br>表锁对于自己和其他线程读写操作的限制如下：如果对一个表进行read/write锁。其他线程在写or读/写时都会堵塞；同时本线程也只能读or读写该表，其他表无法访问。</p><h3 id="元数据锁（MDL）"><a href="#元数据锁（MDL）" class="headerlink" title="元数据锁（MDL）"></a>元数据锁（MDL）</h3><p>该锁不用显示的使用，在访问表的时候会自动加上，他用来保证访问数据时候数据表结构的稳定性，他有如下特点：</p><ul><li>对一个表的数据CRUD时候，加MDL读锁；当修改表结构时候，加MDL写锁</li><li>读锁是不互斥的，因为这些操作不会该表结构，所以可以多个线程同时对表做CRUD；</li><li>读写锁之间，写锁之间是互斥的，也就是说当对表进行CRUD时候，为了保证返回数据的稳定性，DDL操作是堵塞的。</li></ul><p>由于上面MDL的读写锁机制，就会有下面这种情况，修改一个访问量很高的小表，会导致整个库挂掉：<br>比如:</p><ol><li>大量的select语句，加了MDL读锁，这时候是不会堵塞的;</li><li>这时候有一条alter表的语句需要执行，加了MDL写锁，开始block。</li><li>由于select量很大，alter会一直堵塞，这时候后续的select也会堵塞，很块连接池就被用完了。</li></ol><p>解决方法：<br>MariaDB 已经合并了 AliSQL的方法</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tbl_name <span class="keyword">NOWAIT</span> <span class="keyword">add</span> <span class="keyword">column</span> ...</span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tbl_name <span class="keyword">WAIT</span> N <span class="keyword">add</span> <span class="keyword">column</span> ...</span><br></pre></td></tr></table></figure><h2 id="行锁"><a href="#行锁" class="headerlink" title="行锁"></a>行锁</h2><p>为了加强数据库的并发度引入的锁的机制，他有如下几个特点：</p><ul><li>行锁是由mysql的表引擎决定，Innodb支持行锁，MyISM不支持行锁。</li><li>Innodb的行锁是两阶段锁：即数据需要锁的时候对数据涉及到的行加锁；在事务结束后才释放行锁；</li></ul><h3 id="如何减少行锁的锁冲突"><a href="#如何减少行锁的锁冲突" class="headerlink" title="如何减少行锁的锁冲突"></a>如何减少行锁的锁冲突</h3><p>为了减少锁的冲突，我们在事务中要把会引起锁冲突的语句往后放。因为事务是原子性的所以，在一个事务中，要么都成功要么都失败，所以我们在一个事务中根据业务需求可以把一些没有锁冲突的操作或者语句放在事务的前面先只是，可能会造成锁冲突的语句放在后面，减少锁冲突加大并发。</p><h3 id="死锁和死锁检测"><a href="#死锁和死锁检测" class="headerlink" title="死锁和死锁检测"></a>死锁和死锁检测</h3><ul><li>出现原因：循环的资源等待。举个例子：俩个事务，事务1:用户uid=1点赞,事务2：用户uid=1取消赞。如下：这时候在并发时候可能会造成死锁当事务1、事务2都执行完第一条语句时候，这时候事务1等待事务2执行完第二条语句释放，这时候事务2执行完第二条语句等待事务一释放</li></ul><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#事务1 点赞</span></span><br><span class="line"><span class="keyword">BEGIN</span> <span class="keyword">TRANSACTION</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> reply <span class="keyword">SET</span> like_ammount=like_ammount+<span class="number">1</span> <span class="keyword">WHERE</span> reply_id=<span class="number">1</span> ;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> user_sum <span class="keyword">SET</span> like_sum=like_sum+<span class="number">1</span> <span class="keyword">WHERE</span> uid=<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">COMMIT</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">#事务2取消赞</span></span><br><span class="line"><span class="keyword">BEGIN</span> <span class="keyword">TRANSACTION</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> user_sum <span class="keyword">SET</span> like_sum=like_sum<span class="number">-1</span> <span class="keyword">WHERE</span> uid=<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> reply <span class="keyword">SET</span> like_ammount=like_ammount<span class="number">-1</span> <span class="keyword">WHERE</span> reply_id=<span class="number">1</span> ;</span><br><span class="line"></span><br><span class="line"><span class="keyword">COMMIT</span>;</span><br></pre></td></tr></table></figure><ul><li>解决方法<ul><li>等待锁超时，用innodb_lock_wait_timeout来设置；（默认50s）</li><li>用死锁检查的方式innodb_deadlock_detect设置为on，表示开启，一旦发生死锁回滚死锁链条中的某个事务让其他事务可以进行；</li></ul></li></ul><h3 id="死锁检查真的很美好么？"><a href="#死锁检查真的很美好么？" class="headerlink" title="死锁检查真的很美好么？"></a>死锁检查真的很美好么？</h3><p>死锁检查是一个O(n*n)的时间复杂度的操作，因为每一个被堵塞的线程都会检查是否是自己导致了死锁。导致会有大量的线程做无谓的死锁检查，最终现象是CPU很高，但是并发度很低。</p><p>解决方案：</p><ul><li>粗暴的做法：如果确定没有死锁情况，关掉死锁检查。</li><li>控制并发度：客户端自己控制，最多只有N个线程同时进行修改，但是不排除一个库有多个客户端（比如多连接池）</li><li>中间件开发：如果发现请求数据一样的，进行排队减少冲突。（成本高）</li></ul><h2 id="间隙锁-gap-lock-与幻读"><a href="#间隙锁-gap-lock-与幻读" class="headerlink" title="间隙锁(gap lock) 与幻读"></a>间隙锁(gap lock) 与幻读</h2><p>什么是幻读？为什么会出现幻读？幻读有什么危害？</p><ul><li>事物在RR隔离级别下；</li><li>一个事物中，俩次查询涉及的条件相同，后面的语句出现了之前查询没有存在的数据。（注意：出现了新增的数据）；</li><li>为什么出现幻读：RR隔离级别下，当数据发生改变，采用当前读的原则</li><li>幻读的危害：破坏了业务的语意；违反了数据的一致性</li></ul><p>为什么需要间隙锁？当数据库的隔离级别是RR的情况下，由于Mysql的行锁在为数据上锁的时候需要数据在表中，也就是说对于新插入的数据mysql是无法上锁的。这样就会出现幻读的情况。innodb为了解决幻读引入了间隙锁。</p><h2 id="innodb是如何加间隙锁的"><a href="#innodb是如何加间隙锁的" class="headerlink" title="innodb是如何加间隙锁的"></a>innodb是如何加间隙锁的</h2><ol><li>当一个涉及到为数据加锁的语句执行时候，会为涉及到的数据加行锁，同时为整个表的数据之间加间隙锁（gap lock）,这个行锁+间隙锁也叫next-key-lock。</li><li>间隙锁是个左开，右闭的空间。比如一张表有如下数据  </li><li>间隙锁只会锁插入语句，其他的操作是不互斥的。</li></ol><p>具体例子说明<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">#表t(id, c(有索引))有数据（1，3），（1，5），（1，7），有如下3个事物，是不冲突的 t1 ,t2锁不冲突， t3会被间隙锁block</span></span><br><span class="line"><span class="comment">#间隙锁是(-∞,3],(3,5],(5,7],(7,supernum]</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#t1</span></span><br><span class="line">begion transaction;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span>  t <span class="keyword">where</span> c=<span class="number">5</span> <span class="keyword">for</span> <span class="keyword">update</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">#t2</span></span><br><span class="line">begion transaction;</span><br><span class="line"><span class="keyword">update</span> t <span class="keyword">set</span> c=<span class="number">1</span> <span class="keyword">where</span> c=<span class="number">5</span> <span class="keyword">for</span> <span class="keyword">share</span> <span class="keyword">mode</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">#t3</span></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t <span class="keyword">values</span>(<span class="number">3</span>,<span class="number">4</span>);</span><br></pre></td></tr></table></figure></p><h3 id="间隙锁的缺点"><a href="#间隙锁的缺点" class="headerlink" title="间隙锁的缺点"></a>间隙锁的缺点</h3><p>间隙锁也并不是万能的在某些情况下会造成死锁比如，下面的情况：</p><ol><li>判断断C=5是否存在；</li><li>不存在就insert,存在就update；</li><li>图中在并发的情况下，且c=5不存在，行锁无效，触发间隙锁，这时候事物2的insert需要等待事物1commit之后释放间隙锁。</li><li>但是事物1，因为也insert导致了，不能释放锁就触发了死锁。</li></ol><table><thead><tr><th>事物1</th><th>事物2</th></tr></thead><tbody><tr><td>begin transaction;</td><td>begin transaction;</td></tr><tr><td>select * from t where c=5 for update ;</td><td>select * from t where c=5  for share update;</td></tr><tr><td>select * from t where c=5 for update ;</td><td>select * from t where c=5  for share update;</td></tr><tr><td>-</td><td>insert into t values(5,5);</td></tr><tr><td>insert into t values(5,5);（dead lock）</td><td>-</td></tr></tbody></table><p>这种方式的解决方案，在满足业务的前提下，将事物的隔离级别改为RC，并且将binlog置为row。</p><h3 id="innodb对于数据加锁的原则"><a href="#innodb对于数据加锁的原则" class="headerlink" title="innodb对于数据加锁的原则"></a>innodb对于数据加锁的原则</h3><p>Q:锁是加在数据上还是加载索引中？<br>A:锁是加载索引中。（因为Mysql的数据是在磁盘中的，而索引是在内存中切有序的。所以按照mysql的能用内存用内存的原则是锁索引的）</p><ol><li>加锁的基本单位是next key lock；</li><li>查找到访问的对象会加锁；</li><li>对于查询等值唯一索引的数据加锁，会退化成行锁；</li><li>对于查询等值非唯一索引的数据加锁，当向右扫描到第一个不符合索引的数据时候，会退化成间隙锁；</li><li>注意：对于范围查找唯一索引，会访问到不满足条件的第一个值位置；</li></ol><p>所以准确的说，innodb在对数据加锁不是简单的为涉及到的数据加行锁，而是对要访问的数据加一个nextKeyLock，然后innodb在根据如上条件判断哪些数据加行锁，哪些数据不是行锁是间隙锁；（确定是查询范围锁的数据是x锁，中间不存在的数据间隙锁）</p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;mysql的锁&quot;&gt;&lt;a href=&quot;#mysql的锁&quot; class=&quot;headerlink&quot; title=&quot;mysql的锁&quot;&gt;&lt;/a&gt;mysql的锁&lt;/h1&gt;&lt;h2 id=&quot;全局锁（FTWRL）&quot;&gt;&lt;a href=&quot;#全局锁（FTWRL）&quot; class=&quot;head
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title></title>
+    <link href="http://yoursite.com/2019/01/27/mysql/mysql%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%A2%E5%A4%B1/"/>
+    <id>http://yoursite.com/2019/01/27/mysql/mysql如何保证数据不丢失/</id>
+    <published>2019-01-27T02:47:24.000Z</published>
+    <updated>2019-01-27T04:54:05.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="Mysql是如何保证数据不丢失的"><a href="#Mysql是如何保证数据不丢失的" class="headerlink" title="Mysql是如何保证数据不丢失的"></a>Mysql是如何保证数据不丢失的</h1><h2 id="binlog"><a href="#binlog" class="headerlink" title="binlog"></a>binlog</h2><ol><li>事务执行过程中binlog写入到binlog cache,事务提交时写入到binlog文件中。</li><li>事务的原子性决定这无论事务有多大，binlogcahe都要一次性完整的写入到binlog文件中，写入方式如下：<ol><li>系统为每个binlog_cache开辟了一片内存（每个线程都有一个），参数是blong_cache_size,超过这个阈值的会保存在临时文件中</li><li>事务提交时候，出于性能的考虑回将bionlog_cache都write到文件系统的page_cache中，在通过fsync刷新到磁盘文件中。如下图所示是binlog的同步机制。</li></ol></li></ol><p>如图：<br><img src="/images/mysql/binglog_写入.png" alt="avatar"></p><ul><li>只有fsnyc刷盘这不操作才会占用IOPS。</li><li>write和fsync的时机是用binglog_sync参数来控制的<ul><li>=0 每次事务提交时候都只write不sync</li><li>=1 每次事务提交都sync</li><li>=N（N&gt;1） 每次事务提交都write，积攒到N时候才会fsync</li></ul></li></ul><p>在IO出现瓶颈时候我们可以设置一个较大的值来提升性能（个人不是很推荐做，如果出现这种情况建议从业务考虑优化数据库）</p><h2 id="redolog的写入机制"><a href="#redolog的写入机制" class="headerlink" title="redolog的写入机制"></a>redolog的写入机制</h2><p>redolog从写入到最终写入到磁盘中会经历如下的阶段：写入redolog-buffer中–&gt;在事务提交、或者一定时机（见下面）下：redolog-buffer写入到文件系统的pagecache(write)–&gt;文件系统pagecache写入到磁盘中(fsnyc)，这样的操作的意义是为了提高mysql的吞吐的，具体的机制见下面：</p><p><img src="/images/mysql/redolog_3种状态.png" alt="avatar"></p><ol><li>一个事务会产生很多条redolog如果每次直接持久化磁盘会消耗大量的磁盘IO，所以redolog会先写入redolog-buffer中，之后在write文件系统的到pagecache中，这俩步是内存操作很快。</li><li>是否会影响数据的持久化，比如mysql在事务进行中crash了，这时候redolog-buffer中的数据丢失怎么办？答案是由于事物没有提交，所以事物会进行回滚。</li><li>redolog-buffer持久化的条件和机制：<ol><li>受参数innodb_flush_log_at_tx_commit的控制：<ol><li>=0：每次提交都只停留在redolog-buffer中；</li><li>=1：每次提交都会持久化到磁盘中；</li><li>=2：每次提交都只会写入到文件的pagecache中；</li></ol></li><li>innodb后台会有一个线程每秒一次，会把redolog-buffer中的日志，调用write写到pagecahe中，在fsync到磁盘中；</li><li>其他场景触发redolog的持久化<ol><li>当redolog-buffer占到了innodb_log_buffer_size的一半时候，会调用write将buffer中的log写入到文件系统的pagecache中</li><li>另一种是并行事物提交时候，如果innodb_flush_log_at_tx_commit设置为1时候会，即时当前事物没有commit，也会将redolog写入到文件系统中。</li></ol></li></ol></li></ol><h3 id="双1设置"><a href="#双1设置" class="headerlink" title="双1设置"></a>双1设置</h3><p>即：binlogsnyc=1，innodb_flush_log_at_tx_commit也设置为1。<br>  由于innodb的事物提交redolog和binlog是2PC。<br>     所以当redolog在prepare时候，为了故障恢复一定会持久化一次，所以这时候需要fsync到磁盘中。<br>     binlog在进行fsync到磁盘中<br>     这时候事物在redolog在commit时候，mysql由于有奔溃恢复机制和后台线程每秒轮训一次刷盘会认为redolog没有必要在fsync一次到磁盘了，只会写入到文件的pagecache中。</p><h3 id="gourp-commit机制"><a href="#gourp-commit机制" class="headerlink" title="gourp commit机制"></a>gourp commit机制</h3><p>一个事物的提交由于redolog和binglog都要持久化，磁盘IO还是很大Mysql是如何优化这部分呢。这里mysql采用了组提交（group commit）的方式。<br>如图所示：<br><img src="/images/mysql/group_commit机制.png" alt="avatar"></p><ul><li>首先介绍下LSN(log sequence number)，一个单调递增的序号，用来对应redolog的一个个写入点。当然也会写入到数据页中，用于flush脏盘时候避免重复执行（不在讨论范围内）</li><li>如图，当3个事务同时都写完redolog-buffer 并且处于prepare阶段时候，这时候就构成了一个gourp<ol><li>第一个先到达的trx1，成为组里的leader，LSN=50;</li><li>等trx1开始写盘时候，组里已经有其他俩个事物，这时候LSN=160;</li><li>trx1开始写盘，所有lsn&lt;160的日志都会被写入到磁盘中；</li><li>trx3,trx4就可以直接返回了；</li></ol></li></ul><p>所以在并发事物中，当写完redolog，越晚调用fsync，带的log越多性能也就越好；mysql在这方法采用的是拖时间的策略，即:在双1配置下<br>  redolog-prepare(write)–&gt;binglog(write)–&gt;redolog-prepare(fsync)–&gt;binlog(fsnyc)–&gt;redolog commit(write)</p><p>如图：<br><img src="/images/mysql/redolog_binlog_groupcommit.png" alt="avatar"></p><ul><li>如上图所示，由于redolog在write和fsnyc中有一个binlog-write的过程，所以在持久化磁盘时候你可以带上更多的log；</li><li>另外：binlog也可以采用组提交，只不过由于这俩个阶段间隔短可能没有redolog那么明显<ul><li>binlog的gruop commit的参数如下：<ul><li>binlog_group_commit_sync_delay:表示延迟多少微妙后就会调用fsnyc</li><li>binlog_gourp_commit_sync_no_delay_count:表示累计多少次后才调用fsync</li><li>俩个参数是or的关系，不过如果binlog_group_commit_sync_delay设置为0，binlog_gourp_commit_sync_no_delay_count就无效了</li></ul></li></ul></li></ul><p>综上所述：</p><ul><li>mysql的WAL机制是由于redolog和binlog都是顺序写，保证了高吞吐；</li><li>同时采用了组提交的方式，来减少了IOPS;</li></ul>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;Mysql是如何保证数据不丢失的&quot;&gt;&lt;a href=&quot;#Mysql是如何保证数据不丢失的&quot; class=&quot;headerlink&quot; title=&quot;Mysql是如何保证数据不丢失的&quot;&gt;&lt;/a&gt;Mysql是如何保证数据不丢失的&lt;/h1&gt;&lt;h2 id=&quot;binlog&quot;&gt;&lt;
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title></title>
+    <link href="http://yoursite.com/2019/01/03/mysql/mysql%E7%9A%84%E6%95%B0%E6%8D%AE%E9%A1%B5%E6%9B%B4%E6%96%B0/"/>
+    <id>http://yoursite.com/2019/01/03/mysql/mysql的数据页更新/</id>
+    <published>2019-01-03T12:40:00.000Z</published>
+    <updated>2019-01-03T12:40:00.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="mysql更新数据的原理和流程-草稿"><a href="#mysql更新数据的原理和流程-草稿" class="headerlink" title="mysql更新数据的原理和流程-草稿"></a>mysql更新数据的原理和流程-草稿</h1><p>本文介绍mysql更新数据的原理和流程</p><h2 id="为什么mysql更新的效率很高？"><a href="#为什么mysql更新的效率很高？" class="headerlink" title="为什么mysql更新的效率很高？"></a>为什么mysql更新的效率很高？</h2><ol><li>WAL机制：即更新内存中数据页，同时写redolog+binglog然后返回。后台慢慢将数据页刷到磁盘中。（随机写改为顺序写）</li><li>mysql的chagenbuffer。</li></ol><h2 id="为什么mysql偶尔会抖一下"><a href="#为什么mysql偶尔会抖一下" class="headerlink" title="为什么mysql偶尔会抖一下"></a>为什么mysql偶尔会抖一下</h2><p>刷新脏页<br>什么叫脏页？<br>什么时候触发脏页的flush。</p><ol><li>redolog写满；（尽量避免，因为这时候所有更新都被block主）</li><li>内存不足：需要加载新的数据页但是内存不够，将数据页淘汰，如果是脏页，就flush到磁盘；（至于为什么不直接淘汰，下次读的时候从redologmerge是出于性能考虑，每次加载的都是干净的数据页）</li><li>正常的时候，定时刷新</li><li>正常关闭mysql时候</li></ol><p>2是抖一下的原因<br>buf1fpool数据页三种状态（未使用，使用了但是干净页，使用了但是脏页）。<br>当数据页没在内存中时候，申请一个页面，如果没有未使用页面就需要淘汰页面，俩种情况，如果淘汰的页面过多，会影响性能</p><ol><li>干净页直接淘汰</li><li>脏页flush，淘汰</li></ol><p> fio -filename=$filename -direct=1 -iodepth 1 -thread -rw=randrw -ioengine=psync -bs=16k -size=500M -numjobs=10 -runtime=10 -group_reporting -name=mytest </p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;mysql更新数据的原理和流程-草稿&quot;&gt;&lt;a href=&quot;#mysql更新数据的原理和流程-草稿&quot; class=&quot;headerlink&quot; title=&quot;mysql更新数据的原理和流程-草稿&quot;&gt;&lt;/a&gt;mysql更新数据的原理和流程-草稿&lt;/h1&gt;&lt;p&gt;本文介绍my
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title></title>
+    <link href="http://yoursite.com/2019/01/03/mysql/mysql%E7%9A%84redolog/"/>
+    <id>http://yoursite.com/2019/01/03/mysql/mysql的redolog/</id>
+    <published>2019-01-03T12:40:00.000Z</published>
+    <updated>2019-01-27T02:47:03.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="mysql的redolog-草稿"><a href="#mysql的redolog-草稿" class="headerlink" title="mysql的redolog-草稿"></a>mysql的redolog-草稿</h1><h2 id="mysql的事物的完整性"><a href="#mysql的事物的完整性" class="headerlink" title="mysql的事物的完整性"></a>mysql的事物的完整性</h2><p>取数据–&gt;加载到内存–&gt;更新内存中的数据–&gt;写redolog(prepare)–&gt;写binlog–&gt;redolog(commit)–&gt;事物commit</p><p>mysql在事物提交过程中崩溃时候的处理：</p><ol><li>redolog在prepare阶段，有commit，事物直接提交；</li><li>redolog在prepare阶段<ol><li>通过xid判断binglog完整性，如果完整redolog(commit)–&gt;事物commit</li><li>通过xid判断binglog完整性不完整，直接回滚</li></ol></li></ol>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;mysql的redolog-草稿&quot;&gt;&lt;a href=&quot;#mysql的redolog-草稿&quot; class=&quot;headerlink&quot; title=&quot;mysql的redolog-草稿&quot;&gt;&lt;/a&gt;mysql的redolog-草稿&lt;/h1&gt;&lt;h2 id=&quot;mysql的事物的
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title></title>
+    <link href="http://yoursite.com/2019/01/03/mysql/mysql%E7%9A%84%E6%8E%92%E5%BA%8F/"/>
+    <id>http://yoursite.com/2019/01/03/mysql/mysql的排序/</id>
+    <published>2019-01-03T12:40:00.000Z</published>
+    <updated>2019-02-12T13:02:02.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="mysql排序-order-by的原理"><a href="#mysql排序-order-by的原理" class="headerlink" title="mysql排序 order by的原理"></a>mysql排序 order by的原理</h1><h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>下面的语句用按照姓名排序，我们看下执行计划，Extra有一段‘Using filesort’，说明Mysql用的用到了排序</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">explain</span> <span class="keyword">select</span> city,<span class="keyword">name</span>,age <span class="keyword">from</span> t <span class="keyword">where</span> city=<span class="string">'杭州'</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">name</span> <span class="keyword">limit</span> <span class="number">1000</span>  ;</span><br><span class="line"></span><br><span class="line"><span class="comment">#执行计划</span></span><br><span class="line">1 SIMPLE t NULL ref city city 66 const 1 100.00 Using index condition; Using filesort</span><br></pre></td></tr></table></figure><h2 id="排序的过程"><a href="#排序的过程" class="headerlink" title="排序的过程"></a>排序的过程</h2><p>mysql在排序操作中会用到sort_buffer和临时文件，sort_buffer的大小由sort_buffer_size参数决定</p><ul><li>sort_buffer:是Mysql为排序操作开辟的一块内存空间，会将需要查询的字段以及排序字段放在内存空间中，进行排序操作。</li><li>临时文件：如果字段太多sort_buffer容量不够了会借用到临时文件进行存储，会将需要排序的文件分成N份，同时排序排序完成后在进行合并。</li></ul><h3 id="全字段排序"><a href="#全字段排序" class="headerlink" title="全字段排序"></a>全字段排序</h3><p>全字段排序需要的流程</p><ol><li>初始化sort_buffer,确定要放进去的字段</li><li>根据索引等条件取出满足条件的主键ID</li><li>回表查询出需要显示的字段，将需要的字段放到sort_buffer中，如果用到临时文件，加载到临时文件中</li><li>内存中排序</li><li>返回结果</li></ol><h3 id="rowid排序"><a href="#rowid排序" class="headerlink" title="rowid排序"></a>rowid排序</h3><p>如果Mysql判断单行占用的空间很大，会采用rowid方式进行排序,可以用如下方式进行设置。</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> max_length_for_sort_data = <span class="number">16</span>;</span><br></pre></td></tr></table></figure><ol><li>初始化sort_buffer,确定排序字段和主键ID</li><li>根据索引等条件取出满足条件的主键ID</li><li>将需要排序和主键ID放到sort_buffer中，如果用到临时文件，加载到临时文件中</li><li>内存中排序，得到排好序的排序字段值–主键ID</li><li>回表查询数据</li><li>返回结果</li></ol><h3 id="全字段排序-vs-rowid-排序"><a href="#全字段排序-vs-rowid-排序" class="headerlink" title="全字段排序 vs rowid 排序"></a>全字段排序 vs rowid 排序</h3><p>rowid比全字段排序多了一次回表操作，理论上来说mysql能用内存尽量用内存，减少磁盘操作，所以理论上来说rowid排序性能会低于全字段排序</p><h3 id="如何优化排序"><a href="#如何优化排序" class="headerlink" title="如何优化排序"></a>如何优化排序</h3><p>使用索引：因为索引本身是有序的，合理利用索引，这样排序就可以用索引避免使用临时文件和sort_buffer进行排序。如例子中的语句可以创建（city,name）的索引，可以用执行计划看出来。</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#创建索引（city,name）注意顺序</span></span><br><span class="line"><span class="keyword">explain</span> <span class="keyword">select</span> city,<span class="keyword">name</span>,age <span class="keyword">from</span> t <span class="keyword">where</span> city=<span class="string">'杭州'</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">name</span> <span class="keyword">limit</span> <span class="number">1000</span>  ;</span><br><span class="line"></span><br><span class="line"><span class="comment">#执行计划</span></span><br><span class="line">1 SIMPLE t NULL ref idx idx 66 const 1 100.00 Using index condition</span><br></pre></td></tr></table></figure><h3 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h3><p>判断排序语句是否用了临时文件，是那种排序方式的语句</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 打开 optimizer_trace，只对本线程有效 */</span></span><br><span class="line"><span class="keyword">SET</span> optimizer_trace=<span class="string">'enabled=on'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* @a 保存 Innodb_rows_read 的初始值 */</span></span><br><span class="line"><span class="keyword">select</span> VARIABLE_VALUE <span class="keyword">into</span> @a <span class="keyword">from</span>  performance_schema.session_status <span class="keyword">where</span> variable_name = <span class="string">'Innodb_rows_read'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 执行语句 */</span></span><br><span class="line"><span class="keyword">select</span> city, <span class="keyword">name</span>,age <span class="keyword">from</span> t <span class="keyword">where</span> city=<span class="string">'杭州'</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">name</span> <span class="keyword">limit</span> <span class="number">1000</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 查看 OPTIMIZER_TRACE 输出 */</span></span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="string">`information_schema`</span>.<span class="string">`OPTIMIZER_TRACE`</span>\G</span><br><span class="line"></span><br><span class="line"><span class="comment">/* @b 保存 Innodb_rows_read 的当前值 */</span></span><br><span class="line"><span class="keyword">select</span> VARIABLE_VALUE <span class="keyword">into</span> @b <span class="keyword">from</span> performance_schema.session_status <span class="keyword">where</span> variable_name = <span class="string">'Innodb_rows_read'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 计算 Innodb_rows_read 差值 */</span></span><br><span class="line"><span class="keyword">select</span> @b-@a;</span><br></pre></td></tr></table></figure><p>如何判断排序类型</p><ol><li>SELECT * FROM <code>information_schema</code>.<code>OPTIMIZER_TRACE</code>\G，之后的json对象看filesort_summary段<ol><li>sort_mode是sort_key, rowid是全字段排序</li><li>sort_mode是sort_key, packed_additional_fields采用全字段排序</li></ol></li></ol><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">            "filesort_summary": &#123;</span><br><span class="line">              "rows": 1001, <span class="comment">#取的字段</span></span><br><span class="line">              "examined_rows": 110501, <span class="comment">#扫描行数</span></span><br><span class="line">              "number_of_tmp_files": 0, <span class="comment">#历史文件个数</span></span><br><span class="line">              "sort_buffer_size": 17024,</span><br><span class="line">              "sort_mode": "&lt;sort_key, rowid&gt;"</span><br><span class="line">            &#125;</span><br><span class="line"><span class="comment">#如果是rowid排序实际扫描行数是examined_rows+rows（因为回了一次表）</span></span><br></pre></td></tr></table></figure>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;mysql排序-order-by的原理&quot;&gt;&lt;a href=&quot;#mysql排序-order-by的原理&quot; class=&quot;headerlink&quot; title=&quot;mysql排序 order by的原理&quot;&gt;&lt;/a&gt;mysql排序 order by的原理&lt;/h1&gt;&lt;h2 i
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title></title>
+    <link href="http://yoursite.com/2018/12/26/mysql/mysql%E5%88%A0%E9%99%A4%E6%95%B0%E6%8D%AE-%E9%87%8A%E6%94%BE%E8%A1%A8%E7%A9%BA%E9%97%B4/"/>
+    <id>http://yoursite.com/2018/12/26/mysql/mysql删除数据-释放表空间/</id>
+    <published>2018-12-26T12:44:02.000Z</published>
+    <updated>2018-12-26T12:57:34.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="mysql的数据删除的原理"><a href="#mysql的数据删除的原理" class="headerlink" title="mysql的数据删除的原理"></a>mysql的数据删除的原理</h1><p>我的数据删除了为什么表还是这么大？</p><h2 id="mysql删除数据的原理"><a href="#mysql删除数据的原理" class="headerlink" title="mysql删除数据的原理"></a>mysql删除数据的原理</h2><p>  mysql采用标记删除法，即并不是物理删除而是采用标记删除。<br>  delete数据时候：数据标记为可服用，如果插入的数据在这个数据页，可复用这个空间，例如：索引页的范围内可复用，超过了则需要插入新的空间。<br>  delete整个数据页：如果数据页上所有数据被删除，则整个数据页可复用。</p><h2 id="数据页的分裂和合并"><a href="#数据页的分裂和合并" class="headerlink" title="数据页的分裂和合并"></a>数据页的分裂和合并</h2><p>  如果数据页利用率小，数据页会合并。<br>  如果数据页满了，中间插入会导致数据页分裂。</p><h2 id="释放表空间"><a href="#释放表空间" class="headerlink" title="释放表空间"></a>释放表空间</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE t ENGINE=innodb;</span><br></pre></td></tr></table></figure><p>在mysql5.5会有MDL锁，不能Online执行</p><p>在mysql5.6会有online ddl机制，但是会小号CPU和IO（因为扫表），大表请谨慎。</p><p>这两种区别<br>5.5是在server层,copy出tmp_table，这时候不能对原表进行操作，然后copy到老表中。<br>5.6是在innodb层,copy出tmp_file,改的写row_log,然后重放生成逻辑一直的新表，tmp_file inplace操作到老表中。（tmp_file是个inplace操作）</p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;mysql的数据删除的原理&quot;&gt;&lt;a href=&quot;#mysql的数据删除的原理&quot; class=&quot;headerlink&quot; title=&quot;mysql的数据删除的原理&quot;&gt;&lt;/a&gt;mysql的数据删除的原理&lt;/h1&gt;&lt;p&gt;我的数据删除了为什么表还是这么大？&lt;/p&gt;
+&lt;h2 
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title></title>
+    <link href="http://yoursite.com/2018/12/17/java/jvm/index/"/>
+    <id>http://yoursite.com/2018/12/17/java/jvm/index/</id>
+    <published>2018-12-17T02:42:42.000Z</published>
+    <updated>2018-12-17T02:42:42.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="jvm相关"><a href="#jvm相关" class="headerlink" title="jvm相关"></a>jvm相关</h1><p><a href="./Java性能调优.html">Java性能调优–todo</a></p><p><a href="./排查java线程异常的方法.html">排查java线程异常的方法</a></p><p><a href="./GCVIEWER.html">Java的GC查看工具-GCVIEWER</a></p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;jvm相关&quot;&gt;&lt;a href=&quot;#jvm相关&quot; class=&quot;headerlink&quot; title=&quot;jvm相关&quot;&gt;&lt;/a&gt;jvm相关&lt;/h1&gt;&lt;p&gt;&lt;a href=&quot;./Java性能调优.html&quot;&gt;Java性能调优–todo&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;&lt;a href
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title></title>
+    <link href="http://yoursite.com/2018/12/17/java/jvm/%E6%8E%92%E6%9F%A5java%E7%BA%BF%E7%A8%8B%E5%BC%82%E5%B8%B8%E7%9A%84%E6%96%B9%E6%B3%95/"/>
+    <id>http://yoursite.com/2018/12/17/java/jvm/排查java线程异常的方法/</id>
+    <published>2018-12-17T02:42:42.000Z</published>
+    <updated>2018-12-17T12:21:19.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="定位JAVA进程中异常线程的方法"><a href="#定位JAVA进程中异常线程的方法" class="headerlink" title="定位JAVA进程中异常线程的方法"></a>定位JAVA进程中异常线程的方法</h1><p>日常使用中我们往往会遇到JAVA进程内存飙高，程序hang住，cpu的load过高等情况。这时候往往需要定位到JAVA的实例看下具体占用CPU、内存过高的线程都在做什么？<br>下面总结了下如何定位JAVA问题线程的方法。</p><h2 id="找到有问题的JVM进程"><a href="#找到有问题的JVM进程" class="headerlink" title="找到有问题的JVM进程"></a>找到有问题的JVM进程</h2><p>linux命令：top–找到有问题的JAVA进程<br>  shift+p 按照cpu排序<br>  shift+m按照内存排序</p><h2 id="查看有问题JAVA进程中的线程"><a href="#查看有问题JAVA进程中的线程" class="headerlink" title="查看有问题JAVA进程中的线程"></a>查看有问题JAVA进程中的线程</h2><p>linux命令：top -H -p  pid 查看pid进程下所有有问题的线程</p><ol><li>将十进制数换成16进制：printf “%x\n” tid</li><li>查看进程下的线程正在执行的方法： jstack pid |grep nid=0x【tid】 -A 30</li></ol><h2 id="jstack查看出来的线程信息梳理"><a href="#jstack查看出来的线程信息梳理" class="headerlink" title="jstack查看出来的线程信息梳理"></a>jstack查看出来的线程信息梳理</h2><p>线程的几种状态</p><ol><li>RUNNABLE，线程处于执行中</li><li>BLOCKED，线程被阻塞</li><li>WAITING，线程正在等待</li></ol><p>对于锁的竞争，可参照下面的思路排查问题：</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">线程1获取到锁，处于RUNNABLE状态，线程2处于BLOCK状态；  </span><br><span class="line">1、locked &lt;0x000000076bf62208&gt;说明线程1对地址为0x000000076bf62208对象进行了加锁；  </span><br><span class="line">2、waiting to lock &lt;0x000000076bf62208&gt; 说明线程2在等待地址为0x000000076bf62208对象上的锁；  </span><br><span class="line">3、waiting for monitor entry [0x000000001e21f000]说明线程1是通过synchronized关键字进入了监视器的临界区，并处于&quot;Entry Set&quot;队列，等待monitor；</span><br></pre></td></tr></table></figure><h2 id="jmap查看JVM系统信息的命令"><a href="#jmap查看JVM系统信息的命令" class="headerlink" title="jmap查看JVM系统信息的命令"></a>jmap查看JVM系统信息的命令</h2><p>查找JVM中系统的大小和个数</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">按照个数统计  </span><br><span class="line">  jmap -histo:live  pid|grep keyword|sort -k 2 -g -r|head -10</span><br><span class="line"></span><br><span class="line">按照占用大小统计</span><br><span class="line">  jmap -histo:live  pid|grep keyword|sort -k 2 -g -r|head -10</span><br></pre></td></tr></table></figure><p>查看JVM中Heap的情况</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -heap pid</span><br></pre></td></tr></table></figure><p>情况如下</p><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">Attaching to process ID Pid, please <span class="built_in">wait</span>...</span><br><span class="line">Debugger attached successfully.</span><br><span class="line">Server compiler detected.</span><br><span class="line">JVM version is 25.65-b01</span><br><span class="line"></span><br><span class="line">using parallel threads <span class="keyword">in</span> the new generation.</span><br><span class="line">using thread-local object allocation.</span><br><span class="line">Concurrent Mark-Sweep GC</span><br><span class="line"></span><br><span class="line">Heap Configuration:</span><br><span class="line">   MinHeapFreeRatio         = 40</span><br><span class="line">   MaxHeapFreeRatio         = 70</span><br><span class="line">   MaxHeapSize              = 4294967296 (4096.0MB)</span><br><span class="line">   NewSize                  = 858980352 (819.1875MB)</span><br><span class="line">   MaxNewSize               = 858980352 (819.1875MB)</span><br><span class="line">   OldSize                  = 3435986944 (3276.8125MB)</span><br><span class="line">   NewRatio                 = 4</span><br><span class="line">   SurvivorRatio            = 8</span><br><span class="line">   MetaspaceSize            = 21807104 (20.796875MB)</span><br><span class="line">   CompressedClassSpaceSize = 1073741824 (1024.0MB)</span><br><span class="line">   MaxMetaspaceSize         = 17592186044415 MB</span><br><span class="line">   G1HeapRegionSize         = 0 (0.0MB)</span><br><span class="line"></span><br><span class="line">Heap Usage:</span><br><span class="line">New Generation (Eden + 1 Survivor Space):</span><br><span class="line">   capacity = 773128192 (737.3125MB)</span><br><span class="line">   used     = 9882512 (9.424697875976562MB)</span><br><span class="line">   free     = 763245680 (727.8878021240234MB)</span><br><span class="line">   1.2782501145683225% used</span><br><span class="line">Eden Space: (Edn区)</span><br><span class="line">   capacity = 687276032 (655.4375MB)</span><br><span class="line">   used     = 9882512 (9.424697875976562MB)</span><br><span class="line">   free     = 677393520 (646.0128021240234MB)</span><br><span class="line">   1.4379247260000476% used</span><br><span class="line">From Space: (Survivor中的From)</span><br><span class="line">   capacity = 85852160 (81.875MB)</span><br><span class="line">   used     = 0 (0.0MB)</span><br><span class="line">   free     = 85852160 (81.875MB)</span><br><span class="line">   0.0% used</span><br><span class="line">To Space: (Survivor中的To)</span><br><span class="line">   capacity = 85852160 (81.875MB)</span><br><span class="line">   used     = 0 (0.0MB)</span><br><span class="line">   free     = 85852160 (81.875MB)</span><br><span class="line">   0.0% used</span><br><span class="line">concurrent mark-sweep generation: （老年代）</span><br><span class="line">   capacity = 3435986944 (3276.8125MB)</span><br><span class="line">   used     = 258117296 (246.1598358154297MB)</span><br><span class="line">   free     = 3177869648 (3030.6526641845703MB)</span><br><span class="line">   7.512173364067357% used</span><br></pre></td></tr></table></figure>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;定位JAVA进程中异常线程的方法&quot;&gt;&lt;a href=&quot;#定位JAVA进程中异常线程的方法&quot; class=&quot;headerlink&quot; title=&quot;定位JAVA进程中异常线程的方法&quot;&gt;&lt;/a&gt;定位JAVA进程中异常线程的方法&lt;/h1&gt;&lt;p&gt;日常使用中我们往往会遇到JA
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title></title>
+    <link href="http://yoursite.com/2018/12/14/mysql/%E5%85%B6%E4%BB%96/"/>
+    <id>http://yoursite.com/2018/12/14/mysql/其他/</id>
+    <published>2018-12-14T09:15:18.000Z</published>
+    <updated>2018-12-14T09:15:22.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><p>查询长事物的语句</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> information_schema.innodb_trx <span class="keyword">where</span> TIME_TO_SEC(<span class="keyword">timediff</span>(<span class="keyword">now</span>(),trx_started))&gt;<span class="number">60</span></span><br></pre></td></tr></table></figure>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;其他&quot;&gt;&lt;a href=&quot;#其他&quot; class=&quot;headerlink&quot; title=&quot;其他&quot;&gt;&lt;/a&gt;其他&lt;/h1&gt;&lt;p&gt;查询长事物的语句&lt;/p&gt;
+&lt;figure class=&quot;highlight sql&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutte
+      
+    
+    </summary>
+    
+    
+  </entry>
+  
+</feed>

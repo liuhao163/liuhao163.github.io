@@ -1,0 +1,80 @@
+<hr>
+<p>title: mysql数据的完整性–草稿<br>date: 2019-02-05 00:00:00</p>
+<h2 id="categories-Mysql-Mysql基础"><a href="#categories-Mysql-Mysql基础" class="headerlink" title="categories: [Mysql,Mysql基础]"></a>categories: [Mysql,Mysql基础]</h2><h1 id="mysql排序-order-by的原理"><a href="#mysql排序-order-by的原理" class="headerlink" title="mysql排序 order by的原理"></a>mysql排序 order by的原理</h1><h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>下面的语句用按照姓名排序，我们看下执行计划，Extra有一段‘Using filesort’，说明Mysql用的用到了排序</p>
+<pre><code class="sql"><span class="keyword">explain</span> <span class="keyword">select</span> city,<span class="keyword">name</span>,age <span class="keyword">from</span> t <span class="keyword">where</span> city=<span class="string">'杭州'</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">name</span> <span class="keyword">limit</span> <span class="number">1000</span>  ;
+
+<span class="comment">#执行计划</span>
+1 SIMPLE t NULL ref city city 66 const 1 100.00 Using index condition; Using filesort
+</code></pre>
+<h2 id="排序的过程"><a href="#排序的过程" class="headerlink" title="排序的过程"></a>排序的过程</h2><p>mysql在排序操作中会用到sort_buffer和临时文件，sort_buffer的大小由sort_buffer_size参数决定</p>
+<ul>
+<li>sort_buffer:是Mysql为排序操作开辟的一块内存空间，会将需要查询的字段以及排序字段放在内存空间中，进行排序操作。</li>
+<li>临时文件：如果字段太多sort_buffer容量不够了会借用到临时文件进行存储，会将需要排序的文件分成N份，同时排序排序完成后在进行合并。</li>
+</ul>
+<h3 id="全字段排序"><a href="#全字段排序" class="headerlink" title="全字段排序"></a>全字段排序</h3><p>全字段排序需要的流程</p>
+<ol>
+<li>初始化sort_buffer,确定要放进去的字段</li>
+<li>根据索引等条件取出满足条件的主键ID</li>
+<li>回表查询出需要显示的字段，将需要的字段放到sort_buffer中，如果用到临时文件，加载到临时文件中</li>
+<li>内存中排序</li>
+<li>返回结果</li>
+</ol>
+<h3 id="rowid排序"><a href="#rowid排序" class="headerlink" title="rowid排序"></a>rowid排序</h3><p>如果Mysql判断单行占用的空间很大，会采用rowid方式进行排序,可以用如下方式进行设置。</p>
+<pre><code class="sql"><span class="keyword">SET</span> max_length_for_sort_data = <span class="number">16</span>;
+</code></pre>
+<ol>
+<li>初始化sort_buffer,确定排序字段和主键ID</li>
+<li>根据索引等条件取出满足条件的主键ID</li>
+<li>将需要排序和主键ID放到sort_buffer中，如果用到临时文件，加载到临时文件中</li>
+<li>内存中排序，得到排好序的排序字段值–主键ID</li>
+<li>回表查询数据</li>
+<li>返回结果</li>
+</ol>
+<h3 id="全字段排序-vs-rowid-排序"><a href="#全字段排序-vs-rowid-排序" class="headerlink" title="全字段排序 vs rowid 排序"></a>全字段排序 vs rowid 排序</h3><p>rowid比全字段排序多了一次回表操作，理论上来说mysql能用内存尽量用内存，减少磁盘操作，所以理论上来说rowid排序性能会低于全字段排序</p>
+<h3 id="如何优化排序"><a href="#如何优化排序" class="headerlink" title="如何优化排序"></a>如何优化排序</h3><p>使用索引：因为索引本身是有序的，合理利用索引，这样排序就可以用索引避免使用临时文件和sort_buffer进行排序。如例子中的语句可以创建（city,name）的索引，可以用执行计划看出来。</p>
+<pre><code class="sql"><span class="comment">#创建索引（city,name）注意顺序</span>
+<span class="keyword">explain</span> <span class="keyword">select</span> city,<span class="keyword">name</span>,age <span class="keyword">from</span> t <span class="keyword">where</span> city=<span class="string">'杭州'</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">name</span> <span class="keyword">limit</span> <span class="number">1000</span>  ;
+
+<span class="comment">#执行计划</span>
+1 SIMPLE t NULL ref idx idx 66 const 1 100.00 Using index condition
+</code></pre>
+<h3 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h3><p>判断排序语句是否用了临时文件，是那种排序方式的语句</p>
+<pre><code class="sql"><span class="comment">/* 打开 optimizer_trace，只对本线程有效 */</span>
+<span class="keyword">SET</span> optimizer_trace=<span class="string">'enabled=on'</span>;
+
+<span class="comment">/* @a 保存 Innodb_rows_read 的初始值 */</span>
+<span class="keyword">select</span> VARIABLE_VALUE <span class="keyword">into</span> @a <span class="keyword">from</span>  performance_schema.session_status <span class="keyword">where</span> variable_name = <span class="string">'Innodb_rows_read'</span>;
+
+<span class="comment">/* 执行语句 */</span>
+<span class="keyword">select</span> city, <span class="keyword">name</span>,age <span class="keyword">from</span> t <span class="keyword">where</span> city=<span class="string">'杭州'</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">name</span> <span class="keyword">limit</span> <span class="number">1000</span>;
+
+<span class="comment">/* 查看 OPTIMIZER_TRACE 输出 */</span>
+<span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="string">`information_schema`</span>.<span class="string">`OPTIMIZER_TRACE`</span>\G
+
+<span class="comment">/* @b 保存 Innodb_rows_read 的当前值 */</span>
+<span class="keyword">select</span> VARIABLE_VALUE <span class="keyword">into</span> @b <span class="keyword">from</span> performance_schema.session_status <span class="keyword">where</span> variable_name = <span class="string">'Innodb_rows_read'</span>;
+
+<span class="comment">/* 计算 Innodb_rows_read 差值 */</span>
+<span class="keyword">select</span> @b-@a;
+
+</code></pre>
+<p>如何判断排序类型</p>
+<ol>
+<li>SELECT * FROM <code>information_schema</code>.<code>OPTIMIZER_TRACE</code>\G，之后的json对象看filesort_summary段<ol>
+<li>sort_mode是sort_key, rowid是全字段排序</li>
+<li>sort_mode是sort_key, packed_additional_fields采用全字段排序</li>
+</ol>
+</li>
+</ol>
+<pre><code class="sql">
+
+
+            "filesort_summary": {
+              "rows": 1001, <span class="comment">#取的字段</span>
+              "examined_rows": 110501, <span class="comment">#扫描行数</span>
+              "number_of_tmp_files": 0, <span class="comment">#历史文件个数</span>
+              "sort_buffer_size": 17024,
+              "sort_mode": "&lt;sort_key, rowid&gt;"
+            }
+<span class="comment">#如果是rowid排序实际扫描行数是examined_rows+rows（因为回了一次表）</span>
+</code></pre>

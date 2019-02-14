@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next muse use-motion" lang="zh_CN">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2">
+
+<link rel="stylesheet" href="/css/main.css?v=7.0.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.0.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.0.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Muse',
+    version: '7.0.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="mysql是怎么保证高可用的–如何解决主备延迟mysql的主从同步会保证主库到从库的最终一致性，但是mysql的高可用，光有最终一致性是远远不够的。下面会讨论影响mysql主备高可用的因素以及解决方法。 主备延迟 我们在备库上可以执行命令：seconds_behind_master来查看备库的状态，会显示备库同步数据和主库的时间差（单位：秒），这个时间差计算方式是：同一事物，备库执行完binlog">
+<meta property="og:type" content="article">
+<meta property="og:title" content="mysql是怎么保证高可用的">
+<meta property="og:url" content="https://liuhao163.github.io/mysql/mysql是怎么保证高可用的/index.html">
+<meta property="og:site_name" content="liuhao163.github.io">
+<meta property="og:description" content="mysql是怎么保证高可用的–如何解决主备延迟mysql的主从同步会保证主库到从库的最终一致性，但是mysql的高可用，光有最终一致性是远远不够的。下面会讨论影响mysql主备高可用的因素以及解决方法。 主备延迟 我们在备库上可以执行命令：seconds_behind_master来查看备库的状态，会显示备库同步数据和主库的时间差（单位：秒），这个时间差计算方式是：同一事物，备库执行完binlog">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://liuhao163.github.io/images/mysql/主备_高可用性切换_数据不一致.png">
+<meta property="og:updated_time" content="2019-02-14T02:57:02.000Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="mysql是怎么保证高可用的">
+<meta name="twitter:description" content="mysql是怎么保证高可用的–如何解决主备延迟mysql的主从同步会保证主库到从库的最终一致性，但是mysql的高可用，光有最终一致性是远远不够的。下面会讨论影响mysql主备高可用的因素以及解决方法。 主备延迟 我们在备库上可以执行命令：seconds_behind_master来查看备库的状态，会显示备库同步数据和主库的时间差（单位：秒），这个时间差计算方式是：同一事物，备库执行完binlog">
+<meta name="twitter:image" content="https://liuhao163.github.io/images/mysql/主备_高可用性切换_数据不一致.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="liuhao163.github.io" type="application/atom+xml">
+
+
+
+
+  <link rel="canonical" href="https://liuhao163.github.io/mysql/mysql是怎么保证高可用的/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>mysql是怎么保证高可用的 | liuhao163.github.io</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope="" itemtype="http://schema.org/WebPage" lang="zh_CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope="" itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">liuhao163.github.io</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+    
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope="" itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql是怎么保证高可用的/">
+
+    <span hidden itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope="" itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">mysql是怎么保证高可用的
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-03 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-03T00:00:00Z">2019-02-03</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-02-14 02:57:02" itemprop="dateModified" datetime="2019-02-14T02:57:02Z">2019-02-14</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql高可用架构/" itemprop="url" rel="index"><span itemprop="name">Mysql高可用架构</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="mysql是怎么保证高可用的–如何解决主备延迟"><a href="#mysql是怎么保证高可用的–如何解决主备延迟" class="headerlink" title="mysql是怎么保证高可用的–如何解决主备延迟"></a>mysql是怎么保证高可用的–如何解决主备延迟</h1><p>mysql的主从同步会保证主库到从库的最终一致性，但是mysql的高可用，光有最终一致性是远远不够的。下面会讨论影响mysql主备高可用的因素以及解决方法。</p>
+<h2 id="主备延迟"><a href="#主备延迟" class="headerlink" title="主备延迟"></a>主备延迟</h2><ul>
+<li>我们在备库上可以执行命令：seconds_behind_master来查看备库的状态，会显示备库同步数据和主库的时间差（单位：秒），这个时间差计算方式是：同一事物，备库执行完binlog的时间-主库产生binlog的时间备库执行的binlog的时间，当然这个值越小越好。</li>
+<li>在网络正常的情况下，主备同步binlog的时间往往很短，真正造成主备延迟的原因往往是relylog的消费赶不上binlog的生产。那么是什么造成主备延迟的呢</li>
+</ul>
+<h3 id="主备延迟的原因"><a href="#主备延迟的原因" class="headerlink" title="主备延迟的原因"></a>主备延迟的原因</h3><ol>
+<li>主备库，备库的性能要不主库所在的的机器性能差；–目前很少见了，因为大多是双M配置，所以备库可能会变为主，所以在部署时候都会选择对称部署；</li>
+<li>备库压力大，备库上很多的查询需求，比如备份数据，运营统计等会放在备库执行。在同步binlog时候往往也会占用查询的资源，导致备库的眼里很大，引起主备延迟</li>
+<li>大事物，由于mysql是在主库上事物提交之后才开始传输binlog给备库，这样如果1个很大的事物在主库执行N长时间后，在同步给备库，备库在执行这个事物时候就会造成主从不一致。<ol>
+<li>一次删除很多的数据，如：数据库快满了删除数据；</li>
+<li>大表的DDL</li>
+</ol>
+</li>
+<li>库的并行复制能力,具体放在<a href="./mysql是如何降低主备延迟的.html">mysql是如何降低主备延迟的</a></li>
+</ol>
+<h3 id="主备延迟的解决方案"><a href="#主备延迟的解决方案" class="headerlink" title="主备延迟的解决方案"></a>主备延迟的解决方案</h3><ol>
+<li>首先对于双M架构，主备库建议对称部署，保证切换朱备库时候性能没有打的差别</li>
+<li>建议根据需要一主多从，比如说：一个主备做为切换，一个从库作为数据备份，一个从库作为数据分析以及运营支持；</li>
+<li>根本上杜绝大事物，对于删除可以考虑分批删除数据；DDL可以采用开源的工具进行入：gh-ost方案</li>
+</ol>
+<h2 id="主备切换的几种策略"><a href="#主备切换的几种策略" class="headerlink" title="主备切换的几种策略"></a>主备切换的几种策略</h2><h3 id="可靠性优先"><a href="#可靠性优先" class="headerlink" title="可靠性优先"></a>可靠性优先</h3><p>该策略可能会有一段时间服务不可用，流程如下：</p>
+<ol>
+<li>判断备库的seconds_behind_master的值，当相于一个值的时候进行第二步，否则一直重试；</li>
+<li>主库设置readonly=true，即只读；</li>
+<li>备库等待seconds_behind_master=0为止；</li>
+<li>备库设置readonly=fase，即可写；</li>
+<li>切换业务到备库；</li>
+</ol>
+<p>注：第一步的作用实际上是希望主库和从库的延时在小于一个阈值时候开始做切换，否则如果相差30分钟，直接切换，那么服务就会有30分钟不可用，业务方一般是不可忍受的。（当然。。。。某些时候我也作为业务方我也就忍了）</p>
+<h3 id="可用性优先"><a href="#可用性优先" class="headerlink" title="可用性优先"></a>可用性优先</h3><p>和上面相比，保证业务的可用，但是会牺牲掉数据的一致性</p>
+<ol>
+<li>备库设置readonly=fase，即可写；</li>
+<li>切换业务到备库；</li>
+<li>主库设置eadonly=true</li>
+</ol>
+<p>注：在下面的情况会导致数据不一致，原因如下：（老的主库是A,备库是B）</p>
+<ol>
+<li>A插入了数据c(4)，还没有同步到B时候进行切换</li>
+<li>这时候B变为主，B库插入数据c(5)，这条数据是（4，5）</li>
+<li>然后B从A通过relylog重放数据是c(4)那条数据，这时候B库中(5，4)</li>
+<li>A库通过重放relylog获取刚才c(5)的数据，这时候数据是（5，5）</li>
+</ol>
+<p><img src="/images/mysql/主备_高可用性切换_数据不一致.png" alt="avatar"></p>
+<p>总结，Mysql作为数据的存储，还是应该优先保证数据的一致性，所以建议采用可靠性优先方案保证数据的一致性。否则，对于一些依赖写入的业务，可能因为在切换主备时候数据不一致引起逻辑的错误，而且由于往往写入不是一个单一的操作，这一次的不一致会导致后续的引发更多的问题，最终导致数据无法修复。</p>
+<p>其他的好的建议：如果业务不依赖mysql的写入可以针对写入进行降级，比如：让数据先写到临时文件中，然后切换后慢慢的同步到mysql中。</p>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/mysql/mysql是如何降低主备延迟的/" rel="next" title="MySql是如何降低主备延迟的">
+                <i class="fa fa-chevron-left"></i> MySql是如何降低主备延迟的
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/mysql/mysql删除数据-释放表空间/" rel="prev" title="mysql数据的完整性--草稿">
+                mysql数据的完整性--草稿 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope="" itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Liu hao</p>
+              <p class="site-description motion-element" itemprop="description"></p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">37</span>
+                    <span class="site-state-item-name">posts</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/categories/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">3</span>
+                    <span class="site-state-item-name">categories</span>
+                  </a>
+                </div>
+              
+
+              
+            </nav>
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#mysql是怎么保证高可用的–如何解决主备延迟"><span class="nav-number">1.</span> <span class="nav-text">mysql是怎么保证高可用的–如何解决主备延迟</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#主备延迟"><span class="nav-number">1.1.</span> <span class="nav-text">主备延迟</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#主备延迟的原因"><span class="nav-number">1.1.1.</span> <span class="nav-text">主备延迟的原因</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#主备延迟的解决方案"><span class="nav-number">1.1.2.</span> <span class="nav-text">主备延迟的解决方案</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#主备切换的几种策略"><span class="nav-number">1.2.</span> <span class="nav-text">主备切换的几种策略</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#可靠性优先"><span class="nav-number">1.2.1.</span> <span class="nav-text">可靠性优先</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#可用性优先"><span class="nav-number">1.2.2.</span> <span class="nav-text">可用性优先</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Liu hao</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> v7.0.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/src/utils.js?v=7.0.0"></script>
+
+  <script src="/js/src/motion.js?v=7.0.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/src/schemes/muse.js?v=7.0.0"></script>
+
+
+
+  
+  <script src="/js/src/scrollspy.js?v=7.0.0"></script>
+<script src="/js/src/post-details.js?v=7.0.0"></script>
+
+
+
+  
+
+
+  <script src="/js/src/bootstrap.js?v=7.0.0"></script>
+
+
+
+  
+
+
+  
+
+
+  
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

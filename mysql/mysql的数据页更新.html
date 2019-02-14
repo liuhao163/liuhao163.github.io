@@ -1,0 +1,21 @@
+<hr>
+<p>title: mysql更新数据的原理和流程-草稿<br>date: 2019-02-06 00:00:00</p>
+<h2 id="categories-Mysql-Mysql基础"><a href="#categories-Mysql-Mysql基础" class="headerlink" title="categories: [Mysql,Mysql基础]"></a>categories: [Mysql,Mysql基础]</h2><h1 id="mysql更新数据的原理和流程-草稿"><a href="#mysql更新数据的原理和流程-草稿" class="headerlink" title="mysql更新数据的原理和流程-草稿"></a>mysql更新数据的原理和流程-草稿</h1><p>本文介绍mysql更新数据的原理和流程</p>
+<h2 id="为什么mysql更新的效率很高？"><a href="#为什么mysql更新的效率很高？" class="headerlink" title="为什么mysql更新的效率很高？"></a>为什么mysql更新的效率很高？</h2><ol>
+<li>WAL机制：即更新内存中数据页，同时写redolog+binglog然后返回。后台慢慢将数据页刷到磁盘中。（随机写改为顺序写）</li>
+<li>mysql的chagenbuffer。</li>
+</ol>
+<h2 id="为什么mysql偶尔会抖一下"><a href="#为什么mysql偶尔会抖一下" class="headerlink" title="为什么mysql偶尔会抖一下"></a>为什么mysql偶尔会抖一下</h2><p>刷新脏页<br>什么叫脏页？<br>什么时候触发脏页的flush。</p>
+<ol>
+<li>redolog写满；（尽量避免，因为这时候所有更新都被block主）</li>
+<li>内存不足：需要加载新的数据页但是内存不够，将数据页淘汰，如果是脏页，就flush到磁盘；（至于为什么不直接淘汰，下次读的时候从redologmerge是出于性能考虑，每次加载的都是干净的数据页）</li>
+<li>正常的时候，定时刷新</li>
+<li>正常关闭mysql时候</li>
+</ol>
+<p>2是抖一下的原因<br>buf1fpool数据页三种状态（未使用，使用了但是干净页，使用了但是脏页）。<br>当数据页没在内存中时候，申请一个页面，如果没有未使用页面就需要淘汰页面，俩种情况，如果淘汰的页面过多，会影响性能</p>
+<ol>
+<li>干净页直接淘汰</li>
+<li><p>脏页flush，淘汰</p>
+<p>fio -filename=$filename -direct=1 -iodepth 1 -thread -rw=randrw -ioengine=psync -bs=16k -size=500M -numjobs=10 -runtime=10 -group_reporting -name=mytest</p>
+</li>
+</ol>

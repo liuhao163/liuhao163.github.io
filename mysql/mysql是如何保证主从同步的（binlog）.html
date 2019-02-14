@@ -1,0 +1,51 @@
+<hr>
+<p>title: mysql是如何保证主从同步的（binlog）–草稿<br>date: 2019-02-01 00:00:00</p>
+<h2 id="categories-Mysql-Mysql高可用架构"><a href="#categories-Mysql-Mysql高可用架构" class="headerlink" title="categories: [Mysql,Mysql高可用架构]"></a>categories: [Mysql,Mysql高可用架构]</h2><h1 id="mysql是如何保证主从同步的（binlog）–草稿"><a href="#mysql是如何保证主从同步的（binlog）–草稿" class="headerlink" title="mysql是如何保证主从同步的（binlog）–草稿"></a>mysql是如何保证主从同步的（binlog）–草稿</h1><ol>
+<li><p>mysql的主从搭建</p>
+</li>
+<li><p>mysql的主从数据同步的流程（图）</p>
+</li>
+<li><p>查看binlog方式：mysql&gt; show binlog events in ‘master.000001’;</p>
+</li>
+<li><p>mysql的binlog的几种形式</p>
+<ol>
+<li>row。<ol>
+<li>优点：可做数据恢复</li>
+<li>缺点：可能会很大，因为是每一条数据一个log,所以如果一个涉及很多行修改的sql语句会有很多row的log。</li>
+<li>恢复的话：相应的事件逆序即可</li>
+<li>查看用：mysqlbinlog  -vv data/master.000001 –start-position=8900;</li>
+</ol>
+</li>
+<li>statement。（优点：节省空间只是一条sql语句，缺点：无法做数据恢复）线上不会用<ol>
+<li>在某些情况下可能会导致数据不一致比如limit和默认排序根据选择的索引不同数据会不一样。（warn）</li>
+</ol>
+</li>
+<li>mixed（前两种混合 一般用这种）</li>
+</ol>
+</li>
+<li><p>数据重放的方法</p>
+<ol>
+<li>badcase:mysqlbinlog解析日志，直接copy出statement重发，由于mysql语句是依赖上下文的所以会有风险。</li>
+<li>goodcase:mysqlbinlog解析日志，吧解析结果发给mysql执行，如：<ol>
+<li>mysqlbinlog master.000001  –start-position=2738 –stop-position=2973 | mysql -h127.0.0.1 -P13000 -u$user -p$pwd;</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>mysql的双M架构（对比M-S）(如何解决主从循环复制的问题)</p>
+<ol>
+<li>生产上使用较多的数据库，好处是主从切换不用修改节点状态，因为都是主</li>
+<li>如何解决循环复制的：因为双M,所以另一个主一般会开启log_slave_updates(on)<ol>
+<li>说明情况：server1写一条binlog,同步到server2这时候server2也会产生一条binlog，这时候如果同步到server1就会循环同步，mysql如何解决？</li>
+<li>解决方案：<ol>
+<li>俩个server的serverid不一样，一样的话不能成为主备；</li>
+<li>第一次生产binlog的库带着serverid</li>
+<li>备库接到binlog在重放的时候带着主库的serverid</li>
+<li>这条log同步到主库时候，主库发现这个serverid和自己一样说明是自己产生的直接丢弃</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>

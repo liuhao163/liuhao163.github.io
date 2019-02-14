@@ -1,0 +1,10 @@
+<hr>
+<p>title: mysql的索引–草稿<br>date: 2019-02-08 00:00:00</p>
+<h2 id="categories-Mysql-Mysql基础"><a href="#categories-Mysql-Mysql基础" class="headerlink" title="categories: [Mysql,Mysql基础]"></a>categories: [Mysql,Mysql基础]</h2><h1 id="mysql的索引-草稿"><a href="#mysql的索引-草稿" class="headerlink" title="mysql的索引-草稿"></a>mysql的索引-草稿</h1><p>唯一索引和普通索引区别<br>  读：<br>    唯一索引在查询上和普通索引的差距不大<br>    原因：mysql是将整个数据页加载到内存中，1个数据页有16KB，可以加载很多数据（都是索引和主键指针），儿唯一索引和普通索引的区别就是查询完后是break还是continue<br>  写：<br>    唯一索引，需要在每次写入时候读取数据判断是否唯一，所以不能利用changebuffer。所以更新需要将数据页cp到内存中更新。（如果数据页不巧没在内存中，性能消耗就会很大，数据页加载涉及到随机读）<br>    数据更新，只需要将数据写到changebuffer中，然后在下次用到数据（或者定时）将changebuffer，merge到数据页，所以会很快。</p>
+<p>索引的使用上<br>  索引使用是在优化器上进行的。优化器使用索引的依据是索引的基数（不重复的数据，可以用show index xxx看索引基数），使用基数大的索引。当频繁的删除，有可能导致基数不准选错索引。<br>  同时优化器在判断索引时候回考虑，会表的可能有可能会因为回表导致，选错索引</p>
+<p>  方法<br>  用ANALYZE TABLE table;优化索引<br>  删除不需要的索引</p>
+<p>有什么情况用不到索引<br>  原则：对于索引字段进行计算不会走上索引，会采用全索引遍历或者全表扫描<br>  例如：</p>
+<pre><code>1. 索引字段加减；a+1=1000
+2. 字段类型转化 比如 id=&apos;1111&apos;---&gt;CAST(id ,varchar)=&apos;1111&apos;
+3. 字段隐式类型转化：比如CAST(id,utf8mb4)=&apos;xxx&apos;
+</code></pre>

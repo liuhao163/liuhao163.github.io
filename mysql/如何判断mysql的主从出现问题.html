@@ -1,0 +1,66 @@
+<hr>
+<p>title: 如何判断MySql的主从出现问题<br>date: 2019-02-06 00:00:00</p>
+<h2 id="categories-Mysql-Mysql高可用架构"><a href="#categories-Mysql-Mysql高可用架构" class="headerlink" title="categories: [Mysql,Mysql高可用架构]"></a>categories: [Mysql,Mysql高可用架构]</h2><h1 id="如何判断MySql的主从出现问题"><a href="#如何判断MySql的主从出现问题" class="headerlink" title="如何判断MySql的主从出现问题"></a>如何判断MySql的主从出现问题</h1><p>本章主要介绍如何对MySql主从进行健康检查</p>
+<h2 id="SELECT-1"><a href="#SELECT-1" class="headerlink" title="SELECT 1"></a>SELECT 1</h2><p>定期在数据库上执行“SELECT 1”,缺点是指能判断MySql的进程是否存在，不能判断实际的使用情况，因为Mysql的并发度往往受参数innodb_thread_concurrency影响：</p>
+<blockquote>
+<p>innodb_thread_concurrency代表数据库的并发度，即同一时间有多少线程并发执行任务；默认是0即无限制，但是为了防止CPU被打满我们往往设置64~1·28中的一个值；<br>注意一下俩点：</p>
+<ul>
+<li>innodb_thread_concurrency和最大连接数不一样，最大连接数只是保持了链接状态，并没有多消耗CPU资源；</li>
+<li>当链接进入sleep状态的时候，innodb_thread_concurrency参数会减一，即释放一个并发度；</li>
+</ul>
+</blockquote>
+<h2 id="查表"><a href="#查表" class="headerlink" title="查表"></a>查表</h2><p>我们可以在mysql中创建一个表比如讲heal_check，定期执行下面的语句：</p>
+<pre><code class="sql">mysql&gt; select * from mysql.health_check;
+</code></pre>
+<p>但是依然有个缺点，我们不能检查出MySql写的能力。</p>
+<h2 id="定期执行修改的方式"><a href="#定期执行修改的方式" class="headerlink" title="定期执行修改的方式"></a>定期执行修改的方式</h2><pre><code class="sql">mysql&gt; update mysql.health_check set t_modified=now();
+</code></pre>
+<p>缺点从库无法判断,我们可以修改下我们的语句用如下的方式定期轮训</p>
+<pre><code class="sql">mysql&gt; CREATE TABLE `health_check` (
+  `id` int(11) NOT NULL,
+  `t_modified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB;
+
+<span class="comment">/* 检测命令 */</span>
+<span class="keyword">insert</span> <span class="keyword">into</span> mysql.health_check(<span class="keyword">id</span>, t_modified) <span class="keyword">values</span> (@@server_id, <span class="keyword">now</span>()) <span class="keyword">on</span> <span class="keyword">duplicate</span> <span class="keyword">key</span> <span class="keyword">update</span> t_modified=<span class="keyword">now</span>();
+</code></pre>
+<p>缺点，只能被动的轮询无法及时发现问题。</p>
+<h2 id="内部统计–performance-schema库"><a href="#内部统计–performance-schema库" class="headerlink" title="内部统计–performance_schema库"></a>内部统计–performance_schema库</h2><p>我们可以利用performance_schema，注意如果打开会因为检测导致性能下降10%左右。</p>
+<p>我们执行语句可以看到如下内容</p>
+<pre><code class="sql"><span class="keyword">select</span> * <span class="keyword">from</span> performance_schema.file_summary_by_event_name <span class="keyword">where</span> event_name=<span class="string">'wait/io/file/innodb/innodb_log_file'</span>\G
+
+*************************** <span class="number">1.</span> <span class="keyword">row</span> ***************************
+               EVENT_NAME: <span class="keyword">wait</span>/io/<span class="keyword">file</span>/<span class="keyword">innodb</span>/innodb_log_file
+               COUNT_STAR: <span class="number">107</span>  <span class="comment">#IO总次数</span>
+           SUM_TIMER_WAIT: <span class="number">101355337720</span> <span class="comment">#单位皮秒</span>
+           MIN_TIMER_WAIT: <span class="number">498680</span>
+           AVG_TIMER_WAIT: <span class="number">947245845</span>
+           MAX_TIMER_WAIT: <span class="number">81456567920</span>
+               COUNT_READ: <span class="number">7</span> <span class="comment">#读</span>
+           SUM_TIMER_READ: <span class="number">1321141640</span>
+           MIN_TIMER_READ: <span class="number">498680</span>
+           AVG_TIMER_READ: <span class="number">188734455</span>
+           MAX_TIMER_READ: <span class="number">790074740</span>
+ SUM_NUMBER_OF_BYTES_READ: <span class="number">70144</span> <span class="comment">#字节</span>
+              COUNT_WRITE: <span class="number">47</span> <span class="comment">#写</span>
+          SUM_TIMER_WRITE: <span class="number">874801200</span>
+          MIN_TIMER_WRITE: <span class="number">12836460</span>
+          AVG_TIMER_WRITE: <span class="number">18612685</span>
+          MAX_TIMER_WRITE: <span class="number">33429760</span>
+SUM_NUMBER_OF_BYTES_WRITE: <span class="number">40960</span>
+               COUNT_MISC: <span class="number">53</span> <span class="comment">#fsync次数--其他</span>
+           SUM_TIMER_MISC: <span class="number">99159394880</span>
+           MIN_TIMER_MISC: <span class="number">891800</span>
+           AVG_TIMER_MISC: <span class="number">1870931790</span>
+           MAX_TIMER_MISC: <span class="number">81456567920</span>
+</code></pre>
+<p>为了节省性能，我们可以只打开我们需要的统计项，执行如下命令，打开redolog和binlog的统计项</p>
+<pre><code class="sql">mysql&gt; update setup_instruments set ENABLED='YES', Timed='YES' where name like '%wait/io/file/innodb/innodb_log_file%';
+</code></pre>
+<p>检测性能方式如下，比如监控binlog和redolog超过200ms时，即监控MAX_TIMER_WAIT值</p>
+<pre><code class="sql">mysql&gt; select event_name,MAX_TIMER_WAIT  FROM performance_schema.file_summary_by_event_name where event_name in ('wait/io/file/innodb/innodb_log_file','wait/io/file/sql/binlog') and MAX_TIMER_WAIT&gt;200*1000000000;
+
+<span class="comment">#获取异常信息时候可以清空表，继续累计</span>
+mysql&gt; truncate table performance_schema.file_summary_by_event_name;
+</code></pre>

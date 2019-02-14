@@ -96,17 +96,17 @@
 
 
 
-  <meta name="description" content="Unsafejava7之后在并发中大量使用Unsafe来保证并发状态，字段修改的唯一性 代码例子例如在AbstractQueuedSynchronizer中的CAS中123456789//创建unsafe对象private static final Unsafe unsafe = Unsafe.getUnsafe();//计算字段的偏移量stateOffset = unsafe.objectFie">
+  <meta name="description" content="Unsafejava7之后在并发中大量使用Unsafe来保证并发状态，字段修改的唯一性 代码例子例如在AbstractQueuedSynchronizer中的CAS中 123456789//创建unsafe对象private static final Unsafe unsafe = Unsafe.getUnsafe();//计算字段的偏移量stateOffset = unsafe.objectFi">
 <meta property="og:type" content="article">
-<meta property="og:title" content="liuhao163.github.io">
+<meta property="og:title" content="Unsafe-java7之后的CAS">
 <meta property="og:url" content="https://liuhao163.github.io/java/cas/Unsafe/index.html">
 <meta property="og:site_name" content="liuhao163.github.io">
-<meta property="og:description" content="Unsafejava7之后在并发中大量使用Unsafe来保证并发状态，字段修改的唯一性 代码例子例如在AbstractQueuedSynchronizer中的CAS中123456789//创建unsafe对象private static final Unsafe unsafe = Unsafe.getUnsafe();//计算字段的偏移量stateOffset = unsafe.objectFie">
+<meta property="og:description" content="Unsafejava7之后在并发中大量使用Unsafe来保证并发状态，字段修改的唯一性 代码例子例如在AbstractQueuedSynchronizer中的CAS中 123456789//创建unsafe对象private static final Unsafe unsafe = Unsafe.getUnsafe();//计算字段的偏移量stateOffset = unsafe.objectFi">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:updated_time" content="2018-11-28T12:14:41.000Z">
+<meta property="og:updated_time" content="2019-02-14T03:14:26.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="liuhao163.github.io">
-<meta name="twitter:description" content="Unsafejava7之后在并发中大量使用Unsafe来保证并发状态，字段修改的唯一性 代码例子例如在AbstractQueuedSynchronizer中的CAS中123456789//创建unsafe对象private static final Unsafe unsafe = Unsafe.getUnsafe();//计算字段的偏移量stateOffset = unsafe.objectFie">
+<meta name="twitter:title" content="Unsafe-java7之后的CAS">
+<meta name="twitter:description" content="Unsafejava7之后在并发中大量使用Unsafe来保证并发状态，字段修改的唯一性 代码例子例如在AbstractQueuedSynchronizer中的CAS中 123456789//创建unsafe对象private static final Unsafe unsafe = Unsafe.getUnsafe();//计算字段的偏移量stateOffset = unsafe.objectFi">
 
 
 
@@ -125,7 +125,7 @@
   };
 </script>
 
-  <title> | liuhao163.github.io</title>
+  <title>Unsafe-java7之后的CAS | liuhao163.github.io</title>
   
 
 
@@ -307,7 +307,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">
+          <h1 class="post-title" itemprop="name headline">Unsafe-java7之后的CAS
 
               
             
@@ -333,12 +333,53 @@
                 
               
 
-              <time title="Created: 2018-11-28 12:14:41" itemprop="dateCreated datePublished" datetime="2018-11-28T12:14:41Z">2018-11-28</time>
+              <time title="Created: 2019-02-01 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-01T00:00:00Z">2019-02-01</time>
             
 
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-02-14 03:14:26" itemprop="dateModified" datetime="2019-02-14T03:14:26Z">2019-02-14</time>
+              
             
           </span>
 
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing"><a href="/categories/java/cas/" itemprop="url" rel="index"><span itemprop="name">cas</span></a></span>
+
+                
+                
+              
+            </span>
           
 
           
@@ -369,7 +410,8 @@
 
       
         <h1 id="Unsafe"><a href="#Unsafe" class="headerlink" title="Unsafe"></a>Unsafe</h1><p>java7之后在并发中大量使用Unsafe来保证并发状态，字段修改的唯一性</p>
-<h2 id="代码例子"><a href="#代码例子" class="headerlink" title="代码例子"></a>代码例子</h2><p>例如在AbstractQueuedSynchronizer中的CAS中<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//创建unsafe对象</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Unsafe unsafe = Unsafe.getUnsafe();</span><br><span class="line"></span><br><span class="line"><span class="comment">//计算字段的偏移量</span></span><br><span class="line">stateOffset = unsafe.objectFieldOffset</span><br><span class="line">            (AbstractQueuedSynchronizer.class.getDeclaredField(<span class="string">"state"</span>));</span><br><span class="line"></span><br><span class="line"><span class="comment">//CAS修改方法，第二个至是计算出的偏移量，第3个值是原有值，第4个参数是修改之后的值，success-true,faild-false</span></span><br><span class="line">unsafe.compareAndSwapObject(<span class="keyword">this</span>, tailOffset, expect, update);</span><br></pre></td></tr></table></figure></p>
+<h2 id="代码例子"><a href="#代码例子" class="headerlink" title="代码例子"></a>代码例子</h2><p>例如在AbstractQueuedSynchronizer中的CAS中</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//创建unsafe对象</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Unsafe unsafe = Unsafe.getUnsafe();</span><br><span class="line"></span><br><span class="line"><span class="comment">//计算字段的偏移量</span></span><br><span class="line">stateOffset = unsafe.objectFieldOffset</span><br><span class="line">            (AbstractQueuedSynchronizer.class.getDeclaredField(<span class="string">"state"</span>));</span><br><span class="line"></span><br><span class="line"><span class="comment">//CAS修改方法，第二个至是计算出的偏移量，第3个值是原有值，第4个参数是修改之后的值，success-true,faild-false</span></span><br><span class="line">unsafe.compareAndSwapObject(<span class="keyword">this</span>, tailOffset, expect, update);</span><br></pre></td></tr></table></figure>
 <h2 id="阻塞线程park和unpark"><a href="#阻塞线程park和unpark" class="headerlink" title="阻塞线程park和unpark"></a>阻塞线程park和unpark</h2><p>park和unpark与object.wait() object.notify一样都是可以阻塞和唤醒线程但是俩这有如下区别：</p>
 <ol>
 <li>面向的主体不同，LockSupport的park, unpark面向的是线程，而Object.wait, nofify面向的是对象</li>
@@ -405,8 +447,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/java/aqs/AbstractQueuedSynchronizer/" rel="next" title="">
-                <i class="fa fa-chevron-left"></i> 
+              <a href="/java/aqs/CountDownLatch/" rel="next" title="CountDownLatch解读">
+                <i class="fa fa-chevron-left"></i> CountDownLatch解读
               </a>
             
           </div>
@@ -415,8 +457,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/java/cas/index/" rel="prev" title="">
-                 <i class="fa fa-chevron-right"></i>
+              <a href="/java/cas/AtomicReferenceFieldUpdater/" rel="prev" title="AtomicReferenceFieldUpdater">
+                AtomicReferenceFieldUpdater <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -487,7 +529,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">37</span>
+                    <span class="site-state-item-count">31</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -506,7 +548,23 @@
                     
                       
                     
-                    <span class="site-state-item-count">3</span>
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">11</span>
                     <span class="site-state-item-name">categories</span>
                   </a>
                 </div>

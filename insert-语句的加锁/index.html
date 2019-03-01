@@ -107,7 +107,8 @@
 <meta property="og:image" content="https://liuhao163.github.io/insert-语句的加锁/img1.png">
 <meta property="og:image" content="https://liuhao163.github.io/insert-语句的加锁/insert_block.png">
 <meta property="og:image" content="https://liuhao163.github.io/insert-语句的加锁/insert_dead_lock.png">
-<meta property="og:updated_time" content="2019-03-01T15:35:33.000Z">
+<meta property="og:image" content="https://liuhao163.github.io/insert-语句的加锁/insert_dead_lock2.jpg">
+<meta property="og:updated_time" content="2019-03-01T16:01:10.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="insert 语句的加锁">
 <meta name="twitter:description" content="insert…select为什么要对目标表加锁测试语句如下，注：隔离模式是RR，binlog_format=statement 1234567891011121314CREATE TABLE `t` (  `id` int(11) NOT NULL AUTO_INCREMENT,  `c` int(11) DEFAULT NULL,  `d` int(11) DEFAULT NULL,  PRIM">
@@ -376,12 +377,24 @@
                 
               
 
-              <time title="Created: 2019-03-01 22:56:52 / Modified: 23:35:33" itemprop="dateCreated datePublished" datetime="2019-03-01T22:56:52+08:00">2019-03-01</time>
+              <time title="Created: 2019-03-01 22:56:52" itemprop="dateCreated datePublished" datetime="2019-03-01T22:56:52+08:00">2019-03-01</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-02 00:01:10" itemprop="dateModified" datetime="2019-03-02T00:01:10+08:00">2019-03-02</time>
               
             
           </span>
@@ -467,10 +480,14 @@
 <p>原因是：</p>
 <ol>
 <li>SessaionA为记录加行锁c=5。（唯一索引等值查询是行锁）</li>
-<li>T2时刻SessionB和SessionC都对c=5家了读锁。（违反唯一约束）</li>
-<li>T3时刻SessionArollback，这时候SessionB和SessionC要继续执行插入操作，这时候要对数据加写锁，需要等待对方释放读锁，死锁。</li>
+<li>T2时刻SessionB和SessionC都对c=5加了读锁。（违反唯一约束）这时候都是等待状态</li>
+<li>T3时刻SessionArollback，<ol>
+<li>SessionB和SessionCD的读锁生效；</li>
+<li>SessionB和SessionC要继续执行插入操作，这时候要对数据加写锁，这时候需要等待对方释放读锁，循环等待发生死锁。</li>
 </ol>
-<p>解决方法</p>
+</li>
+</ol>
+<p>见图:<br><img src="./insert_dead_lock2.jpg" alt="avator"><br>解决方法</p>
 <ol>
 <li>事务中唯一约束冲突后要尽快提交或者回滚，防止并发写循环等待；</li>
 <li>采用insert into…duplicate key update的方式，因为这时候会加一个nextkey-lock写锁是互斥的。这样sessionB和sessionC不会循环等待。</li>
@@ -524,6 +541,10 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/如何最快的复制一张表/" rel="prev" title="如何最快的复制一张表">
+                如何最快的复制一张表 <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -592,7 +613,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">39</span>
+                    <span class="site-state-item-count">42</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

@@ -373,7 +373,7 @@
                 
               
 
-              <time title="Created: 2019-03-01 22:56:52 / Modified: 23:20:06" itemprop="dateCreated datePublished" datetime="2019-03-01T22:56:52+08:00">2019-03-01</time>
+              <time title="Created: 2019-03-01 22:56:52 / Modified: 23:35:33" itemprop="dateCreated datePublished" datetime="2019-03-01T22:56:52+08:00">2019-03-01</time>
             
 
             
@@ -460,8 +460,20 @@
 </ul>
 <p>优化的方法是：采用临时表来解决语句如下</p>
 <figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">temporary</span> <span class="keyword">table</span> temp_t(c <span class="built_in">int</span>,d <span class="built_in">int</span>) <span class="keyword">engine</span>=<span class="keyword">memory</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> temp_t  (<span class="keyword">select</span> c+<span class="number">1</span>, d <span class="keyword">from</span> t <span class="keyword">force</span> <span class="keyword">index</span>(c) <span class="keyword">order</span> <span class="keyword">by</span> c <span class="keyword">desc</span> <span class="keyword">limit</span> <span class="number">1</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t <span class="keyword">select</span> * <span class="keyword">from</span> temp_t;</span><br><span class="line"><span class="keyword">drop</span> <span class="keyword">table</span> temp_t;</span><br></pre></td></tr></table></figure>
-<h1 id="insert违反唯一约束加锁"><a href="#insert违反唯一约束加锁" class="headerlink" title="insert违反唯一约束加锁"></a>insert违反唯一约束加锁</h1><p>见下图：</p>
-<p><img src="./insert_block.png" alt="avator"></p>
+<h1 id="insert违反唯一约束加锁"><a href="#insert违反唯一约束加锁" class="headerlink" title="insert违反唯一约束加锁"></a>insert违反唯一约束加锁</h1><p>见下图：<br><img src="./insert_block.png" alt="avator"></p>
+<p>SessionA在第2次插入时候违反了唯一约束，这时候SessionB的语句并没有因为SessionA的insert失败开始执行反而是block住。原因是SessionA在后滚之前为冲突的索引(5,10]加了nextkey-lock读锁。</p>
+<p>在并发情况下也会引起死锁，如图：<br><img src="./insert_dead_lock.png" alt="avator"></p>
+<p>原因是：</p>
+<ol>
+<li>SessaionA为记录加行锁c=5。（唯一索引等值查询是行锁）</li>
+<li>T2时刻SessionB和SessionC都对c=5家了读锁。（违反唯一约束）</li>
+<li>T3时刻SessionArollback，这时候SessionB和SessionC要继续执行插入操作，这时候要对数据加写锁，需要等待对方释放读锁，死锁。</li>
+</ol>
+<p>解决方法</p>
+<ol>
+<li>事务中唯一约束冲突后要尽快提交或者回滚，防止并发写循环等待；</li>
+<li>采用insert into…duplicate key update的方式，因为这时候会加一个nextkey-lock写锁是互斥的。这样sessionB和sessionC不会循环等待。</li>
+</ol>
 
           
         
@@ -2437,7 +2449,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">3</span>
+                      
+                    
+                    <span class="site-state-item-count">4</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>

@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://liuhao163.github.io/"/>
-  <updated>2019-03-02T06:01:10.000Z</updated>
+  <updated>2019-03-02T06:32:13.000Z</updated>
   <id>https://liuhao163.github.io/</id>
   
   <author>
@@ -15,6 +15,37 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Mysql自增ID用完了怎么办</title>
+    <link href="https://liuhao163.github.io/Mysql%E8%87%AA%E5%A2%9EID%E7%94%A8%E5%AE%8C%E4%BA%86%E6%80%8E%E4%B9%88%E5%8A%9E/"/>
+    <id>https://liuhao163.github.io/Mysql自增ID用完了怎么办/</id>
+    <published>2019-03-02T06:07:29.000Z</published>
+    <updated>2019-03-02T06:32:13.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="表自增ID"><a href="#表自增ID" class="headerlink" title="表自增ID"></a>表自增ID</h1><ol><li>如果主键是auto_incrment，如果达到了最大值，不会在增长，这时候写入会报主键冲突</li><li>如果没指定，会用dict_sys.row_id的值，作为主键，长度6字节，如果达到最大值会从0开始循环写入</li></ol><p>所以，推荐这只auto_incrment，毕竟报主键冲突比覆盖以前的数据要好的多。</p><h1 id="XID"><a href="#XID" class="headerlink" title="XID"></a>XID</h1><p>mysql对应事物的ID，Mysql的内存中会维护一个golbal_query_id的变量，改变量在内存中重启会清0，每次执行语句会吧当前值赋值给Query_id，并且+1,<br>如果当前语句是事务中的一个语句那么会把这个Xid赋值给事物ID</p><p>Mysql在重启后由于会清零，同时会有一个新的binlog所以一个binlog中xid是不冲突的。但是如果执行时间过长，理论上也可能会冲突吗，因为XID到达最大值后会从0开始分配，只不过这个值太大了2E64-1,所以冲突只存在在理论中。</p><h1 id="Innodb-trxid"><a href="#Innodb-trxid" class="headerlink" title="Innodb trxid"></a>Innodb trxid</h1><p>  区别于XID，XID是Server层的trxId是innodb层的</p><p>  innodb内部维护了个max_trx_id，每次申请时候会获取当前的max_trx_id，然后max_trx_id+1；</p><p>  inndob的事务可见性核心思想是：每次更新都更新了数据的trx_id，当一个事务读到数据的时候判断一致性视图和当前trx_id的关系</p><p>  对于正在执行的事物可以通过：information_schema.innodb_trx表中看到当前事务的trx_id;</p><p>  注意trx_id的分配规则：</p><ol><li>只读事物不分配trx_id，把当前事物的trx_id变量的指针地址转成int+2e48<ol><li>这么做的好处是只读事物中，指针地址不会变，同一个只读事务在innodb_locks和innodb_trx查出来的trx_id是一致的；</li><li>不同的事务由于指针地址会变，查出来的trx_id一定是不同的</li><li>加上2e48也是能区别于读写事物</li></ol></li><li><p>同时trx_id可能看到不只加了1：</p><ol><li>因为update和delete操作也会+1，（标记删除，放到purge队列中）</li><li>innodb的后台操作比如表的索引信息统计等都会+1</li></ol><p>只读事务不分配trx_id的好处</p></li><li><p>减少事务视图中活跃事务数，innodb在创建一致性视图时候值需要copy读写事物的trx_id就好了</p></li><li><p>可以减少trx_id的申请次数</p><p>trx_id是被持久化不会清0的所以当到达最大值后，会从0开始，这时候就可能会出现脏读。因为后续的数据trx_id变小了，变成可见的了，但是因为这个值是2e48-1所以这个错误也只存在于理论上。（50万TPS，要跑17.8年）</p></li></ol><h1 id="thread-id"><a href="#thread-id" class="headerlink" title="thread_id"></a>thread_id</h1><p>mysql有个thread_id_counter每次分配完后+1，如果到达最大值后会从0开始，这时候会看到俩个一样的thread_id</p><p>不过mysql在分配时候有一个逻辑来处理这种情况</p><p>thread_ids是个唯一数组，添加失败后会一直循环（待验证）</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">do</span> &#123;</span><br><span class="line">  new_id= thread_id_counter++;</span><br><span class="line">&#125; <span class="keyword">while</span> (!thread_ids.insert_unique(new_id).second);</span><br></pre></td></tr></table></figure>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;表自增ID&quot;&gt;&lt;a href=&quot;#表自增ID&quot; class=&quot;headerlink&quot; title=&quot;表自增ID&quot;&gt;&lt;/a&gt;表自增ID&lt;/h1&gt;&lt;ol&gt;
+&lt;li&gt;如果主键是auto_incrment，如果达到了最大值，不会在增长，这时候写入会报主键冲突&lt;/li&gt;
+&lt;
+      
+    
+    </summary>
+    
+      <category term="Mysql" scheme="https://liuhao163.github.io/categories/Mysql/"/>
+    
+      <category term="Mysql基础" scheme="https://liuhao163.github.io/categories/Mysql/Mysql%E5%9F%BA%E7%A1%80/"/>
+    
+    
+      <category term="数据库" scheme="https://liuhao163.github.io/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
+    
+      <category term="技术" scheme="https://liuhao163.github.io/tags/%E6%8A%80%E6%9C%AF/"/>
+    
+  </entry>
   
   <entry>
     <title>要不要使用分区表</title>
@@ -137,6 +168,20 @@
   
   <entry>
     <title></title>
+    <link href="https://liuhao163.github.io/dubbo/index/"/>
+    <id>https://liuhao163.github.io/dubbo/index/</id>
+    <published>2019-03-01T14:53:26.000Z</published>
+    <updated>2019-03-01T14:53:26.000Z</updated>
+    
+    <summary type="html">
+    
+    </summary>
+    
+    
+  </entry>
+  
+  <entry>
+    <title></title>
     <link href="https://liuhao163.github.io/mq/index/"/>
     <id>https://liuhao163.github.io/mq/index/</id>
     <published>2019-03-01T14:53:26.000Z</published>
@@ -151,20 +196,6 @@
         &lt;h1 id=&quot;mq相关&quot;&gt;&lt;a href=&quot;#mq相关&quot; class=&quot;headerlink&quot; title=&quot;mq相关&quot;&gt;&lt;/a&gt;mq相关&lt;/h1&gt;&lt;p&gt;&lt;a href=&quot;./rocketmq&quot;&gt;rocketmq&lt;/a&gt;&lt;/p&gt;
 
       
-    
-    </summary>
-    
-    
-  </entry>
-  
-  <entry>
-    <title></title>
-    <link href="https://liuhao163.github.io/dubbo/index/"/>
-    <id>https://liuhao163.github.io/dubbo/index/</id>
-    <published>2019-03-01T14:53:26.000Z</published>
-    <updated>2019-03-01T14:53:26.000Z</updated>
-    
-    <summary type="html">
     
     </summary>
     
@@ -236,9 +267,9 @@
     <link href="https://liuhao163.github.io/Mysq%E4%BD%95%E6%97%B6%E4%BC%9A%E7%94%A8%E5%88%B0%E5%86%85%E9%83%A8%E4%B8%B4%E6%97%B6%E8%A1%A8/"/>
     <id>https://liuhao163.github.io/Mysq何时会用到内部临时表/</id>
     <published>2019-02-27T05:13:03.000Z</published>
-    <updated>2019-03-01T14:53:26.000Z</updated>
+    <updated>2019-03-02T06:08:51.000Z</updated>
     
-    <content type="html"><![CDATA[<h1 id="Mysql何时会使用内部临时表"><a href="#Mysql何时会使用内部临时表" class="headerlink" title="Mysql何时会使用内部临时表"></a>Mysql何时会使用内部临时表</h1><p>Mysql除了我们显式的创建临时表外，在某些情况下会用到内部临时表，在开始之前可以先用下面脚本创建一个测试库</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> t1(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>, a <span class="built_in">int</span>, b <span class="built_in">int</span>, <span class="keyword">index</span>(a));</span><br><span class="line">delimiter ;;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">procedure</span> idata()</span><br><span class="line"><span class="keyword">begin</span></span><br><span class="line">  <span class="keyword">declare</span> i <span class="built_in">int</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">set</span> i=<span class="number">1</span>;</span><br><span class="line">  while(i&lt;=1000)do</span><br><span class="line">    <span class="keyword">insert</span> <span class="keyword">into</span> t1 <span class="keyword">values</span>(i, i, i);</span><br><span class="line">    <span class="keyword">set</span> i=i+<span class="number">1</span>;</span><br><span class="line">  <span class="keyword">end</span> <span class="keyword">while</span>;</span><br><span class="line"><span class="keyword">end</span>;;</span><br><span class="line">delimiter ;</span><br><span class="line"><span class="keyword">call</span> idata();</span><br></pre></td></tr></table></figure><h2 id="Union"><a href="#Union" class="headerlink" title="Union"></a>Union</h2><p>如下面的语句，取俩条语句结果的并集</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(<span class="keyword">select</span> <span class="number">1000</span> <span class="keyword">as</span> f) <span class="keyword">union</span> (<span class="keyword">select</span> <span class="keyword">id</span> <span class="keyword">from</span> t1 <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">id</span> <span class="keyword">desc</span> <span class="keyword">limit</span> <span class="number">2</span>);</span><br></pre></td></tr></table></figure><p>执行计划如下：</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----+--------------+------------+------------+-------+---------------+---------+---------+------+------+----------+-----------------+</span></span><br><span class="line">| id | select_type  | table      | partitions | type  | possible_keys | key     | key_len | ref  | rows | filtered | Extra           |</span><br><span class="line">+<span class="comment">----+--------------+------------+------------+-------+---------------+---------+---------+------+------+----------+-----------------+</span></span><br><span class="line">|  1 | PRIMARY      | NULL       | NULL       | NULL  | NULL          | NULL    | NULL    | NULL | NULL |     NULL | No tables used  |</span><br><span class="line">|  2 | UNION        | t1         | NULL       | index | NULL          | PRIMARY | 4       | NULL |    2 |   100.00 | Using index     |</span><br><span class="line">| NULL | UNION RESULT | &lt;union1,2&gt; | NULL       | ALL   | NULL          | NULL    | NULL    | NULL | NULL |     NULL | Using temporary |</span><br><span class="line">+<span class="comment">----+--------------+------------+------------+-------+---------------+---------+---------+------+------+----------+-----------------+</span></span><br></pre></td></tr></table></figure><p>最后的Extra字段Using temporary表示使用了临时表</p><p>该语句流程如下：</p><ol><li>创建一个内存临时表，只有一个字段是f，f是主键;</li><li>将第一条查询语句结果插入到临时表中</li><li>执行第2个子查询<ol><li>将符合条件的插入到临时表中，如果是union取并集，违反唯一约束写入失败；</li><li>继续插入直到不符合规则</li></ol></li><li>返回结果，删除临时表</li><li>注:如果是union all因为没有计算并集的需求也就没有唯一约束就不用临时表了</li></ol><h2 id="GROUP-BY"><a href="#GROUP-BY" class="headerlink" title="GROUP BY"></a>GROUP BY</h2><p>例如下面的语句</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">id</span>%<span class="number">10</span> <span class="keyword">as</span> m, <span class="keyword">count</span>(*) <span class="keyword">as</span> c <span class="keyword">from</span> t1 <span class="keyword">group</span> <span class="keyword">by</span> m;</span><br></pre></td></tr></table></figure><p>执行计划如下：</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+----------------------------------------------+</span></span><br><span class="line">| id | select_type | table | partitions | type  | possible_keys | key  | key_len | ref  | rows | filtered | Extra                                        |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+----------------------------------------------+</span></span><br><span class="line">|  1 | SIMPLE      | t1    | NULL       | index | PRIMARY,a     | a    | 5       | NULL | 1000 |   100.00 | Using index; Using temporary; Using filesort |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+----------------------------------------------+</span></span><br></pre></td></tr></table></figure><p>通过Extra字段可以看到3个信息</p><ul><li>Using index 因为需要遍历索引树，这里没选PRIMARY原因是因为a索引够用（只取count），并且相对PK更小 </li><li>Using temporary 用了临时表</li><li>Using filesort 排序</li></ul><p>流程如下：</p><ol><li>创建内存临时表，创建俩个字段（m,c），且m为主键</li><li>将id%10，然后得到m，写入到临时表<ol><li>如果m不存在，insert m,1</li><li>如果m存在，update c字段+1；</li></ol></li><li>然后临时表通过filesort排序，内存临时表rowid排序，见前面的文章</li><li>返回结果，移除临时表。</li></ol><p>上面提到里都是创建一个内存临时表，这是由参数tmp_table_size值控制的默认是16M，如果超过这个值就采用磁盘临时表了</p><h3 id="group-by优化方案"><a href="#group-by优化方案" class="headerlink" title="group by优化方案"></a>group by优化方案</h3><p>临时表会消耗内存，甚至是磁盘。所以在生产环境上我们哟啊尽量避免这种内部临时表的产生，针对上面说的group by有如下几点优化建议</p><h4 id="通过索引"><a href="#通过索引" class="headerlink" title="通过索引"></a>通过索引</h4><p>上面的例子，我们可以创建一个id%10的字段,然后根据这个字段group by</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> t1 <span class="keyword">add</span> <span class="keyword">column</span> z <span class="built_in">int</span> <span class="keyword">generated</span> <span class="keyword">always</span> <span class="keyword">as</span>(<span class="keyword">id</span> % <span class="number">100</span>), <span class="keyword">add</span> <span class="keyword">index</span>(z);</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> z, <span class="keyword">count</span>(*) <span class="keyword">as</span> c <span class="keyword">from</span> t1 <span class="keyword">group</span> <span class="keyword">by</span> z;</span><br><span class="line"></span><br><span class="line">执行计划会告诉这你这条语句走的是索引z</span><br></pre></td></tr></table></figure><h4 id="直接排序"><a href="#直接排序" class="headerlink" title="直接排序"></a>直接排序</h4><p>原理是，因为mysql会默认走临时表，但是我们可以通过SQL_BIG_RESULT来提示mysql这个结果集很大，让mysql直接选择磁盘临时表，mysql发现这个临时表是b+tree结构，不如数组方式排序效率高，就不会采用临时表而是至用filesortset了</p><p>sql语句如下</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">SQL_BIG_RESULT</span> <span class="keyword">id</span>%<span class="number">100</span> <span class="keyword">as</span> m, <span class="keyword">count</span>(*) <span class="keyword">as</span> c <span class="keyword">from</span> t1 <span class="keyword">group</span> <span class="keyword">by</span> m;</span><br></pre></td></tr></table></figure><p>执行计划如下</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+-----------------------------+</span></span><br><span class="line">| id | select_type | table | partitions | type  | possible_keys | key  | key_len | ref  | rows | filtered | Extra                       |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+-----------------------------+</span></span><br><span class="line">|  1 | SIMPLE      | t1    | NULL       | index | PRIMARY,a     | a    | 5       | NULL | 1000 |   100.00 | Using index; Using filesort |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+-----------------------------+</span></span><br></pre></td></tr></table></figure><p>语句执行流程是：</p><ol><li>初始化sort_buffer，去顶放入整形字段m</li><li>扫秒表t1索引树a,将id%100值放入sort_buffer中</li><li>在sort_buffer对m排序</li><li>返回数组</li></ol><h1 id="总结mysql何时会用临时表呢"><a href="#总结mysql何时会用临时表呢" class="headerlink" title="总结mysql何时会用临时表呢"></a>总结mysql何时会用临时表呢</h1><ol><li>如果mysql一边读数据，一边直接获取结果不需要额外的内存保存结果，否则会需要额外内存；</li><li>join_buffer是无序数据，sort_buffer是有序数组，临时表是二维表结构</li><li>如果执行逻辑需要二维表特性，就优先使用临时表，比如:Union需要唯一约束，groupby需要额外保存计数</li></ol>]]></content>
+    <content type="html"><![CDATA[<h1 id="Mysql何时会使用内部临时表"><a href="#Mysql何时会使用内部临时表" class="headerlink" title="Mysql何时会使用内部临时表"></a>Mysql何时会使用内部临时表</h1><p>Mysql除了我们显式的创建临时表外，在某些情况下会用到内部临时表，在开始之前可以先用下面脚本创建一个测试库</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> t1(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>, a <span class="built_in">int</span>, b <span class="built_in">int</span>, <span class="keyword">index</span>(a));</span><br><span class="line">delimiter ;;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">procedure</span> idata()</span><br><span class="line"><span class="keyword">begin</span></span><br><span class="line">  <span class="keyword">declare</span> i <span class="built_in">int</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">set</span> i=<span class="number">1</span>;</span><br><span class="line">  while(i&lt;=1000)do</span><br><span class="line">    <span class="keyword">insert</span> <span class="keyword">into</span> t1 <span class="keyword">values</span>(i, i, i);</span><br><span class="line">    <span class="keyword">set</span> i=i+<span class="number">1</span>;</span><br><span class="line">  <span class="keyword">end</span> <span class="keyword">while</span>;</span><br><span class="line"><span class="keyword">end</span>;;</span><br><span class="line">delimiter ;</span><br><span class="line"><span class="keyword">call</span> idata();</span><br></pre></td></tr></table></figure><h2 id="Union"><a href="#Union" class="headerlink" title="Union"></a>Union</h2><p>如下面的语句，取俩条语句结果的并集</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(<span class="keyword">select</span> <span class="number">1000</span> <span class="keyword">as</span> f) <span class="keyword">union</span> (<span class="keyword">select</span> <span class="keyword">id</span> <span class="keyword">from</span> t1 <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">id</span> <span class="keyword">desc</span> <span class="keyword">limit</span> <span class="number">2</span>);</span><br></pre></td></tr></table></figure><p>执行计划如下：</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----+--------------+------------+------------+-------+---------------+---------+---------+------+------+----------+-----------------+</span></span><br><span class="line">| id | select_type  | table      | partitions | type  | possible_keys | key     | key_len | ref  | rows | filtered | Extra           |</span><br><span class="line">+<span class="comment">----+--------------+------------+------------+-------+---------------+---------+---------+------+------+----------+-----------------+</span></span><br><span class="line">|  1 | PRIMARY      | NULL       | NULL       | NULL  | NULL          | NULL    | NULL    | NULL | NULL |     NULL | No tables used  |</span><br><span class="line">|  2 | UNION        | t1         | NULL       | index | NULL          | PRIMARY | 4       | NULL |    2 |   100.00 | Using index     |</span><br><span class="line">| NULL | UNION RESULT | &lt;union1,2&gt; | NULL       | ALL   | NULL          | NULL    | NULL    | NULL | NULL |     NULL | Using temporary |</span><br><span class="line">+<span class="comment">----+--------------+------------+------------+-------+---------------+---------+---------+------+------+----------+-----------------+</span></span><br></pre></td></tr></table></figure><p>最后的Extra字段Using temporary表示使用了临时表</p><p>该语句流程如下：</p><ol><li>创建一个内存临时表，只有一个字段是f，f是主键;</li><li>将第一条查询语句结果插入到临时表中</li><li>执行第2个子查询<ol><li>将符合条件的插入到临时表中，如果是union取并集，违反唯一约束写入失败；</li><li>继续插入直到不符合规则</li></ol></li><li>返回结果，删除临时表</li><li>注:如果是union all因为没有计算并集的需求也就没有唯一约束就不用临时表了</li></ol><h2 id="GROUP-BY"><a href="#GROUP-BY" class="headerlink" title="GROUP BY"></a>GROUP BY</h2><p>例如下面的语句</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">id</span>%<span class="number">10</span> <span class="keyword">as</span> m, <span class="keyword">count</span>(*) <span class="keyword">as</span> c <span class="keyword">from</span> t1 <span class="keyword">group</span> <span class="keyword">by</span> m;</span><br></pre></td></tr></table></figure><p>执行计划如下：</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+----------------------------------------------+</span></span><br><span class="line">| id | select_type | table | partitions | type  | possible_keys | key  | key_len | ref  | rows | filtered | Extra                                        |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+----------------------------------------------+</span></span><br><span class="line">|  1 | SIMPLE      | t1    | NULL       | index | PRIMARY,a     | a    | 5       | NULL | 1000 |   100.00 | Using index; Using temporary; Using filesort |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+----------------------------------------------+</span></span><br></pre></td></tr></table></figure><p>通过Extra字段可以看到3个信息</p><ul><li>Using index 因为需要遍历索引树，这里没选PRIMARY原因是因为a索引够用（只取count），并且相对PK更小</li><li>Using temporary 用了临时表</li><li>Using filesort 排序</li></ul><p>流程如下：</p><ol><li>创建内存临时表，创建俩个字段（m,c），且m为主键</li><li>将id%10，然后得到m，写入到临时表<ol><li>如果m不存在，insert m,1</li><li>如果m存在，update c字段+1；</li></ol></li><li>然后临时表通过filesort排序，内存临时表rowid排序，见前面的文章</li><li>返回结果，移除临时表。</li></ol><p>上面提到里都是创建一个内存临时表，这是由参数tmp_table_size值控制的默认是16M，如果超过这个值就采用磁盘临时表了</p><h3 id="group-by优化方案"><a href="#group-by优化方案" class="headerlink" title="group by优化方案"></a>group by优化方案</h3><p>临时表会消耗内存，甚至是磁盘。所以在生产环境上我们哟啊尽量避免这种内部临时表的产生，针对上面说的group by有如下几点优化建议</p><h4 id="通过索引"><a href="#通过索引" class="headerlink" title="通过索引"></a>通过索引</h4><p>上面的例子，我们可以创建一个id%10的字段,然后根据这个字段group by</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> t1 <span class="keyword">add</span> <span class="keyword">column</span> z <span class="built_in">int</span> <span class="keyword">generated</span> <span class="keyword">always</span> <span class="keyword">as</span>(<span class="keyword">id</span> % <span class="number">100</span>), <span class="keyword">add</span> <span class="keyword">index</span>(z);</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> z, <span class="keyword">count</span>(*) <span class="keyword">as</span> c <span class="keyword">from</span> t1 <span class="keyword">group</span> <span class="keyword">by</span> z;</span><br><span class="line"></span><br><span class="line">执行计划会告诉这你这条语句走的是索引z</span><br></pre></td></tr></table></figure><h4 id="直接排序"><a href="#直接排序" class="headerlink" title="直接排序"></a>直接排序</h4><p>原理是，因为mysql会默认走临时表，但是我们可以通过SQL_BIG_RESULT来提示mysql这个结果集很大，让mysql直接选择磁盘临时表，mysql发现这个临时表是b+tree结构，不如数组方式排序效率高，就不会采用临时表而是至用filesortset了</p><p>sql语句如下</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">SQL_BIG_RESULT</span> <span class="keyword">id</span>%<span class="number">100</span> <span class="keyword">as</span> m, <span class="keyword">count</span>(*) <span class="keyword">as</span> c <span class="keyword">from</span> t1 <span class="keyword">group</span> <span class="keyword">by</span> m;</span><br></pre></td></tr></table></figure><p>执行计划如下</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+-----------------------------+</span></span><br><span class="line">| id | select_type | table | partitions | type  | possible_keys | key  | key_len | ref  | rows | filtered | Extra                       |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+-----------------------------+</span></span><br><span class="line">|  1 | SIMPLE      | t1    | NULL       | index | PRIMARY,a     | a    | 5       | NULL | 1000 |   100.00 | Using index; Using filesort |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+-----------------------------+</span></span><br></pre></td></tr></table></figure><p>语句执行流程是：</p><ol><li>初始化sort_buffer，去顶放入整形字段m</li><li>扫秒表t1索引树a,将id%100值放入sort_buffer中</li><li>在sort_buffer对m排序</li><li>返回数组</li></ol><h1 id="总结mysql何时会用临时表呢"><a href="#总结mysql何时会用临时表呢" class="headerlink" title="总结mysql何时会用临时表呢"></a>总结mysql何时会用临时表呢</h1><ol><li>如果mysql一边读数据，一边直接获取结果不需要额外的内存保存结果，否则会需要额外内存；</li><li>join_buffer是无序数据，sort_buffer是有序数组，临时表是二维表结构</li><li>如果执行逻辑需要二维表特性，就优先使用临时表，比如:Union需要唯一约束，groupby需要额外保存计数</li></ol>]]></content>
     
     <summary type="html">
     
@@ -394,6 +425,30 @@
   </entry>
   
   <entry>
+    <title>其他</title>
+    <link href="https://liuhao163.github.io/mysql/%E5%85%B6%E4%BB%96/"/>
+    <id>https://liuhao163.github.io/mysql/其他/</id>
+    <published>2019-02-06T16:00:00.000Z</published>
+    <updated>2019-03-01T14:53:26.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><p>查询长事物的语句</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> information_schema.innodb_trx <span class="keyword">where</span> TIME_TO_SEC(<span class="keyword">timediff</span>(<span class="keyword">now</span>(),trx_started))&gt;<span class="number">60</span></span><br></pre></td></tr></table></figure>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;其他&quot;&gt;&lt;a href=&quot;#其他&quot; class=&quot;headerlink&quot; title=&quot;其他&quot;&gt;&lt;/a&gt;其他&lt;/h1&gt;&lt;p&gt;查询长事物的语句&lt;/p&gt;
+&lt;figure class=&quot;highlight sql&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutte
+      
+    
+    </summary>
+    
+      <category term="Mysql" scheme="https://liuhao163.github.io/categories/Mysql/"/>
+    
+    
+  </entry>
+  
+  <entry>
     <title>mysql的锁-全局锁、表锁、行锁、间隙锁</title>
     <link href="https://liuhao163.github.io/mysql/mysql%E7%9A%84%E9%94%81/"/>
     <id>https://liuhao163.github.io/mysql/mysql的锁/</id>
@@ -414,30 +469,6 @@
       <category term="Mysql" scheme="https://liuhao163.github.io/categories/Mysql/"/>
     
       <category term="Mysql基础" scheme="https://liuhao163.github.io/categories/Mysql/Mysql%E5%9F%BA%E7%A1%80/"/>
-    
-    
-  </entry>
-  
-  <entry>
-    <title>其他</title>
-    <link href="https://liuhao163.github.io/mysql/%E5%85%B6%E4%BB%96/"/>
-    <id>https://liuhao163.github.io/mysql/其他/</id>
-    <published>2019-02-06T16:00:00.000Z</published>
-    <updated>2019-03-01T14:53:26.000Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><p>查询长事物的语句</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> information_schema.innodb_trx <span class="keyword">where</span> TIME_TO_SEC(<span class="keyword">timediff</span>(<span class="keyword">now</span>(),trx_started))&gt;<span class="number">60</span></span><br></pre></td></tr></table></figure>]]></content>
-    
-    <summary type="html">
-    
-      
-      
-        &lt;h1 id=&quot;其他&quot;&gt;&lt;a href=&quot;#其他&quot; class=&quot;headerlink&quot; title=&quot;其他&quot;&gt;&lt;/a&gt;其他&lt;/h1&gt;&lt;p&gt;查询长事物的语句&lt;/p&gt;
-&lt;figure class=&quot;highlight sql&quot;&gt;&lt;table&gt;&lt;tr&gt;&lt;td class=&quot;gutte
-      
-    
-    </summary>
-    
-      <category term="Mysql" scheme="https://liuhao163.github.io/categories/Mysql/"/>
     
     
   </entry>
@@ -488,31 +519,6 @@
       <category term="Mysql" scheme="https://liuhao163.github.io/categories/Mysql/"/>
     
       <category term="Mysql基础" scheme="https://liuhao163.github.io/categories/Mysql/Mysql%E5%9F%BA%E7%A1%80/"/>
-    
-    
-  </entry>
-  
-  <entry>
-    <title>mysql读写分离的坑</title>
-    <link href="https://liuhao163.github.io/mysql/mysql%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB%E7%9A%84%E9%82%A3%E4%BA%9B%E5%9D%91/"/>
-    <id>https://liuhao163.github.io/mysql/mysql读写分离的那些坑/</id>
-    <published>2019-02-04T16:00:00.000Z</published>
-    <updated>2019-03-01T14:53:26.000Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="mysql读写分离的坑"><a href="#mysql读写分离的坑" class="headerlink" title="mysql读写分离的坑"></a>mysql读写分离的坑</h1><p>本章主要介绍mysql读写分离的架构，读写分离遇到的问题，以及解决方案。</p><h2 id="mysql读写分离结构介绍"><a href="#mysql读写分离结构介绍" class="headerlink" title="mysql读写分离结构介绍"></a>mysql读写分离结构介绍</h2><h3 id="直连架构"><a href="#直连架构" class="headerlink" title="直连架构"></a>直连架构</h3><p>见图：<br><img src="/images/mysql/mysql读写分离架构直连.png" alt="avator"></p><h3 id="proxy"><a href="#proxy" class="headerlink" title="proxy"></a>proxy</h3><p>见图：<br><img src="/images/mysql/mysql读写分离架构proxy.png" alt="avator"></p><p>小结：</p><ul><li>直连的架构，往往后端会有一个管理器（zookeeper）来管理所有的节点，动态的做主从切换，踢掉失联节点，和动态更新节点。</li><li>客户端链接proxy，业务往往只关注业务逻辑即可。<em>现在大多采用此方案</em></li></ul><h2 id="mysql读写分离架构遇到的挑战以及解决方案"><a href="#mysql读写分离架构遇到的挑战以及解决方案" class="headerlink" title="mysql读写分离架构遇到的挑战以及解决方案"></a>mysql读写分离架构遇到的挑战以及解决方案</h2><p>无论采用直连还是proxy架构都会遇到主从不同步的问题，这里我们叫过期读，我们该采用什么方式解决呢？</p><h3 id="强制走主库"><a href="#强制走主库" class="headerlink" title="强制走主库"></a>强制走主库</h3><p>业务方自己判断某些查询走主库某些查询走备库。比如：刚修改的数据立刻就获取的最新的数据从主库查询；数据分析等离线的情况走从库；</p><ul><li>优点：比较简单，由业务自己掌控，大部分情况都可以用此种方式解决；</li><li>缺点：可能会遇到所有查询都需要从主库查询的情况，这样一主多从的架构就失去了作用；</li></ul><h3 id="sleep方案"><a href="#sleep方案" class="headerlink" title="sleep方案"></a>sleep方案</h3><p>修改和插入数据时候等待一段时间，然后在从备库查询，例如：页面ajax提交了修改请求，页面直接返回结果，当下次刷新时候从从库取出数据；</p><ul><li>优点：业务方决定，比较简单，且可以利用一主多从</li><li>缺点：过期时间的不确定性，可能会导致数据一致性有问题</li></ul><h3 id="判断主备无延迟方案"><a href="#判断主备无延迟方案" class="headerlink" title="判断主备无延迟方案"></a>判断主备无延迟方案</h3><p>在sql语句执行前线判断主库和从库是否有延迟，没延迟读取从库，有延迟读取主库。</p><h4 id="判断seconds-behind-master参数"><a href="#判断seconds-behind-master参数" class="headerlink" title="判断seconds_behind_master参数"></a>判断seconds_behind_master参数</h4><p>当参数为0说明无延迟，可以从从库读取，但是时间不精确只能精确到秒</p><h4 id="通过位点来判断"><a href="#通过位点来判断" class="headerlink" title="通过位点来判断"></a>通过位点来判断</h4><p>从库通过show slave status命令取得如下俩对参数：Master_Log_File和Read_Master_Log_Pos，Relay_Master_Log_File和Exec_Master_Log_Pos，当这俩对参数相等说明主备无延迟，</p><h4 id="通过gtid来判断"><a href="#通过gtid来判断" class="headerlink" title="通过gtid来判断"></a>通过gtid来判断</h4><ul><li>Auto_Position=1 ，表示这对主备关系使用了GTID</li><li>Retrieved_Gtid_Set，表示备库收到的日志GTID_SET</li><li>Executed_Gtid_Set，表示备库执行完成的GTID_SET</li></ul><p>当着俩个集合相等说明主备无延迟</p><p>但是，这种方案有个缺点就是，备库判断的是自己的,relaylog和binlog的差异，但是如果这时候主库提交了个事物，备库还没有转成relaylog，备库会认为没有延迟，但是依然从备库差不到刚才主库刚提交的事务的数据，如下图：</p><p><img src="/images/mysql/判断主备无延迟方案badcase.png" alt="avator"></p><p>tx3事务的数据主库提交了，但是备库会看不到</p><h3 id="结合semi-sync方案"><a href="#结合semi-sync方案" class="headerlink" title="结合semi-sync方案"></a>结合semi-sync方案</h3><p>上图的问题，结合semi-sync（办同步）方案可解决，semi-sync原理是什么呢？</p><ol><li>开启semi-sync后，主库在提交时候后会发送binlog给备库</li><li>备库收到binlog以后，发给主库一个ack信号，说明已经收到</li><li>主库收到这个信号后才能给客户端返回事务已经提交</li></ol><p>这种方案会有如下俩个缺点：</p><ol><li>对于一主多从的结构，当一个从库发送ack信号给主库，主库会返回一个事务已经提交，这时候如果从其他从库查询还是有可能出现过期读；</li><li>如果数据库更新频繁，你会发现g</li><li>tid或者位点主从会一直不相等，这样就失去了从库读写分离的意义。</li></ol><h3 id="等主库位点（gtid）"><a href="#等主库位点（gtid）" class="headerlink" title="等主库位点（gtid）"></a>等主库位点（gtid）</h3><p>我们针对上面的痛点可以采用等主库位点或者gtid的方式来处理这种情况</p><h4 id="等主库位点"><a href="#等主库位点" class="headerlink" title="等主库位点"></a>等主库位点</h4><p>命令:select master_pos_wait(file, pos[, timeout]);</p><ul><li>该命令含义：返回从命令执行开始，经过timeout秒后，从库执行到file（binlog）的pos位置执行了多少个事物。</li><li>返回值含义:<ul><li>NULL:失联</li><li>-1：超时</li><li>0：执行即到了改位置。执行了0个事物</li><li>N：从库到这个位置执行了N个事物。</li></ul></li></ul><p>具体流程如图:<br><img src="/images/mysql/等主库位点case.png" alt="avator"></p><ol><li>tx1提交后，在master上执行show master status;获取主库的binlog和binlog_pos。</li><li>在从库上执行查询语句前，先执行select master_pos_wait(file, pos[, timeout]);</li><li>如果返回&gt;=0,slect在从库执行，否则主库执行</li></ol><h4 id="等GTID"><a href="#等GTID" class="headerlink" title="等GTID"></a>等GTID</h4><p>命令:select wait_for_executed_gtid_set(gtid_set, timeout);</p><ul><li>该命令含义：等待从库timeout秒后，执行的gtid_set包含了gtid_set</li><li>返回值含义:<ul><li>0：包含</li><li>1：超时</li></ul></li></ul><p>具体流程如图:<br><img src="/images/mysql/等主库gtidcase.png" alt="avator"></p><ol><li>tx1提交后，在master上执行show master status;获取主库的gtid_set。（5.7后可以通过函数直接获取该事务返回的gtid,具体见后面）</li><li>在从库上执行查询语句前，先执行select wait_for_executed_gtid_set(gtid_set, timeout);</li><li>如果返回0从库，1主库</li></ol><p>注：5.7之后获取事务提交后gtid的方法</p><blockquote><p>set session_track_gtids=OWN_GTID<br>执行事务并且提交<br>客户端通过函数：mysql_session_track_get_first <em>这个函数只针对客户端调用</em></p></blockquote><p>注：开启semi-sync<em>待完善</em></p>]]></content>
-    
-    <summary type="html">
-    
-      
-      
-        &lt;h1 id=&quot;mysql读写分离的坑&quot;&gt;&lt;a href=&quot;#mysql读写分离的坑&quot; class=&quot;headerlink&quot; title=&quot;mysql读写分离的坑&quot;&gt;&lt;/a&gt;mysql读写分离的坑&lt;/h1&gt;&lt;p&gt;本章主要介绍mysql读写分离的架构，读写分离遇到的问题，以及解决方
-      
-    
-    </summary>
-    
-      <category term="Mysql" scheme="https://liuhao163.github.io/categories/Mysql/"/>
-    
-      <category term="Mysql高可用架构" scheme="https://liuhao163.github.io/categories/Mysql/Mysql%E9%AB%98%E5%8F%AF%E7%94%A8%E6%9E%B6%E6%9E%84/"/>
     
     
   </entry>

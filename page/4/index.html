@@ -328,6 +328,188 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/netty/Promise和Future/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/netty/Promise和Future/" class="post-title-link" itemprop="url">Promise 和 Future</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-02 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-02T00:00:00+08:00">2019-02-02</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/netty/" itemprop="url" rel="index"><span itemprop="name">netty</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="Promise-和-Future"><a href="#Promise-和-Future" class="headerlink" title="Promise 和 Future"></a>Promise 和 Future</h1><p>netty中的I/O操作大部分为异步，netty在Java的Future的基础上封装了Future和Promise</p>
+<h2 id="Future"><a href="#Future" class="headerlink" title="Future"></a>Future</h2><p>继承java.util.concurrent.Future接口，并且在Future基础上做了如下的强化。<br>future是read-only的。我们没有办法在Future中改变状态，只能获取状态。进行后续操作</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Future</span>&lt;<span class="title">V</span>&gt; <span class="keyword">extends</span> <span class="title">java</span>.<span class="title">util</span>.<span class="title">concurrent</span>.<span class="title">Future</span>&lt;<span class="title">V</span>&gt;</span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 判断I/O是否成功,和Future的isDone()相比,能得到是否真正完成的结果（有可能成功、失败、取消）</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">isSuccess</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 是否已经中断</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">cancel</span><span class="params">(<span class="keyword">boolean</span> mayInterruptIfRunning)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 方法表示如果I/O操作失败，返回异常信息</span></span><br><span class="line"><span class="comment">     * Returns the cause of the failed I/O operation if the I/O operation has</span></span><br><span class="line"><span class="comment">     * failed.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> the cause of the failure.</span></span><br><span class="line"><span class="comment">     *         &#123;<span class="doctag">@code</span> null&#125; if succeeded or this future is not</span></span><br><span class="line"><span class="comment">     *         completed yet.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">Throwable <span class="title">cause</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 用观察者模式对future操作进行更精准的管理调用，如果get(),需要在代码中显示的调用在完成后续操作，如果用Listerner可以通过noify完成后续操作。</span></span><br><span class="line"><span class="comment">     * Adds the specified listener to this future.  The</span></span><br><span class="line"><span class="comment">     * specified listener is notified when this future is</span></span><br><span class="line"><span class="comment">     * &#123;<span class="doctag">@linkplain</span> #isDone() done&#125;.  If this future is already</span></span><br><span class="line"><span class="comment">     * completed, the specified listener is notified immediately.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">Future&lt;V&gt; <span class="title">addListener</span><span class="params">(GenericFutureListener&lt;? extends Future&lt;? <span class="keyword">super</span> V&gt;&gt; listener)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="ChannelFuture"><a href="#ChannelFuture" class="headerlink" title="ChannelFuture"></a>ChannelFuture</h3><p>ChannelFuture可以通过添加ChannelFutureListener监听器，当I/O操作完成的时候来通知调用。相比于wait()方式也更推荐这种方式来获取结果状态或者执行后续操作。<br>此外，不建议在ChannelHandler中调用await（），因为ChannelHandler中事件驱动的方法被一个I/O线程调用，可能一直不回完成，那么await（）也可能被I/O线程调用，同样会一直block，因此会产生死锁。<br>另外在，在Future的基础上增加了获取channle的方法</p>
+<h2 id="Promise"><a href="#Promise" class="headerlink" title="Promise"></a>Promise</h2><p>对比Future，Promise是writeable的，可以修改状态，调用noify执行Future(Promis)的listerner方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Promise</span>&lt;<span class="title">V</span>&gt; <span class="keyword">extends</span> <span class="title">Future</span>&lt;<span class="title">V</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//一下是定义了标记了Future状态的方法，有且只能标记一次，</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">setSuccess</span><span class="params">(V result)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">trySuccess</span><span class="params">(V result)</span></span>;</span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">setFailure</span><span class="params">(Throwable cause)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">tryFailure</span><span class="params">(Throwable cause)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">setUncancellable</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">addListener</span><span class="params">(GenericFutureListener&lt;? extends Future&lt;? <span class="keyword">super</span> V&gt;&gt; listener)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">removeListeners</span><span class="params">(GenericFutureListener&lt;? extends Future&lt;? <span class="keyword">super</span> V&gt;&gt;... listeners)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">await</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">awaitUninterruptibly</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">sync</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">syncUninterruptibly</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="DefaultPromise"><a href="#DefaultPromise" class="headerlink" title="DefaultPromise"></a>DefaultPromise</h2><p>在DefaultChannelPromise中会，改变状态会通知listerner</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Promise&lt;V&gt; <span class="title">setSuccess</span><span class="params">(V result)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (setSuccess0(result)) &#123;</span><br><span class="line">        <span class="comment">//todo notify</span></span><br><span class="line">        notifyListeners();</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"complete already: "</span> + <span class="keyword">this</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">notifyListeners</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    EventExecutor executor = executor();</span><br><span class="line">    <span class="keyword">if</span> (executor.inEventLoop()) &#123;</span><br><span class="line">       ...</span><br><span class="line">                notifyListenersNow();</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">       ...</span><br><span class="line">    &#125;</span><br><span class="line">    safeExecute(executor, <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            notifyListenersNow();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">notifyListenersNow</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        <span class="keyword">if</span> (listeners <span class="keyword">instanceof</span> DefaultFutureListeners) &#123;</span><br><span class="line">            notifyListeners0((DefaultFutureListeners) listeners);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            notifyListener0(<span class="keyword">this</span>, (GenericFutureListener&lt;?&gt;) listeners);</span><br><span class="line">        &#125;</span><br><span class="line">    ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>eg:在register过程中<br>AbstactServerBootstrap.initAndRegister<br>    –&gt;register()<br>        –&gt;SingleThreadEventLoop.register(channel)<br>            –&gt;SingleThreadEventLoop.register(new DefaultChannelPromise(channel, this))<br>                –&gt;AbstractUnsafe.register(promise,evenlop)–&gt;AbstractUnsafe.resiter0(promise)–&gt;safeSetSuccess(promise)</p>
+<p>在safeSetSuccess调用promise.traSuccess()。notifyPromise中的listerner</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql是如何降低主备延迟的/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -829,188 +1011,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/netty/Promise和Future/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/netty/Promise和Future/" class="post-title-link" itemprop="url">Promise 和 Future</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-02 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-02T00:00:00+08:00">2019-02-02</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/netty/" itemprop="url" rel="index"><span itemprop="name">netty</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="Promise-和-Future"><a href="#Promise-和-Future" class="headerlink" title="Promise 和 Future"></a>Promise 和 Future</h1><p>netty中的I/O操作大部分为异步，netty在Java的Future的基础上封装了Future和Promise</p>
-<h2 id="Future"><a href="#Future" class="headerlink" title="Future"></a>Future</h2><p>继承java.util.concurrent.Future接口，并且在Future基础上做了如下的强化。<br>future是read-only的。我们没有办法在Future中改变状态，只能获取状态。进行后续操作</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Future</span>&lt;<span class="title">V</span>&gt; <span class="keyword">extends</span> <span class="title">java</span>.<span class="title">util</span>.<span class="title">concurrent</span>.<span class="title">Future</span>&lt;<span class="title">V</span>&gt;</span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 判断I/O是否成功,和Future的isDone()相比,能得到是否真正完成的结果（有可能成功、失败、取消）</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">isSuccess</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 是否已经中断</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">cancel</span><span class="params">(<span class="keyword">boolean</span> mayInterruptIfRunning)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 方法表示如果I/O操作失败，返回异常信息</span></span><br><span class="line"><span class="comment">     * Returns the cause of the failed I/O operation if the I/O operation has</span></span><br><span class="line"><span class="comment">     * failed.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> the cause of the failure.</span></span><br><span class="line"><span class="comment">     *         &#123;<span class="doctag">@code</span> null&#125; if succeeded or this future is not</span></span><br><span class="line"><span class="comment">     *         completed yet.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">Throwable <span class="title">cause</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 用观察者模式对future操作进行更精准的管理调用，如果get(),需要在代码中显示的调用在完成后续操作，如果用Listerner可以通过noify完成后续操作。</span></span><br><span class="line"><span class="comment">     * Adds the specified listener to this future.  The</span></span><br><span class="line"><span class="comment">     * specified listener is notified when this future is</span></span><br><span class="line"><span class="comment">     * &#123;<span class="doctag">@linkplain</span> #isDone() done&#125;.  If this future is already</span></span><br><span class="line"><span class="comment">     * completed, the specified listener is notified immediately.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">Future&lt;V&gt; <span class="title">addListener</span><span class="params">(GenericFutureListener&lt;? extends Future&lt;? <span class="keyword">super</span> V&gt;&gt; listener)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="ChannelFuture"><a href="#ChannelFuture" class="headerlink" title="ChannelFuture"></a>ChannelFuture</h3><p>ChannelFuture可以通过添加ChannelFutureListener监听器，当I/O操作完成的时候来通知调用。相比于wait()方式也更推荐这种方式来获取结果状态或者执行后续操作。<br>此外，不建议在ChannelHandler中调用await（），因为ChannelHandler中事件驱动的方法被一个I/O线程调用，可能一直不回完成，那么await（）也可能被I/O线程调用，同样会一直block，因此会产生死锁。<br>另外在，在Future的基础上增加了获取channle的方法</p>
-<h2 id="Promise"><a href="#Promise" class="headerlink" title="Promise"></a>Promise</h2><p>对比Future，Promise是writeable的，可以修改状态，调用noify执行Future(Promis)的listerner方法</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Promise</span>&lt;<span class="title">V</span>&gt; <span class="keyword">extends</span> <span class="title">Future</span>&lt;<span class="title">V</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//一下是定义了标记了Future状态的方法，有且只能标记一次，</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">setSuccess</span><span class="params">(V result)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">trySuccess</span><span class="params">(V result)</span></span>;</span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">setFailure</span><span class="params">(Throwable cause)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">tryFailure</span><span class="params">(Throwable cause)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">setUncancellable</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">addListener</span><span class="params">(GenericFutureListener&lt;? extends Future&lt;? <span class="keyword">super</span> V&gt;&gt; listener)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">removeListeners</span><span class="params">(GenericFutureListener&lt;? extends Future&lt;? <span class="keyword">super</span> V&gt;&gt;... listeners)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">await</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">awaitUninterruptibly</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">sync</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">syncUninterruptibly</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="DefaultPromise"><a href="#DefaultPromise" class="headerlink" title="DefaultPromise"></a>DefaultPromise</h2><p>在DefaultChannelPromise中会，改变状态会通知listerner</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Promise&lt;V&gt; <span class="title">setSuccess</span><span class="params">(V result)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (setSuccess0(result)) &#123;</span><br><span class="line">        <span class="comment">//todo notify</span></span><br><span class="line">        notifyListeners();</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"complete already: "</span> + <span class="keyword">this</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">notifyListeners</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    EventExecutor executor = executor();</span><br><span class="line">    <span class="keyword">if</span> (executor.inEventLoop()) &#123;</span><br><span class="line">       ...</span><br><span class="line">                notifyListenersNow();</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">       ...</span><br><span class="line">    &#125;</span><br><span class="line">    safeExecute(executor, <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            notifyListenersNow();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">notifyListenersNow</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        <span class="keyword">if</span> (listeners <span class="keyword">instanceof</span> DefaultFutureListeners) &#123;</span><br><span class="line">            notifyListeners0((DefaultFutureListeners) listeners);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            notifyListener0(<span class="keyword">this</span>, (GenericFutureListener&lt;?&gt;) listeners);</span><br><span class="line">        &#125;</span><br><span class="line">    ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>eg:在register过程中<br>AbstactServerBootstrap.initAndRegister<br>    –&gt;register()<br>        –&gt;SingleThreadEventLoop.register(channel)<br>            –&gt;SingleThreadEventLoop.register(new DefaultChannelPromise(channel, this))<br>                –&gt;AbstractUnsafe.register(promise,evenlop)–&gt;AbstractUnsafe.resiter0(promise)–&gt;safeSetSuccess(promise)</p>
-<p>在safeSetSuccess调用promise.traSuccess()。notifyPromise中的listerner</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql基础知识/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1138,6 +1138,190 @@
 <h2 id="一条sql语句从提交到返回结果经过哪几步"><a href="#一条sql语句从提交到返回结果经过哪几步" class="headerlink" title="一条sql语句从提交到返回结果经过哪几步"></a>一条sql语句从提交到返回结果经过哪几步</h2><p>客户端–&gt;连接器–&gt;查询缓存（如果有直接返回，8.0会被废除）–&gt;分析器–&gt;优化器–&gt;执行器–&gt;存储引擎–&gt;server数据。</p>
 <h2 id="我们经常用到的查询语句"><a href="#我们经常用到的查询语句" class="headerlink" title="我们经常用到的查询语句"></a>我们经常用到的查询语句</h2><p>select * from t where t=1 ordey by date desc limit 0 ,1;</p>
 <h3 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h3>
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/java/cas/AtomicReferenceFieldUpdater/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/java/cas/AtomicReferenceFieldUpdater/" class="post-title-link" itemprop="url">AtomicReferenceFieldUpdater</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-01 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-01T00:00:00+08:00">2019-02-01</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/cas/" itemprop="url" rel="index"><span itemprop="name">cas</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="AtomicReferenceFieldUpdater"><a href="#AtomicReferenceFieldUpdater" class="headerlink" title="AtomicReferenceFieldUpdater"></a>AtomicReferenceFieldUpdater</h1><p>JAVA原子更新器，用于原子性的更新对象的字段</p>
+<p>用newUpdater来初始化AtomicReferenceFieldUpdater对象。<br>1.有3个参数第一个参数包含该字段类<br>2.有修改字段的类<br>3.字段名</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">AtomicReferenceFieldUpdater updater=AtomicReferenceFieldUpdater.newUpdater(Object.class,String.class,<span class="string">"fieldName"</span>);</span><br></pre></td></tr></table></figure>
+<p>修改方法，失败会返回false</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">boolean</span> res=updater.compareAndSet(obj,<span class="string">"srcValue"</span>,<span class="string">"destValue"</span>);</span><br></pre></td></tr></table></figure>
+
           
         
       
@@ -1367,205 +1551,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/java/jvm/排查java线程异常的方法/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/java/jvm/排查java线程异常的方法/" class="post-title-link" itemprop="url">定位JAVA进程中异常线程的方法</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-01 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-01T00:00:00+08:00">2019-02-01</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/" itemprop="url" rel="index"><span itemprop="name">jvm</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="定位JAVA进程中异常线程的方法"><a href="#定位JAVA进程中异常线程的方法" class="headerlink" title="定位JAVA进程中异常线程的方法"></a>定位JAVA进程中异常线程的方法</h1><p>日常使用中我们往往会遇到JAVA进程内存飙高，程序hang住，cpu的load过高等情况。这时候往往需要定位到JAVA的实例看下具体占用CPU、内存过高的线程都在做什么？<br>下面总结了下如何定位JAVA问题线程的方法。</p>
-<h2 id="找到有问题的JVM进程"><a href="#找到有问题的JVM进程" class="headerlink" title="找到有问题的JVM进程"></a>找到有问题的JVM进程</h2><p>linux命令：top–找到有问题的JAVA进程<br>  shift+p 按照cpu排序<br>  shift+m按照内存排序</p>
-<h2 id="查看有问题JAVA进程中的线程"><a href="#查看有问题JAVA进程中的线程" class="headerlink" title="查看有问题JAVA进程中的线程"></a>查看有问题JAVA进程中的线程</h2><p>linux命令：top -H -p  pid 查看pid进程下所有有问题的线程</p>
-<ol>
-<li>将十进制数换成16进制：printf “%x\n” tid</li>
-<li>查看进程下的线程正在执行的方法： jstack pid |grep nid=0x【tid】 -A 30</li>
-</ol>
-<h2 id="jstack查看出来的线程信息梳理"><a href="#jstack查看出来的线程信息梳理" class="headerlink" title="jstack查看出来的线程信息梳理"></a>jstack查看出来的线程信息梳理</h2><p>线程的几种状态</p>
-<ol>
-<li>RUNNABLE，线程处于执行中</li>
-<li>BLOCKED，线程被阻塞</li>
-<li>WAITING，线程正在等待</li>
-</ol>
-<p>对于锁的竞争，可参照下面的思路排查问题：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">线程1获取到锁，处于RUNNABLE状态，线程2处于BLOCK状态；  </span><br><span class="line">1、locked &lt;0x000000076bf62208&gt;说明线程1对地址为0x000000076bf62208对象进行了加锁；  </span><br><span class="line">2、waiting to lock &lt;0x000000076bf62208&gt; 说明线程2在等待地址为0x000000076bf62208对象上的锁；  </span><br><span class="line">3、waiting for monitor entry [0x000000001e21f000]说明线程1是通过synchronized关键字进入了监视器的临界区，并处于&quot;Entry Set&quot;队列，等待monitor；</span><br></pre></td></tr></table></figure>
-<h2 id="jmap查看JVM系统信息的命令"><a href="#jmap查看JVM系统信息的命令" class="headerlink" title="jmap查看JVM系统信息的命令"></a>jmap查看JVM系统信息的命令</h2><p>查找JVM中系统的大小和个数</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">按照个数统计  </span><br><span class="line">  jmap -histo:live  pid|grep keyword|sort -k 2 -g -r|head -10</span><br><span class="line"></span><br><span class="line">按照占用大小统计</span><br><span class="line">  jmap -histo:live  pid|grep keyword|sort -k 2 -g -r|head -10</span><br></pre></td></tr></table></figure>
-<p>查看JVM中Heap的情况</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -heap pid</span><br></pre></td></tr></table></figure>
-<p>情况如下</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">Attaching to process ID Pid, please <span class="built_in">wait</span>...</span><br><span class="line">Debugger attached successfully.</span><br><span class="line">Server compiler detected.</span><br><span class="line">JVM version is 25.65-b01</span><br><span class="line"></span><br><span class="line">using parallel threads <span class="keyword">in</span> the new generation.</span><br><span class="line">using thread-local object allocation.</span><br><span class="line">Concurrent Mark-Sweep GC</span><br><span class="line"></span><br><span class="line">Heap Configuration:</span><br><span class="line">   MinHeapFreeRatio         = 40</span><br><span class="line">   MaxHeapFreeRatio         = 70</span><br><span class="line">   MaxHeapSize              = 4294967296 (4096.0MB)</span><br><span class="line">   NewSize                  = 858980352 (819.1875MB)</span><br><span class="line">   MaxNewSize               = 858980352 (819.1875MB)</span><br><span class="line">   OldSize                  = 3435986944 (3276.8125MB)</span><br><span class="line">   NewRatio                 = 4</span><br><span class="line">   SurvivorRatio            = 8</span><br><span class="line">   MetaspaceSize            = 21807104 (20.796875MB)</span><br><span class="line">   CompressedClassSpaceSize = 1073741824 (1024.0MB)</span><br><span class="line">   MaxMetaspaceSize         = 17592186044415 MB</span><br><span class="line">   G1HeapRegionSize         = 0 (0.0MB)</span><br><span class="line"></span><br><span class="line">Heap Usage:</span><br><span class="line">New Generation (Eden + 1 Survivor Space):</span><br><span class="line">   capacity = 773128192 (737.3125MB)</span><br><span class="line">   used     = 9882512 (9.424697875976562MB)</span><br><span class="line">   free     = 763245680 (727.8878021240234MB)</span><br><span class="line">   1.2782501145683225% used</span><br><span class="line">Eden Space: (Edn区)</span><br><span class="line">   capacity = 687276032 (655.4375MB)</span><br><span class="line">   used     = 9882512 (9.424697875976562MB)</span><br><span class="line">   free     = 677393520 (646.0128021240234MB)</span><br><span class="line">   1.4379247260000476% used</span><br><span class="line">From Space: (Survivor中的From)</span><br><span class="line">   capacity = 85852160 (81.875MB)</span><br><span class="line">   used     = 0 (0.0MB)</span><br><span class="line">   free     = 85852160 (81.875MB)</span><br><span class="line">   0.0% used</span><br><span class="line">To Space: (Survivor中的To)</span><br><span class="line">   capacity = 85852160 (81.875MB)</span><br><span class="line">   used     = 0 (0.0MB)</span><br><span class="line">   free     = 85852160 (81.875MB)</span><br><span class="line">   0.0% used</span><br><span class="line">concurrent mark-sweep generation: （老年代）</span><br><span class="line">   capacity = 3435986944 (3276.8125MB)</span><br><span class="line">   used     = 258117296 (246.1598358154297MB)</span><br><span class="line">   free     = 3177869648 (3030.6526641845703MB)</span><br><span class="line">   7.512173364067357% used</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/java/ Future模型/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1739,7 +1724,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql是如何保证主从同步的（binlog）/">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/java/aqs/CountDownLatch/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Liu hao">
@@ -1759,7 +1744,7 @@
           <h1 class="post-title" itemprop="name headline">
                 
                 
-                <a href="/mysql/mysql是如何保证主从同步的（binlog）/" class="post-title-link" itemprop="url">mysql是如何保证主从同步的（binlog）--草稿</a>
+                <a href="/java/aqs/CountDownLatch/" class="post-title-link" itemprop="url">CountDownLatch解读</a>
               
             
           </h1>
@@ -1818,14 +1803,14 @@
                 <span class="post-meta-item-text">In</span>
               
               
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
 
                 
                 
                   , 
                 
               
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql高可用架构/" itemprop="url" rel="index"><span itemprop="name">Mysql高可用架构</span></a></span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/aqs/" itemprop="url" rel="index"><span itemprop="name">aqs</span></a></span>
 
                 
                 
@@ -1862,56 +1847,19 @@
       
         
           
-            <h1 id="mysql是如何保证主从同步的（binlog）–草稿"><a href="#mysql是如何保证主从同步的（binlog）–草稿" class="headerlink" title="mysql是如何保证主从同步的（binlog）–草稿"></a>mysql是如何保证主从同步的（binlog）–草稿</h1><ol>
-<li><p>mysql的主从搭建</p>
-</li>
-<li><p>mysql的主从数据同步的流程（图）</p>
-</li>
-<li><p>查看binlog方式：mysql&gt; show binlog events in ‘master.000001’;</p>
-</li>
-<li><p>mysql的binlog的几种形式</p>
-<ol>
-<li>row。<ol>
-<li>优点：可做数据恢复</li>
-<li>缺点：可能会很大，因为是每一条数据一个log,所以如果一个涉及很多行修改的sql语句会有很多row的log。</li>
-<li>恢复的话：相应的事件逆序即可</li>
-<li>查看用：mysqlbinlog  -vv data/master.000001 –start-position=8900;</li>
-</ol>
-</li>
-<li>statement。（优点：节省空间只是一条sql语句，缺点：无法做数据恢复）线上不会用<ol>
-<li>在某些情况下可能会导致数据不一致比如limit和默认排序根据选择的索引不同数据会不一样。（warn）</li>
-</ol>
-</li>
-<li>mixed（前两种混合 一般用这种）</li>
-</ol>
-</li>
-<li><p>数据重放的方法</p>
-<ol>
-<li>badcase:mysqlbinlog解析日志，直接copy出statement重发，由于mysql语句是依赖上下文的所以会有风险。</li>
-<li>goodcase:mysqlbinlog解析日志，吧解析结果发给mysql执行，如：<ol>
-<li>mysqlbinlog master.000001  –start-position=2738 –stop-position=2973 | mysql -h127.0.0.1 -P13000 -u$user -p$pwd;</li>
-</ol>
-</li>
-</ol>
-</li>
-<li><p>mysql的双M架构（对比M-S）(如何解决主从循环复制的问题)</p>
-<ol>
-<li>生产上使用较多的数据库，好处是主从切换不用修改节点状态，因为都是主</li>
-<li>如何解决循环复制的：因为双M,所以另一个主一般会开启log_slave_updates(on)<ol>
-<li>说明情况：server1写一条binlog,同步到server2这时候server2也会产生一条binlog，这时候如果同步到server1就会循环同步，mysql如何解决？</li>
-<li>解决方案：<ol>
-<li>俩个server的serverid不一样，一样的话不能成为主备；</li>
-<li>第一次生产binlog的库带着serverid</li>
-<li>备库接到binlog在重放的时候带着主库的serverid</li>
-<li>这条log同步到主库时候，主库发现这个serverid和自己一样说明是自己产生的直接丢弃</li>
-</ol>
-</li>
-</ol>
-</li>
-</ol>
-</li>
-</ol>
-
+            <h1 id="CountDownLatch解读"><a href="#CountDownLatch解读" class="headerlink" title="CountDownLatch解读"></a>CountDownLatch解读</h1><ul>
+<li>是基于AQS原理，共享锁的一种实现，构造函数里的count值代表计数器，会将count赋值给state。</li>
+<li>CountDownLatch不可重入。</li>
+<li>通过await()来阻塞线程。countDown使计数器-1，当count为0时候所有await的线程会同时获取锁。</li>
+</ul>
+<h2 id="实现原理"><a href="#实现原理" class="headerlink" title="实现原理"></a>实现原理</h2><p>CountDownLatch有一个内部类Sync，该类继承了AQS,await()方法和countDown方法都是调用Sync的tryAcquireShared和tryReleaseShared</p>
+<h2 id="共享锁获取锁-tryAcquireShared"><a href="#共享锁获取锁-tryAcquireShared" class="headerlink" title="共享锁获取锁-tryAcquireShared"></a>共享锁获取锁-tryAcquireShared</h2><p>CountDownLatch掉用await()实际上是调用sync的acquireSharedInterruptibly，最终会调用AQS中的doAcquireSharedInterruptiblyState，在该方法中调用doAcquireSharedInterruptibly，在改方法中，会调用CountDownLatch实现的tryAcquireShared方法如果state==0返回1，否则-1，其中代码和逻辑如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">doAcquireSharedInterruptibly</span><span class="params">(<span class="keyword">int</span> arg)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">    <span class="comment">//将当前线程封装成SHARDED类型的节点，加入到链表中</span></span><br><span class="line">    <span class="keyword">final</span> Node node = addWaiter(Node.SHARED);</span><br><span class="line">    <span class="keyword">boolean</span> failed = <span class="keyword">true</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">            <span class="comment">//自旋来获取锁，获取前置节点，如果前置节点是头结点，尝试获取锁，将当前节点设置为头节点，开始传播为后置节点解锁</span></span><br><span class="line">            <span class="keyword">final</span> Node p = node.predecessor();</span><br><span class="line">            <span class="keyword">if</span> (p == head) &#123;</span><br><span class="line">                <span class="keyword">int</span> r = tryAcquireShared(arg);</span><br><span class="line">                <span class="keyword">if</span> (r &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">                    <span class="comment">/**自旋解锁：唤醒头结点的线程并且开始根据链表顺序传播解锁。</span></span><br><span class="line"><span class="comment">                    *   因为是公平锁，所以无论现在在哪个线程都会根据链表顺序从head节点开始唤醒</span></span><br><span class="line"><span class="comment">                    **/</span></span><br><span class="line">                    setHeadAndPropagate(node, r);</span><br><span class="line">                    p.next = <span class="keyword">null</span>; <span class="comment">// help GC</span></span><br><span class="line">                    failed = <span class="keyword">false</span>;</span><br><span class="line">                    <span class="keyword">return</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//通独占锁，根据前置节点的情况判断是否应该休眠（前置节点是SINGAL，当前节点的线程会block，如果前置节点是cancel会跳过所有cancel的节点）</span></span><br><span class="line">            <span class="keyword">if</span> (shouldParkAfterFailedAcquire(p, node) &amp;&amp;</span><br><span class="line">                parkAndCheckInterrupt())</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> InterruptedException();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (failed)</span><br><span class="line">            cancelAcquire(node);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">setHeadAndPropagate</span><span class="params">(Node node, <span class="keyword">int</span> propagate)</span> </span>&#123;</span><br><span class="line">    <span class="comment">//当前的头节点当中间变量同时设置头结点</span></span><br><span class="line">    Node h = head;</span><br><span class="line">    setHead(node);</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * Try to signal next queued node if:</span></span><br><span class="line"><span class="comment">     *   Propagation was indicated by caller,</span></span><br><span class="line"><span class="comment">     *     or was recorded (as h.waitStatus either before</span></span><br><span class="line"><span class="comment">     *     or after setHead) by a previous operation</span></span><br><span class="line"><span class="comment">     *     (<span class="doctag">note:</span> this uses sign-check of waitStatus because</span></span><br><span class="line"><span class="comment">     *      PROPAGATE status may transition to SIGNAL.)</span></span><br><span class="line"><span class="comment">     * and</span></span><br><span class="line"><span class="comment">     *   The next node is waiting in shared mode,</span></span><br><span class="line"><span class="comment">     *     or we don't know, because it appears null</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * The conservatism in both of these checks may cause</span></span><br><span class="line"><span class="comment">     * unnecessary wake-ups, but only when there are multiple</span></span><br><span class="line"><span class="comment">     * racing acquires/releases, so most need signals now or soon</span></span><br><span class="line"><span class="comment">     * anyway.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">     <span class="comment">//propagate&gt;0（这里是state==0），或者头结点为空，或者头结点不是CANCELED状态，或者现在的头节点为空，或者头结点不是CANCELED状态</span></span><br><span class="line">    <span class="keyword">if</span> (propagate &gt; <span class="number">0</span> || h == <span class="keyword">null</span> || h.waitStatus &lt; <span class="number">0</span> ||</span><br><span class="line">        (h = head) == <span class="keyword">null</span> || h.waitStatus &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        Node s = node.next;<span class="comment">//把当前Node状态之后的节点Shared都唤醒</span></span><br><span class="line">        <span class="keyword">if</span> (s == <span class="keyword">null</span> || s.isShared())</span><br><span class="line">            doReleaseShared();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">doReleaseShared</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">/*</span></span><br><span class="line"><span class="comment">     * Ensure that a release propagates, even if there are other</span></span><br><span class="line"><span class="comment">     * in-progress acquires/releases.  This proceeds in the usual</span></span><br><span class="line"><span class="comment">     * way of trying to unparkSuccessor of head if it needs</span></span><br><span class="line"><span class="comment">     * signal. But if it does not, status is set to PROPAGATE to</span></span><br><span class="line"><span class="comment">     * ensure that upon release, propagation continues.</span></span><br><span class="line"><span class="comment">     * Additionally, we must loop in case a new node is added</span></span><br><span class="line"><span class="comment">     * while we are doing this. Also, unlike other uses of</span></span><br><span class="line"><span class="comment">     * unparkSuccessor, we need to know if CAS to reset status</span></span><br><span class="line"><span class="comment">     * fails, if so rechecking.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        Node h = head;</span><br><span class="line">        <span class="keyword">if</span> (h != <span class="keyword">null</span> &amp;&amp; h != tail) &#123;</span><br><span class="line">            <span class="keyword">int</span> ws = h.waitStatus;</span><br><span class="line">             <span class="comment">//自旋解锁，如果头结点的状态是SIGNAL，因为刚才将当前节点置为了Head，实际就是当前节点，同时一般ws也是SINGAL</span></span><br><span class="line">            <span class="keyword">if</span> (ws == Node.SIGNAL) &#123;</span><br><span class="line">                <span class="comment">//cas成功后将头结点的线程解锁</span></span><br><span class="line">                <span class="keyword">if</span> (!compareAndSetWaitStatus(h, Node.SIGNAL, <span class="number">0</span>))</span><br><span class="line">                    <span class="keyword">continue</span>;            <span class="comment">// loop to recheck cases</span></span><br><span class="line">                unparkSuccessor(h);</span><br><span class="line">            &#125;<span class="keyword">else</span> <span class="keyword">if</span> (ws == <span class="number">0</span> &amp;&amp;</span><br><span class="line">                     !compareAndSetWaitStatus(h, <span class="number">0</span>, Node.PROPAGATE))</span><br><span class="line">                    <span class="comment">//刚才的setHead()方法已经将Thread=null所以，如果修改成功了会跳出循环</span></span><br><span class="line">                <span class="keyword">continue</span>;                <span class="comment">// loop on failed CAS</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//上面修改成功了node是</span></span><br><span class="line">        <span class="keyword">if</span> (h == head)                   <span class="comment">// loop if head changed</span></span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="共享锁释放-tryAcquireShared"><a href="#共享锁释放-tryAcquireShared" class="headerlink" title="共享锁释放-tryAcquireShared"></a>共享锁释放-tryAcquireShared</h2><p>CountDownLatch调用countDown()时候回调用sync.releaseShared(1)，实际是AQS的releaseShared(int args)方法，如果返回true即state==0,在该方法中会调用doReleaseShared()，获取锁和传播获取锁的流程</p>
+<p>CountDownLatch中的Sync的tryReleaseShared：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">boolean</span> <span class="title">tryReleaseShared</span><span class="params">(<span class="keyword">int</span> releases)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// Decrement count; signal when transition to zero</span></span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        <span class="keyword">int</span> c = getState();</span><br><span class="line">        <span class="keyword">if</span> (c == <span class="number">0</span>)</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">        <span class="keyword">int</span> nextc = c-<span class="number">1</span>;</span><br><span class="line">        <span class="keyword">if</span> (compareAndSetState(c, nextc))</span><br><span class="line">            <span class="keyword">return</span> nextc == <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>AQS中的releaseShared代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">boolean</span> <span class="title">releaseShared</span><span class="params">(<span class="keyword">int</span> arg)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (tryReleaseShared(arg)) &#123;</span><br><span class="line">        doReleaseShared();</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
           
         
       
@@ -2196,7 +2144,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/java/cas/AtomicReferenceFieldUpdater/">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql是如何保证主从同步的（binlog）/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Liu hao">
@@ -2216,7 +2164,7 @@
           <h1 class="post-title" itemprop="name headline">
                 
                 
-                <a href="/java/cas/AtomicReferenceFieldUpdater/" class="post-title-link" itemprop="url">AtomicReferenceFieldUpdater</a>
+                <a href="/mysql/mysql是如何保证主从同步的（binlog）/" class="post-title-link" itemprop="url">mysql是如何保证主从同步的（binlog）--草稿</a>
               
             
           </h1>
@@ -2275,14 +2223,14 @@
                 <span class="post-meta-item-text">In</span>
               
               
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
 
                 
                 
                   , 
                 
               
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/cas/" itemprop="url" rel="index"><span itemprop="name">cas</span></a></span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql高可用架构/" itemprop="url" rel="index"><span itemprop="name">Mysql高可用架构</span></a></span>
 
                 
                 
@@ -2319,11 +2267,55 @@
       
         
           
-            <h1 id="AtomicReferenceFieldUpdater"><a href="#AtomicReferenceFieldUpdater" class="headerlink" title="AtomicReferenceFieldUpdater"></a>AtomicReferenceFieldUpdater</h1><p>JAVA原子更新器，用于原子性的更新对象的字段</p>
-<p>用newUpdater来初始化AtomicReferenceFieldUpdater对象。<br>1.有3个参数第一个参数包含该字段类<br>2.有修改字段的类<br>3.字段名</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">AtomicReferenceFieldUpdater updater=AtomicReferenceFieldUpdater.newUpdater(Object.class,String.class,<span class="string">"fieldName"</span>);</span><br></pre></td></tr></table></figure>
-<p>修改方法，失败会返回false</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">boolean</span> res=updater.compareAndSet(obj,<span class="string">"srcValue"</span>,<span class="string">"destValue"</span>);</span><br></pre></td></tr></table></figure>
+            <h1 id="mysql是如何保证主从同步的（binlog）–草稿"><a href="#mysql是如何保证主从同步的（binlog）–草稿" class="headerlink" title="mysql是如何保证主从同步的（binlog）–草稿"></a>mysql是如何保证主从同步的（binlog）–草稿</h1><ol>
+<li><p>mysql的主从搭建</p>
+</li>
+<li><p>mysql的主从数据同步的流程（图）</p>
+</li>
+<li><p>查看binlog方式：mysql&gt; show binlog events in ‘master.000001’;</p>
+</li>
+<li><p>mysql的binlog的几种形式</p>
+<ol>
+<li>row。<ol>
+<li>优点：可做数据恢复</li>
+<li>缺点：可能会很大，因为是每一条数据一个log,所以如果一个涉及很多行修改的sql语句会有很多row的log。</li>
+<li>恢复的话：相应的事件逆序即可</li>
+<li>查看用：mysqlbinlog  -vv data/master.000001 –start-position=8900;</li>
+</ol>
+</li>
+<li>statement。（优点：节省空间只是一条sql语句，缺点：无法做数据恢复）线上不会用<ol>
+<li>在某些情况下可能会导致数据不一致比如limit和默认排序根据选择的索引不同数据会不一样。（warn）</li>
+</ol>
+</li>
+<li>mixed（前两种混合 一般用这种）</li>
+</ol>
+</li>
+<li><p>数据重放的方法</p>
+<ol>
+<li>badcase:mysqlbinlog解析日志，直接copy出statement重发，由于mysql语句是依赖上下文的所以会有风险。</li>
+<li>goodcase:mysqlbinlog解析日志，吧解析结果发给mysql执行，如：<ol>
+<li>mysqlbinlog master.000001  –start-position=2738 –stop-position=2973 | mysql -h127.0.0.1 -P13000 -u$user -p$pwd;</li>
+</ol>
+</li>
+</ol>
+</li>
+<li><p>mysql的双M架构（对比M-S）(如何解决主从循环复制的问题)</p>
+<ol>
+<li>生产上使用较多的数据库，好处是主从切换不用修改节点状态，因为都是主</li>
+<li>如何解决循环复制的：因为双M,所以另一个主一般会开启log_slave_updates(on)<ol>
+<li>说明情况：server1写一条binlog,同步到server2这时候server2也会产生一条binlog，这时候如果同步到server1就会循环同步，mysql如何解决？</li>
+<li>解决方案：<ol>
+<li>俩个server的serverid不一样，一样的话不能成为主备；</li>
+<li>第一次生产binlog的库带着serverid</li>
+<li>备库接到binlog在重放的时候带着主库的serverid</li>
+<li>这条log同步到主库时候，主库发现这个serverid和自己一样说明是自己产生的直接丢弃</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
 
           
         

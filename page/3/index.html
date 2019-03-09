@@ -328,6 +328,257 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/误删数据后的处理/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/误删数据后的处理/" class="post-title-link" itemprop="url">误删数据后的处理</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-15 10:28:12" itemprop="dateCreated datePublished" datetime="2019-02-15T10:28:12+08:00">2019-02-15</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql高可用架构/" itemprop="url" rel="index"><span itemprop="name">Mysql高可用架构</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="误删数据的几种情况"><a href="#误删数据的几种情况" class="headerlink" title="误删数据的几种情况"></a>误删数据的几种情况</h1><p>对于误删除数据进行了简单的分类：</p>
+<ol>
+<li>使用delete语句误删除数据航；</li>
+<li>使用droptable或者truncate table误删除表数据；</li>
+<li>使用dropdatabase语句误删除数据库；</li>
+<li>使用rm命令删除整个mysql实例；</li>
+</ol>
+<h2 id="误删行–用delete"><a href="#误删行–用delete" class="headerlink" title="误删行–用delete"></a>误删行–用delete</h2><ul>
+<li>方法：可使用工具Flashback来恢复误删除的数据；</li>
+<li>条件：使用FalshBack的条件，binlog_format=row和 binlog_row_image=FULL</li>
+<li>原理：解析binlog，并且把binlog的逆向修改，那会原数据库重放；</li>
+<li>注意：<ul>
+<li>逆向后不要重新那回主库重放，要先从一个林水库开始，然后由临时库在恢复到主库上，防止直接在一个在线的主库上还原，破坏了数据关联，造成数据2次破坏；</li>
+<li>数据库的防范于未然：sql语句的安全模式：set [global] sql_safe_updates = 1，这样当update delete没有where条件时候就会报错；</li>
+</ul>
+</li>
+</ul>
+<h2 id="drop-table或者truncate-table"><a href="#drop-table或者truncate-table" class="headerlink" title="drop table或者truncate table"></a>drop table或者truncate table</h2><p>  delete删除全表往往性能会很差，因为要写undolog redolog binlog等，这时候如果有删除全表的需求就可以考虑用：drop table或者truncate table来删除<br>。<br>  当使用这几个命令时候我们的binlog是statement格式的，所以也没法用上面的方法恢复数据。</p>
+<p>  误删库表恢复的流程是怎样的呢？</p>
+<ol>
+<li>去最后一次全量备份的库，恢复出一个临时库；</li>
+<li>在日志备份里，取当前备份点之后的日志，除了误删除的语句，应用到临时库中；</li>
+</ol>
+<p>如图：<br><img src="误删数据后的处理/误删库恢复流程.png" alt="avator"></p>
+<p>注意：</p>
+<ol>
+<li>如果临时库的实例上有多个数据库，在使用mysqlbinlog命令可以加上–database参数，来指定误删除库；</li>
+<li>恢复数据跳过误删除的binlog的方法上：<ol>
+<li>如果原实例没有GTID模式:我们只能在备份日志中先找到误删除的那个操作用-stop-position参数执行前的日志，在用-start-position从误删除之后的操作执行；</li>
+<li>GTID模式:我们可以在临时库上执行：set gtid_next=gtid1;begin;commit；先把这个gtid加到临时库的gtidset中，之后重放binlog会自动跳过这个操作</li>
+</ol>
+</li>
+</ol>
+<h3 id="恢复表和库的加速"><a href="#恢复表和库的加速" class="headerlink" title="恢复表和库的加速"></a>恢复表和库的加速</h3><p>上面的做法还是不够快，因为：</p>
+<ol>
+<li>如果是误删表：我们期望只恢复这张表的数据，但是mysqlbinlog工具不能只解析一张表的日志；</li>
+<li>用mysqlbinlog恢复出的应用日志，只能是单线程恢复，无法利用并行复制的功能；</li>
+</ol>
+<p>解决方案：</p>
+<p>第一种方法：临时库在被全量恢复（设置了gtid后）后，将这个临时库置为主库的从库，然后这个临时库在执行start salve之前执行；</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#让临时库只同步误删除的表，同时主-&gt;备可以利用并行复制</span></span><br><span class="line"><span class="keyword">change</span> <span class="keyword">replication</span> filter replicate_do_table = (tbl_name)</span><br></pre></td></tr></table></figure>
+<p>如图：<br><img src="误删数据后的处理/误删库加速.png" alt="avator"></p>
+<h3 id="mysql的binlog丢失"><a href="#mysql的binlog丢失" class="headerlink" title="mysql的binlog丢失"></a>mysql的binlog丢失</h3><p>有一种情况，如果要恢复的是个很久远的库，备库上又不能无限制的保存binlog,导致需要的binlog备库没有log的情况该如何操作呢？</p>
+<ol>
+<li>假设临时库上需要的master.000005，而备库上从master.000007开始的，意味这我们要从备份系统上下载master.000005，master.000006放到备库上</li>
+<li>之后打开备库的master.index文件上（根据配置名字可能不同），加上”./master.000005”，”./master.000006”</li>
+<li>重启备库，让备库识别这俩个文件</li>
+<li>建立主备关系开始同步数据</li>
+</ol>
+<p>综上：误删库的恢复是通过定期全量备份+增量备份来恢复数据库，建议DBA把流程做成自动化，同时定期演练减伤损失。</p>
+<h2 id="搭建延迟复制备库"><a href="#搭建延迟复制备库" class="headerlink" title="搭建延迟复制备库"></a>搭建延迟复制备库</h2><p>假设：当一个大库的备份周期是1周一备份，同时在第6天发生了误操作，这时候就要恢复6天的binlog，恢复时间可能是按天计的，对于在线业务是不允许的。这时候我们可以通过搭建一个延迟赋值的备库来解决。</p>
+<ol>
+<li>这个机制是mysql5.6之后引入的有一个机制，我们在备库可以通过命令CHANGE MASTER TO MASTER_DELAY=N（单位：秒），即延迟N秒同步命令。</li>
+<li>比如：CHANGE MASTER TO MASTER_DELAY=3600，那么当一个误操作发生后，这个备库会在一个小时以后收到这条命令，我们可以在这段时间内stop salve;</li>
+<li>然后恢复这一个小时的数据并且跳过这个命令即可；</li>
+</ol>
+<h2 id="预防误删除库-表的方法"><a href="#预防误删除库-表的方法" class="headerlink" title="预防误删除库/表的方法"></a>预防误删除库/表的方法</h2><p>我们应该尽量最大化的目标误删除操作：</p>
+<ol>
+<li><p>账号分离：</p>
+<ol>
+<li>业务账号应该只有MDL权限</li>
+<li>日常的数据查询值用只读账号</li>
+</ol>
+</li>
+<li><p>指定操作规范：</p>
+<ol>
+<li>删除表前线对表改名，观察一段时间</li>
+<li>该表明要有命名规范比如_to_be_deleted</li>
+</ol>
+</li>
+</ol>
+<h2 id="rm删除"><a href="#rm删除" class="headerlink" title="rm删除"></a>rm删除</h2><p>HA会选取一个从库作为主库，我们只需要回复这个机器即可；<br>为防止这个事情发生可以做跨机房或者跨城市备份</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql索引/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -459,179 +710,6 @@
 2. 字段类型转化 比如 id=&apos;1111&apos;---&gt;CAST(id ,varchar)=&apos;1111&apos;
 3. 字段隐式类型转化：比如CAST(id,utf8mb4)=&apos;xxx&apos;
 </code></pre>
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/其他/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/mysql/其他/" class="post-title-link" itemprop="url">其他</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-07 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-07T00:00:00+08:00">2019-02-07</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><p>查询长事物的语句</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> information_schema.innodb_trx <span class="keyword">where</span> TIME_TO_SEC(<span class="keyword">timediff</span>(<span class="keyword">now</span>(),trx_started))&gt;<span class="number">60</span></span><br></pre></td></tr></table></figure>
           
         
       
@@ -922,6 +1000,179 @@
 </ol>
 <p>所以准确的说，innodb在对数据加锁不是简单的为涉及到的数据加行锁，而是对要访问的数据加一个nextKeyLock，然后innodb在根据如上条件判断哪些数据加行锁，哪些数据不是行锁是间隙锁；（确定是查询范围锁的数据是x锁，中间不存在的数据间隙锁）</p>
 
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/其他/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/mysql/其他/" class="post-title-link" itemprop="url">其他</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-07 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-07T00:00:00+08:00">2019-02-07</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><p>查询长事物的语句</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> information_schema.innodb_trx <span class="keyword">where</span> TIME_TO_SEC(<span class="keyword">timediff</span>(<span class="keyword">now</span>(),trx_started))&gt;<span class="number">60</span></span><br></pre></td></tr></table></figure>
           
         
       
@@ -1377,266 +1628,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql读写分离的那些坑/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/mysql/mysql读写分离的那些坑/" class="post-title-link" itemprop="url">mysql读写分离的坑</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-05 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-05T00:00:00+08:00">2019-02-05</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql高可用架构/" itemprop="url" rel="index"><span itemprop="name">Mysql高可用架构</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="mysql读写分离的坑"><a href="#mysql读写分离的坑" class="headerlink" title="mysql读写分离的坑"></a>mysql读写分离的坑</h1><p>本章主要介绍mysql读写分离的架构，读写分离遇到的问题，以及解决方案。</p>
-<h2 id="mysql读写分离结构介绍"><a href="#mysql读写分离结构介绍" class="headerlink" title="mysql读写分离结构介绍"></a>mysql读写分离结构介绍</h2><h3 id="直连架构"><a href="#直连架构" class="headerlink" title="直连架构"></a>直连架构</h3><p>见图：<br><img src="/images/mysql/mysql读写分离架构直连.png" alt="avator"></p>
-<h3 id="proxy"><a href="#proxy" class="headerlink" title="proxy"></a>proxy</h3><p>见图：<br><img src="/images/mysql/mysql读写分离架构proxy.png" alt="avator"></p>
-<p>小结：</p>
-<ul>
-<li>直连的架构，往往后端会有一个管理器（zookeeper）来管理所有的节点，动态的做主从切换，踢掉失联节点，和动态更新节点。</li>
-<li>客户端链接proxy，业务往往只关注业务逻辑即可。<em>现在大多采用此方案</em></li>
-</ul>
-<h2 id="mysql读写分离架构遇到的挑战以及解决方案"><a href="#mysql读写分离架构遇到的挑战以及解决方案" class="headerlink" title="mysql读写分离架构遇到的挑战以及解决方案"></a>mysql读写分离架构遇到的挑战以及解决方案</h2><p>无论采用直连还是proxy架构都会遇到主从不同步的问题，这里我们叫过期读，我们该采用什么方式解决呢？</p>
-<h3 id="强制走主库"><a href="#强制走主库" class="headerlink" title="强制走主库"></a>强制走主库</h3><p>业务方自己判断某些查询走主库某些查询走备库。比如：刚修改的数据立刻就获取的最新的数据从主库查询；数据分析等离线的情况走从库；</p>
-<ul>
-<li>优点：比较简单，由业务自己掌控，大部分情况都可以用此种方式解决；</li>
-<li>缺点：可能会遇到所有查询都需要从主库查询的情况，这样一主多从的架构就失去了作用；</li>
-</ul>
-<h3 id="sleep方案"><a href="#sleep方案" class="headerlink" title="sleep方案"></a>sleep方案</h3><p>修改和插入数据时候等待一段时间，然后在从备库查询，例如：页面ajax提交了修改请求，页面直接返回结果，当下次刷新时候从从库取出数据；</p>
-<ul>
-<li>优点：业务方决定，比较简单，且可以利用一主多从</li>
-<li>缺点：过期时间的不确定性，可能会导致数据一致性有问题</li>
-</ul>
-<h3 id="判断主备无延迟方案"><a href="#判断主备无延迟方案" class="headerlink" title="判断主备无延迟方案"></a>判断主备无延迟方案</h3><p>在sql语句执行前线判断主库和从库是否有延迟，没延迟读取从库，有延迟读取主库。</p>
-<h4 id="判断seconds-behind-master参数"><a href="#判断seconds-behind-master参数" class="headerlink" title="判断seconds_behind_master参数"></a>判断seconds_behind_master参数</h4><p>当参数为0说明无延迟，可以从从库读取，但是时间不精确只能精确到秒</p>
-<h4 id="通过位点来判断"><a href="#通过位点来判断" class="headerlink" title="通过位点来判断"></a>通过位点来判断</h4><p>从库通过show slave status命令取得如下俩对参数：Master_Log_File和Read_Master_Log_Pos，Relay_Master_Log_File和Exec_Master_Log_Pos，当这俩对参数相等说明主备无延迟，</p>
-<h4 id="通过gtid来判断"><a href="#通过gtid来判断" class="headerlink" title="通过gtid来判断"></a>通过gtid来判断</h4><ul>
-<li>Auto_Position=1 ，表示这对主备关系使用了GTID</li>
-<li>Retrieved_Gtid_Set，表示备库收到的日志GTID_SET</li>
-<li>Executed_Gtid_Set，表示备库执行完成的GTID_SET</li>
-</ul>
-<p>当着俩个集合相等说明主备无延迟</p>
-<p>但是，这种方案有个缺点就是，备库判断的是自己的,relaylog和binlog的差异，但是如果这时候主库提交了个事物，备库还没有转成relaylog，备库会认为没有延迟，但是依然从备库差不到刚才主库刚提交的事务的数据，如下图：</p>
-<p><img src="/images/mysql/判断主备无延迟方案badcase.png" alt="avator"></p>
-<p>tx3事务的数据主库提交了，但是备库会看不到</p>
-<h3 id="结合semi-sync方案"><a href="#结合semi-sync方案" class="headerlink" title="结合semi-sync方案"></a>结合semi-sync方案</h3><p>上图的问题，结合semi-sync（办同步）方案可解决，semi-sync原理是什么呢？</p>
-<ol>
-<li>开启semi-sync后，主库在提交时候后会发送binlog给备库</li>
-<li>备库收到binlog以后，发给主库一个ack信号，说明已经收到</li>
-<li>主库收到这个信号后才能给客户端返回事务已经提交</li>
-</ol>
-<p>这种方案会有如下俩个缺点：</p>
-<ol>
-<li>对于一主多从的结构，当一个从库发送ack信号给主库，主库会返回一个事务已经提交，这时候如果从其他从库查询还是有可能出现过期读；</li>
-<li>如果数据库更新频繁，你会发现g</li>
-<li>tid或者位点主从会一直不相等，这样就失去了从库读写分离的意义。</li>
-</ol>
-<h3 id="等主库位点（gtid）"><a href="#等主库位点（gtid）" class="headerlink" title="等主库位点（gtid）"></a>等主库位点（gtid）</h3><p>我们针对上面的痛点可以采用等主库位点或者gtid的方式来处理这种情况</p>
-<h4 id="等主库位点"><a href="#等主库位点" class="headerlink" title="等主库位点"></a>等主库位点</h4><p>命令:select master_pos_wait(file, pos[, timeout]);</p>
-<ul>
-<li>该命令含义：返回从命令执行开始，经过timeout秒后，从库执行到file（binlog）的pos位置执行了多少个事物。</li>
-<li>返回值含义:<ul>
-<li>NULL:失联</li>
-<li>-1：超时</li>
-<li>0：执行即到了改位置。执行了0个事物</li>
-<li>N：从库到这个位置执行了N个事物。</li>
-</ul>
-</li>
-</ul>
-<p>具体流程如图:<br><img src="/images/mysql/等主库位点case.png" alt="avator"></p>
-<ol>
-<li>tx1提交后，在master上执行show master status;获取主库的binlog和binlog_pos。</li>
-<li>在从库上执行查询语句前，先执行select master_pos_wait(file, pos[, timeout]);</li>
-<li>如果返回&gt;=0,slect在从库执行，否则主库执行</li>
-</ol>
-<h4 id="等GTID"><a href="#等GTID" class="headerlink" title="等GTID"></a>等GTID</h4><p>命令:select wait_for_executed_gtid_set(gtid_set, timeout);</p>
-<ul>
-<li>该命令含义：等待从库timeout秒后，执行的gtid_set包含了gtid_set</li>
-<li>返回值含义:<ul>
-<li>0：包含</li>
-<li>1：超时</li>
-</ul>
-</li>
-</ul>
-<p>具体流程如图:<br><img src="/images/mysql/等主库gtidcase.png" alt="avator"></p>
-<ol>
-<li>tx1提交后，在master上执行show master status;获取主库的gtid_set。（5.7后可以通过函数直接获取该事务返回的gtid,具体见后面）</li>
-<li>在从库上执行查询语句前，先执行select wait_for_executed_gtid_set(gtid_set, timeout);</li>
-<li>如果返回0从库，1主库</li>
-</ol>
-<p>注：5.7之后获取事务提交后gtid的方法</p>
-<blockquote>
-<p>set session_track_gtids=OWN_GTID<br>执行事务并且提交<br>客户端通过函数：mysql_session_track_get_first <em>这个函数只针对客户端调用</em></p>
-</blockquote>
-<p>注：开启semi-sync<em>待完善</em></p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql的排序/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1854,7 +1845,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/shell/index/">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql读写分离的那些坑/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Liu hao">
@@ -1874,7 +1865,7 @@
           <h1 class="post-title" itemprop="name headline">
                 
                 
-                <a href="/shell/index/" class="post-title-link" itemprop="url">shell的积累</a>
+                <a href="/mysql/mysql读写分离的那些坑/" class="post-title-link" itemprop="url">mysql读写分离的坑</a>
               
             
           </h1>
@@ -1899,7 +1890,7 @@
                 
               
 
-              <time title="Created: 2019-02-04 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-04T00:00:00+08:00">2019-02-04</time>
+              <time title="Created: 2019-02-05 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-05T00:00:00+08:00">2019-02-05</time>
             
 
             
@@ -1933,7 +1924,14 @@
                 <span class="post-meta-item-text">In</span>
               
               
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Shell/" itemprop="url" rel="index"><span itemprop="name">Shell</span></a></span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql高可用架构/" itemprop="url" rel="index"><span itemprop="name">Mysql高可用架构</span></a></span>
 
                 
                 
@@ -1970,10 +1968,87 @@
       
         
           
-            <h1 id="shell的积累"><a href="#shell的积累" class="headerlink" title="shell的积累"></a>shell的积累</h1><p>日常工作中linux的命令的积累</p>
-<h2 id="删除N天的文件的命令-用于清理log"><a href="#删除N天的文件的命令-用于清理log" class="headerlink" title="删除N天的文件的命令-用于清理log"></a>删除N天的文件的命令-用于清理log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find ./ -mtime +1 -name "*.log*" -exec rm -rf &#123;&#125; \;</span><br></pre></td></tr></table></figure>
-<h2 id="按天筛选log"><a href="#按天筛选log" class="headerlink" title="按天筛选log"></a>按天筛选log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -n '/2018-10-15 16:55:00/,/2018-10-15 23:59:59/p' log_path |grep "condition"</span><br></pre></td></tr></table></figure>
-<h2 id="合并redis，用于单机环境的redis导入"><a href="#合并redis，用于单机环境的redis导入" class="headerlink" title="合并redis，用于单机环境的redis导入"></a>合并redis，用于单机环境的redis导入</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span>!/bin/bash</span><br><span class="line">redis-cli -h srcIp -p 6379 -n 0 keys "*" | while read key</span><br><span class="line">do</span><br><span class="line">    redis-cli -h srcIp -p 6379 -n 0 --raw dump $key | perl -pe 'chomp if eof' | redis-cli -h dest -p 6379 -n 1 -x restore $key 0</span><br><span class="line">    echo "migrate key $key"</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
+            <h1 id="mysql读写分离的坑"><a href="#mysql读写分离的坑" class="headerlink" title="mysql读写分离的坑"></a>mysql读写分离的坑</h1><p>本章主要介绍mysql读写分离的架构，读写分离遇到的问题，以及解决方案。</p>
+<h2 id="mysql读写分离结构介绍"><a href="#mysql读写分离结构介绍" class="headerlink" title="mysql读写分离结构介绍"></a>mysql读写分离结构介绍</h2><h3 id="直连架构"><a href="#直连架构" class="headerlink" title="直连架构"></a>直连架构</h3><p>见图：<br><img src="/images/mysql/mysql读写分离架构直连.png" alt="avator"></p>
+<h3 id="proxy"><a href="#proxy" class="headerlink" title="proxy"></a>proxy</h3><p>见图：<br><img src="/images/mysql/mysql读写分离架构proxy.png" alt="avator"></p>
+<p>小结：</p>
+<ul>
+<li>直连的架构，往往后端会有一个管理器（zookeeper）来管理所有的节点，动态的做主从切换，踢掉失联节点，和动态更新节点。</li>
+<li>客户端链接proxy，业务往往只关注业务逻辑即可。<em>现在大多采用此方案</em></li>
+</ul>
+<h2 id="mysql读写分离架构遇到的挑战以及解决方案"><a href="#mysql读写分离架构遇到的挑战以及解决方案" class="headerlink" title="mysql读写分离架构遇到的挑战以及解决方案"></a>mysql读写分离架构遇到的挑战以及解决方案</h2><p>无论采用直连还是proxy架构都会遇到主从不同步的问题，这里我们叫过期读，我们该采用什么方式解决呢？</p>
+<h3 id="强制走主库"><a href="#强制走主库" class="headerlink" title="强制走主库"></a>强制走主库</h3><p>业务方自己判断某些查询走主库某些查询走备库。比如：刚修改的数据立刻就获取的最新的数据从主库查询；数据分析等离线的情况走从库；</p>
+<ul>
+<li>优点：比较简单，由业务自己掌控，大部分情况都可以用此种方式解决；</li>
+<li>缺点：可能会遇到所有查询都需要从主库查询的情况，这样一主多从的架构就失去了作用；</li>
+</ul>
+<h3 id="sleep方案"><a href="#sleep方案" class="headerlink" title="sleep方案"></a>sleep方案</h3><p>修改和插入数据时候等待一段时间，然后在从备库查询，例如：页面ajax提交了修改请求，页面直接返回结果，当下次刷新时候从从库取出数据；</p>
+<ul>
+<li>优点：业务方决定，比较简单，且可以利用一主多从</li>
+<li>缺点：过期时间的不确定性，可能会导致数据一致性有问题</li>
+</ul>
+<h3 id="判断主备无延迟方案"><a href="#判断主备无延迟方案" class="headerlink" title="判断主备无延迟方案"></a>判断主备无延迟方案</h3><p>在sql语句执行前线判断主库和从库是否有延迟，没延迟读取从库，有延迟读取主库。</p>
+<h4 id="判断seconds-behind-master参数"><a href="#判断seconds-behind-master参数" class="headerlink" title="判断seconds_behind_master参数"></a>判断seconds_behind_master参数</h4><p>当参数为0说明无延迟，可以从从库读取，但是时间不精确只能精确到秒</p>
+<h4 id="通过位点来判断"><a href="#通过位点来判断" class="headerlink" title="通过位点来判断"></a>通过位点来判断</h4><p>从库通过show slave status命令取得如下俩对参数：Master_Log_File和Read_Master_Log_Pos，Relay_Master_Log_File和Exec_Master_Log_Pos，当这俩对参数相等说明主备无延迟，</p>
+<h4 id="通过gtid来判断"><a href="#通过gtid来判断" class="headerlink" title="通过gtid来判断"></a>通过gtid来判断</h4><ul>
+<li>Auto_Position=1 ，表示这对主备关系使用了GTID</li>
+<li>Retrieved_Gtid_Set，表示备库收到的日志GTID_SET</li>
+<li>Executed_Gtid_Set，表示备库执行完成的GTID_SET</li>
+</ul>
+<p>当着俩个集合相等说明主备无延迟</p>
+<p>但是，这种方案有个缺点就是，备库判断的是自己的,relaylog和binlog的差异，但是如果这时候主库提交了个事物，备库还没有转成relaylog，备库会认为没有延迟，但是依然从备库差不到刚才主库刚提交的事务的数据，如下图：</p>
+<p><img src="/images/mysql/判断主备无延迟方案badcase.png" alt="avator"></p>
+<p>tx3事务的数据主库提交了，但是备库会看不到</p>
+<h3 id="结合semi-sync方案"><a href="#结合semi-sync方案" class="headerlink" title="结合semi-sync方案"></a>结合semi-sync方案</h3><p>上图的问题，结合semi-sync（办同步）方案可解决，semi-sync原理是什么呢？</p>
+<ol>
+<li>开启semi-sync后，主库在提交时候后会发送binlog给备库</li>
+<li>备库收到binlog以后，发给主库一个ack信号，说明已经收到</li>
+<li>主库收到这个信号后才能给客户端返回事务已经提交</li>
+</ol>
+<p>这种方案会有如下俩个缺点：</p>
+<ol>
+<li>对于一主多从的结构，当一个从库发送ack信号给主库，主库会返回一个事务已经提交，这时候如果从其他从库查询还是有可能出现过期读；</li>
+<li>如果数据库更新频繁，你会发现g</li>
+<li>tid或者位点主从会一直不相等，这样就失去了从库读写分离的意义。</li>
+</ol>
+<h3 id="等主库位点（gtid）"><a href="#等主库位点（gtid）" class="headerlink" title="等主库位点（gtid）"></a>等主库位点（gtid）</h3><p>我们针对上面的痛点可以采用等主库位点或者gtid的方式来处理这种情况</p>
+<h4 id="等主库位点"><a href="#等主库位点" class="headerlink" title="等主库位点"></a>等主库位点</h4><p>命令:select master_pos_wait(file, pos[, timeout]);</p>
+<ul>
+<li>该命令含义：返回从命令执行开始，经过timeout秒后，从库执行到file（binlog）的pos位置执行了多少个事物。</li>
+<li>返回值含义:<ul>
+<li>NULL:失联</li>
+<li>-1：超时</li>
+<li>0：执行即到了改位置。执行了0个事物</li>
+<li>N：从库到这个位置执行了N个事物。</li>
+</ul>
+</li>
+</ul>
+<p>具体流程如图:<br><img src="/images/mysql/等主库位点case.png" alt="avator"></p>
+<ol>
+<li>tx1提交后，在master上执行show master status;获取主库的binlog和binlog_pos。</li>
+<li>在从库上执行查询语句前，先执行select master_pos_wait(file, pos[, timeout]);</li>
+<li>如果返回&gt;=0,slect在从库执行，否则主库执行</li>
+</ol>
+<h4 id="等GTID"><a href="#等GTID" class="headerlink" title="等GTID"></a>等GTID</h4><p>命令:select wait_for_executed_gtid_set(gtid_set, timeout);</p>
+<ul>
+<li>该命令含义：等待从库timeout秒后，执行的gtid_set包含了gtid_set</li>
+<li>返回值含义:<ul>
+<li>0：包含</li>
+<li>1：超时</li>
+</ul>
+</li>
+</ul>
+<p>具体流程如图:<br><img src="/images/mysql/等主库gtidcase.png" alt="avator"></p>
+<ol>
+<li>tx1提交后，在master上执行show master status;获取主库的gtid_set。（5.7后可以通过函数直接获取该事务返回的gtid,具体见后面）</li>
+<li>在从库上执行查询语句前，先执行select wait_for_executed_gtid_set(gtid_set, timeout);</li>
+<li>如果返回0从库，1主库</li>
+</ol>
+<p>注：5.7之后获取事务提交后gtid的方法</p>
+<blockquote>
+<p>set session_track_gtids=OWN_GTID<br>执行事务并且提交<br>客户端通过函数：mysql_session_track_get_first <em>这个函数只针对客户端调用</em></p>
+</blockquote>
+<p>注：开启semi-sync<em>待完善</em></p>
 
           
         
@@ -2543,7 +2618,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">17</span>
+                      
+                    
+                    <span class="site-state-item-count">18</span>
                     <span class="site-state-item-name">categories</span>
                   </a>
                 </div>
@@ -2576,7 +2653,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">10</span>
+                      
+                    
+                    <span class="site-state-item-count">11</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>

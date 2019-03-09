@@ -97,15 +97,16 @@
 
 
   <meta name="description" content="AbstractQueuedSynchronizer是java.util.concurrent.locks中最重要的类。翻译过来是“抽象队列同步器”,我们根据字面来理解：  Abstract-它是抽象的，业务方根据自己的场景来实现tryAcqurie、tryRelease等方法。例如：CountDownLatch、CyclicBarrier、Semaphore、ReentrantLock等; Qu">
+<meta name="keywords" content="java,并发">
 <meta property="og:type" content="article">
-<meta property="og:title" content="AbstractQueuedSynchronizer">
-<meta property="og:url" content="https://liuhao163.github.io/java/aqs/AbstractQueuedSynchronizer/index.html">
+<meta property="og:title" content="java的队列同步器AQS">
+<meta property="og:url" content="https://liuhao163.github.io/java的队列同步器AQS/index.html">
 <meta property="og:site_name" content="liuhao163.github.io">
 <meta property="og:description" content="AbstractQueuedSynchronizer是java.util.concurrent.locks中最重要的类。翻译过来是“抽象队列同步器”,我们根据字面来理解：  Abstract-它是抽象的，业务方根据自己的场景来实现tryAcqurie、tryRelease等方法。例如：CountDownLatch、CyclicBarrier、Semaphore、ReentrantLock等; Qu">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-03-01T14:53:26.000Z">
+<meta property="og:updated_time" content="2019-03-09T15:53:05.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="AbstractQueuedSynchronizer">
+<meta name="twitter:title" content="java的队列同步器AQS">
 <meta name="twitter:description" content="AbstractQueuedSynchronizer是java.util.concurrent.locks中最重要的类。翻译过来是“抽象队列同步器”,我们根据字面来理解：  Abstract-它是抽象的，业务方根据自己的场景来实现tryAcqurie、tryRelease等方法。例如：CountDownLatch、CyclicBarrier、Semaphore、ReentrantLock等; Qu">
 
 
@@ -115,7 +116,7 @@
 
 
 
-  <link rel="canonical" href="https://liuhao163.github.io/java/aqs/AbstractQueuedSynchronizer/">
+  <link rel="canonical" href="https://liuhao163.github.io/java的队列同步器AQS/">
 
 
 
@@ -125,7 +126,7 @@
   };
 </script>
 
-  <title>AbstractQueuedSynchronizer | liuhao163.github.io</title>
+  <title>java的队列同步器AQS | liuhao163.github.io</title>
   
 
 
@@ -328,7 +329,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/java/aqs/AbstractQueuedSynchronizer/">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/java的队列同步器AQS/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Liu hao">
@@ -345,7 +346,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">AbstractQueuedSynchronizer
+          <h1 class="post-title" itemprop="name headline">java的队列同步器AQS
 
               
             
@@ -371,7 +372,7 @@
                 
               
 
-              <time title="Created: 2019-02-01 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-01T00:00:00+08:00">2019-02-01</time>
+              <time title="Created: 2019-03-08 17:41:24" itemprop="dateCreated datePublished" datetime="2019-03-08T17:41:24+08:00">2019-03-08</time>
             
 
             
@@ -388,7 +389,7 @@
                 
                   <span class="post-meta-item-text">Edited on</span>
                 
-                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
+                <time title="Modified: 2019-03-09 23:53:05" itemprop="dateModified" datetime="2019-03-09T23:53:05+08:00">2019-03-09</time>
               
             
           </span>
@@ -405,14 +406,14 @@
                 <span class="post-meta-item-text">In</span>
               
               
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/JAVA/" itemprop="url" rel="index"><span itemprop="name">JAVA</span></a></span>
 
                 
                 
                   , 
                 
               
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/aqs/" itemprop="url" rel="index"><span itemprop="name">aqs</span></a></span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/JAVA/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
 
                 
                 
@@ -498,6 +499,7 @@
 <p>源码如下：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">park</span><span class="params">(Object blocker)</span> </span>&#123;</span><br><span class="line">    <span class="comment">//获取当前线程，并且设置parkBlocker对象，jstack查看时候就可以知道线程是在哪个对象上阻塞，这里是AQS的实现类</span></span><br><span class="line">    Thread t = Thread.currentThread();</span><br><span class="line">    setBlocker(t, blocker);</span><br><span class="line">    <span class="comment">//阻塞线程，绝对时间，并且无限制的阻塞</span></span><br><span class="line">    UNSAFE.park(<span class="keyword">false</span>, <span class="number">0L</span>);</span><br><span class="line">    <span class="comment">//阻塞停止，将parkBlocker置为空。</span></span><br><span class="line">    setBlocker(t, <span class="keyword">null</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h3 id="AQS中FIFO队列介绍，内部类Node"><a href="#AQS中FIFO队列介绍，内部类Node" class="headerlink" title="AQS中FIFO队列介绍，内部类Node"></a>AQS中FIFO队列介绍，内部类Node</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">Node</span> </span>&#123;</span><br><span class="line">        <span class="comment">/** Marker to indicate a node is waiting in shared mode */</span></span><br><span class="line">        <span class="keyword">static</span> <span class="keyword">final</span> Node SHARED = <span class="keyword">new</span> Node();</span><br><span class="line">        <span class="comment">/** Marker to indicate a node is waiting in exclusive mode */</span></span><br><span class="line">        <span class="keyword">static</span> <span class="keyword">final</span> Node EXCLUSIVE = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">        <span class="comment">/** waitStatus value to indicate thread has cancelled */</span></span><br><span class="line">        <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> CANCELLED =  <span class="number">1</span>;</span><br><span class="line">        <span class="comment">/** waitStatus value to indicate successor's thread needs unparking */</span></span><br><span class="line">        <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> SIGNAL    = -<span class="number">1</span>;</span><br><span class="line">        <span class="comment">/** waitStatus value to indicate thread is waiting on condition */</span></span><br><span class="line">        <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> CONDITION = -<span class="number">2</span>;</span><br><span class="line">        <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> PROPAGATE = -<span class="number">3</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">volatile</span> <span class="keyword">int</span> waitStatus;</span><br><span class="line">        <span class="keyword">volatile</span> Node prev;</span><br><span class="line">        <span class="keyword">volatile</span> Node next;</span><br><span class="line">        <span class="keyword">volatile</span> Thread thread;</span><br><span class="line">        Node nextWaiter;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
       
     </div>
 
@@ -518,6 +520,14 @@
 
     <footer class="post-footer">
       
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"># java</a>
+          
+            <a href="/tags/并发/" rel="tag"># 并发</a>
+          
+        </div>
+      
 
       
       
@@ -527,8 +537,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/mysql/mysql是如何保证主从同步的（binlog）/" rel="next" title="mysql是如何保证主从同步的（binlog）--草稿">
-                <i class="fa fa-chevron-left"></i> mysql是如何保证主从同步的（binlog）--草稿
+              <a href="/网络协议-UDP/" rel="next" title="网络协议-UDP">
+                <i class="fa fa-chevron-left"></i> 网络协议-UDP
               </a>
             
           </div>
@@ -537,8 +547,8 @@
 
           <div class="post-nav-prev post-nav-item">
             
-              <a href="/java/aqs/CountDownLatch/" rel="prev" title="CountDownLatch解读">
-                CountDownLatch解读 <i class="fa fa-chevron-right"></i>
+              <a href="/CountDownLatch/" rel="prev" title="CountDownLatch">
+                CountDownLatch <i class="fa fa-chevron-right"></i>
               </a>
             
           </div>
@@ -608,7 +618,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">45</span>
+                    <span class="site-state-item-count">47</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -686,7 +696,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">9</span>
+                      
+                    
+                    <span class="site-state-item-count">10</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>

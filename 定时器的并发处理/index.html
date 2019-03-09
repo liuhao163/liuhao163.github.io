@@ -96,18 +96,18 @@
 
 
 
-  <meta name="description" content="项目背景客户的数据量徒增，每天1QWPV，1个月1张表的话30亿数据，页面上一些接口的响应变慢，即时用了ES在一些复杂的查询和聚合下，ES的查询性能也已经成为瓶颈，需要对于数据的查询，进行优化，增强用户体验。 方案为了增强用户体验考虑将一些历史统计指标缓存下来。如客户网站下PV的来源分布，浏览器分布，响应数据等，优化方案如下：  采用spring的定时器将客户网站的历史PV保存在表中，一个指标一条">
+  <meta name="description" content="项目背景客户的数据量徒增，每天1QWPV，1个月1张表的话大约这一个客户有30亿数据，页面上一些接口的响应变慢。 原因是：后端数据存在了ES中，ES特点是模糊查询很开，但是但是如果用到了一些叫复杂的聚合函数需要进行索引扫描，所以效率了堪忧。 优化方案 每天，用定时器将客户网站数据归档，目前是采用mysql保存。 前端查询采用缓存数据+当天数据的方式呈现给客户，当日的数据很小所以可以满足性能上的要求">
 <meta name="keywords" content="java,redis,定时器">
 <meta property="og:type" content="article">
-<meta property="og:title" content="定时器的并发处理">
+<meta property="og:title" content="支持并发的定时器+数据归档解决查询效率">
 <meta property="og:url" content="https://liuhao163.github.io/定时器的并发处理/index.html">
 <meta property="og:site_name" content="liuhao163.github.io">
-<meta property="og:description" content="项目背景客户的数据量徒增，每天1QWPV，1个月1张表的话30亿数据，页面上一些接口的响应变慢，即时用了ES在一些复杂的查询和聚合下，ES的查询性能也已经成为瓶颈，需要对于数据的查询，进行优化，增强用户体验。 方案为了增强用户体验考虑将一些历史统计指标缓存下来。如客户网站下PV的来源分布，浏览器分布，响应数据等，优化方案如下：  采用spring的定时器将客户网站的历史PV保存在表中，一个指标一条">
+<meta property="og:description" content="项目背景客户的数据量徒增，每天1QWPV，1个月1张表的话大约这一个客户有30亿数据，页面上一些接口的响应变慢。 原因是：后端数据存在了ES中，ES特点是模糊查询很开，但是但是如果用到了一些叫复杂的聚合函数需要进行索引扫描，所以效率了堪忧。 优化方案 每天，用定时器将客户网站数据归档，目前是采用mysql保存。 前端查询采用缓存数据+当天数据的方式呈现给客户，当日的数据很小所以可以满足性能上的要求">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-03-05T16:17:17.000Z">
+<meta property="og:updated_time" content="2019-03-09T15:53:05.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="定时器的并发处理">
-<meta name="twitter:description" content="项目背景客户的数据量徒增，每天1QWPV，1个月1张表的话30亿数据，页面上一些接口的响应变慢，即时用了ES在一些复杂的查询和聚合下，ES的查询性能也已经成为瓶颈，需要对于数据的查询，进行优化，增强用户体验。 方案为了增强用户体验考虑将一些历史统计指标缓存下来。如客户网站下PV的来源分布，浏览器分布，响应数据等，优化方案如下：  采用spring的定时器将客户网站的历史PV保存在表中，一个指标一条">
+<meta name="twitter:title" content="支持并发的定时器+数据归档解决查询效率">
+<meta name="twitter:description" content="项目背景客户的数据量徒增，每天1QWPV，1个月1张表的话大约这一个客户有30亿数据，页面上一些接口的响应变慢。 原因是：后端数据存在了ES中，ES特点是模糊查询很开，但是但是如果用到了一些叫复杂的聚合函数需要进行索引扫描，所以效率了堪忧。 优化方案 每天，用定时器将客户网站数据归档，目前是采用mysql保存。 前端查询采用缓存数据+当天数据的方式呈现给客户，当日的数据很小所以可以满足性能上的要求">
 
 
 
@@ -126,7 +126,7 @@
   };
 </script>
 
-  <title>定时器的并发处理 | liuhao163.github.io</title>
+  <title>支持并发的定时器+数据归档解决查询效率 | liuhao163.github.io</title>
   
 
 
@@ -346,7 +346,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">定时器的并发处理
+          <h1 class="post-title" itemprop="name headline">支持并发的定时器+数据归档解决查询效率
 
               
             
@@ -372,12 +372,24 @@
                 
               
 
-              <time title="Created: 2019-03-06 00:03:46 / Modified: 00:17:17" itemprop="dateCreated datePublished" datetime="2019-03-06T00:03:46+08:00">2019-03-06</time>
+              <time title="Created: 2019-03-06 00:03:46" itemprop="dateCreated datePublished" datetime="2019-03-06T00:03:46+08:00">2019-03-06</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-09 23:53:05" itemprop="dateModified" datetime="2019-03-09T23:53:05+08:00">2019-03-09</time>
               
             
           </span>
@@ -395,13 +407,6 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/项目积累/" itemprop="url" rel="index"><span itemprop="name">项目积累</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/项目积累/知识点/" itemprop="url" rel="index"><span itemprop="name">知识点</span></a></span>
 
                 
                 
@@ -436,14 +441,25 @@
       
 
       
-        <h1 id="项目背景"><a href="#项目背景" class="headerlink" title="项目背景"></a>项目背景</h1><p>客户的数据量徒增，每天1QWPV，1个月1张表的话30亿数据，页面上一些接口的响应变慢，即时用了ES在一些复杂的查询和聚合下，ES的查询性能也已经成为瓶颈，需要对于数据的查询，进行优化，增强用户体验。</p>
-<h1 id="方案"><a href="#方案" class="headerlink" title="方案"></a>方案</h1><p>为了增强用户体验考虑将一些历史统计指标缓存下来。如客户网站下PV的来源分布，浏览器分布，响应数据等，优化方案如下：</p>
-<ul>
-<li>采用spring的定时器将客户网站的历史PV保存在表中，一个指标一条记录，目前是采用mysql保存。</li>
-<li>前端查询采用缓存数据+当天数据的方式呈现给客户，当日的数据很小满足客户需求</li>
-<li>考虑到将来会有很多客户，如果一个定时器执行不完要考虑多定时器部署。</li>
+        <h1 id="项目背景"><a href="#项目背景" class="headerlink" title="项目背景"></a>项目背景</h1><p>客户的数据量徒增，每天1QWPV，1个月1张表的话大约这一个客户有30亿数据，页面上一些接口的响应变慢。</p>
+<p>原因是：后端数据存在了ES中，ES特点是模糊查询很开，但是但是如果用到了一些叫复杂的聚合函数需要进行索引扫描，所以效率了堪忧。</p>
+<h1 id="优化方案"><a href="#优化方案" class="headerlink" title="优化方案"></a>优化方案</h1><ul>
+<li>每天，用定时器将客户网站数据归档，目前是采用mysql保存。</li>
+<li>前端查询采用缓存数据+当天数据的方式呈现给客户，当日的数据很小所以可以满足性能上的要求。</li>
+<li>考虑到将来会有很多客户，可能一个定时器执行效率慢，所以定时器要支持水平扩展。</li>
 </ul>
-<h1 id="架构"><a href="#架构" class="headerlink" title="架构"></a>架构</h1>
+<h1 id="具体执行"><a href="#具体执行" class="headerlink" title="具体执行"></a>具体执行</h1><ol>
+<li>将数据库中所有的网站ID放到redis的zset中，为什么用zset？有序-支持分页，排重；</li>
+<li>利用setNx做锁， 从zset取出一条数据锁住：setNx的key是：prefix:statslock:id:yyyyMMdd, ttl：1天；<ul>
+<li>因为采用的是RedisTemplate不支持setNx和expire排异常轻快无法解锁，所以锁是按天锁住数据</li>
+</ul>
+</li>
+<li>ES查询昨天的数据，归档</li>
+<li>前端查询ES当钱数据+归档数据返回，测试从10sec请求变为了600ms </li>
+</ol>
+<p>示例代码如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doWafDataArchiveByDate</span><span class="params">(LocalDateTime localDateTime)</span> </span>&#123;</span><br><span class="line">    String dateFormater = localDateTime.format(YYYYMMDD);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//分页</span></span><br><span class="line">    Long total = statsRedis.domainSize();</span><br><span class="line">    Long pageNo = (total - <span class="number">1L</span>) / ZSET_PAGE_SIZE + <span class="number">1</span>;</span><br><span class="line">    Long curPage = <span class="number">1L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        <span class="comment">//从redis获取数据</span></span><br><span class="line">        Long startIdx = (curPage - <span class="number">1L</span>) * ZSET_PAGE_SIZE;</span><br><span class="line">        Long endIdx = startIdx + ZSET_PAGE_SIZE - <span class="number">1L</span>;</span><br><span class="line">        Set&lt;String&gt; set = statsRedis.queryRange(startIdx, endIdx);</span><br><span class="line">        </span><br><span class="line">        curPage++;</span><br><span class="line">        <span class="keyword">for</span> (String domainUuid : set) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="comment">//锁1天</span></span><br><span class="line">                <span class="keyword">if</span> (taskLock.lock(domainUuid, dateFormater)) &#123;</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        <span class="comment">//do logic</span></span><br><span class="line">                    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                        e.printStackTrace();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                taskLock.unlock(domainUuid,dateFormater);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">while</span> (curPage &lt;= pageNo);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h1 id="遗留的坑以及方案"><a href="#遗留的坑以及方案" class="headerlink" title="遗留的坑以及方案"></a>遗留的坑以及方案</h1><p>待补充</p>
+
       
     </div>
 
@@ -483,8 +499,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/网络协议/" rel="next" title="网络协议">
-                <i class="fa fa-chevron-left"></i> 网络协议
+              <a href="/网络协议-TCP/" rel="next" title="网络协议-TCP">
+                <i class="fa fa-chevron-left"></i> 网络协议-TCP
               </a>
             
           </div>
@@ -492,6 +508,10 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/网络协议-UDP/" rel="prev" title="网络协议-UDP">
+                网络协议-UDP <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -560,7 +580,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">45</span>
+                    <span class="site-state-item-count">47</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -638,7 +658,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">9</span>
+                      
+                    
+                    <span class="site-state-item-count">10</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>
@@ -681,7 +703,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#项目背景"><span class="nav-number">1.</span> <span class="nav-text">项目背景</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#方案"><span class="nav-number">2.</span> <span class="nav-text">方案</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#架构"><span class="nav-number">3.</span> <span class="nav-text">架构</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#项目背景"><span class="nav-number">1.</span> <span class="nav-text">项目背景</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#优化方案"><span class="nav-number">2.</span> <span class="nav-text">优化方案</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#具体执行"><span class="nav-number">3.</span> <span class="nav-text">具体执行</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#遗留的坑以及方案"><span class="nav-number">4.</span> <span class="nav-text">遗留的坑以及方案</span></a></li></ol></div>
             
 
           </div>

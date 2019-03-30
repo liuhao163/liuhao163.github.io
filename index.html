@@ -1505,7 +1505,7 @@
                 
                   <span class="post-meta-item-text">Edited on</span>
                 
-                <time title="Modified: 2019-03-23 21:44:13" itemprop="dateModified" datetime="2019-03-23T21:44:13+08:00">2019-03-23</time>
+                <time title="Modified: 2019-03-28 23:06:31" itemprop="dateModified" datetime="2019-03-28T23:06:31+08:00">2019-03-28</time>
               
             
           </span>
@@ -1604,13 +1604,13 @@
 <li>stop方法已经不建议使用了，因为会立即杀死线程，同时不会释放synchronized的锁，所以后面的线程都会阻塞。</li>
 <li><p>interrupt方法相对来说就会“温柔”很多，它只是对线程了interrupt标记，当调用thread.interrupt()方法有俩种方式退出线程</p>
 <ul>
-<li><p>主动退出：对于一个一直执行的线程来说可以通过判断t1.isInterrupted()来判断是否该终端</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> Thread t1 = <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">          <span class="keyword">while</span>(!t1.isInterrupted())&#123;</span><br><span class="line">              <span class="comment">//do something</span></span><br><span class="line">          &#125;</span><br><span class="line">      &#125;);</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>异常退出：对于执行了wait sleep这种线程我们可以通过异常捕获来判断线程的终端，因为他们会抛出InterruptedException异常</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> Thread t1 = <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">         <span class="keyword">synchronized</span> (lock) &#123;</span><br><span class="line">             <span class="keyword">try</span> &#123;</span><br><span class="line">                 lock.wait();</span><br><span class="line">             &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                 e.printStackTrace();</span><br><span class="line">                 <span class="keyword">return</span>;</span><br><span class="line">             &#125;</span><br><span class="line">             <span class="comment">//do something</span></span><br><span class="line"></span><br><span class="line">             <span class="comment">//这时候会输出false因为interrupt会被清除</span></span><br><span class="line">             System.out.println(t1.isInterrupted());</span><br><span class="line">         &#125;</span><br><span class="line">     &#125;);</span><br></pre></td></tr></table></figure>
-</li>
+<li>主动退出：对于一个一直执行的线程来说可以通过判断t1.isInterrupted()来判断是否该终端</li>
 </ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> Thread t1 = <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">          <span class="keyword">while</span>(!t1.isInterrupted())&#123;</span><br><span class="line">              <span class="comment">//do something</span></span><br><span class="line">          &#125;</span><br><span class="line">      &#125;);</span><br></pre></td></tr></table></figure>
+<ul>
+<li>异常退出：对于执行了wait sleep这种线程我们可以通过异常捕获来判断线程的终端，因为他们会抛出InterruptedException异常</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> Thread t1 = <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">         <span class="keyword">synchronized</span> (lock) &#123;</span><br><span class="line">             <span class="keyword">try</span> &#123;</span><br><span class="line">                 lock.wait();</span><br><span class="line">             &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                 e.printStackTrace();</span><br><span class="line">                 <span class="keyword">return</span>;</span><br><span class="line">             &#125;</span><br><span class="line">             <span class="comment">//do something</span></span><br><span class="line"></span><br><span class="line">             <span class="comment">//这时候会输出false因为interrupt会被清除</span></span><br><span class="line">             System.out.println(t1.isInterrupted());</span><br><span class="line">         &#125;</span><br><span class="line">     &#125;);</span><br></pre></td></tr></table></figure>
 </li>
 </ul>
 <p>注意：当抛出InterruptedException异常后线程的interrupt标记会被清楚如果这时候在判断isInterrupted()方法就又变成了false</p>

@@ -4,6 +4,35 @@
   
     
     <entry>
+      <title>如何用面向对象的思想写好并发程序</title>
+      <link href="/%E5%A6%82%E4%BD%95%E7%94%A8%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%9A%84%E6%80%9D%E6%83%B3%E5%86%99%E5%A5%BD%E5%B9%B6%E5%8F%91%E7%A8%8B%E5%BA%8F/"/>
+      <url>/%E5%A6%82%E4%BD%95%E7%94%A8%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%9A%84%E6%80%9D%E6%83%B3%E5%86%99%E5%A5%BD%E5%B9%B6%E5%8F%91%E7%A8%8B%E5%BA%8F/</url>
+      
+        <content type="html"><![CDATA[<h1 id="防止变量的共享"><a href="#防止变量的共享" class="headerlink" title="防止变量的共享"></a>防止变量的共享</h1><p>在声明一个变量时候要通过方法的封装暴露对象的修改和查询操作，以此为入口来控制变量的并发，对于不变的对象尽量声明成final类型，告诉别人这个便利不会被改变。</p><h1 id="识别共享变量的条件"><a href="#识别共享变量的条件" class="headerlink" title="识别共享变量的条件"></a>识别共享变量的条件</h1><p>防止变量之间的竞态问题，比如下面的代码：设置了上限和下限，这里有个隐含的条件上限一定要&gt;=下限,虽然变量声明成了AtomicLong，但是在并发的时候需改时候遇到if条件可能会造成下限高于上限的问题。原因在于条件判断和修改结果不是原子操作，这是个典型的竞态问题。修改方案是set方法加synchronized</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SafeWM</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 库存上限</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> AtomicLong upper =</span><br><span class="line">        <span class="keyword">new</span> AtomicLong(<span class="number">0</span>);</span><br><span class="line">  <span class="comment">// 库存下限</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> AtomicLong lower =</span><br><span class="line">        <span class="keyword">new</span> AtomicLong(<span class="number">0</span>);</span><br><span class="line">  <span class="comment">// 设置库存上限</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">setUpper</span><span class="params">(<span class="keyword">long</span> v)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 检查参数合法性</span></span><br><span class="line">    <span class="keyword">if</span> (v &lt; lower.get()) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException();</span><br><span class="line">    &#125;</span><br><span class="line">    upper.set(v);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 设置库存下限</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">setLower</span><span class="params">(<span class="keyword">long</span> v)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 检查参数合法性</span></span><br><span class="line">    <span class="keyword">if</span> (v &gt; upper.get()) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException();</span><br><span class="line">    &#125;</span><br><span class="line">    lower.set(v);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 省略其他业务代码</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><h1 id="制定并发访问策略"><a href="#制定并发访问策略" class="headerlink" title="制定并发访问策略"></a>制定并发访问策略</h1><ol><li>防止共享</li><li>采取不变模式。这样修改一个对象就是创建了一个新对象</li><li>利用管程和其他并发工具来</li></ol><h2 id="要注意几点"><a href="#要注意几点" class="headerlink" title="要注意几点"></a>要注意几点</h2><ol><li>采用成熟的工具类避免重复开发轮子</li><li>尽量避免使用低级原语入synchronized、lock等方式，而是采用并罚保</li><li>尽量以并发安全为主，尽量避免过早优化代码</li></ol>]]></content>
+      
+      
+      <categories>
+          
+          <category> java </category>
+          
+          <category> 并发 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> java </tag>
+            
+            <tag> 并发 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>数据结构与算法-排序(上)</title>
       <link href="/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95-%E6%8E%92%E5%BA%8F/"/>
       <url>/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95-%E6%8E%92%E5%BA%8F/</url>
@@ -51,9 +80,9 @@
       
         <tags>
             
-            <tag> 算法 </tag>
-            
             <tag> 数据结构 </tag>
+            
+            <tag> 算法 </tag>
             
             <tag> 队列 </tag>
             
@@ -111,11 +140,11 @@
       
         <tags>
             
-            <tag> 算法 </tag>
-            
             <tag> 链表 </tag>
             
             <tag> 数据结构 </tag>
+            
+            <tag> 算法 </tag>
             
             <tag> 代码 </tag>
             
@@ -1217,46 +1246,6 @@
     
     
     <entry>
-      <title>Spring-Schedule多线程</title>
-      <link href="/spring/spring-scheduled/"/>
-      <url>/spring/spring-scheduled/</url>
-      
-        <content type="html"><![CDATA[<h1 id="Spring多线程执行任务"><a href="#Spring多线程执行任务" class="headerlink" title="Spring多线程执行任务"></a>Spring多线程执行任务</h1><p>用Spring执行定时任务，spring默认是单线程执行的也就是说，多个任务会存在等待阻塞情况</p><h2 id="多线程方案"><a href="#多线程方案" class="headerlink" title="多线程方案"></a>多线程方案</h2><p>用如下方法注入</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ScheduleConfigure</span> <span class="keyword">implements</span> <span class="title">SchedulingConfigurer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">configureTasks</span><span class="params">(ScheduledTaskRegistrar taskRegistrar)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//设定一个长度10的定时任务线程池</span></span><br><span class="line">        taskRegistrar.setScheduler(Executors.newScheduledThreadPool(<span class="number">2</span>));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>]]></content>
-      
-      
-      <categories>
-          
-          <category> java </category>
-          
-          <category> spring </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
-      <title>shell的积累</title>
-      <link href="/shell/index/"/>
-      <url>/shell/index/</url>
-      
-        <content type="html"><![CDATA[<h1 id="shell的积累"><a href="#shell的积累" class="headerlink" title="shell的积累"></a>shell的积累</h1><p>日常工作中linux的命令的积累</p><h2 id="删除N天的文件的命令-用于清理log"><a href="#删除N天的文件的命令-用于清理log" class="headerlink" title="删除N天的文件的命令-用于清理log"></a>删除N天的文件的命令-用于清理log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find ./ -mtime +1 -name "*.log*" -exec rm -rf &#123;&#125; \;</span><br></pre></td></tr></table></figure><h2 id="按天筛选log"><a href="#按天筛选log" class="headerlink" title="按天筛选log"></a>按天筛选log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -n '/2018-10-15 16:55:00/,/2018-10-15 23:59:59/p' log_path |grep "condition"</span><br></pre></td></tr></table></figure><h2 id="合并redis，用于单机环境的redis导入"><a href="#合并redis，用于单机环境的redis导入" class="headerlink" title="合并redis，用于单机环境的redis导入"></a>合并redis，用于单机环境的redis导入</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line">redis-cli -h srcIp -p 6379 -n 0 keys "*" | while read key</span><br><span class="line">do</span><br><span class="line">    redis-cli -h srcIp -p 6379 -n 0 --raw dump $key | perl -pe 'chomp if eof' | redis-cli -h dest -p 6379 -n 1 -x restore $key 0</span><br><span class="line">    echo "migrate key $key"</span><br><span class="line">done</span><br></pre></td></tr></table></figure>]]></content>
-      
-      
-      <categories>
-          
-          <category> Shell </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
       <title>mysql事务隔离级别</title>
       <link href="/mysql/mysql%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB/"/>
       <url>/mysql/mysql%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB/</url>
@@ -1299,6 +1288,67 @@
     
     
     <entry>
+      <title>Spring-Schedule多线程</title>
+      <link href="/spring/spring-scheduled/"/>
+      <url>/spring/spring-scheduled/</url>
+      
+        <content type="html"><![CDATA[<h1 id="Spring多线程执行任务"><a href="#Spring多线程执行任务" class="headerlink" title="Spring多线程执行任务"></a>Spring多线程执行任务</h1><p>用Spring执行定时任务，spring默认是单线程执行的也就是说，多个任务会存在等待阻塞情况</p><h2 id="多线程方案"><a href="#多线程方案" class="headerlink" title="多线程方案"></a>多线程方案</h2><p>用如下方法注入</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ScheduleConfigure</span> <span class="keyword">implements</span> <span class="title">SchedulingConfigurer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">configureTasks</span><span class="params">(ScheduledTaskRegistrar taskRegistrar)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//设定一个长度10的定时任务线程池</span></span><br><span class="line">        taskRegistrar.setScheduler(Executors.newScheduledThreadPool(<span class="number">2</span>));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>]]></content>
+      
+      
+      <categories>
+          
+          <category> java </category>
+          
+          <category> spring </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>shell的积累</title>
+      <link href="/shell/index/"/>
+      <url>/shell/index/</url>
+      
+        <content type="html"><![CDATA[<h1 id="shell的积累"><a href="#shell的积累" class="headerlink" title="shell的积累"></a>shell的积累</h1><p>日常工作中linux的命令的积累</p><h2 id="删除N天的文件的命令-用于清理log"><a href="#删除N天的文件的命令-用于清理log" class="headerlink" title="删除N天的文件的命令-用于清理log"></a>删除N天的文件的命令-用于清理log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find ./ -mtime +1 -name "*.log*" -exec rm -rf &#123;&#125; \;</span><br></pre></td></tr></table></figure><h2 id="按天筛选log"><a href="#按天筛选log" class="headerlink" title="按天筛选log"></a>按天筛选log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -n '/2018-10-15 16:55:00/,/2018-10-15 23:59:59/p' log_path |grep "condition"</span><br></pre></td></tr></table></figure><h2 id="合并redis，用于单机环境的redis导入"><a href="#合并redis，用于单机环境的redis导入" class="headerlink" title="合并redis，用于单机环境的redis导入"></a>合并redis，用于单机环境的redis导入</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line">redis-cli -h srcIp -p 6379 -n 0 keys "*" | while read key</span><br><span class="line">do</span><br><span class="line">    redis-cli -h srcIp -p 6379 -n 0 --raw dump $key | perl -pe 'chomp if eof' | redis-cli -h dest -p 6379 -n 1 -x restore $key 0</span><br><span class="line">    echo "migrate key $key"</span><br><span class="line">done</span><br></pre></td></tr></table></figure>]]></content>
+      
+      
+      <categories>
+          
+          <category> Shell </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>mysql数据的完整性--草稿</title>
+      <link href="/mysql/mysql%E5%88%A0%E9%99%A4%E6%95%B0%E6%8D%AE-%E9%87%8A%E6%94%BE%E8%A1%A8%E7%A9%BA%E9%97%B4/"/>
+      <url>/mysql/mysql%E5%88%A0%E9%99%A4%E6%95%B0%E6%8D%AE-%E9%87%8A%E6%94%BE%E8%A1%A8%E7%A9%BA%E9%97%B4/</url>
+      
+        <content type="html"><![CDATA[<h1 id="mysql的数据删除的原理"><a href="#mysql的数据删除的原理" class="headerlink" title="mysql的数据删除的原理"></a>mysql的数据删除的原理</h1><p>我的数据删除了为什么表还是这么大？</p><h2 id="mysql删除数据的原理"><a href="#mysql删除数据的原理" class="headerlink" title="mysql删除数据的原理"></a>mysql删除数据的原理</h2><p>  mysql采用标记删除法，即并不是物理删除而是采用标记删除。<br>  delete数据时候：数据标记为可服用，如果插入的数据在这个数据页，可复用这个空间，例如：索引页的范围内可复用，超过了则需要插入新的空间。<br>  delete整个数据页：如果数据页上所有数据被删除，则整个数据页可复用。</p><h2 id="数据页的分裂和合并"><a href="#数据页的分裂和合并" class="headerlink" title="数据页的分裂和合并"></a>数据页的分裂和合并</h2><p>  如果数据页利用率小，数据页会合并。<br>  如果数据页满了，中间插入会导致数据页分裂。</p><h2 id="释放表空间"><a href="#释放表空间" class="headerlink" title="释放表空间"></a>释放表空间</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE t ENGINE=innodb;</span><br></pre></td></tr></table></figure><p>在mysql5.5会有MDL锁，不能Online执行</p><p>在mysql5.6会有online ddl机制，但是会小号CPU和IO（因为扫表），大表请谨慎。</p><p>这两种区别<br>5.5是在server层,copy出tmp_table，这时候不能对原表进行操作，然后copy到老表中。<br>5.6是在innodb层,copy出tmp_file,改的写row_log,然后重放生成逻辑一直的新表，tmp_file inplace操作到老表中。（tmp_file是个inplace操作）</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> Mysql </category>
+          
+          <category> Mysql基础 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>mysql是怎么保证高可用的</title>
       <link href="/mysql/mysql%E6%98%AF%E6%80%8E%E4%B9%88%E4%BF%9D%E8%AF%81%E9%AB%98%E5%8F%AF%E7%94%A8%E7%9A%84/"/>
       <url>/mysql/mysql%E6%98%AF%E6%80%8E%E4%B9%88%E4%BF%9D%E8%AF%81%E9%AB%98%E5%8F%AF%E7%94%A8%E7%9A%84/</url>
@@ -1330,27 +1380,6 @@
       <categories>
           
           <category> netty </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
-      <title>mysql数据的完整性--草稿</title>
-      <link href="/mysql/mysql%E5%88%A0%E9%99%A4%E6%95%B0%E6%8D%AE-%E9%87%8A%E6%94%BE%E8%A1%A8%E7%A9%BA%E9%97%B4/"/>
-      <url>/mysql/mysql%E5%88%A0%E9%99%A4%E6%95%B0%E6%8D%AE-%E9%87%8A%E6%94%BE%E8%A1%A8%E7%A9%BA%E9%97%B4/</url>
-      
-        <content type="html"><![CDATA[<h1 id="mysql的数据删除的原理"><a href="#mysql的数据删除的原理" class="headerlink" title="mysql的数据删除的原理"></a>mysql的数据删除的原理</h1><p>我的数据删除了为什么表还是这么大？</p><h2 id="mysql删除数据的原理"><a href="#mysql删除数据的原理" class="headerlink" title="mysql删除数据的原理"></a>mysql删除数据的原理</h2><p>  mysql采用标记删除法，即并不是物理删除而是采用标记删除。<br>  delete数据时候：数据标记为可服用，如果插入的数据在这个数据页，可复用这个空间，例如：索引页的范围内可复用，超过了则需要插入新的空间。<br>  delete整个数据页：如果数据页上所有数据被删除，则整个数据页可复用。</p><h2 id="数据页的分裂和合并"><a href="#数据页的分裂和合并" class="headerlink" title="数据页的分裂和合并"></a>数据页的分裂和合并</h2><p>  如果数据页利用率小，数据页会合并。<br>  如果数据页满了，中间插入会导致数据页分裂。</p><h2 id="释放表空间"><a href="#释放表空间" class="headerlink" title="释放表空间"></a>释放表空间</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE t ENGINE=innodb;</span><br></pre></td></tr></table></figure><p>在mysql5.5会有MDL锁，不能Online执行</p><p>在mysql5.6会有online ddl机制，但是会小号CPU和IO（因为扫表），大表请谨慎。</p><p>这两种区别<br>5.5是在server层,copy出tmp_table，这时候不能对原表进行操作，然后copy到老表中。<br>5.6是在innodb层,copy出tmp_file,改的写row_log,然后重放生成逻辑一直的新表，tmp_file inplace操作到老表中。（tmp_file是个inplace操作）</p>]]></content>
-      
-      
-      <categories>
-          
-          <category> Mysql </category>
-          
-          <category> Mysql基础 </category>
           
       </categories>
       
@@ -1442,25 +1471,6 @@
     
     
     <entry>
-      <title>源代码说明</title>
-      <link href="/netty/%E8%AF%B4%E6%98%8E/"/>
-      <url>/netty/%E8%AF%B4%E6%98%8E/</url>
-      
-        <content type="html"><![CDATA[<h1 id="netty-源码的学习"><a href="#netty-源码的学习" class="headerlink" title="netty 源码的学习"></a>netty 源码的学习</h1><p>netty源码学习的git地址：<a href="https://github.com/liuhao163/netty.git" target="_blank" rel="noopener">https://github.com/liuhao163/netty.git</a></p><p>branch:4.1-ericliu</p>]]></content>
-      
-      
-      <categories>
-          
-          <category> netty </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
       <title>mysql是如何保证主从同步的（binlog）--草稿</title>
       <link href="/mysql/mysql%E6%98%AF%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E4%B8%BB%E4%BB%8E%E5%90%8C%E6%AD%A5%E7%9A%84%EF%BC%88binlog%EF%BC%89/"/>
       <url>/mysql/mysql%E6%98%AF%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E4%B8%BB%E4%BB%8E%E5%90%8C%E6%AD%A5%E7%9A%84%EF%BC%88binlog%EF%BC%89/</url>
@@ -1473,6 +1483,25 @@
           <category> Mysql </category>
           
           <category> Mysql高可用架构 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>源代码说明</title>
+      <link href="/netty/%E8%AF%B4%E6%98%8E/"/>
+      <url>/netty/%E8%AF%B4%E6%98%8E/</url>
+      
+        <content type="html"><![CDATA[<h1 id="netty-源码的学习"><a href="#netty-源码的学习" class="headerlink" title="netty 源码的学习"></a>netty 源码的学习</h1><p>netty源码学习的git地址：<a href="https://github.com/liuhao163/netty.git" target="_blank" rel="noopener">https://github.com/liuhao163/netty.git</a></p><p>branch:4.1-ericliu</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> netty </category>
           
       </categories>
       

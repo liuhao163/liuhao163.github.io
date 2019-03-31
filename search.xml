@@ -80,9 +80,9 @@
       
         <tags>
             
-            <tag> 数据结构 </tag>
-            
             <tag> 算法 </tag>
+            
+            <tag> 数据结构 </tag>
             
             <tag> 队列 </tag>
             
@@ -140,11 +140,11 @@
       
         <tags>
             
-            <tag> 链表 </tag>
+            <tag> 算法 </tag>
             
             <tag> 数据结构 </tag>
             
-            <tag> 算法 </tag>
+            <tag> 链表 </tag>
             
             <tag> 代码 </tag>
             
@@ -155,11 +155,11 @@
     
     
     <entry>
-      <title>JAVA线程-为什么局部变量是线程安全的</title>
-      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/"/>
-      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/</url>
+      <title>JAVA线程-开启多少线程合适</title>
+      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/"/>
+      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/</url>
       
-        <content type="html"><![CDATA[<h1 id="方法是如何被执行"><a href="#方法是如何被执行" class="headerlink" title="方法是如何被执行"></a>方法是如何被执行</h1><p>例如下面的程序</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">7</span>；</span><br><span class="line"><span class="keyword">int</span>[] b = fibonacci(a);</span><br><span class="line"><span class="keyword">int</span>[] c = b;</span><br></pre></td></tr></table></figure><p>当jvm调用fibonacci(a)时，通过cpu的寄存器找到方法的地址。cpu支持一种栈结构，他和方法息息相关，所以一般叫做调用栈。<br>栈这种数据结构的特点是后进先出，所以当一个遇到方法嵌套时候比如a–&gt;b–&gt;c，那么入栈的时候就是c–&gt;b–&gt;a，执行顺序也是c–&gt;b–&gt;a。</p><h1 id="方法中的局部变量"><a href="#方法中的局部变量" class="headerlink" title="方法中的局部变量"></a>方法中的局部变量</h1><p>  方法实际上是以栈帧为单位入栈的，一个方法从入口到返回都在一个栈帧中，栈帧和方法的生命周期是一样的，当方法结束，栈帧也就失效了，而方法中的局部变量都是保存在栈帧中的，他的生命周期也是在方法内部。且为了线程之间不相互干扰，每个线程都有一个独立的栈帧。综上，栈帧是线程安全的。</p><p>  这种方式有个名词叫线程封闭，即仅在单线程内访问数据，不共享就没有线程安全的问题。例如：我们常用的数据库连接池，connection的方法并没有声明线程安全，我们在使用中都是在一个方法内获取conenection，查询数据，关闭connecton，这这种线程封闭方式来解决线程安全的问题。</p>]]></content>
+        <content type="html"><![CDATA[<h1 id="为什么要使用多线程"><a href="#为什么要使用多线程" class="headerlink" title="为什么要使用多线程"></a>为什么要使用多线程</h1><p>  我们评价一个操作系统性能好的系统往往是俩点低延迟、高吞吐。做到这俩点，往往需要一优化算法，二有效利用硬件。对于一不在此讨论的范畴，而硬件利用率大致往往分俩类，即cpu的利用率，和i/o的利用。<br>  单线程时代：我们的程序往往是cpu和io设备相互配合执行，所以一个单线程的程序执行cpu操作时候io就要停下来等待cpu完成，为了提高io和cpu的利用率，操作系统为我们提供了多线程技术。<br>  线程1处理cpu的计算，线程2处理io请求。处理玩io请求后在切换回来，这样利用率就得到了提高</p><h1 id="线程多了就一定快么"><a href="#线程多了就一定快么" class="headerlink" title="线程多了就一定快么"></a>线程多了就一定快么</h1><p>  针对我们程序的特点分为，io密集型和计算密集型俩种。如果io操作执行的比例比较大就是io密集型，如果cpu计算的比例比较大就是计算密集型。<br>  在单核时代，对于计算密集型的业务增加线程反而会拖慢程序执行效率，因为只有一个核，所以同时只能有一个线程在运行，增加线程反而加大了线程切换的损耗。<br>  在多核时代，对于计算密集型的业务是可以通过增加线程提高性能的，但是设置应该是cpu的核数+1，充分利用起cpu。<br>  对于io密集型的业务，由于一般io的耗时比cpu要多的多，那么线程往往是cpu的核数*io耗时/cpu耗时+1。</p>]]></content>
       
       
       <categories>
@@ -184,11 +184,11 @@
     
     
     <entry>
-      <title>JAVA线程-开启多少线程合适</title>
-      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/"/>
-      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/</url>
+      <title>JAVA线程-为什么局部变量是线程安全的</title>
+      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/"/>
+      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/</url>
       
-        <content type="html"><![CDATA[<h1 id="为什么要使用多线程"><a href="#为什么要使用多线程" class="headerlink" title="为什么要使用多线程"></a>为什么要使用多线程</h1><p>  我们评价一个操作系统性能好的系统往往是俩点低延迟、高吞吐。做到这俩点，往往需要一优化算法，二有效利用硬件。对于一不在此讨论的范畴，而硬件利用率大致往往分俩类，即cpu的利用率，和i/o的利用。<br>  单线程时代：我们的程序往往是cpu和io设备相互配合执行，所以一个单线程的程序执行cpu操作时候io就要停下来等待cpu完成，为了提高io和cpu的利用率，操作系统为我们提供了多线程技术。<br>  线程1处理cpu的计算，线程2处理io请求。处理玩io请求后在切换回来，这样利用率就得到了提高</p><h1 id="线程多了就一定快么"><a href="#线程多了就一定快么" class="headerlink" title="线程多了就一定快么"></a>线程多了就一定快么</h1><p>  针对我们程序的特点分为，io密集型和计算密集型俩种。如果io操作执行的比例比较大就是io密集型，如果cpu计算的比例比较大就是计算密集型。<br>  在单核时代，对于计算密集型的业务增加线程反而会拖慢程序执行效率，因为只有一个核，所以同时只能有一个线程在运行，增加线程反而加大了线程切换的损耗。<br>  在多核时代，对于计算密集型的业务是可以通过增加线程提高性能的，但是设置应该是cpu的核数+1，充分利用起cpu。<br>  对于io密集型的业务，由于一般io的耗时比cpu要多的多，那么线程往往是cpu的核数*io耗时/cpu耗时+1。</p>]]></content>
+        <content type="html"><![CDATA[<h1 id="方法是如何被执行"><a href="#方法是如何被执行" class="headerlink" title="方法是如何被执行"></a>方法是如何被执行</h1><p>例如下面的程序</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">7</span>；</span><br><span class="line"><span class="keyword">int</span>[] b = fibonacci(a);</span><br><span class="line"><span class="keyword">int</span>[] c = b;</span><br></pre></td></tr></table></figure><p>当jvm调用fibonacci(a)时，通过cpu的寄存器找到方法的地址。cpu支持一种栈结构，他和方法息息相关，所以一般叫做调用栈。<br>栈这种数据结构的特点是后进先出，所以当一个遇到方法嵌套时候比如a–&gt;b–&gt;c，那么入栈的时候就是c–&gt;b–&gt;a，执行顺序也是c–&gt;b–&gt;a。</p><h1 id="方法中的局部变量"><a href="#方法中的局部变量" class="headerlink" title="方法中的局部变量"></a>方法中的局部变量</h1><p>  方法实际上是以栈帧为单位入栈的，一个方法从入口到返回都在一个栈帧中，栈帧和方法的生命周期是一样的，当方法结束，栈帧也就失效了，而方法中的局部变量都是保存在栈帧中的，他的生命周期也是在方法内部。且为了线程之间不相互干扰，每个线程都有一个独立的栈帧。综上，栈帧是线程安全的。</p><p>  这种方式有个名词叫线程封闭，即仅在单线程内访问数据，不共享就没有线程安全的问题。例如：我们常用的数据库连接池，connection的方法并没有声明线程安全，我们在使用中都是在一个方法内获取conenection，查询数据，关闭connecton，这这种线程封闭方式来解决线程安全的问题。</p>]]></content>
       
       
       <categories>
@@ -1122,25 +1122,6 @@
     
     
     <entry>
-      <title>其他</title>
-      <link href="/mysql/%E5%85%B6%E4%BB%96/"/>
-      <url>/mysql/%E5%85%B6%E4%BB%96/</url>
-      
-        <content type="html"><![CDATA[<h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><p>查询长事物的语句</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> information_schema.innodb_trx <span class="keyword">where</span> TIME_TO_SEC(<span class="keyword">timediff</span>(<span class="keyword">now</span>(),trx_started))&gt;<span class="number">60</span></span><br></pre></td></tr></table></figure>]]></content>
-      
-      
-      <categories>
-          
-          <category> Mysql </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
       <title>mysql的锁-全局锁、表锁、行锁、间隙锁</title>
       <link href="/mysql/mysql%E7%9A%84%E9%94%81/"/>
       <url>/mysql/mysql%E7%9A%84%E9%94%81/</url>
@@ -1153,6 +1134,25 @@
           <category> Mysql </category>
           
           <category> Mysql基础 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>其他</title>
+      <link href="/mysql/%E5%85%B6%E4%BB%96/"/>
+      <url>/mysql/%E5%85%B6%E4%BB%96/</url>
+      
+        <content type="html"><![CDATA[<h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><p>查询长事物的语句</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> information_schema.innodb_trx <span class="keyword">where</span> TIME_TO_SEC(<span class="keyword">timediff</span>(<span class="keyword">now</span>(),trx_started))&gt;<span class="number">60</span></span><br></pre></td></tr></table></figure>]]></content>
+      
+      
+      <categories>
+          
+          <category> Mysql </category>
           
       </categories>
       
@@ -1267,27 +1267,6 @@
     
     
     <entry>
-      <title>mysql数据的完整性</title>
-      <link href="/mysql/mysql%E7%9A%84%E4%B8%BB%E4%BB%8E%E5%88%87%E6%8D%A2/"/>
-      <url>/mysql/mysql%E7%9A%84%E4%B8%BB%E4%BB%8E%E5%88%87%E6%8D%A2/</url>
-      
-        <content type="html"><![CDATA[<h1 id="MySql的主从切换"><a href="#MySql的主从切换" class="headerlink" title="MySql的主从切换"></a>MySql的主从切换</h1><p>大部分业务数据库都是读多写少，我们在实际使用情况上往往会遇到读性能，本章主要讲述如何解决读延迟</p><h2 id="一主多从的架构"><a href="#一主多从的架构" class="headerlink" title="一主多从的架构"></a>一主多从的架构</h2><p>我们一般会采取一主多从架构，主库承担所有的写和一部分读的任务，丛库根据承担读的任务。</p><p>如图：<br><img src="/images/mysql/mysql一主多从架构.png" alt="avatar"></p><ol><li>A和A’互为主备</li><li>B、C、D是A的从库</li></ol><p>下面我们来通论下当主库A发生故障后，A’成为主库，BCD的主库也要都指向A’，下面我们来讨论下遇到这种情况，mysql是如何做主从切换的。<br>如图：<br><img src="/images/mysql/mysql一主多从故障.png" alt="avatar"></p><h3 id="基于位点的主备切换"><a href="#基于位点的主备切换" class="headerlink" title="基于位点的主备切换"></a>基于位点的主备切换</h3><p>当把B置为A’的从库时候要执行如下命令</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CHANGE</span> <span class="keyword">MASTER</span> <span class="keyword">TO</span></span><br><span class="line">MASTER_HOST=$host_name</span><br><span class="line">MASTER_PORT=$port</span><br><span class="line">MASTER_USER=$user_name</span><br><span class="line">MASTER_PASSWORD=$<span class="keyword">password</span></span><br><span class="line">MASTER_LOG_FILE=$master_log_name</span><br><span class="line">MASTER_LOG_POS=$master_log_pos</span><br></pre></td></tr></table></figure><ul><li>host_name、port、user_name、password主库的IP、端口、用于主从同步的数据库用户名、密码</li><li>master_log_name，和master_log_pos就是A’库binlog的文件名和位置成为位点；</li></ul><p>原来的B是A的从库，所以B中记录的是A的位点，在change master之后，B要将位点置为A’的位点，由于A和A’记录的位点不一样，所以要大概估算出一个靠前一点的位点，在忽略掉主从不同步的情况。为什么要靠前一点的主要是有下面这种情况，下面语句是分析mysqlbinlog找到位点</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mysqlbinlog File <span class="comment">--stop-datetime=T --start-datetime=T</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#比如这是看到了pos是123，我们B在chenagemaster时候可以往前一点比如110；</span></span><br></pre></td></tr></table></figure><blockquote><p>在A插入了一行R，同时同步给B和A’这时候A出现故障，B和A’都已经有了R行数据，如果这时候changemaster会提示主键冲突，停止同步。</p></blockquote><p>解决的方案：</p><ol><li>主动跳过1个事务,如下的命令，每次遇到这样的错误都跳过知道最后没有错误为止</li><li>通过设置slave_skip_errors参数，直接跳过指定错误，常见的错误如下，可以直接跳过“1062，1032”<ol><li>1062 错误是插入数据时唯一键冲突；</li><li>1032 错误是删除数据时找不到行。</li></ol></li></ol><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> <span class="keyword">global</span> sql_slave_skip_counter=N;</span><br><span class="line"><span class="keyword">start</span> <span class="keyword">slave</span>;</span><br></pre></td></tr></table></figure><p>注意：前提是这俩种操作是对业务无损的。</p><h3 id="GTID–-since-v5-6"><a href="#GTID–-since-v5-6" class="headerlink" title="GTID– since v5.6"></a>GTID– since v5.6</h3><p>基于位面做主从切换比较复杂且很容易出错，所以mysql在5.6后引入了gtid彻底解决了这个问题。</p><p>GTID全程是Global Transaction Identifier,即全局事物ID，即一个事物提交后生成的全局唯一ID，他有俩个部分组成</p><blockquote><p>GTID=server_uuid:gno（官方定义：GTID=source_id:transaction_id）<br>其中：</p></blockquote><ol><li>server_uuid是mysql的实例ID</li><li>gno是一个递增的整数，</li></ol><p>如何启动gtid呢？</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gtid_mode=on</span><br><span class="line">enforce_gtid_consistency=on</span><br></pre></td></tr></table></figure><p>下图就是我在主库上执行了一条插入看到的binlog,其中SET @@SESSION.GTID_NEXT= ‘b01b34d1-25cf-11e9-8e68-9ec1c2413262:1’就是这条事物的GTID</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show binlog events IN 'mysql-bin.000028';</span><br><span class="line">+<span class="comment">------------------+-----+----------------+-----------+-------------+-------------------------------------------------------------------+</span></span><br><span class="line">| Log_name         | Pos | Event_type     | Server_id | End_log_pos | Info                                                              |</span><br><span class="line">+<span class="comment">------------------+-----+----------------+-----------+-------------+-------------------------------------------------------------------+</span></span><br><span class="line">| mysql-bin.000028 |   4 | Format_desc    |         1 |         123 | Server ver: 5.7.25-log, Binlog ver: 4                             |</span><br><span class="line">| mysql-bin.000028 | 123 | Previous_gtids |         1 |         154 |                                                                   |</span><br><span class="line">| mysql-bin.000028 | 154 | Gtid           |         1 |         219 | <span class="keyword">SET</span> @@SESSION.GTID_NEXT= <span class="string">'b01b34d1-25cf-11e9-8e68-9ec1c2413262:1'</span> |</span><br><span class="line">| mysql-<span class="keyword">bin</span><span class="number">.000028</span> | <span class="number">219</span> | <span class="keyword">Query</span>          |         <span class="number">1</span> |         <span class="number">293</span> | <span class="keyword">BEGIN</span>                                                             |</span><br><span class="line">| mysql-<span class="keyword">bin</span><span class="number">.000028</span> | <span class="number">293</span> | Table_map      |         <span class="number">1</span> |         <span class="number">340</span> | table_id: <span class="number">108</span> (liuhao.t)                                          |</span><br><span class="line">| mysql-<span class="keyword">bin</span><span class="number">.000028</span> | <span class="number">340</span> | Write_rows     |         <span class="number">1</span> |         <span class="number">384</span> | table_id: <span class="number">108</span> flags: STMT_END_F                                   |</span><br><span class="line">| mysql-<span class="keyword">bin</span><span class="number">.000028</span> | <span class="number">384</span> | Xid            |         <span class="number">1</span> |         <span class="number">415</span> | <span class="keyword">COMMIT</span> <span class="comment">/* xid=23 */</span>                                               |</span><br><span class="line">+<span class="comment">------------------+-----+----------------+-----------+-------------+-------------------------------------------------------------------+</span></span><br></pre></td></tr></table></figure><p>gtid的分配方式:</p><ol><li>当gtid_next=automatic时候，代表使用默认值:<ol><li>记录binlog时候先记录一行SET @@SESSION.GTID_NEXT=</li><li>把这个gtid加入到本地实例的gtid集合中（Executed_Gtid_set）</li></ol></li><li>如果gtid_next=是一个指定的gtid值时候，比如通过set gtid_next=’current_gtid’指定为当前的current_gtid时候，<ol><li>如果current_gtid已经存在于gtid集合，接下来执行这个事务会跳过这个事务；</li><li>如果current_gtid不存在于gtid这个集合中，将这个current_gtid分配给新的事务，说明系统不需要分配新的gtid,gno也不需要加1</li></ol></li></ol><p>gtid的使用方法</p><p>加入一个库X是有一条数据（1,1),他的的gtid=aaaaaaaa-cccc-dddd-eeee-0000000000000:1<br>同时X作为了Y的从库，Y写入了一条数据（1,1）,他的gtid=aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10</p><p>我们在X上执行如下的命令</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#将X的gtid_next置为Y库的aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10</span></span><br><span class="line"><span class="keyword">set</span> gtid_next=<span class="string">'aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10'</span>;</span><br><span class="line"><span class="comment">#提交一个空事物，把“aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10”这个gtid置为X的Executed_Gtid_set中，遇到冲突可以跳过</span></span><br><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">commit</span>;</span><br><span class="line"><span class="comment">#置gtid_next为automatic,下一个事物就变为了“aaaaaaaa-cccc-dddd-eeee-ffffffffffff:11”</span></span><br><span class="line"><span class="keyword">set</span> gtid_next=<span class="keyword">automatic</span>;</span><br><span class="line"><span class="comment">#开启从库</span></span><br><span class="line"><span class="keyword">start</span> <span class="keyword">slave</span>;</span><br></pre></td></tr></table></figure><h4 id="基于GTID的主备切换"><a href="#基于GTID的主备切换" class="headerlink" title="基于GTID的主备切换"></a>基于GTID的主备切换</h4><p>执行如下命令注意,master_auto_position表示的这个主备关系支持GTID协议，我们之前的MASTER_LOG_FILE和MASTER_LOG_POS已经不需要指定了。</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CHANGE</span> <span class="keyword">MASTER</span> <span class="keyword">TO</span></span><br><span class="line">MASTER_HOST=$host_name</span><br><span class="line">MASTER_PORT=$port</span><br><span class="line">MASTER_USER=$user_name</span><br><span class="line">MASTER_PASSWORD=$<span class="keyword">password</span></span><br><span class="line">master_auto_position=<span class="number">1</span></span><br></pre></td></tr></table></figure><p>B通过CHANGE MASTER变为A’的从库，B的gtid_set为set_b，A的gtid_set为set_a，在start slave时候逻辑如下：</p><ol><li>A和B建立主备关系;</li><li>B把set_b发个A’;</li><li>A’计算set_a和set_b的差集，差集说明是B需要执行的binlog,同时判断A是否包含了这些binlog<ol><li>不包含，直接报错，说明A已经把这些BINLOG删除了</li><li>如果全部包含，A’从自己的binlog里找出第一个差集中的binlog开始同步</li></ol></li><li>之后从这个事务开始一直往B同步</li></ol><p>这种方式，由之前通过位点同步的，由从库来决定从哪里同步，到主库通过获取从库的gtid来计算出从哪里开始同步。</p>]]></content>
-      
-      
-      <categories>
-          
-          <category> Mysql </category>
-          
-          <category> Mysql高可用架构 </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
       <title>Spring-Schedule多线程</title>
       <link href="/spring/spring-scheduled/"/>
       <url>/spring/spring-scheduled/</url>
@@ -1328,18 +1307,18 @@
     
     
     <entry>
-      <title>mysql数据的完整性--草稿</title>
-      <link href="/mysql/mysql%E5%88%A0%E9%99%A4%E6%95%B0%E6%8D%AE-%E9%87%8A%E6%94%BE%E8%A1%A8%E7%A9%BA%E9%97%B4/"/>
-      <url>/mysql/mysql%E5%88%A0%E9%99%A4%E6%95%B0%E6%8D%AE-%E9%87%8A%E6%94%BE%E8%A1%A8%E7%A9%BA%E9%97%B4/</url>
+      <title>mysql数据的完整性</title>
+      <link href="/mysql/mysql%E7%9A%84%E4%B8%BB%E4%BB%8E%E5%88%87%E6%8D%A2/"/>
+      <url>/mysql/mysql%E7%9A%84%E4%B8%BB%E4%BB%8E%E5%88%87%E6%8D%A2/</url>
       
-        <content type="html"><![CDATA[<h1 id="mysql的数据删除的原理"><a href="#mysql的数据删除的原理" class="headerlink" title="mysql的数据删除的原理"></a>mysql的数据删除的原理</h1><p>我的数据删除了为什么表还是这么大？</p><h2 id="mysql删除数据的原理"><a href="#mysql删除数据的原理" class="headerlink" title="mysql删除数据的原理"></a>mysql删除数据的原理</h2><p>  mysql采用标记删除法，即并不是物理删除而是采用标记删除。<br>  delete数据时候：数据标记为可服用，如果插入的数据在这个数据页，可复用这个空间，例如：索引页的范围内可复用，超过了则需要插入新的空间。<br>  delete整个数据页：如果数据页上所有数据被删除，则整个数据页可复用。</p><h2 id="数据页的分裂和合并"><a href="#数据页的分裂和合并" class="headerlink" title="数据页的分裂和合并"></a>数据页的分裂和合并</h2><p>  如果数据页利用率小，数据页会合并。<br>  如果数据页满了，中间插入会导致数据页分裂。</p><h2 id="释放表空间"><a href="#释放表空间" class="headerlink" title="释放表空间"></a>释放表空间</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE t ENGINE=innodb;</span><br></pre></td></tr></table></figure><p>在mysql5.5会有MDL锁，不能Online执行</p><p>在mysql5.6会有online ddl机制，但是会小号CPU和IO（因为扫表），大表请谨慎。</p><p>这两种区别<br>5.5是在server层,copy出tmp_table，这时候不能对原表进行操作，然后copy到老表中。<br>5.6是在innodb层,copy出tmp_file,改的写row_log,然后重放生成逻辑一直的新表，tmp_file inplace操作到老表中。（tmp_file是个inplace操作）</p>]]></content>
+        <content type="html"><![CDATA[<h1 id="MySql的主从切换"><a href="#MySql的主从切换" class="headerlink" title="MySql的主从切换"></a>MySql的主从切换</h1><p>大部分业务数据库都是读多写少，我们在实际使用情况上往往会遇到读性能，本章主要讲述如何解决读延迟</p><h2 id="一主多从的架构"><a href="#一主多从的架构" class="headerlink" title="一主多从的架构"></a>一主多从的架构</h2><p>我们一般会采取一主多从架构，主库承担所有的写和一部分读的任务，丛库根据承担读的任务。</p><p>如图：<br><img src="/images/mysql/mysql一主多从架构.png" alt="avatar"></p><ol><li>A和A’互为主备</li><li>B、C、D是A的从库</li></ol><p>下面我们来通论下当主库A发生故障后，A’成为主库，BCD的主库也要都指向A’，下面我们来讨论下遇到这种情况，mysql是如何做主从切换的。<br>如图：<br><img src="/images/mysql/mysql一主多从故障.png" alt="avatar"></p><h3 id="基于位点的主备切换"><a href="#基于位点的主备切换" class="headerlink" title="基于位点的主备切换"></a>基于位点的主备切换</h3><p>当把B置为A’的从库时候要执行如下命令</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CHANGE</span> <span class="keyword">MASTER</span> <span class="keyword">TO</span></span><br><span class="line">MASTER_HOST=$host_name</span><br><span class="line">MASTER_PORT=$port</span><br><span class="line">MASTER_USER=$user_name</span><br><span class="line">MASTER_PASSWORD=$<span class="keyword">password</span></span><br><span class="line">MASTER_LOG_FILE=$master_log_name</span><br><span class="line">MASTER_LOG_POS=$master_log_pos</span><br></pre></td></tr></table></figure><ul><li>host_name、port、user_name、password主库的IP、端口、用于主从同步的数据库用户名、密码</li><li>master_log_name，和master_log_pos就是A’库binlog的文件名和位置成为位点；</li></ul><p>原来的B是A的从库，所以B中记录的是A的位点，在change master之后，B要将位点置为A’的位点，由于A和A’记录的位点不一样，所以要大概估算出一个靠前一点的位点，在忽略掉主从不同步的情况。为什么要靠前一点的主要是有下面这种情况，下面语句是分析mysqlbinlog找到位点</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mysqlbinlog File <span class="comment">--stop-datetime=T --start-datetime=T</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#比如这是看到了pos是123，我们B在chenagemaster时候可以往前一点比如110；</span></span><br></pre></td></tr></table></figure><blockquote><p>在A插入了一行R，同时同步给B和A’这时候A出现故障，B和A’都已经有了R行数据，如果这时候changemaster会提示主键冲突，停止同步。</p></blockquote><p>解决的方案：</p><ol><li>主动跳过1个事务,如下的命令，每次遇到这样的错误都跳过知道最后没有错误为止</li><li>通过设置slave_skip_errors参数，直接跳过指定错误，常见的错误如下，可以直接跳过“1062，1032”<ol><li>1062 错误是插入数据时唯一键冲突；</li><li>1032 错误是删除数据时找不到行。</li></ol></li></ol><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> <span class="keyword">global</span> sql_slave_skip_counter=N;</span><br><span class="line"><span class="keyword">start</span> <span class="keyword">slave</span>;</span><br></pre></td></tr></table></figure><p>注意：前提是这俩种操作是对业务无损的。</p><h3 id="GTID–-since-v5-6"><a href="#GTID–-since-v5-6" class="headerlink" title="GTID– since v5.6"></a>GTID– since v5.6</h3><p>基于位面做主从切换比较复杂且很容易出错，所以mysql在5.6后引入了gtid彻底解决了这个问题。</p><p>GTID全程是Global Transaction Identifier,即全局事物ID，即一个事物提交后生成的全局唯一ID，他有俩个部分组成</p><blockquote><p>GTID=server_uuid:gno（官方定义：GTID=source_id:transaction_id）<br>其中：</p></blockquote><ol><li>server_uuid是mysql的实例ID</li><li>gno是一个递增的整数，</li></ol><p>如何启动gtid呢？</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gtid_mode=on</span><br><span class="line">enforce_gtid_consistency=on</span><br></pre></td></tr></table></figure><p>下图就是我在主库上执行了一条插入看到的binlog,其中SET @@SESSION.GTID_NEXT= ‘b01b34d1-25cf-11e9-8e68-9ec1c2413262:1’就是这条事物的GTID</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show binlog events IN 'mysql-bin.000028';</span><br><span class="line">+<span class="comment">------------------+-----+----------------+-----------+-------------+-------------------------------------------------------------------+</span></span><br><span class="line">| Log_name         | Pos | Event_type     | Server_id | End_log_pos | Info                                                              |</span><br><span class="line">+<span class="comment">------------------+-----+----------------+-----------+-------------+-------------------------------------------------------------------+</span></span><br><span class="line">| mysql-bin.000028 |   4 | Format_desc    |         1 |         123 | Server ver: 5.7.25-log, Binlog ver: 4                             |</span><br><span class="line">| mysql-bin.000028 | 123 | Previous_gtids |         1 |         154 |                                                                   |</span><br><span class="line">| mysql-bin.000028 | 154 | Gtid           |         1 |         219 | <span class="keyword">SET</span> @@SESSION.GTID_NEXT= <span class="string">'b01b34d1-25cf-11e9-8e68-9ec1c2413262:1'</span> |</span><br><span class="line">| mysql-<span class="keyword">bin</span><span class="number">.000028</span> | <span class="number">219</span> | <span class="keyword">Query</span>          |         <span class="number">1</span> |         <span class="number">293</span> | <span class="keyword">BEGIN</span>                                                             |</span><br><span class="line">| mysql-<span class="keyword">bin</span><span class="number">.000028</span> | <span class="number">293</span> | Table_map      |         <span class="number">1</span> |         <span class="number">340</span> | table_id: <span class="number">108</span> (liuhao.t)                                          |</span><br><span class="line">| mysql-<span class="keyword">bin</span><span class="number">.000028</span> | <span class="number">340</span> | Write_rows     |         <span class="number">1</span> |         <span class="number">384</span> | table_id: <span class="number">108</span> flags: STMT_END_F                                   |</span><br><span class="line">| mysql-<span class="keyword">bin</span><span class="number">.000028</span> | <span class="number">384</span> | Xid            |         <span class="number">1</span> |         <span class="number">415</span> | <span class="keyword">COMMIT</span> <span class="comment">/* xid=23 */</span>                                               |</span><br><span class="line">+<span class="comment">------------------+-----+----------------+-----------+-------------+-------------------------------------------------------------------+</span></span><br></pre></td></tr></table></figure><p>gtid的分配方式:</p><ol><li>当gtid_next=automatic时候，代表使用默认值:<ol><li>记录binlog时候先记录一行SET @@SESSION.GTID_NEXT=</li><li>把这个gtid加入到本地实例的gtid集合中（Executed_Gtid_set）</li></ol></li><li>如果gtid_next=是一个指定的gtid值时候，比如通过set gtid_next=’current_gtid’指定为当前的current_gtid时候，<ol><li>如果current_gtid已经存在于gtid集合，接下来执行这个事务会跳过这个事务；</li><li>如果current_gtid不存在于gtid这个集合中，将这个current_gtid分配给新的事务，说明系统不需要分配新的gtid,gno也不需要加1</li></ol></li></ol><p>gtid的使用方法</p><p>加入一个库X是有一条数据（1,1),他的的gtid=aaaaaaaa-cccc-dddd-eeee-0000000000000:1<br>同时X作为了Y的从库，Y写入了一条数据（1,1）,他的gtid=aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10</p><p>我们在X上执行如下的命令</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#将X的gtid_next置为Y库的aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10</span></span><br><span class="line"><span class="keyword">set</span> gtid_next=<span class="string">'aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10'</span>;</span><br><span class="line"><span class="comment">#提交一个空事物，把“aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10”这个gtid置为X的Executed_Gtid_set中，遇到冲突可以跳过</span></span><br><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">commit</span>;</span><br><span class="line"><span class="comment">#置gtid_next为automatic,下一个事物就变为了“aaaaaaaa-cccc-dddd-eeee-ffffffffffff:11”</span></span><br><span class="line"><span class="keyword">set</span> gtid_next=<span class="keyword">automatic</span>;</span><br><span class="line"><span class="comment">#开启从库</span></span><br><span class="line"><span class="keyword">start</span> <span class="keyword">slave</span>;</span><br></pre></td></tr></table></figure><h4 id="基于GTID的主备切换"><a href="#基于GTID的主备切换" class="headerlink" title="基于GTID的主备切换"></a>基于GTID的主备切换</h4><p>执行如下命令注意,master_auto_position表示的这个主备关系支持GTID协议，我们之前的MASTER_LOG_FILE和MASTER_LOG_POS已经不需要指定了。</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CHANGE</span> <span class="keyword">MASTER</span> <span class="keyword">TO</span></span><br><span class="line">MASTER_HOST=$host_name</span><br><span class="line">MASTER_PORT=$port</span><br><span class="line">MASTER_USER=$user_name</span><br><span class="line">MASTER_PASSWORD=$<span class="keyword">password</span></span><br><span class="line">master_auto_position=<span class="number">1</span></span><br></pre></td></tr></table></figure><p>B通过CHANGE MASTER变为A’的从库，B的gtid_set为set_b，A的gtid_set为set_a，在start slave时候逻辑如下：</p><ol><li>A和B建立主备关系;</li><li>B把set_b发个A’;</li><li>A’计算set_a和set_b的差集，差集说明是B需要执行的binlog,同时判断A是否包含了这些binlog<ol><li>不包含，直接报错，说明A已经把这些BINLOG删除了</li><li>如果全部包含，A’从自己的binlog里找出第一个差集中的binlog开始同步</li></ol></li><li>之后从这个事务开始一直往B同步</li></ol><p>这种方式，由之前通过位点同步的，由从库来决定从哪里同步，到主库通过获取从库的gtid来计算出从哪里开始同步。</p>]]></content>
       
       
       <categories>
           
           <category> Mysql </category>
           
-          <category> Mysql基础 </category>
+          <category> Mysql高可用架构 </category>
           
       </categories>
       
@@ -1370,6 +1349,27 @@
     
     
     <entry>
+      <title>mysql数据的完整性--草稿</title>
+      <link href="/mysql/mysql%E5%88%A0%E9%99%A4%E6%95%B0%E6%8D%AE-%E9%87%8A%E6%94%BE%E8%A1%A8%E7%A9%BA%E9%97%B4/"/>
+      <url>/mysql/mysql%E5%88%A0%E9%99%A4%E6%95%B0%E6%8D%AE-%E9%87%8A%E6%94%BE%E8%A1%A8%E7%A9%BA%E9%97%B4/</url>
+      
+        <content type="html"><![CDATA[<h1 id="mysql的数据删除的原理"><a href="#mysql的数据删除的原理" class="headerlink" title="mysql的数据删除的原理"></a>mysql的数据删除的原理</h1><p>我的数据删除了为什么表还是这么大？</p><h2 id="mysql删除数据的原理"><a href="#mysql删除数据的原理" class="headerlink" title="mysql删除数据的原理"></a>mysql删除数据的原理</h2><p>  mysql采用标记删除法，即并不是物理删除而是采用标记删除。<br>  delete数据时候：数据标记为可服用，如果插入的数据在这个数据页，可复用这个空间，例如：索引页的范围内可复用，超过了则需要插入新的空间。<br>  delete整个数据页：如果数据页上所有数据被删除，则整个数据页可复用。</p><h2 id="数据页的分裂和合并"><a href="#数据页的分裂和合并" class="headerlink" title="数据页的分裂和合并"></a>数据页的分裂和合并</h2><p>  如果数据页利用率小，数据页会合并。<br>  如果数据页满了，中间插入会导致数据页分裂。</p><h2 id="释放表空间"><a href="#释放表空间" class="headerlink" title="释放表空间"></a>释放表空间</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE t ENGINE=innodb;</span><br></pre></td></tr></table></figure><p>在mysql5.5会有MDL锁，不能Online执行</p><p>在mysql5.6会有online ddl机制，但是会小号CPU和IO（因为扫表），大表请谨慎。</p><p>这两种区别<br>5.5是在server层,copy出tmp_table，这时候不能对原表进行操作，然后copy到老表中。<br>5.6是在innodb层,copy出tmp_file,改的写row_log,然后重放生成逻辑一直的新表，tmp_file inplace操作到老表中。（tmp_file是个inplace操作）</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> Mysql </category>
+          
+          <category> Mysql基础 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>ByteBuf</title>
       <link href="/netty/ByteBuf/"/>
       <url>/netty/ByteBuf/</url>
@@ -1380,27 +1380,6 @@
       <categories>
           
           <category> netty </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
-      <title>Mysql是如何保证数据不丢失的</title>
-      <link href="/mysql/mysql%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%A2%E5%A4%B1/"/>
-      <url>/mysql/mysql%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%A2%E5%A4%B1/</url>
-      
-        <content type="html"><![CDATA[<h1 id="Mysql是如何保证数据不丢失的"><a href="#Mysql是如何保证数据不丢失的" class="headerlink" title="Mysql是如何保证数据不丢失的"></a>Mysql是如何保证数据不丢失的</h1><h2 id="binlog"><a href="#binlog" class="headerlink" title="binlog"></a>binlog</h2><ol><li>事务执行过程中binlog写入到binlog cache,事务提交时写入到binlog文件中。</li><li>事务的原子性决定这无论事务有多大，binlogcahe都要一次性完整的写入到binlog文件中，写入方式如下：<ol><li>系统为每个binlog_cache开辟了一片内存（每个线程都有一个），参数是blong_cache_size,超过这个阈值的会保存在临时文件中</li><li>事务提交时候，出于性能的考虑回将bionlog_cache都write到文件系统的page_cache中，在通过fsync刷新到磁盘文件中。如下图所示是binlog的同步机制。</li></ol></li></ol><p>如图：<br><img src="/images/mysql/binglog_写入.png" alt="avatar"></p><ul><li>只有fsnyc刷盘这不操作才会占用IOPS。</li><li>write和fsync的时机是用binglog_sync参数来控制的<ul><li>=0 每次事务提交时候都只write不sync</li><li>=1 每次事务提交都sync</li><li>=N（N&gt;1） 每次事务提交都write，积攒到N时候才会fsync</li></ul></li></ul><p>在IO出现瓶颈时候我们可以设置一个较大的值来提升性能（个人不是很推荐做，如果出现这种情况建议从业务考虑优化数据库）</p><h2 id="redolog的写入机制"><a href="#redolog的写入机制" class="headerlink" title="redolog的写入机制"></a>redolog的写入机制</h2><p>redolog从写入到最终写入到磁盘中会经历如下的阶段：写入redolog-buffer中–&gt;在事务提交、或者一定时机（见下面）下：redolog-buffer写入到文件系统的pagecache(write)–&gt;文件系统pagecache写入到磁盘中(fsnyc)，这样的操作的意义是为了提高mysql的吞吐的，具体的机制见下面：</p><p><img src="/images/mysql/redolog_3种状态.png" alt="avatar"></p><ol><li>一个事务会产生很多条redolog如果每次直接持久化磁盘会消耗大量的磁盘IO，所以redolog会先写入redolog-buffer中，之后在write文件系统的到pagecache中，这俩步是内存操作很快。</li><li>是否会影响数据的持久化，比如mysql在事务进行中crash了，这时候redolog-buffer中的数据丢失怎么办？答案是由于事物没有提交，所以事物会进行回滚。</li><li>redolog-buffer持久化的条件和机制：<ol><li>受参数innodb_flush_log_at_tx_commit的控制：<ol><li>=0：每次提交都只停留在redolog-buffer中；</li><li>=1：每次提交都会持久化到磁盘中；</li><li>=2：每次提交都只会写入到文件的pagecache中；</li></ol></li><li>innodb后台会有一个线程每秒一次，会把redolog-buffer中的日志，调用write写到pagecahe中，在fsync到磁盘中；</li><li>其他场景触发redolog的持久化<ol><li>当redolog-buffer占到了innodb_log_buffer_size的一半时候，会调用write将buffer中的log写入到文件系统的pagecache中</li><li>另一种是并行事物提交时候，如果innodb_flush_log_at_tx_commit设置为1时候会，即时当前事物没有commit，也会将redolog写入到文件系统中。</li></ol></li></ol></li></ol><h3 id="双1设置"><a href="#双1设置" class="headerlink" title="双1设置"></a>双1设置</h3><p>即：binlogsnyc=1，innodb_flush_log_at_tx_commit也设置为1。<br>  由于innodb的事物提交redolog和binlog是2PC。<br>     所以当redolog在prepare时候，为了故障恢复一定会持久化一次，所以这时候需要fsync到磁盘中。<br>     binlog在进行fsync到磁盘中<br>     这时候事物在redolog在commit时候，mysql由于有奔溃恢复机制和后台线程每秒轮训一次刷盘会认为redolog没有必要在fsync一次到磁盘了，只会写入到文件的pagecache中。</p><h3 id="gourp-commit机制"><a href="#gourp-commit机制" class="headerlink" title="gourp commit机制"></a>gourp commit机制</h3><p>一个事物的提交由于redolog和binglog都要持久化，磁盘IO还是很大Mysql是如何优化这部分呢。这里mysql采用了组提交（group commit）的方式。<br>如图所示：<br><img src="/images/mysql/group_commit机制.png" alt="avatar"></p><ul><li>首先介绍下LSN(log sequence number)，一个单调递增的序号，用来对应redolog的一个个写入点。当然也会写入到数据页中，用于flush脏盘时候避免重复执行（不在讨论范围内）</li><li>如图，当3个事务同时都写完redolog-buffer 并且处于prepare阶段时候，这时候就构成了一个gourp<ol><li>第一个先到达的trx1，成为组里的leader，LSN=50;</li><li>等trx1开始写盘时候，组里已经有其他俩个事物，这时候LSN=160;</li><li>trx1开始写盘，所有lsn&lt;160的日志都会被写入到磁盘中；</li><li>trx3,trx4就可以直接返回了；</li></ol></li></ul><p>所以在并发事物中，当写完redolog，越晚调用fsync，带的log越多性能也就越好；mysql在这方法采用的是拖时间的策略，即:在双1配置下<br>  redolog-prepare(write)–&gt;binglog(write)–&gt;redolog-prepare(fsync)–&gt;binlog(fsnyc)–&gt;redolog commit(write)</p><p>如图：<br><img src="/images/mysql/redolog_binlog_groupcommit.png" alt="avatar"></p><ul><li>如上图所示，由于redolog在write和fsnyc中有一个binlog-write的过程，所以在持久化磁盘时候你可以带上更多的log；</li><li>另外：binlog也可以采用组提交，只不过由于这俩个阶段间隔短可能没有redolog那么明显<ul><li>binlog的gruop commit的参数如下：<ul><li>binlog_group_commit_sync_delay:表示延迟多少微妙后就会调用fsnyc</li><li>binlog_gourp_commit_sync_no_delay_count:表示累计多少次后才调用fsync</li><li>俩个参数是or的关系，不过如果binlog_group_commit_sync_delay设置为0，binlog_gourp_commit_sync_no_delay_count就无效了</li></ul></li></ul></li></ul><p>综上所述：</p><ul><li>mysql的WAL机制是由于redolog和binlog都是顺序写，保证了高吞吐；</li><li>同时采用了组提交的方式，来减少了IOPS;</li></ul>]]></content>
-      
-      
-      <categories>
-          
-          <category> Mysql </category>
-          
-          <category> Mysql基础 </category>
           
       </categories>
       
@@ -1422,6 +1401,27 @@
           <category> Mysql </category>
           
           <category> Mysql高可用架构 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>Mysql是如何保证数据不丢失的</title>
+      <link href="/mysql/mysql%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%A2%E5%A4%B1/"/>
+      <url>/mysql/mysql%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%A2%E5%A4%B1/</url>
+      
+        <content type="html"><![CDATA[<h1 id="Mysql是如何保证数据不丢失的"><a href="#Mysql是如何保证数据不丢失的" class="headerlink" title="Mysql是如何保证数据不丢失的"></a>Mysql是如何保证数据不丢失的</h1><h2 id="binlog"><a href="#binlog" class="headerlink" title="binlog"></a>binlog</h2><ol><li>事务执行过程中binlog写入到binlog cache,事务提交时写入到binlog文件中。</li><li>事务的原子性决定这无论事务有多大，binlogcahe都要一次性完整的写入到binlog文件中，写入方式如下：<ol><li>系统为每个binlog_cache开辟了一片内存（每个线程都有一个），参数是blong_cache_size,超过这个阈值的会保存在临时文件中</li><li>事务提交时候，出于性能的考虑回将bionlog_cache都write到文件系统的page_cache中，在通过fsync刷新到磁盘文件中。如下图所示是binlog的同步机制。</li></ol></li></ol><p>如图：<br><img src="/images/mysql/binglog_写入.png" alt="avatar"></p><ul><li>只有fsnyc刷盘这不操作才会占用IOPS。</li><li>write和fsync的时机是用binglog_sync参数来控制的<ul><li>=0 每次事务提交时候都只write不sync</li><li>=1 每次事务提交都sync</li><li>=N（N&gt;1） 每次事务提交都write，积攒到N时候才会fsync</li></ul></li></ul><p>在IO出现瓶颈时候我们可以设置一个较大的值来提升性能（个人不是很推荐做，如果出现这种情况建议从业务考虑优化数据库）</p><h2 id="redolog的写入机制"><a href="#redolog的写入机制" class="headerlink" title="redolog的写入机制"></a>redolog的写入机制</h2><p>redolog从写入到最终写入到磁盘中会经历如下的阶段：写入redolog-buffer中–&gt;在事务提交、或者一定时机（见下面）下：redolog-buffer写入到文件系统的pagecache(write)–&gt;文件系统pagecache写入到磁盘中(fsnyc)，这样的操作的意义是为了提高mysql的吞吐的，具体的机制见下面：</p><p><img src="/images/mysql/redolog_3种状态.png" alt="avatar"></p><ol><li>一个事务会产生很多条redolog如果每次直接持久化磁盘会消耗大量的磁盘IO，所以redolog会先写入redolog-buffer中，之后在write文件系统的到pagecache中，这俩步是内存操作很快。</li><li>是否会影响数据的持久化，比如mysql在事务进行中crash了，这时候redolog-buffer中的数据丢失怎么办？答案是由于事物没有提交，所以事物会进行回滚。</li><li>redolog-buffer持久化的条件和机制：<ol><li>受参数innodb_flush_log_at_tx_commit的控制：<ol><li>=0：每次提交都只停留在redolog-buffer中；</li><li>=1：每次提交都会持久化到磁盘中；</li><li>=2：每次提交都只会写入到文件的pagecache中；</li></ol></li><li>innodb后台会有一个线程每秒一次，会把redolog-buffer中的日志，调用write写到pagecahe中，在fsync到磁盘中；</li><li>其他场景触发redolog的持久化<ol><li>当redolog-buffer占到了innodb_log_buffer_size的一半时候，会调用write将buffer中的log写入到文件系统的pagecache中</li><li>另一种是并行事物提交时候，如果innodb_flush_log_at_tx_commit设置为1时候会，即时当前事物没有commit，也会将redolog写入到文件系统中。</li></ol></li></ol></li></ol><h3 id="双1设置"><a href="#双1设置" class="headerlink" title="双1设置"></a>双1设置</h3><p>即：binlogsnyc=1，innodb_flush_log_at_tx_commit也设置为1。<br>  由于innodb的事物提交redolog和binlog是2PC。<br>     所以当redolog在prepare时候，为了故障恢复一定会持久化一次，所以这时候需要fsync到磁盘中。<br>     binlog在进行fsync到磁盘中<br>     这时候事物在redolog在commit时候，mysql由于有奔溃恢复机制和后台线程每秒轮训一次刷盘会认为redolog没有必要在fsync一次到磁盘了，只会写入到文件的pagecache中。</p><h3 id="gourp-commit机制"><a href="#gourp-commit机制" class="headerlink" title="gourp commit机制"></a>gourp commit机制</h3><p>一个事物的提交由于redolog和binglog都要持久化，磁盘IO还是很大Mysql是如何优化这部分呢。这里mysql采用了组提交（group commit）的方式。<br>如图所示：<br><img src="/images/mysql/group_commit机制.png" alt="avatar"></p><ul><li>首先介绍下LSN(log sequence number)，一个单调递增的序号，用来对应redolog的一个个写入点。当然也会写入到数据页中，用于flush脏盘时候避免重复执行（不在讨论范围内）</li><li>如图，当3个事务同时都写完redolog-buffer 并且处于prepare阶段时候，这时候就构成了一个gourp<ol><li>第一个先到达的trx1，成为组里的leader，LSN=50;</li><li>等trx1开始写盘时候，组里已经有其他俩个事物，这时候LSN=160;</li><li>trx1开始写盘，所有lsn&lt;160的日志都会被写入到磁盘中；</li><li>trx3,trx4就可以直接返回了；</li></ol></li></ul><p>所以在并发事物中，当写完redolog，越晚调用fsync，带的log越多性能也就越好；mysql在这方法采用的是拖时间的策略，即:在双1配置下<br>  redolog-prepare(write)–&gt;binglog(write)–&gt;redolog-prepare(fsync)–&gt;binlog(fsnyc)–&gt;redolog commit(write)</p><p>如图：<br><img src="/images/mysql/redolog_binlog_groupcommit.png" alt="avatar"></p><ul><li>如上图所示，由于redolog在write和fsnyc中有一个binlog-write的过程，所以在持久化磁盘时候你可以带上更多的log；</li><li>另外：binlog也可以采用组提交，只不过由于这俩个阶段间隔短可能没有redolog那么明显<ul><li>binlog的gruop commit的参数如下：<ul><li>binlog_group_commit_sync_delay:表示延迟多少微妙后就会调用fsnyc</li><li>binlog_gourp_commit_sync_no_delay_count:表示累计多少次后才调用fsync</li><li>俩个参数是or的关系，不过如果binlog_group_commit_sync_delay设置为0，binlog_gourp_commit_sync_no_delay_count就无效了</li></ul></li></ul></li></ul><p>综上所述：</p><ul><li>mysql的WAL机制是由于redolog和binlog都是顺序写，保证了高吞吐；</li><li>同时采用了组提交的方式，来减少了IOPS;</li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> Mysql </category>
+          
+          <category> Mysql基础 </category>
           
       </categories>
       

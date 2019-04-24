@@ -328,6 +328,620 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql如何保证数据不丢失/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/mysql/mysql如何保证数据不丢失/" class="post-title-link" itemprop="url">Mysql是如何保证数据不丢失的</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-02 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-02T00:00:00+08:00">2019-02-02</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="Mysql是如何保证数据不丢失的"><a href="#Mysql是如何保证数据不丢失的" class="headerlink" title="Mysql是如何保证数据不丢失的"></a>Mysql是如何保证数据不丢失的</h1><h2 id="binlog"><a href="#binlog" class="headerlink" title="binlog"></a>binlog</h2><ol>
+<li>事务执行过程中binlog写入到binlog cache,事务提交时写入到binlog文件中。</li>
+<li>事务的原子性决定这无论事务有多大，binlogcahe都要一次性完整的写入到binlog文件中，写入方式如下：<ol>
+<li>系统为每个binlog_cache开辟了一片内存（每个线程都有一个），参数是blong_cache_size,超过这个阈值的会保存在临时文件中</li>
+<li>事务提交时候，出于性能的考虑回将bionlog_cache都write到文件系统的page_cache中，在通过fsync刷新到磁盘文件中。如下图所示是binlog的同步机制。</li>
+</ol>
+</li>
+</ol>
+<p>如图：<br><img src="/images/mysql/binglog_写入.png" alt="avatar"></p>
+<ul>
+<li>只有fsnyc刷盘这不操作才会占用IOPS。</li>
+<li>write和fsync的时机是用binglog_sync参数来控制的<ul>
+<li>=0 每次事务提交时候都只write不sync</li>
+<li>=1 每次事务提交都sync</li>
+<li>=N（N&gt;1） 每次事务提交都write，积攒到N时候才会fsync</li>
+</ul>
+</li>
+</ul>
+<p>在IO出现瓶颈时候我们可以设置一个较大的值来提升性能（个人不是很推荐做，如果出现这种情况建议从业务考虑优化数据库）</p>
+<h2 id="redolog的写入机制"><a href="#redolog的写入机制" class="headerlink" title="redolog的写入机制"></a>redolog的写入机制</h2><p>redolog从写入到最终写入到磁盘中会经历如下的阶段：写入redolog-buffer中–&gt;在事务提交、或者一定时机（见下面）下：redolog-buffer写入到文件系统的pagecache(write)–&gt;文件系统pagecache写入到磁盘中(fsnyc)，这样的操作的意义是为了提高mysql的吞吐的，具体的机制见下面：</p>
+<p><img src="/images/mysql/redolog_3种状态.png" alt="avatar"></p>
+<ol>
+<li>一个事务会产生很多条redolog如果每次直接持久化磁盘会消耗大量的磁盘IO，所以redolog会先写入redolog-buffer中，之后在write文件系统的到pagecache中，这俩步是内存操作很快。</li>
+<li>是否会影响数据的持久化，比如mysql在事务进行中crash了，这时候redolog-buffer中的数据丢失怎么办？答案是由于事物没有提交，所以事物会进行回滚。</li>
+<li>redolog-buffer持久化的条件和机制：<ol>
+<li>受参数innodb_flush_log_at_tx_commit的控制：<ol>
+<li>=0：每次提交都只停留在redolog-buffer中；</li>
+<li>=1：每次提交都会持久化到磁盘中；</li>
+<li>=2：每次提交都只会写入到文件的pagecache中；</li>
+</ol>
+</li>
+<li>innodb后台会有一个线程每秒一次，会把redolog-buffer中的日志，调用write写到pagecahe中，在fsync到磁盘中；</li>
+<li>其他场景触发redolog的持久化<ol>
+<li>当redolog-buffer占到了innodb_log_buffer_size的一半时候，会调用write将buffer中的log写入到文件系统的pagecache中</li>
+<li>另一种是并行事物提交时候，如果innodb_flush_log_at_tx_commit设置为1时候会，即时当前事物没有commit，也会将redolog写入到文件系统中。</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<h3 id="双1设置"><a href="#双1设置" class="headerlink" title="双1设置"></a>双1设置</h3><p>即：binlogsnyc=1，innodb_flush_log_at_tx_commit也设置为1。<br>  由于innodb的事物提交redolog和binlog是2PC。<br>     所以当redolog在prepare时候，为了故障恢复一定会持久化一次，所以这时候需要fsync到磁盘中。<br>     binlog在进行fsync到磁盘中<br>     这时候事物在redolog在commit时候，mysql由于有奔溃恢复机制和后台线程每秒轮训一次刷盘会认为redolog没有必要在fsync一次到磁盘了，只会写入到文件的pagecache中。</p>
+<h3 id="gourp-commit机制"><a href="#gourp-commit机制" class="headerlink" title="gourp commit机制"></a>gourp commit机制</h3><p>一个事物的提交由于redolog和binglog都要持久化，磁盘IO还是很大Mysql是如何优化这部分呢。这里mysql采用了组提交（group commit）的方式。<br>如图所示：<br><img src="/images/mysql/group_commit机制.png" alt="avatar"></p>
+<ul>
+<li>首先介绍下LSN(log sequence number)，一个单调递增的序号，用来对应redolog的一个个写入点。当然也会写入到数据页中，用于flush脏盘时候避免重复执行（不在讨论范围内）</li>
+<li>如图，当3个事务同时都写完redolog-buffer 并且处于prepare阶段时候，这时候就构成了一个gourp<ol>
+<li>第一个先到达的trx1，成为组里的leader，LSN=50;</li>
+<li>等trx1开始写盘时候，组里已经有其他俩个事物，这时候LSN=160;</li>
+<li>trx1开始写盘，所有lsn&lt;160的日志都会被写入到磁盘中；</li>
+<li>trx3,trx4就可以直接返回了；</li>
+</ol>
+</li>
+</ul>
+<p>所以在并发事物中，当写完redolog，越晚调用fsync，带的log越多性能也就越好；mysql在这方法采用的是拖时间的策略，即:在双1配置下<br>  redolog-prepare(write)–&gt;binglog(write)–&gt;redolog-prepare(fsync)–&gt;binlog(fsnyc)–&gt;redolog commit(write)</p>
+<p>如图：<br><img src="/images/mysql/redolog_binlog_groupcommit.png" alt="avatar"></p>
+<ul>
+<li>如上图所示，由于redolog在write和fsnyc中有一个binlog-write的过程，所以在持久化磁盘时候你可以带上更多的log；</li>
+<li>另外：binlog也可以采用组提交，只不过由于这俩个阶段间隔短可能没有redolog那么明显<ul>
+<li>binlog的gruop commit的参数如下：<ul>
+<li>binlog_group_commit_sync_delay:表示延迟多少微妙后就会调用fsnyc</li>
+<li>binlog_gourp_commit_sync_no_delay_count:表示累计多少次后才调用fsync</li>
+<li>俩个参数是or的关系，不过如果binlog_group_commit_sync_delay设置为0，binlog_gourp_commit_sync_no_delay_count就无效了</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>综上所述：</p>
+<ul>
+<li>mysql的WAL机制是由于redolog和binlog都是顺序写，保证了高吞吐；</li>
+<li>同时采用了组提交的方式，来减少了IOPS;</li>
+</ul>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/netty/Promise和Future/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/netty/Promise和Future/" class="post-title-link" itemprop="url">Promise 和 Future</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-02 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-02T00:00:00+08:00">2019-02-02</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/netty/" itemprop="url" rel="index"><span itemprop="name">netty</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="Promise-和-Future"><a href="#Promise-和-Future" class="headerlink" title="Promise 和 Future"></a>Promise 和 Future</h1><p>netty中的I/O操作大部分为异步，netty在Java的Future的基础上封装了Future和Promise</p>
+<h2 id="Future"><a href="#Future" class="headerlink" title="Future"></a>Future</h2><p>继承java.util.concurrent.Future接口，并且在Future基础上做了如下的强化。<br>future是read-only的。我们没有办法在Future中改变状态，只能获取状态。进行后续操作</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Future</span>&lt;<span class="title">V</span>&gt; <span class="keyword">extends</span> <span class="title">java</span>.<span class="title">util</span>.<span class="title">concurrent</span>.<span class="title">Future</span>&lt;<span class="title">V</span>&gt;</span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 判断I/O是否成功,和Future的isDone()相比,能得到是否真正完成的结果（有可能成功、失败、取消）</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">isSuccess</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 是否已经中断</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">cancel</span><span class="params">(<span class="keyword">boolean</span> mayInterruptIfRunning)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 方法表示如果I/O操作失败，返回异常信息</span></span><br><span class="line"><span class="comment">     * Returns the cause of the failed I/O operation if the I/O operation has</span></span><br><span class="line"><span class="comment">     * failed.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> the cause of the failure.</span></span><br><span class="line"><span class="comment">     *         &#123;<span class="doctag">@code</span> null&#125; if succeeded or this future is not</span></span><br><span class="line"><span class="comment">     *         completed yet.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">Throwable <span class="title">cause</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 用观察者模式对future操作进行更精准的管理调用，如果get(),需要在代码中显示的调用在完成后续操作，如果用Listerner可以通过noify完成后续操作。</span></span><br><span class="line"><span class="comment">     * Adds the specified listener to this future.  The</span></span><br><span class="line"><span class="comment">     * specified listener is notified when this future is</span></span><br><span class="line"><span class="comment">     * &#123;<span class="doctag">@linkplain</span> #isDone() done&#125;.  If this future is already</span></span><br><span class="line"><span class="comment">     * completed, the specified listener is notified immediately.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">Future&lt;V&gt; <span class="title">addListener</span><span class="params">(GenericFutureListener&lt;? extends Future&lt;? <span class="keyword">super</span> V&gt;&gt; listener)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="ChannelFuture"><a href="#ChannelFuture" class="headerlink" title="ChannelFuture"></a>ChannelFuture</h3><p>ChannelFuture可以通过添加ChannelFutureListener监听器，当I/O操作完成的时候来通知调用。相比于wait()方式也更推荐这种方式来获取结果状态或者执行后续操作。<br>此外，不建议在ChannelHandler中调用await（），因为ChannelHandler中事件驱动的方法被一个I/O线程调用，可能一直不回完成，那么await（）也可能被I/O线程调用，同样会一直block，因此会产生死锁。<br>另外在，在Future的基础上增加了获取channle的方法</p>
+<h2 id="Promise"><a href="#Promise" class="headerlink" title="Promise"></a>Promise</h2><p>对比Future，Promise是writeable的，可以修改状态，调用noify执行Future(Promis)的listerner方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Promise</span>&lt;<span class="title">V</span>&gt; <span class="keyword">extends</span> <span class="title">Future</span>&lt;<span class="title">V</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//一下是定义了标记了Future状态的方法，有且只能标记一次，</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">setSuccess</span><span class="params">(V result)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">trySuccess</span><span class="params">(V result)</span></span>;</span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">setFailure</span><span class="params">(Throwable cause)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">tryFailure</span><span class="params">(Throwable cause)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">setUncancellable</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">addListener</span><span class="params">(GenericFutureListener&lt;? extends Future&lt;? <span class="keyword">super</span> V&gt;&gt; listener)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">removeListeners</span><span class="params">(GenericFutureListener&lt;? extends Future&lt;? <span class="keyword">super</span> V&gt;&gt;... listeners)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">await</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">awaitUninterruptibly</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">sync</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">syncUninterruptibly</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="DefaultPromise"><a href="#DefaultPromise" class="headerlink" title="DefaultPromise"></a>DefaultPromise</h2><p>在DefaultChannelPromise中会，改变状态会通知listerner</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Promise&lt;V&gt; <span class="title">setSuccess</span><span class="params">(V result)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (setSuccess0(result)) &#123;</span><br><span class="line">        <span class="comment">//todo notify</span></span><br><span class="line">        notifyListeners();</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"complete already: "</span> + <span class="keyword">this</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">notifyListeners</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    EventExecutor executor = executor();</span><br><span class="line">    <span class="keyword">if</span> (executor.inEventLoop()) &#123;</span><br><span class="line">       ...</span><br><span class="line">                notifyListenersNow();</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">       ...</span><br><span class="line">    &#125;</span><br><span class="line">    safeExecute(executor, <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            notifyListenersNow();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">notifyListenersNow</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        <span class="keyword">if</span> (listeners <span class="keyword">instanceof</span> DefaultFutureListeners) &#123;</span><br><span class="line">            notifyListeners0((DefaultFutureListeners) listeners);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            notifyListener0(<span class="keyword">this</span>, (GenericFutureListener&lt;?&gt;) listeners);</span><br><span class="line">        &#125;</span><br><span class="line">    ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>eg:在register过程中<br>AbstactServerBootstrap.initAndRegister<br>    –&gt;register()<br>        –&gt;SingleThreadEventLoop.register(channel)<br>            –&gt;SingleThreadEventLoop.register(new DefaultChannelPromise(channel, this))<br>                –&gt;AbstractUnsafe.register(promise,evenlop)–&gt;AbstractUnsafe.resiter0(promise)–&gt;safeSetSuccess(promise)</p>
+<p>在safeSetSuccess调用promise.traSuccess()。notifyPromise中的listerner</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql基础知识/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/mysql/mysql基础知识/" class="post-title-link" itemprop="url">mysql基础知识--草稿</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-01 00:19:46" itemprop="dateCreated datePublished" datetime="2019-02-01T00:19:46+08:00">2019-02-01</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="Mysql的基础知识"><a href="#Mysql的基础知识" class="headerlink" title="Mysql的基础知识"></a>Mysql的基础知识</h1><p> Mysql的基础知识</p>
+<h2 id="一条sql语句从提交到返回结果经过哪几步"><a href="#一条sql语句从提交到返回结果经过哪几步" class="headerlink" title="一条sql语句从提交到返回结果经过哪几步"></a>一条sql语句从提交到返回结果经过哪几步</h2><p>客户端–&gt;连接器–&gt;查询缓存（如果有直接返回，8.0会被废除）–&gt;分析器–&gt;优化器–&gt;执行器–&gt;存储引擎–&gt;server数据。</p>
+<h2 id="我们经常用到的查询语句"><a href="#我们经常用到的查询语句" class="headerlink" title="我们经常用到的查询语句"></a>我们经常用到的查询语句</h2><p>select * from t where t=1 ordey by date desc limit 0 ,1;</p>
+<h3 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h3>
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql是如何保证主从同步的（binlog）/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -761,7 +1375,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">62</span>
+                    <span class="site-state-item-count">65</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

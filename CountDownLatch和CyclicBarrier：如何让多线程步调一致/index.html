@@ -96,18 +96,17 @@
 
 
 
-  <meta name="description" content="上文中讲到了ReadWriteLock这种读写锁方法作为缓存策略那么有没有效率更高的方法 重点方法long stamp = stampedLock.tryOptimisticRead();//乐观锁long stamp = stampedLock.readLock(); //悲观读锁long stamp = stampedLock.writeLock();//主观读锁boolean hasWrit">
-<meta name="keywords" content="java,并发">
+  <meta name="description" content="励志当好厨子的程序员">
 <meta property="og:type" content="article">
-<meta property="og:title" content="StampdLock:Java8中的乐观锁">
-<meta property="og:url" content="https://liuhao163.github.io/StampdLock-Java8中的乐观锁/index.html">
+<meta property="og:title" content="CountDownLatch和CyclicBarrier：如何让多线程步调一致?">
+<meta property="og:url" content="https://liuhao163.github.io/CountDownLatch和CyclicBarrier：如何让多线程步调一致/index.html">
 <meta property="og:site_name" content="liuhao163.github.io">
-<meta property="og:description" content="上文中讲到了ReadWriteLock这种读写锁方法作为缓存策略那么有没有效率更高的方法 重点方法long stamp = stampedLock.tryOptimisticRead();//乐观锁long stamp = stampedLock.readLock(); //悲观读锁long stamp = stampedLock.writeLock();//主观读锁boolean hasWrit">
+<meta property="og:description" content="励志当好厨子的程序员">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-04-24T11:54:22.000Z">
+<meta property="og:updated_time" content="2019-04-24T12:41:54.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="StampdLock:Java8中的乐观锁">
-<meta name="twitter:description" content="上文中讲到了ReadWriteLock这种读写锁方法作为缓存策略那么有没有效率更高的方法 重点方法long stamp = stampedLock.tryOptimisticRead();//乐观锁long stamp = stampedLock.readLock(); //悲观读锁long stamp = stampedLock.writeLock();//主观读锁boolean hasWrit">
+<meta name="twitter:title" content="CountDownLatch和CyclicBarrier：如何让多线程步调一致?">
+<meta name="twitter:description" content="励志当好厨子的程序员">
 
 
 
@@ -116,7 +115,7 @@
 
 
 
-  <link rel="canonical" href="https://liuhao163.github.io/StampdLock-Java8中的乐观锁/">
+  <link rel="canonical" href="https://liuhao163.github.io/CountDownLatch和CyclicBarrier：如何让多线程步调一致/">
 
 
 
@@ -126,7 +125,7 @@
   };
 </script>
 
-  <title>StampdLock:Java8中的乐观锁 | liuhao163.github.io</title>
+  <title>CountDownLatch和CyclicBarrier：如何让多线程步调一致? | liuhao163.github.io</title>
   
 
 
@@ -329,7 +328,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/StampdLock-Java8中的乐观锁/">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/CountDownLatch和CyclicBarrier：如何让多线程步调一致/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Liu hao">
@@ -346,7 +345,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">StampdLock:Java8中的乐观锁
+          <h1 class="post-title" itemprop="name headline">CountDownLatch和CyclicBarrier：如何让多线程步调一致?
 
               
             
@@ -372,41 +371,12 @@
                 
               
 
-              <time title="Created: 2019-04-24 19:30:45 / Modified: 19:54:22" itemprop="dateCreated datePublished" datetime="2019-04-24T19:30:45+08:00">2019-04-24</time>
+              <time title="Created: 2019-04-24 20:41:54" itemprop="dateCreated datePublished" datetime="2019-04-24T20:41:54+08:00">2019-04-24</time>
             
 
-            
-              
-
-              
             
           </span>
 
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
-
-                
-                
-              
-            </span>
           
 
           
@@ -436,11 +406,7 @@
       
 
       
-        <p>上文中讲到了ReadWriteLock这种读写锁方法作为缓存策略那么有没有效率更高的方法</p>
-<p>重点方法<br>long stamp = stampedLock.tryOptimisticRead();//乐观锁<br>long stamp = stampedLock.readLock(); //悲观读锁<br>long stamp = stampedLock.writeLock();//主观读锁<br>boolean hasWriteLock = stampedLock.validate();//如果有写锁返回false如果没有返回true</p>
-<p>如下面的代码先通过tryOptimisticRead获取一个stamp这个操作是没有锁的，这中间可以读取变量，然后在调用validate方法校验是否有写锁，如果有，将锁升级成读锁。如果没有直接返回。因为没有写锁时候是不加锁的所以效率很高。这点很类似咱们mysql的乐观锁。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">long</span> <span class="title">read</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> stamp = stampedLock.tryOptimisticRead();</span><br><span class="line">        <span class="comment">//无锁操作</span></span><br><span class="line">        <span class="comment">//如果有写锁返回false，升级成悲观读</span></span><br><span class="line">        <span class="keyword">if</span> (!stampedLock.validate(stamp)) &#123;</span><br><span class="line">            stamp = stampedLock.readLock();</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="comment">//读模板</span></span><br><span class="line">            &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                stampedLock.unlockRead(stamp);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> i;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//写模板</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">write</span><span class="params">(<span class="keyword">long</span> i)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> stamp = stampedLock.writeLock();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">           <span class="comment">//todo 写</span></span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            stampedLock.unlock(stamp);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-
+        
       
     </div>
 
@@ -461,14 +427,6 @@
 
     <footer class="post-footer">
       
-        <div class="post-tags">
-          
-            <a href="/tags/java/" rel="tag"># java</a>
-          
-            <a href="/tags/并发/" rel="tag"># 并发</a>
-          
-        </div>
-      
 
       
       
@@ -478,8 +436,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/ReadWriteLock-如何快速事先一个完备的缓存/" rel="next" title="ReadWriteLock:如何快速实现一个完备的缓存">
-                <i class="fa fa-chevron-left"></i> ReadWriteLock:如何快速实现一个完备的缓存
+              <a href="/StampdLock-Java8中的乐观锁/" rel="next" title="StampdLock:Java8中的乐观锁">
+                <i class="fa fa-chevron-left"></i> StampdLock:Java8中的乐观锁
               </a>
             
           </div>
@@ -487,10 +445,6 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/CountDownLatch和CyclicBarrier：如何让多线程步调一致/" rel="prev" title="CountDownLatch和CyclicBarrier：如何让多线程步调一致?">
-                CountDownLatch和CyclicBarrier：如何让多线程步调一致? <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>

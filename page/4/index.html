@@ -328,6 +328,196 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/定时器的并发处理/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/定时器的并发处理/" class="post-title-link" itemprop="url">支持并发的定时器+数据归档解决查询效率</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-06 00:03:46" itemprop="dateCreated datePublished" datetime="2019-03-06T00:03:46+08:00">2019-03-06</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-09 23:53:05" itemprop="dateModified" datetime="2019-03-09T23:53:05+08:00">2019-03-09</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/项目积累/" itemprop="url" rel="index"><span itemprop="name">项目积累</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="项目背景"><a href="#项目背景" class="headerlink" title="项目背景"></a>项目背景</h1><p>客户的数据量徒增，每天1QWPV，1个月1张表的话大约这一个客户有30亿数据，页面上一些接口的响应变慢。</p>
+<p>原因是：后端数据存在了ES中，ES特点是模糊查询很开，但是但是如果用到了一些叫复杂的聚合函数需要进行索引扫描，所以效率了堪忧。</p>
+<h1 id="优化方案"><a href="#优化方案" class="headerlink" title="优化方案"></a>优化方案</h1><ul>
+<li>每天，用定时器将客户网站数据归档，目前是采用mysql保存。</li>
+<li>前端查询采用缓存数据+当天数据的方式呈现给客户，当日的数据很小所以可以满足性能上的要求。</li>
+<li>考虑到将来会有很多客户，可能一个定时器执行效率慢，所以定时器要支持水平扩展。</li>
+</ul>
+<h1 id="具体执行"><a href="#具体执行" class="headerlink" title="具体执行"></a>具体执行</h1><ol>
+<li>将数据库中所有的网站ID放到redis的zset中，为什么用zset？有序-支持分页，排重；</li>
+<li>利用setNx做锁， 从zset取出一条数据锁住：setNx的key是：prefix:statslock:id:yyyyMMdd, ttl：1天；<ul>
+<li>因为采用的是RedisTemplate不支持setNx和expire排异常轻快无法解锁，所以锁是按天锁住数据</li>
+</ul>
+</li>
+<li>ES查询昨天的数据，归档</li>
+<li>前端查询ES当钱数据+归档数据返回，测试从10sec请求变为了600ms </li>
+</ol>
+<p>示例代码如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doWafDataArchiveByDate</span><span class="params">(LocalDateTime localDateTime)</span> </span>&#123;</span><br><span class="line">    String dateFormater = localDateTime.format(YYYYMMDD);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//分页</span></span><br><span class="line">    Long total = statsRedis.domainSize();</span><br><span class="line">    Long pageNo = (total - <span class="number">1L</span>) / ZSET_PAGE_SIZE + <span class="number">1</span>;</span><br><span class="line">    Long curPage = <span class="number">1L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        <span class="comment">//从redis获取数据</span></span><br><span class="line">        Long startIdx = (curPage - <span class="number">1L</span>) * ZSET_PAGE_SIZE;</span><br><span class="line">        Long endIdx = startIdx + ZSET_PAGE_SIZE - <span class="number">1L</span>;</span><br><span class="line">        Set&lt;String&gt; set = statsRedis.queryRange(startIdx, endIdx);</span><br><span class="line">        </span><br><span class="line">        curPage++;</span><br><span class="line">        <span class="keyword">for</span> (String domainUuid : set) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="comment">//锁1天</span></span><br><span class="line">                <span class="keyword">if</span> (taskLock.lock(domainUuid, dateFormater)) &#123;</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        <span class="comment">//do logic</span></span><br><span class="line">                    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                        e.printStackTrace();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                taskLock.unlock(domainUuid,dateFormater);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">while</span> (curPage &lt;= pageNo);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h1 id="遗留的坑以及方案"><a href="#遗留的坑以及方案" class="headerlink" title="遗留的坑以及方案"></a>遗留的坑以及方案</h1><p>待补充</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/网络协议-TCP/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2112,201 +2302,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/我们是否还需要用Memory引擎的表/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/我们是否还需要用Memory引擎的表/" class="post-title-link" itemprop="url">我们是否还需要用Memory引擎的表</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-27 19:42:42" itemprop="dateCreated datePublished" datetime="2019-02-27T19:42:42+08:00">2019-02-27</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="Memory引擎表的特点"><a href="#Memory引擎表的特点" class="headerlink" title="Memory引擎表的特点"></a>Memory引擎表的特点</h1><ul>
-<li>Memory表是堆组织表，对应的Iondb是索引组织表。</li>
-<li>Memory索引顺序是按照写入顺序，Innodb是按照主键顺序</li>
-<li>Memory的索引存放规则决定这他所有索引是一样的没有主键概念</li>
-<li>Memory的索引和数据是分开存放的，在主键ID索引里，存的是每个数据的位置，且顺序是按照hash顺序。Innodb是按照B+树存放的</li>
-<li>Memory不支持blog和Text字段，所有行数的长度都相同。（要充分的利用内存嘛~）</li>
-<li>Memory数据出现空洞时候可以任意位置插入数据，Innodb为了保证索引顺序只能在后面递增插入数据</li>
-<li>Memory数据位置发生改变需要改所有的索引，而Innodb只需要改主键位置，</li>
-</ul>
-<h1 id="不推荐用Mermory在生产环境的原因"><a href="#不推荐用Mermory在生产环境的原因" class="headerlink" title="不推荐用Mermory在生产环境的原因"></a>不推荐用Mermory在生产环境的原因</h1><ol>
-<li>锁粒度不够：不支持行锁，性能会很差，往往不如Innodb</li>
-<li>由于Mysql重启后会删除Memory表数据，数据持久性会有问题<ol>
-<li>尤其是双M架构，当备库重启后，会同步binlog给主库把表清空</li>
-</ol>
-</li>
-</ol>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2353,7 +2348,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">65</span>
+                    <span class="site-state-item-count">66</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

@@ -96,17 +96,18 @@
 
 
 
-  <meta name="description" content="mysql的索引-草稿唯一索引和普通索引区别  读：    唯一索引在查询上和普通索引的差距不大    原因：mysql是将整个数据页加载到内存中，1个数据页有16KB，可以加载很多数据（都是索引和主键指针），儿唯一索引和普通索引的区别就是查询完后是break还是continue  写：    唯一索引，需要在每次写入时候读取数据判断是否唯一，所以不能利用changebuffer。所以更新需要将数">
+  <meta name="description" content="CountDownLatch和CyclicBarrier主要解决线程的调度问题。例如如下场景:订单的对账，订单系统完成的订单和已经派发的订单的对账，对于有异常的订单要修复。这里是3个操作，见下面伪代码 12345Order order=getOrder();POrder porder=getPOder();checkAndFix(order,porder); 如果每天的订单量很大这就会很耗时，我们">
+<meta name="keywords" content="java,并发">
 <meta property="og:type" content="article">
-<meta property="og:title" content="mysql的索引--草稿">
-<meta property="og:url" content="https://liuhao163.github.io/mysql/mysql索引/index.html">
+<meta property="og:title" content="CountDownLatch和CyclicBarrier：如何让多线程步调一致?">
+<meta property="og:url" content="https://liuhao163.github.io/CountDownLatch和CyclicBarrier：如何让多线程步调一致-1/index.html">
 <meta property="og:site_name" content="liuhao163.github.io">
-<meta property="og:description" content="mysql的索引-草稿唯一索引和普通索引区别  读：    唯一索引在查询上和普通索引的差距不大    原因：mysql是将整个数据页加载到内存中，1个数据页有16KB，可以加载很多数据（都是索引和主键指针），儿唯一索引和普通索引的区别就是查询完后是break还是continue  写：    唯一索引，需要在每次写入时候读取数据判断是否唯一，所以不能利用changebuffer。所以更新需要将数">
+<meta property="og:description" content="CountDownLatch和CyclicBarrier主要解决线程的调度问题。例如如下场景:订单的对账，订单系统完成的订单和已经派发的订单的对账，对于有异常的订单要修复。这里是3个操作，见下面伪代码 12345Order order=getOrder();POrder porder=getPOder();checkAndFix(order,porder); 如果每天的订单量很大这就会很耗时，我们">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-03-01T14:53:26.000Z">
+<meta property="og:updated_time" content="2019-04-28T12:03:37.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="mysql的索引--草稿">
-<meta name="twitter:description" content="mysql的索引-草稿唯一索引和普通索引区别  读：    唯一索引在查询上和普通索引的差距不大    原因：mysql是将整个数据页加载到内存中，1个数据页有16KB，可以加载很多数据（都是索引和主键指针），儿唯一索引和普通索引的区别就是查询完后是break还是continue  写：    唯一索引，需要在每次写入时候读取数据判断是否唯一，所以不能利用changebuffer。所以更新需要将数">
+<meta name="twitter:title" content="CountDownLatch和CyclicBarrier：如何让多线程步调一致?">
+<meta name="twitter:description" content="CountDownLatch和CyclicBarrier主要解决线程的调度问题。例如如下场景:订单的对账，订单系统完成的订单和已经派发的订单的对账，对于有异常的订单要修复。这里是3个操作，见下面伪代码 12345Order order=getOrder();POrder porder=getPOder();checkAndFix(order,porder); 如果每天的订单量很大这就会很耗时，我们">
 
 
 
@@ -115,7 +116,7 @@
 
 
 
-  <link rel="canonical" href="https://liuhao163.github.io/mysql/mysql索引/">
+  <link rel="canonical" href="https://liuhao163.github.io/CountDownLatch和CyclicBarrier：如何让多线程步调一致-1/">
 
 
 
@@ -125,7 +126,7 @@
   };
 </script>
 
-  <title>mysql的索引--草稿 | liuhao163.github.io</title>
+  <title>CountDownLatch和CyclicBarrier：如何让多线程步调一致? | liuhao163.github.io</title>
   
 
 
@@ -328,7 +329,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql索引/">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/CountDownLatch和CyclicBarrier：如何让多线程步调一致-1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Liu hao">
@@ -345,7 +346,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">mysql的索引--草稿
+          <h1 class="post-title" itemprop="name headline">CountDownLatch和CyclicBarrier：如何让多线程步调一致?
 
               
             
@@ -371,25 +372,9 @@
                 
               
 
-              <time title="Created: 2019-02-08 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-08T00:00:00+08:00">2019-02-08</time>
+              <time title="Created: 2019-04-28 20:03:37" itemprop="dateCreated datePublished" datetime="2019-04-28T20:03:37+08:00">2019-04-28</time>
             
 
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
-              
             
           </span>
 
@@ -405,14 +390,14 @@
                 <span class="post-meta-item-text">In</span>
               
               
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
 
                 
                 
                   , 
                 
               
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
 
                 
                 
@@ -447,14 +432,14 @@
       
 
       
-        <h1 id="mysql的索引-草稿"><a href="#mysql的索引-草稿" class="headerlink" title="mysql的索引-草稿"></a>mysql的索引-草稿</h1><p>唯一索引和普通索引区别<br>  读：<br>    唯一索引在查询上和普通索引的差距不大<br>    原因：mysql是将整个数据页加载到内存中，1个数据页有16KB，可以加载很多数据（都是索引和主键指针），儿唯一索引和普通索引的区别就是查询完后是break还是continue<br>  写：<br>    唯一索引，需要在每次写入时候读取数据判断是否唯一，所以不能利用changebuffer。所以更新需要将数据页cp到内存中更新。（如果数据页不巧没在内存中，性能消耗就会很大，数据页加载涉及到随机读）<br>    数据更新，只需要将数据写到changebuffer中，然后在下次用到数据（或者定时）将changebuffer，merge到数据页，所以会很快。</p>
-<p>索引的使用上<br>  索引使用是在优化器上进行的。优化器使用索引的依据是索引的基数（不重复的数据，可以用show index xxx看索引基数），使用基数大的索引。当频繁的删除，有可能导致基数不准选错索引。<br>  同时优化器在判断索引时候回考虑，会表的可能有可能会因为回表导致，选错索引</p>
-<p>  方法<br>  用ANALYZE TABLE table;优化索引<br>  删除不需要的索引</p>
-<p>有什么情况用不到索引<br>  原则：对于索引字段进行计算不会走上索引，会采用全索引遍历或者全表扫描<br>  例如：</p>
-<pre><code>1. 索引字段加减；a+1=1000
-2. 字段类型转化 比如 id=&apos;1111&apos;---&gt;CAST(id ,varchar)=&apos;1111&apos;
-3. 字段隐式类型转化：比如CAST(id,utf8mb4)=&apos;xxx&apos;
-</code></pre>
+        <p>CountDownLatch和CyclicBarrier主要解决线程的调度问题。例如如下场景:订单的对账，订单系统完成的订单和已经派发的订单的对账，对于有异常的订单要修复。这里是3个操作，见下面伪代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Order order=getOrder();</span><br><span class="line"></span><br><span class="line">POrder porder=getPOder();</span><br><span class="line"></span><br><span class="line">checkAndFix(order,porder);</span><br></pre></td></tr></table></figure>
+<p>如果每天的订单量很大这就会很耗时，我们可以考虑串行的方法，可以用线程池的方法同时去查询俩个订单，然后在check这时候我们要解决线程调度的问题，CountDownLatch就排上了用场,代码如下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">CountDownLatch countDownLatch = <span class="keyword">new</span> CountDownLatch(<span class="number">2</span>);</span><br><span class="line">ExecutorService pool = Executors.newFixedThreadPool(<span class="number">2</span>);</span><br><span class="line">AtomicReference&lt;Object&gt; order = <span class="keyword">new</span> AtomicReference&lt;&gt;();</span><br><span class="line">pool.execute(() -&gt; &#123;</span><br><span class="line">    order.set(getOrder());</span><br><span class="line">    countDownLatch.countDown();</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">AtomicReference&lt;Object&gt; porder = <span class="keyword">new</span> AtomicReference&lt;&gt;();</span><br><span class="line">pool.execute(() -&gt; &#123;</span><br><span class="line">    porder.set(getPOrder());</span><br><span class="line">    countDownLatch.countDown();</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    countDownLatch.await();</span><br><span class="line">&#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">    e.printStackTrace();</span><br><span class="line">&#125;</span><br><span class="line">checkAndFix(order.get(),porder.get());</span><br></pre></td></tr></table></figure>
+<p>不过这里checkAndFix还是主线程串行的能否在进一步优化呢，答案是能这里用到CyclicBarrier</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">ExecutorService callBack = Executors.newFixedThreadPool(<span class="number">1</span>);</span><br><span class="line">        Vector&lt;Object&gt; orders=<span class="keyword">new</span> Vector&lt;&gt;();</span><br><span class="line">        Vector&lt;Object&gt; porders=<span class="keyword">new</span> Vector&lt;&gt;();</span><br><span class="line">        CyclicBarrier cyclicBarrier = <span class="keyword">new</span> CyclicBarrier(<span class="number">2</span>,()-&gt;&#123;</span><br><span class="line">            callBack.execute(()-&gt;&#123;</span><br><span class="line">                checkAndFix( orders.get(<span class="number">0</span>),porders.get(<span class="number">0</span>));</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span>(<span class="keyword">true</span>)&#123;</span><br><span class="line">            ExecutorService pool = Executors.newFixedThreadPool(<span class="number">2</span>);</span><br><span class="line">            pool.execute(() -&gt; &#123;</span><br><span class="line">                orders.add(getOrder());</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    cyclicBarrier.await();</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException | BrokenBarrierException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">            pool.execute(() -&gt; &#123;</span><br><span class="line">                porders.add(getPOrder());</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    cyclicBarrier.await();</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException | BrokenBarrierException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;</span><br></pre></td></tr></table></figure>
+<p>CyclicBarrier和CountDownLatch的区别是可重入的，当见到0还会从2开始。另外CyclicBarrier可以设置Callback</p>
+
       
     </div>
 
@@ -475,6 +460,14 @@
 
     <footer class="post-footer">
       
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"># java</a>
+          
+            <a href="/tags/并发/" rel="tag"># 并发</a>
+          
+        </div>
+      
 
       
       
@@ -484,8 +477,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/mysql/其他/" rel="next" title="其他">
-                <i class="fa fa-chevron-left"></i> 其他
+              <a href="/CountDownLatch和CyclicBarrier：如何让多线程步调一致/" rel="next" title="CountDownLatch和CyclicBarrier：如何让多线程步调一致?">
+                <i class="fa fa-chevron-left"></i> CountDownLatch和CyclicBarrier：如何让多线程步调一致?
               </a>
             
           </div>
@@ -493,10 +486,6 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/误删数据后的处理/" rel="prev" title="误删数据后的处理">
-                误删数据后的处理 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -540,17 +529,8 @@
       
 
       
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
-            Table of Contents
-          </li>
-          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
-            Overview
-          </li>
-        </ul>
-      
 
-      <div class="site-overview-wrap sidebar-panel">
+      <div class="site-overview-wrap sidebar-panel sidebar-panel-active">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -743,23 +723,6 @@
         </div>
       </div>
 
-      
-      <!--noindex-->
-        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
-          <div class="post-toc">
-
-            
-            
-            
-            
-
-            
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#mysql的索引-草稿"><span class="nav-number">1.</span> <span class="nav-text">mysql的索引-草稿</span></a></li></ol></div>
-            
-
-          </div>
-        </div>
-      <!--/noindex-->
       
 
       

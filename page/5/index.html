@@ -328,6 +328,235 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/自增主键相关-AUTO-INCREMENT/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/自增主键相关-AUTO-INCREMENT/" class="post-title-link" itemprop="url">自增主键相关-AUTO_INCREMENT</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-28 10:16:53" itemprop="dateCreated datePublished" datetime="2019-02-28T10:16:53+08:00">2019-02-28</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-13 00:04:21" itemprop="dateModified" datetime="2019-03-13T00:04:21+08:00">2019-03-13</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="自增主键的原理"><a href="#自增主键的原理" class="headerlink" title="自增主键的原理"></a>自增主键的原理</h1><p>首先创建测试表</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> <span class="string">`t`</span> (</span><br><span class="line">  <span class="string">`id`</span> <span class="built_in">int</span>(<span class="number">11</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span> AUTO_INCREMENT,</span><br><span class="line">  <span class="string">`c`</span> <span class="built_in">int</span>(<span class="number">11</span>) <span class="keyword">DEFAULT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`d`</span> <span class="built_in">int</span>(<span class="number">11</span>) <span class="keyword">DEFAULT</span> <span class="literal">NULL</span>,</span><br><span class="line">  PRIMARY <span class="keyword">KEY</span> (<span class="string">`id`</span>),</span><br><span class="line">  <span class="keyword">UNIQUE</span> <span class="keyword">KEY</span> <span class="string">`c`</span> (<span class="string">`c`</span>)</span><br><span class="line">) <span class="keyword">ENGINE</span>=<span class="keyword">InnoDB</span>;</span><br></pre></td></tr></table></figure>
+<p>我们MySql的主键往往设置成auto_incrment</p>
+<ul>
+<li>原理是什么呢？</li>
+<li>为什么会有不连续的情况？</li>
+</ul>
+<h2 id="自增字值保存在哪里"><a href="#自增字值保存在哪里" class="headerlink" title="自增字值保存在哪里"></a>自增字值保存在哪里</h2><p>不同的表引擎对于auto_incrment处理是不同的</p>
+<ul>
+<li>MyIsam表是保存在数据结构中</li>
+<li>Innodb表是保存在内存中的<ul>
+<li>5.7以及之前的版本是保存在内存中，每次数据库启动时候会查找表的max(id)，然后+1。如果这时候有auto_incrment=11,id=10,如果这条id=10的数据被删除后从起mysql，Auto_incrment的值又变成10</li>
+<li>在Mysql 8.0中auto_incrment的值保存在redolog中，依靠redolog来恢复</li>
+</ul>
+</li>
+</ul>
+<h2 id="自增值的修改方式"><a href="#自增值的修改方式" class="headerlink" title="自增值的修改方式"></a>自增值的修改方式</h2><p>如果一个值被设置为auto_incrment，当一条插入语句时候</p>
+<ol>
+<li>如果这个值是null或者0，会把当前的auto_incrment值设置进去</li>
+<li>如果手动设置了值，就是用设置的值</li>
+</ol>
+<p>这时候auto_incrment的变化如下，插入值是X，auto_incrment的值是Y，</p>
+<ol>
+<li>如果X &lt; Y，自增值不变</li>
+<li>如果X &ge; Y，自增值变为新的自增值，计算方法是：当前的auto_incrment_offset+auto_incrment_increment知道比X大。</li>
+</ol>
+<h2 id="自增值的修改时机来看为什么自增值不连续"><a href="#自增值的修改时机来看为什么自增值不连续" class="headerlink" title="自增值的修改时机来看为什么自增值不连续"></a>自增值的修改时机来看为什么自增值不连续</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1</span></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t <span class="keyword">values</span>(<span class="literal">null</span>, <span class="number">1</span>, <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2</span></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t <span class="keyword">values</span>(<span class="literal">null</span>, <span class="number">1</span>, <span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+<p>主要看第2条语句的执行流程</p>
+<ol>
+<li>Innodb调用引擎写入一条数据(null, 1, 1)</li>
+<li>因为id是null所以获取当前的auto_incrment，现在是2</li>
+<li>改变auto_incrment，变为3</li>
+<li>这时候插入（2,1,1）;</li>
+<li>所以C冲突插入失败</li>
+<li>语句结束</li>
+</ol>
+<p>可以看到这时候auto_incrment是没有变回2。原因是，因为有可能这时候并发写入，如果回滚了后续的写入都会报主键冲突，同理事物的回滚也类似。</p>
+<h1 id="自增锁的优化"><a href="#自增锁的优化" class="headerlink" title="自增锁的优化"></a>自增锁的优化</h1><p>为了增加并发能力，Mysql为自增字段加锁不是一个事务锁，每次申请完了都会释放。但是在Mysql5.1之前不是这样的。</p>
+<p>在5.1.22版本中增加了一个新策略inoodb_autoinc_lock_mode,默认值是1</p>
+<ul>
+<li>0，类似之前的设计直到每个语句执行结束才会释放</li>
+<li>1，普通的insert会立刻释放，select。。。。insert ，load等批量操作需要等语句执行完</li>
+<li>2，都会立刻释放</li>
+</ul>
+<p>推荐设置成2，同事binlog格式设置成row，既能保证并发度，又能保证主备数据不一致。原理是</p>
+<p>当binlog的格式是statement时候，select。。。。insert 在并发阶段很可能造成主从数据不一致。比如下图：</p>
+<p><img src="./批量并发.png" alt="avator"></p>
+<ul>
+<li>很可能涉及sessionB的binlog拿到从库执行由于id都是null，是没法保证执行顺序的造成主备不一致。</li>
+</ul>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/我们是否还需要用Memory引擎的表/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2290,208 +2519,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/如何判断mysql的主从出现问题/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/mysql/如何判断mysql的主从出现问题/" class="post-title-link" itemprop="url">如何判断MySql的主从出现问题</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-06 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-06T00:00:00+08:00">2019-02-06</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql高可用架构/" itemprop="url" rel="index"><span itemprop="name">Mysql高可用架构</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="如何判断MySql的主从出现问题"><a href="#如何判断MySql的主从出现问题" class="headerlink" title="如何判断MySql的主从出现问题"></a>如何判断MySql的主从出现问题</h1><p>本章主要介绍如何对MySql主从进行健康检查</p>
-<h2 id="SELECT-1"><a href="#SELECT-1" class="headerlink" title="SELECT 1"></a>SELECT 1</h2><p>定期在数据库上执行“SELECT 1”,缺点是指能判断MySql的进程是否存在，不能判断实际的使用情况，因为Mysql的并发度往往受参数innodb_thread_concurrency影响：</p>
-<blockquote>
-<p>innodb_thread_concurrency代表数据库的并发度，即同一时间有多少线程并发执行任务；默认是0即无限制，但是为了防止CPU被打满我们往往设置64~1·28中的一个值；<br>注意一下俩点：</p>
-<ul>
-<li>innodb_thread_concurrency和最大连接数不一样，最大连接数只是保持了链接状态，并没有多消耗CPU资源；</li>
-<li>当链接进入sleep状态的时候，innodb_thread_concurrency参数会减一，即释放一个并发度；</li>
-</ul>
-</blockquote>
-<h2 id="查表"><a href="#查表" class="headerlink" title="查表"></a>查表</h2><p>我们可以在mysql中创建一个表比如讲heal_check，定期执行下面的语句：</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; select * from mysql.health_check;</span><br></pre></td></tr></table></figure>
-<p>但是依然有个缺点，我们不能检查出MySql写的能力。</p>
-<h2 id="定期执行修改的方式"><a href="#定期执行修改的方式" class="headerlink" title="定期执行修改的方式"></a>定期执行修改的方式</h2><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; update mysql.health_check set t_modified=now();</span><br></pre></td></tr></table></figure>
-<p>缺点从库无法判断,我们可以修改下我们的语句用如下的方式定期轮训</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; CREATE TABLE `health_check` (</span><br><span class="line">  `id` int(11) NOT NULL,</span><br><span class="line">  `t_modified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,</span><br><span class="line">  PRIMARY KEY (`id`)</span><br><span class="line">) ENGINE=InnoDB;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 检测命令 */</span></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> mysql.health_check(<span class="keyword">id</span>, t_modified) <span class="keyword">values</span> (@@server_id, <span class="keyword">now</span>()) <span class="keyword">on</span> <span class="keyword">duplicate</span> <span class="keyword">key</span> <span class="keyword">update</span> t_modified=<span class="keyword">now</span>();</span><br></pre></td></tr></table></figure>
-<p>缺点，只能被动的轮询无法及时发现问题。</p>
-<h2 id="内部统计–performance-schema库"><a href="#内部统计–performance-schema库" class="headerlink" title="内部统计–performance_schema库"></a>内部统计–performance_schema库</h2><p>我们可以利用performance_schema，注意如果打开会因为检测导致性能下降10%左右。</p>
-<p>我们执行语句可以看到如下内容</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> performance_schema.file_summary_by_event_name <span class="keyword">where</span> event_name=<span class="string">'wait/io/file/innodb/innodb_log_file'</span>\G</span><br><span class="line"></span><br><span class="line">*************************** <span class="number">1.</span> <span class="keyword">row</span> ***************************</span><br><span class="line">               EVENT_NAME: <span class="keyword">wait</span>/io/<span class="keyword">file</span>/<span class="keyword">innodb</span>/innodb_log_file</span><br><span class="line">               COUNT_STAR: <span class="number">107</span>  <span class="comment">#IO总次数</span></span><br><span class="line">           SUM_TIMER_WAIT: <span class="number">101355337720</span> <span class="comment">#单位皮秒</span></span><br><span class="line">           MIN_TIMER_WAIT: <span class="number">498680</span></span><br><span class="line">           AVG_TIMER_WAIT: <span class="number">947245845</span></span><br><span class="line">           MAX_TIMER_WAIT: <span class="number">81456567920</span></span><br><span class="line">               COUNT_READ: <span class="number">7</span> <span class="comment">#读</span></span><br><span class="line">           SUM_TIMER_READ: <span class="number">1321141640</span></span><br><span class="line">           MIN_TIMER_READ: <span class="number">498680</span></span><br><span class="line">           AVG_TIMER_READ: <span class="number">188734455</span></span><br><span class="line">           MAX_TIMER_READ: <span class="number">790074740</span></span><br><span class="line"> SUM_NUMBER_OF_BYTES_READ: <span class="number">70144</span> <span class="comment">#字节</span></span><br><span class="line">              COUNT_WRITE: <span class="number">47</span> <span class="comment">#写</span></span><br><span class="line">          SUM_TIMER_WRITE: <span class="number">874801200</span></span><br><span class="line">          MIN_TIMER_WRITE: <span class="number">12836460</span></span><br><span class="line">          AVG_TIMER_WRITE: <span class="number">18612685</span></span><br><span class="line">          MAX_TIMER_WRITE: <span class="number">33429760</span></span><br><span class="line">SUM_NUMBER_OF_BYTES_WRITE: <span class="number">40960</span></span><br><span class="line">               COUNT_MISC: <span class="number">53</span> <span class="comment">#fsync次数--其他</span></span><br><span class="line">           SUM_TIMER_MISC: <span class="number">99159394880</span></span><br><span class="line">           MIN_TIMER_MISC: <span class="number">891800</span></span><br><span class="line">           AVG_TIMER_MISC: <span class="number">1870931790</span></span><br><span class="line">           MAX_TIMER_MISC: <span class="number">81456567920</span></span><br></pre></td></tr></table></figure>
-<p>为了节省性能，我们可以只打开我们需要的统计项，执行如下命令，打开redolog和binlog的统计项</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; update setup_instruments set ENABLED='YES', Timed='YES' where name like '%wait/io/file/innodb/innodb_log_file%';</span><br></pre></td></tr></table></figure>
-<p>检测性能方式如下，比如监控binlog和redolog超过200ms时，即监控MAX_TIMER_WAIT值</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; select event_name,MAX_TIMER_WAIT  FROM performance_schema.file_summary_by_event_name where event_name in ('wait/io/file/innodb/innodb_log_file','wait/io/file/sql/binlog') and MAX_TIMER_WAIT&gt;200*1000000000;</span><br><span class="line"></span><br><span class="line"><span class="comment">#获取异常信息时候可以清空表，继续累计</span></span><br><span class="line">mysql&gt; truncate table performance_schema.file_summary_by_event_name;</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2538,7 +2565,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">66</span>
+                    <span class="site-state-item-count">67</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

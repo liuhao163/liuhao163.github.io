@@ -5,6 +5,35 @@
     
     <entry>
       <title>原子类:无锁工具类的典范</title>
+      <link href="/%E5%8E%9F%E5%AD%90%E7%B1%BB-%E6%97%A0%E9%94%81%E5%B7%A5%E5%85%B7%E7%B1%BB%E7%9A%84%E5%85%B8%E8%8C%83-1/"/>
+      <url>/%E5%8E%9F%E5%AD%90%E7%B1%BB-%E6%97%A0%E9%94%81%E5%B7%A5%E5%85%B7%E7%B1%BB%E7%9A%84%E5%85%B8%E8%8C%83-1/</url>
+      
+        <content type="html"><![CDATA[<p>无锁方案，在竞争冲突不大的情况下比锁性能会高不少。对应JAVA中各种的Atmoic类。实现原理是硬件的支持，CPU提供了原子化的支持即CAS(Compare And Swap)指令。CAS包含3个字段：共享变量的内存地址A；用于比较值B和共享变量的新值C。只有A的值等于B才允许更新成C。作为一条CPU指令其本身就是原子性的。很类似乐观锁的原理。JAVA在实现是是通过自旋来解决的如下伪代码：</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">add10K</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> newVal = -<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">int</span> cur = -<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        cur = ai.get();<span class="comment">//get 单前值 </span></span><br><span class="line">        newVal = cur + <span class="number">10000</span>; <span class="comment">//得到新值</span></span><br><span class="line">    &#125; <span class="keyword">while</span> (ai.compareAndSet(cur, newVal)); <span class="comment">//失败后自旋</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>java中是通过sun.misc.Unsafe来实现的</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> java </category>
+          
+          <category> 并发 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> java </tag>
+            
+            <tag> 并发 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>原子类:无锁工具类的典范</title>
       <link href="/%E5%8E%9F%E5%AD%90%E7%B1%BB-%E6%97%A0%E9%94%81%E5%B7%A5%E5%85%B7%E7%B1%BB%E7%9A%84%E5%85%B8%E8%8C%83/"/>
       <url>/%E5%8E%9F%E5%AD%90%E7%B1%BB-%E6%97%A0%E9%94%81%E5%B7%A5%E5%85%B7%E7%B1%BB%E7%9A%84%E5%85%B8%E8%8C%83/</url>
       
@@ -404,11 +433,11 @@
     
     
     <entry>
-      <title>JAVA线程-为什么局部变量是线程安全的</title>
-      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/"/>
-      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/</url>
+      <title>JAVA线程-开启多少线程合适</title>
+      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/"/>
+      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/</url>
       
-        <content type="html"><![CDATA[<h1 id="方法是如何被执行"><a href="#方法是如何被执行" class="headerlink" title="方法是如何被执行"></a>方法是如何被执行</h1><p>例如下面的程序</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">7</span>；</span><br><span class="line"><span class="keyword">int</span>[] b = fibonacci(a);</span><br><span class="line"><span class="keyword">int</span>[] c = b;</span><br></pre></td></tr></table></figure><p>当jvm调用fibonacci(a)时，通过cpu的寄存器找到方法的地址。cpu支持一种栈结构，他和方法息息相关，所以一般叫做调用栈。<br>栈这种数据结构的特点是后进先出，所以当一个遇到方法嵌套时候比如a–&gt;b–&gt;c，那么入栈的时候就是c–&gt;b–&gt;a，执行顺序也是c–&gt;b–&gt;a。</p><h1 id="方法中的局部变量"><a href="#方法中的局部变量" class="headerlink" title="方法中的局部变量"></a>方法中的局部变量</h1><p>  方法实际上是以栈帧为单位入栈的，一个方法从入口到返回都在一个栈帧中，栈帧和方法的生命周期是一样的，当方法结束，栈帧也就失效了，而方法中的局部变量都是保存在栈帧中的，他的生命周期也是在方法内部。且为了线程之间不相互干扰，每个线程都有一个独立的栈帧。综上，栈帧是线程安全的。</p><p>  这种方式有个名词叫线程封闭，即仅在单线程内访问数据，不共享就没有线程安全的问题。例如：我们常用的数据库连接池，connection的方法并没有声明线程安全，我们在使用中都是在一个方法内获取conenection，查询数据，关闭connecton，这这种线程封闭方式来解决线程安全的问题。</p>]]></content>
+        <content type="html"><![CDATA[<h1 id="为什么要使用多线程"><a href="#为什么要使用多线程" class="headerlink" title="为什么要使用多线程"></a>为什么要使用多线程</h1><p>  我们评价一个操作系统性能好的系统往往是俩点低延迟、高吞吐。做到这俩点，往往需要一优化算法，二有效利用硬件。对于一不在此讨论的范畴，而硬件利用率大致往往分俩类，即cpu的利用率，和i/o的利用。<br>  单线程时代：我们的程序往往是cpu和io设备相互配合执行，所以一个单线程的程序执行cpu操作时候io就要停下来等待cpu完成，为了提高io和cpu的利用率，操作系统为我们提供了多线程技术。<br>  线程1处理cpu的计算，线程2处理io请求。处理玩io请求后在切换回来，这样利用率就得到了提高</p><h1 id="线程多了就一定快么"><a href="#线程多了就一定快么" class="headerlink" title="线程多了就一定快么"></a>线程多了就一定快么</h1><p>  针对我们程序的特点分为，io密集型和计算密集型俩种。如果io操作执行的比例比较大就是io密集型，如果cpu计算的比例比较大就是计算密集型。<br>  在单核时代，对于计算密集型的业务增加线程反而会拖慢程序执行效率，因为只有一个核，所以同时只能有一个线程在运行，增加线程反而加大了线程切换的损耗。<br>  在多核时代，对于计算密集型的业务是可以通过增加线程提高性能的，但是设置应该是cpu的核数+1，充分利用起cpu。<br>  对于io密集型的业务，由于一般io的耗时比cpu要多的多，那么线程往往是cpu的核数*io耗时/cpu耗时+1。</p>]]></content>
       
       
       <categories>
@@ -433,11 +462,11 @@
     
     
     <entry>
-      <title>JAVA线程-开启多少线程合适</title>
-      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/"/>
-      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/</url>
+      <title>JAVA线程-为什么局部变量是线程安全的</title>
+      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/"/>
+      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/</url>
       
-        <content type="html"><![CDATA[<h1 id="为什么要使用多线程"><a href="#为什么要使用多线程" class="headerlink" title="为什么要使用多线程"></a>为什么要使用多线程</h1><p>  我们评价一个操作系统性能好的系统往往是俩点低延迟、高吞吐。做到这俩点，往往需要一优化算法，二有效利用硬件。对于一不在此讨论的范畴，而硬件利用率大致往往分俩类，即cpu的利用率，和i/o的利用。<br>  单线程时代：我们的程序往往是cpu和io设备相互配合执行，所以一个单线程的程序执行cpu操作时候io就要停下来等待cpu完成，为了提高io和cpu的利用率，操作系统为我们提供了多线程技术。<br>  线程1处理cpu的计算，线程2处理io请求。处理玩io请求后在切换回来，这样利用率就得到了提高</p><h1 id="线程多了就一定快么"><a href="#线程多了就一定快么" class="headerlink" title="线程多了就一定快么"></a>线程多了就一定快么</h1><p>  针对我们程序的特点分为，io密集型和计算密集型俩种。如果io操作执行的比例比较大就是io密集型，如果cpu计算的比例比较大就是计算密集型。<br>  在单核时代，对于计算密集型的业务增加线程反而会拖慢程序执行效率，因为只有一个核，所以同时只能有一个线程在运行，增加线程反而加大了线程切换的损耗。<br>  在多核时代，对于计算密集型的业务是可以通过增加线程提高性能的，但是设置应该是cpu的核数+1，充分利用起cpu。<br>  对于io密集型的业务，由于一般io的耗时比cpu要多的多，那么线程往往是cpu的核数*io耗时/cpu耗时+1。</p>]]></content>
+        <content type="html"><![CDATA[<h1 id="方法是如何被执行"><a href="#方法是如何被执行" class="headerlink" title="方法是如何被执行"></a>方法是如何被执行</h1><p>例如下面的程序</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">7</span>；</span><br><span class="line"><span class="keyword">int</span>[] b = fibonacci(a);</span><br><span class="line"><span class="keyword">int</span>[] c = b;</span><br></pre></td></tr></table></figure><p>当jvm调用fibonacci(a)时，通过cpu的寄存器找到方法的地址。cpu支持一种栈结构，他和方法息息相关，所以一般叫做调用栈。<br>栈这种数据结构的特点是后进先出，所以当一个遇到方法嵌套时候比如a–&gt;b–&gt;c，那么入栈的时候就是c–&gt;b–&gt;a，执行顺序也是c–&gt;b–&gt;a。</p><h1 id="方法中的局部变量"><a href="#方法中的局部变量" class="headerlink" title="方法中的局部变量"></a>方法中的局部变量</h1><p>  方法实际上是以栈帧为单位入栈的，一个方法从入口到返回都在一个栈帧中，栈帧和方法的生命周期是一样的，当方法结束，栈帧也就失效了，而方法中的局部变量都是保存在栈帧中的，他的生命周期也是在方法内部。且为了线程之间不相互干扰，每个线程都有一个独立的栈帧。综上，栈帧是线程安全的。</p><p>  这种方式有个名词叫线程封闭，即仅在单线程内访问数据，不共享就没有线程安全的问题。例如：我们常用的数据库连接池，connection的方法并没有声明线程安全，我们在使用中都是在一个方法内获取conenection，查询数据，关闭connecton，这这种线程封闭方式来解决线程安全的问题。</p>]]></content>
       
       
       <categories>
@@ -1371,6 +1400,25 @@
     
     
     <entry>
+      <title>其他</title>
+      <link href="/mysql/%E5%85%B6%E4%BB%96/"/>
+      <url>/mysql/%E5%85%B6%E4%BB%96/</url>
+      
+        <content type="html"><![CDATA[<h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><p>查询长事物的语句</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> information_schema.innodb_trx <span class="keyword">where</span> TIME_TO_SEC(<span class="keyword">timediff</span>(<span class="keyword">now</span>(),trx_started))&gt;<span class="number">60</span></span><br></pre></td></tr></table></figure>]]></content>
+      
+      
+      <categories>
+          
+          <category> Mysql </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>mysql的锁-全局锁、表锁、行锁、间隙锁</title>
       <link href="/mysql/mysql%E7%9A%84%E9%94%81/"/>
       <url>/mysql/mysql%E7%9A%84%E9%94%81/</url>
@@ -1383,25 +1431,6 @@
           <category> Mysql </category>
           
           <category> Mysql基础 </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
-      <title>其他</title>
-      <link href="/mysql/%E5%85%B6%E4%BB%96/"/>
-      <url>/mysql/%E5%85%B6%E4%BB%96/</url>
-      
-        <content type="html"><![CDATA[<h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><p>查询长事物的语句</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> information_schema.innodb_trx <span class="keyword">where</span> TIME_TO_SEC(<span class="keyword">timediff</span>(<span class="keyword">now</span>(),trx_started))&gt;<span class="number">60</span></span><br></pre></td></tr></table></figure>]]></content>
-      
-      
-      <categories>
-          
-          <category> Mysql </category>
           
       </categories>
       
@@ -1495,25 +1524,6 @@
     
     
     <entry>
-      <title>shell的积累</title>
-      <link href="/shell/index/"/>
-      <url>/shell/index/</url>
-      
-        <content type="html"><![CDATA[<h1 id="shell的积累"><a href="#shell的积累" class="headerlink" title="shell的积累"></a>shell的积累</h1><p>日常工作中linux的命令的积累</p><h2 id="删除N天的文件的命令-用于清理log"><a href="#删除N天的文件的命令-用于清理log" class="headerlink" title="删除N天的文件的命令-用于清理log"></a>删除N天的文件的命令-用于清理log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find ./ -mtime +1 -name "*.log*" -exec rm -rf &#123;&#125; \;</span><br></pre></td></tr></table></figure><h2 id="按天筛选log"><a href="#按天筛选log" class="headerlink" title="按天筛选log"></a>按天筛选log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -n '/2018-10-15 16:55:00/,/2018-10-15 23:59:59/p' log_path |grep "condition"</span><br></pre></td></tr></table></figure><h2 id="合并redis，用于单机环境的redis导入"><a href="#合并redis，用于单机环境的redis导入" class="headerlink" title="合并redis，用于单机环境的redis导入"></a>合并redis，用于单机环境的redis导入</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line">redis-cli -h srcIp -p 6379 -n 0 keys "*" | while read key</span><br><span class="line">do</span><br><span class="line">    redis-cli -h srcIp -p 6379 -n 0 --raw dump $key | perl -pe 'chomp if eof' | redis-cli -h dest -p 6379 -n 1 -x restore $key 0</span><br><span class="line">    echo "migrate key $key"</span><br><span class="line">done</span><br></pre></td></tr></table></figure>]]></content>
-      
-      
-      <categories>
-          
-          <category> Shell </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
       <title>Spring-Schedule多线程</title>
       <link href="/spring/spring-scheduled/"/>
       <url>/spring/spring-scheduled/</url>
@@ -1547,6 +1557,25 @@
           <category> Mysql </category>
           
           <category> Mysql基础 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>shell的积累</title>
+      <link href="/shell/index/"/>
+      <url>/shell/index/</url>
+      
+        <content type="html"><![CDATA[<h1 id="shell的积累"><a href="#shell的积累" class="headerlink" title="shell的积累"></a>shell的积累</h1><p>日常工作中linux的命令的积累</p><h2 id="删除N天的文件的命令-用于清理log"><a href="#删除N天的文件的命令-用于清理log" class="headerlink" title="删除N天的文件的命令-用于清理log"></a>删除N天的文件的命令-用于清理log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find ./ -mtime +1 -name "*.log*" -exec rm -rf &#123;&#125; \;</span><br></pre></td></tr></table></figure><h2 id="按天筛选log"><a href="#按天筛选log" class="headerlink" title="按天筛选log"></a>按天筛选log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -n '/2018-10-15 16:55:00/,/2018-10-15 23:59:59/p' log_path |grep "condition"</span><br></pre></td></tr></table></figure><h2 id="合并redis，用于单机环境的redis导入"><a href="#合并redis，用于单机环境的redis导入" class="headerlink" title="合并redis，用于单机环境的redis导入"></a>合并redis，用于单机环境的redis导入</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line">redis-cli -h srcIp -p 6379 -n 0 keys "*" | while read key</span><br><span class="line">do</span><br><span class="line">    redis-cli -h srcIp -p 6379 -n 0 --raw dump $key | perl -pe 'chomp if eof' | redis-cli -h dest -p 6379 -n 1 -x restore $key 0</span><br><span class="line">    echo "migrate key $key"</span><br><span class="line">done</span><br></pre></td></tr></table></figure>]]></content>
+      
+      
+      <categories>
+          
+          <category> Shell </category>
           
       </categories>
       
@@ -1638,6 +1667,27 @@
     
     
     <entry>
+      <title>Mysql是如何保证数据不丢失的</title>
+      <link href="/mysql/mysql%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%A2%E5%A4%B1/"/>
+      <url>/mysql/mysql%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%A2%E5%A4%B1/</url>
+      
+        <content type="html"><![CDATA[<h1 id="Mysql是如何保证数据不丢失的"><a href="#Mysql是如何保证数据不丢失的" class="headerlink" title="Mysql是如何保证数据不丢失的"></a>Mysql是如何保证数据不丢失的</h1><h2 id="binlog"><a href="#binlog" class="headerlink" title="binlog"></a>binlog</h2><ol><li>事务执行过程中binlog写入到binlog cache,事务提交时写入到binlog文件中。</li><li>事务的原子性决定这无论事务有多大，binlogcahe都要一次性完整的写入到binlog文件中，写入方式如下：<ol><li>系统为每个binlog_cache开辟了一片内存（每个线程都有一个），参数是blong_cache_size,超过这个阈值的会保存在临时文件中</li><li>事务提交时候，出于性能的考虑回将bionlog_cache都write到文件系统的page_cache中，在通过fsync刷新到磁盘文件中。如下图所示是binlog的同步机制。</li></ol></li></ol><p>如图：<br><img src="/images/mysql/binglog_写入.png" alt="avatar"></p><ul><li>只有fsnyc刷盘这不操作才会占用IOPS。</li><li>write和fsync的时机是用binglog_sync参数来控制的<ul><li>=0 每次事务提交时候都只write不sync</li><li>=1 每次事务提交都sync</li><li>=N（N&gt;1） 每次事务提交都write，积攒到N时候才会fsync</li></ul></li></ul><p>在IO出现瓶颈时候我们可以设置一个较大的值来提升性能（个人不是很推荐做，如果出现这种情况建议从业务考虑优化数据库）</p><h2 id="redolog的写入机制"><a href="#redolog的写入机制" class="headerlink" title="redolog的写入机制"></a>redolog的写入机制</h2><p>redolog从写入到最终写入到磁盘中会经历如下的阶段：写入redolog-buffer中–&gt;在事务提交、或者一定时机（见下面）下：redolog-buffer写入到文件系统的pagecache(write)–&gt;文件系统pagecache写入到磁盘中(fsnyc)，这样的操作的意义是为了提高mysql的吞吐的，具体的机制见下面：</p><p><img src="/images/mysql/redolog_3种状态.png" alt="avatar"></p><ol><li>一个事务会产生很多条redolog如果每次直接持久化磁盘会消耗大量的磁盘IO，所以redolog会先写入redolog-buffer中，之后在write文件系统的到pagecache中，这俩步是内存操作很快。</li><li>是否会影响数据的持久化，比如mysql在事务进行中crash了，这时候redolog-buffer中的数据丢失怎么办？答案是由于事物没有提交，所以事物会进行回滚。</li><li>redolog-buffer持久化的条件和机制：<ol><li>受参数innodb_flush_log_at_tx_commit的控制：<ol><li>=0：每次提交都只停留在redolog-buffer中；</li><li>=1：每次提交都会持久化到磁盘中；</li><li>=2：每次提交都只会写入到文件的pagecache中；</li></ol></li><li>innodb后台会有一个线程每秒一次，会把redolog-buffer中的日志，调用write写到pagecahe中，在fsync到磁盘中；</li><li>其他场景触发redolog的持久化<ol><li>当redolog-buffer占到了innodb_log_buffer_size的一半时候，会调用write将buffer中的log写入到文件系统的pagecache中</li><li>另一种是并行事物提交时候，如果innodb_flush_log_at_tx_commit设置为1时候会，即时当前事物没有commit，也会将redolog写入到文件系统中。</li></ol></li></ol></li></ol><h3 id="双1设置"><a href="#双1设置" class="headerlink" title="双1设置"></a>双1设置</h3><p>即：binlogsnyc=1，innodb_flush_log_at_tx_commit也设置为1。<br>  由于innodb的事物提交redolog和binlog是2PC。<br>     所以当redolog在prepare时候，为了故障恢复一定会持久化一次，所以这时候需要fsync到磁盘中。<br>     binlog在进行fsync到磁盘中<br>     这时候事物在redolog在commit时候，mysql由于有奔溃恢复机制和后台线程每秒轮训一次刷盘会认为redolog没有必要在fsync一次到磁盘了，只会写入到文件的pagecache中。</p><h3 id="gourp-commit机制"><a href="#gourp-commit机制" class="headerlink" title="gourp commit机制"></a>gourp commit机制</h3><p>一个事物的提交由于redolog和binglog都要持久化，磁盘IO还是很大Mysql是如何优化这部分呢。这里mysql采用了组提交（group commit）的方式。<br>如图所示：<br><img src="/images/mysql/group_commit机制.png" alt="avatar"></p><ul><li>首先介绍下LSN(log sequence number)，一个单调递增的序号，用来对应redolog的一个个写入点。当然也会写入到数据页中，用于flush脏盘时候避免重复执行（不在讨论范围内）</li><li>如图，当3个事务同时都写完redolog-buffer 并且处于prepare阶段时候，这时候就构成了一个gourp<ol><li>第一个先到达的trx1，成为组里的leader，LSN=50;</li><li>等trx1开始写盘时候，组里已经有其他俩个事物，这时候LSN=160;</li><li>trx1开始写盘，所有lsn&lt;160的日志都会被写入到磁盘中；</li><li>trx3,trx4就可以直接返回了；</li></ol></li></ul><p>所以在并发事物中，当写完redolog，越晚调用fsync，带的log越多性能也就越好；mysql在这方法采用的是拖时间的策略，即:在双1配置下<br>  redolog-prepare(write)–&gt;binglog(write)–&gt;redolog-prepare(fsync)–&gt;binlog(fsnyc)–&gt;redolog commit(write)</p><p>如图：<br><img src="/images/mysql/redolog_binlog_groupcommit.png" alt="avatar"></p><ul><li>如上图所示，由于redolog在write和fsnyc中有一个binlog-write的过程，所以在持久化磁盘时候你可以带上更多的log；</li><li>另外：binlog也可以采用组提交，只不过由于这俩个阶段间隔短可能没有redolog那么明显<ul><li>binlog的gruop commit的参数如下：<ul><li>binlog_group_commit_sync_delay:表示延迟多少微妙后就会调用fsnyc</li><li>binlog_gourp_commit_sync_no_delay_count:表示累计多少次后才调用fsync</li><li>俩个参数是or的关系，不过如果binlog_group_commit_sync_delay设置为0，binlog_gourp_commit_sync_no_delay_count就无效了</li></ul></li></ul></li></ul><p>综上所述：</p><ul><li>mysql的WAL机制是由于redolog和binlog都是顺序写，保证了高吞吐；</li><li>同时采用了组提交的方式，来减少了IOPS;</li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> Mysql </category>
+          
+          <category> Mysql基础 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>MySql是如何降低主备延迟的</title>
       <link href="/mysql/mysql%E6%98%AF%E5%A6%82%E4%BD%95%E9%99%8D%E4%BD%8E%E4%B8%BB%E5%A4%87%E5%BB%B6%E8%BF%9F%E7%9A%84/"/>
       <url>/mysql/mysql%E6%98%AF%E5%A6%82%E4%BD%95%E9%99%8D%E4%BD%8E%E4%B8%BB%E5%A4%87%E5%BB%B6%E8%BF%9F%E7%9A%84/</url>
@@ -1678,27 +1728,6 @@
     
     
     <entry>
-      <title>Mysql是如何保证数据不丢失的</title>
-      <link href="/mysql/mysql%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%A2%E5%A4%B1/"/>
-      <url>/mysql/mysql%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%A2%E5%A4%B1/</url>
-      
-        <content type="html"><![CDATA[<h1 id="Mysql是如何保证数据不丢失的"><a href="#Mysql是如何保证数据不丢失的" class="headerlink" title="Mysql是如何保证数据不丢失的"></a>Mysql是如何保证数据不丢失的</h1><h2 id="binlog"><a href="#binlog" class="headerlink" title="binlog"></a>binlog</h2><ol><li>事务执行过程中binlog写入到binlog cache,事务提交时写入到binlog文件中。</li><li>事务的原子性决定这无论事务有多大，binlogcahe都要一次性完整的写入到binlog文件中，写入方式如下：<ol><li>系统为每个binlog_cache开辟了一片内存（每个线程都有一个），参数是blong_cache_size,超过这个阈值的会保存在临时文件中</li><li>事务提交时候，出于性能的考虑回将bionlog_cache都write到文件系统的page_cache中，在通过fsync刷新到磁盘文件中。如下图所示是binlog的同步机制。</li></ol></li></ol><p>如图：<br><img src="/images/mysql/binglog_写入.png" alt="avatar"></p><ul><li>只有fsnyc刷盘这不操作才会占用IOPS。</li><li>write和fsync的时机是用binglog_sync参数来控制的<ul><li>=0 每次事务提交时候都只write不sync</li><li>=1 每次事务提交都sync</li><li>=N（N&gt;1） 每次事务提交都write，积攒到N时候才会fsync</li></ul></li></ul><p>在IO出现瓶颈时候我们可以设置一个较大的值来提升性能（个人不是很推荐做，如果出现这种情况建议从业务考虑优化数据库）</p><h2 id="redolog的写入机制"><a href="#redolog的写入机制" class="headerlink" title="redolog的写入机制"></a>redolog的写入机制</h2><p>redolog从写入到最终写入到磁盘中会经历如下的阶段：写入redolog-buffer中–&gt;在事务提交、或者一定时机（见下面）下：redolog-buffer写入到文件系统的pagecache(write)–&gt;文件系统pagecache写入到磁盘中(fsnyc)，这样的操作的意义是为了提高mysql的吞吐的，具体的机制见下面：</p><p><img src="/images/mysql/redolog_3种状态.png" alt="avatar"></p><ol><li>一个事务会产生很多条redolog如果每次直接持久化磁盘会消耗大量的磁盘IO，所以redolog会先写入redolog-buffer中，之后在write文件系统的到pagecache中，这俩步是内存操作很快。</li><li>是否会影响数据的持久化，比如mysql在事务进行中crash了，这时候redolog-buffer中的数据丢失怎么办？答案是由于事物没有提交，所以事物会进行回滚。</li><li>redolog-buffer持久化的条件和机制：<ol><li>受参数innodb_flush_log_at_tx_commit的控制：<ol><li>=0：每次提交都只停留在redolog-buffer中；</li><li>=1：每次提交都会持久化到磁盘中；</li><li>=2：每次提交都只会写入到文件的pagecache中；</li></ol></li><li>innodb后台会有一个线程每秒一次，会把redolog-buffer中的日志，调用write写到pagecahe中，在fsync到磁盘中；</li><li>其他场景触发redolog的持久化<ol><li>当redolog-buffer占到了innodb_log_buffer_size的一半时候，会调用write将buffer中的log写入到文件系统的pagecache中</li><li>另一种是并行事物提交时候，如果innodb_flush_log_at_tx_commit设置为1时候会，即时当前事物没有commit，也会将redolog写入到文件系统中。</li></ol></li></ol></li></ol><h3 id="双1设置"><a href="#双1设置" class="headerlink" title="双1设置"></a>双1设置</h3><p>即：binlogsnyc=1，innodb_flush_log_at_tx_commit也设置为1。<br>  由于innodb的事物提交redolog和binlog是2PC。<br>     所以当redolog在prepare时候，为了故障恢复一定会持久化一次，所以这时候需要fsync到磁盘中。<br>     binlog在进行fsync到磁盘中<br>     这时候事物在redolog在commit时候，mysql由于有奔溃恢复机制和后台线程每秒轮训一次刷盘会认为redolog没有必要在fsync一次到磁盘了，只会写入到文件的pagecache中。</p><h3 id="gourp-commit机制"><a href="#gourp-commit机制" class="headerlink" title="gourp commit机制"></a>gourp commit机制</h3><p>一个事物的提交由于redolog和binglog都要持久化，磁盘IO还是很大Mysql是如何优化这部分呢。这里mysql采用了组提交（group commit）的方式。<br>如图所示：<br><img src="/images/mysql/group_commit机制.png" alt="avatar"></p><ul><li>首先介绍下LSN(log sequence number)，一个单调递增的序号，用来对应redolog的一个个写入点。当然也会写入到数据页中，用于flush脏盘时候避免重复执行（不在讨论范围内）</li><li>如图，当3个事务同时都写完redolog-buffer 并且处于prepare阶段时候，这时候就构成了一个gourp<ol><li>第一个先到达的trx1，成为组里的leader，LSN=50;</li><li>等trx1开始写盘时候，组里已经有其他俩个事物，这时候LSN=160;</li><li>trx1开始写盘，所有lsn&lt;160的日志都会被写入到磁盘中；</li><li>trx3,trx4就可以直接返回了；</li></ol></li></ul><p>所以在并发事物中，当写完redolog，越晚调用fsync，带的log越多性能也就越好；mysql在这方法采用的是拖时间的策略，即:在双1配置下<br>  redolog-prepare(write)–&gt;binglog(write)–&gt;redolog-prepare(fsync)–&gt;binlog(fsnyc)–&gt;redolog commit(write)</p><p>如图：<br><img src="/images/mysql/redolog_binlog_groupcommit.png" alt="avatar"></p><ul><li>如上图所示，由于redolog在write和fsnyc中有一个binlog-write的过程，所以在持久化磁盘时候你可以带上更多的log；</li><li>另外：binlog也可以采用组提交，只不过由于这俩个阶段间隔短可能没有redolog那么明显<ul><li>binlog的gruop commit的参数如下：<ul><li>binlog_group_commit_sync_delay:表示延迟多少微妙后就会调用fsnyc</li><li>binlog_gourp_commit_sync_no_delay_count:表示累计多少次后才调用fsync</li><li>俩个参数是or的关系，不过如果binlog_group_commit_sync_delay设置为0，binlog_gourp_commit_sync_no_delay_count就无效了</li></ul></li></ul></li></ul><p>综上所述：</p><ul><li>mysql的WAL机制是由于redolog和binlog都是顺序写，保证了高吞吐；</li><li>同时采用了组提交的方式，来减少了IOPS;</li></ul>]]></content>
-      
-      
-      <categories>
-          
-          <category> Mysql </category>
-          
-          <category> Mysql基础 </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
       <title>mysql基础知识--草稿</title>
       <link href="/mysql/mysql%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/"/>
       <url>/mysql/mysql%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/</url>
@@ -1720,6 +1749,25 @@
     
     
     <entry>
+      <title>源代码说明</title>
+      <link href="/netty/%E8%AF%B4%E6%98%8E/"/>
+      <url>/netty/%E8%AF%B4%E6%98%8E/</url>
+      
+        <content type="html"><![CDATA[<h1 id="netty-源码的学习"><a href="#netty-源码的学习" class="headerlink" title="netty 源码的学习"></a>netty 源码的学习</h1><p>netty源码学习的git地址：<a href="https://github.com/liuhao163/netty.git" target="_blank" rel="noopener">https://github.com/liuhao163/netty.git</a></p><p>branch:4.1-ericliu</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> netty </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>mysql是如何保证主从同步的（binlog）--草稿</title>
       <link href="/mysql/mysql%E6%98%AF%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E4%B8%BB%E4%BB%8E%E5%90%8C%E6%AD%A5%E7%9A%84%EF%BC%88binlog%EF%BC%89/"/>
       <url>/mysql/mysql%E6%98%AF%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E4%B8%BB%E4%BB%8E%E5%90%8C%E6%AD%A5%E7%9A%84%EF%BC%88binlog%EF%BC%89/</url>
@@ -1732,25 +1780,6 @@
           <category> Mysql </category>
           
           <category> Mysql高可用架构 </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
-      <title>源代码说明</title>
-      <link href="/netty/%E8%AF%B4%E6%98%8E/"/>
-      <url>/netty/%E8%AF%B4%E6%98%8E/</url>
-      
-        <content type="html"><![CDATA[<h1 id="netty-源码的学习"><a href="#netty-源码的学习" class="headerlink" title="netty 源码的学习"></a>netty 源码的学习</h1><p>netty源码学习的git地址：<a href="https://github.com/liuhao163/netty.git" target="_blank" rel="noopener">https://github.com/liuhao163/netty.git</a></p><p>branch:4.1-ericliu</p>]]></content>
-      
-      
-      <categories>
-          
-          <category> netty </category>
           
       </categories>
       

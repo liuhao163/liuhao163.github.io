@@ -96,18 +96,18 @@
 
 
 
-  <meta name="description" content="java性能调优的主要几个工具通过jstack打印堆栈信息，得知线程的使用情况通过jstat打印堆中gc以及对象的情况通过jmap详细分析堆中内存的个数大小，必要时可以dump出来结合jhat查看 jstack打印JAVA的堆栈信息 12jstack &amp;lt;pid&amp;gt; jstat统计gc、JVM的情况 1234统计gc的情况jstat -gcutil &amp;lt;pid&amp;gt; 2000 30">
-<meta name="keywords" content="java,虚拟机优化">
+  <meta name="description" content="无锁方案，在竞争冲突不大的情况下比锁性能会高不少。对应JAVA中各种的Atmoic类。实现原理是硬件的支持，CPU提供了原子化的支持即CAS(Compare And Swap)指令。CAS包含3个字段：共享变量的内存地址A；用于比较值B和共享变量的新值C。只有A的值等于B才允许更新成C。作为一条CPU指令其本身就是原子性的。很类似乐观锁的原理。JAVA在实现是是通过自旋来解决的如下伪代码： 123">
+<meta name="keywords" content="java,并发">
 <meta property="og:type" content="article">
-<meta property="og:title" content="JVM调试的常用命令">
-<meta property="og:url" content="https://liuhao163.github.io/JVM调试的常用命令/index.html">
+<meta property="og:title" content="原子类:无锁工具类的典范">
+<meta property="og:url" content="https://liuhao163.github.io/原子类-无锁工具类的典范-1/index.html">
 <meta property="og:site_name" content="liuhao163.github.io">
-<meta property="og:description" content="java性能调优的主要几个工具通过jstack打印堆栈信息，得知线程的使用情况通过jstat打印堆中gc以及对象的情况通过jmap详细分析堆中内存的个数大小，必要时可以dump出来结合jhat查看 jstack打印JAVA的堆栈信息 12jstack &amp;lt;pid&amp;gt; jstat统计gc、JVM的情况 1234统计gc的情况jstat -gcutil &amp;lt;pid&amp;gt; 2000 30">
+<meta property="og:description" content="无锁方案，在竞争冲突不大的情况下比锁性能会高不少。对应JAVA中各种的Atmoic类。实现原理是硬件的支持，CPU提供了原子化的支持即CAS(Compare And Swap)指令。CAS包含3个字段：共享变量的内存地址A；用于比较值B和共享变量的新值C。只有A的值等于B才允许更新成C。作为一条CPU指令其本身就是原子性的。很类似乐观锁的原理。JAVA在实现是是通过自旋来解决的如下伪代码： 123">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-03-12T15:52:35.000Z">
+<meta property="og:updated_time" content="2019-04-28T12:20:10.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="JVM调试的常用命令">
-<meta name="twitter:description" content="java性能调优的主要几个工具通过jstack打印堆栈信息，得知线程的使用情况通过jstat打印堆中gc以及对象的情况通过jmap详细分析堆中内存的个数大小，必要时可以dump出来结合jhat查看 jstack打印JAVA的堆栈信息 12jstack &amp;lt;pid&amp;gt; jstat统计gc、JVM的情况 1234统计gc的情况jstat -gcutil &amp;lt;pid&amp;gt; 2000 30">
+<meta name="twitter:title" content="原子类:无锁工具类的典范">
+<meta name="twitter:description" content="无锁方案，在竞争冲突不大的情况下比锁性能会高不少。对应JAVA中各种的Atmoic类。实现原理是硬件的支持，CPU提供了原子化的支持即CAS(Compare And Swap)指令。CAS包含3个字段：共享变量的内存地址A；用于比较值B和共享变量的新值C。只有A的值等于B才允许更新成C。作为一条CPU指令其本身就是原子性的。很类似乐观锁的原理。JAVA在实现是是通过自旋来解决的如下伪代码： 123">
 
 
 
@@ -116,7 +116,7 @@
 
 
 
-  <link rel="canonical" href="https://liuhao163.github.io/JVM调试的常用命令/">
+  <link rel="canonical" href="https://liuhao163.github.io/原子类-无锁工具类的典范-1/">
 
 
 
@@ -126,7 +126,7 @@
   };
 </script>
 
-  <title>JVM调试的常用命令 | liuhao163.github.io</title>
+  <title>原子类:无锁工具类的典范 | liuhao163.github.io</title>
   
 
 
@@ -329,7 +329,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JVM调试的常用命令/">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/原子类-无锁工具类的典范-1/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Liu hao">
@@ -346,7 +346,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">JVM调试的常用命令
+          <h1 class="post-title" itemprop="name headline">原子类:无锁工具类的典范
 
               
             
@@ -372,25 +372,9 @@
                 
               
 
-              <time title="Created: 2019-03-10 00:05:29" itemprop="dateCreated datePublished" datetime="2019-03-10T00:05:29+08:00">2019-03-10</time>
+              <time title="Created: 2019-04-28 20:20:10" itemprop="dateCreated datePublished" datetime="2019-04-28T20:20:10+08:00">2019-04-28</time>
             
 
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-12 23:52:35" itemprop="dateModified" datetime="2019-03-12T23:52:35+08:00">2019-03-12</time>
-              
             
           </span>
 
@@ -413,7 +397,7 @@
                   , 
                 
               
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm优化/" itemprop="url" rel="index"><span itemprop="name">jvm优化</span></a></span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
 
                 
                 
@@ -448,15 +432,10 @@
       
 
       
-        <h1 id="java性能调优的主要几个工具"><a href="#java性能调优的主要几个工具" class="headerlink" title="java性能调优的主要几个工具"></a>java性能调优的主要几个工具</h1><p>通过jstack打印堆栈信息，得知线程的使用情况<br>通过jstat打印堆中gc以及对象的情况<br>通过jmap详细分析堆中内存的个数大小，必要时可以dump出来结合jhat查看</p>
-<h2 id="jstack"><a href="#jstack" class="headerlink" title="jstack"></a>jstack</h2><p>打印JAVA的堆栈信息</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">jstack &lt;pid&gt;</span><br></pre></td></tr></table></figure>
-<h2 id="jstat"><a href="#jstat" class="headerlink" title="jstat"></a>jstat</h2><p>统计gc、JVM的情况</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">统计gc的情况</span><br><span class="line">jstat -gcutil &lt;pid&gt; <span class="number">2000</span> <span class="number">30</span></span><br><span class="line">  S0     S1     E      O      M     CCS    YGC     YGCT    FGC    FGCT     GCT</span><br></pre></td></tr></table></figure>
-<h2 id="jmap"><a href="#jmap" class="headerlink" title="jmap"></a>jmap</h2><p>统计jvm的内存中类的使用情况</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">按数量排序</span><br><span class="line">jmap -histo:live &lt;pid&gt;|grep xxxx|sort -k <span class="number">2</span> -g -r|head</span><br><span class="line"></span><br><span class="line">按大小排序</span><br><span class="line">jmap -histo:live &lt;pid&gt;|grep xxxx|sort -k <span class="number">3</span> -g -r|head</span><br><span class="line"></span><br><span class="line">`</span><br></pre></td></tr></table></figure>
-<p>配合jhat使用</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">jmap -dump:live,file=xxx.log pid</span><br><span class="line">jhat xxx.log</span><br></pre></td></tr></table></figure>
+        <p>无锁方案，在竞争冲突不大的情况下比锁性能会高不少。对应JAVA中各种的Atmoic类。实现原理是硬件的支持，CPU提供了原子化的支持即CAS(Compare And Swap)指令。CAS包含3个字段：共享变量的内存地址A；用于比较值B和共享变量的新值C。只有A的值等于B才允许更新成C。作为一条CPU指令其本身就是原子性的。很类似乐观锁的原理。JAVA在实现是是通过自旋来解决的如下伪代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">add10K</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> newVal = -<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">int</span> cur = -<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        cur = ai.get();<span class="comment">//get 单前值 </span></span><br><span class="line">        newVal = cur + <span class="number">10000</span>; <span class="comment">//得到新值</span></span><br><span class="line">    &#125; <span class="keyword">while</span> (ai.compareAndSet(cur, newVal)); <span class="comment">//失败后自旋</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>java中是通过sun.misc.Unsafe来实现的</p>
+
       
     </div>
 
@@ -481,7 +460,7 @@
           
             <a href="/tags/java/" rel="tag"># java</a>
           
-            <a href="/tags/虚拟机优化/" rel="tag"># 虚拟机优化</a>
+            <a href="/tags/并发/" rel="tag"># 并发</a>
           
         </div>
       
@@ -494,8 +473,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/排查java异常进程的方法/" rel="next" title="排查java异常进程的方法">
-                <i class="fa fa-chevron-left"></i> 排查java异常进程的方法
+              <a href="/原子类-无锁工具类的典范/" rel="next" title="原子类:无锁工具类的典范">
+                <i class="fa fa-chevron-left"></i> 原子类:无锁工具类的典范
               </a>
             
           </div>
@@ -503,10 +482,6 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/JAVA并发基础-内存模型/" rel="prev" title="JAVA并发基础-内存模型">
-                JAVA并发基础-内存模型 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -550,17 +525,8 @@
       
 
       
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
-            Table of Contents
-          </li>
-          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
-            Overview
-          </li>
-        </ul>
-      
 
-      <div class="site-overview-wrap sidebar-panel">
+      <div class="site-overview-wrap sidebar-panel sidebar-panel-active">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -753,23 +719,6 @@
         </div>
       </div>
 
-      
-      <!--noindex-->
-        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
-          <div class="post-toc">
-
-            
-            
-            
-            
-
-            
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#java性能调优的主要几个工具"><span class="nav-number">1.</span> <span class="nav-text">java性能调优的主要几个工具</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#jstack"><span class="nav-number">1.1.</span> <span class="nav-text">jstack</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#jstat"><span class="nav-number">1.2.</span> <span class="nav-text">jstat</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#jmap"><span class="nav-number">1.3.</span> <span class="nav-text">jmap</span></a></li></ol></li></ol></div>
-            
-
-          </div>
-        </div>
-      <!--/noindex-->
       
 
       

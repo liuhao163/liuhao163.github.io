@@ -373,12 +373,24 @@
                 
               
 
-              <time title="Created: 2019-04-28 20:26:01 / Modified: 20:45:42" itemprop="dateCreated datePublished" datetime="2019-04-28T20:26:01+08:00">2019-04-28</time>
+              <time title="Created: 2019-04-28 20:26:01" itemprop="dateCreated datePublished" datetime="2019-04-28T20:26:01+08:00">2019-04-28</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-04-29 19:42:17" itemprop="dateModified" datetime="2019-04-29T19:42:17+08:00">2019-04-29</time>
               
             
           </span>
@@ -442,8 +454,9 @@
             <p>线程池中可以通过Future模式实现对异步任务的状态的监控和获取异步任务的结果，具体见ExecutorService下的3个方法</p>
 <h2 id="获取异步任务的结果"><a href="#获取异步任务的结果" class="headerlink" title="获取异步任务的结果"></a>获取异步任务的结果</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 提交 Runnable 任务</span></span><br><span class="line">Future&lt;?&gt; submit(Runnable task)</span><br><span class="line"><span class="comment">// 提交 Callable 任务</span></span><br><span class="line">&lt;T&gt; <span class="function">Future&lt;T&gt; <span class="title">submit</span><span class="params">(Callable&lt;T&gt; task)</span></span>;</span><br><span class="line"><span class="comment">// 提交 Runnable 任务及结果引用  </span></span><br><span class="line">&lt;T&gt; <span class="function">Future&lt;T&gt; <span class="title">submit</span><span class="params">(Runnable task, T result)</span></span>;</span><br></pre></td></tr></table></figure>
 <p>第一个方法是无返回值很类似join方法<br>第二个方法是可以获取task的返回值<br>第三个方法是可以通过T result来实现俩个线程之间的交互。如下</p>
-<pre><code class="java">
-</code></pre>
+<h2 id="FutreTask"><a href="#FutreTask" class="headerlink" title="FutreTask"></a>FutreTask</h2><p>和Furtre很类似但是它继承自Furture和Runable可以作为对象传递给线程池或者线程。然后通过get来获取执行结果。如下代码，开水泡茶问题</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">FutureTest</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> ExecutorService executor = Executors.newFixedThreadPool(<span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> ExecutionException, InterruptedException </span>&#123;</span><br><span class="line">        FutureTask&lt;String&gt; ft2 = <span class="keyword">new</span> FutureTask&lt;&gt;(() -&gt; &#123;</span><br><span class="line">            System.out.println(<span class="string">"洗茶杯"</span>);</span><br><span class="line">            Thread.sleep(<span class="number">1000L</span>);</span><br><span class="line"></span><br><span class="line">            System.out.println(<span class="string">"找茶叶"</span>);</span><br><span class="line">            Thread.sleep(<span class="number">1000L</span>);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> <span class="string">"龙井"</span>;</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        FutureTask&lt;String&gt; ft1 = <span class="keyword">new</span> FutureTask&lt;&gt;(() -&gt; &#123;</span><br><span class="line">            System.out.println(<span class="string">"洗茶壶"</span>);</span><br><span class="line">            Thread.sleep(<span class="number">1000L</span>);</span><br><span class="line"></span><br><span class="line">            System.out.println(<span class="string">"烧水"</span>);</span><br><span class="line">            Thread.sleep(<span class="number">10000L</span>);</span><br><span class="line">            System.out.println(<span class="string">"水开了"</span>);</span><br><span class="line">            String ret = ft2.get();</span><br><span class="line">            <span class="keyword">return</span> <span class="string">"上茶"</span>+ret;</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        executor.submit(ft1);</span><br><span class="line">        executor.submit(ft2);</span><br><span class="line">        System.out.println(ft1.get());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>近期的使用场景：<br>  比如一个很大的列表查询，你可以拆分成10个线程同时查询然后在查询完后合并成一个结果集。</p>
 
           
         
@@ -2130,7 +2143,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">69</span>
+                    <span class="site-state-item-count">68</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2183,9 +2196,7 @@
                     
                       
                     
-                      
-                    
-                    <span class="site-state-item-count">20</span>
+                    <span class="site-state-item-count">19</span>
                     <span class="site-state-item-name">categories</span>
                   </a>
                 </div>
@@ -2248,9 +2259,7 @@
                     
                       
                     
-                      
-                    
-                    <span class="site-state-item-count">25</span>
+                    <span class="site-state-item-count">24</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>

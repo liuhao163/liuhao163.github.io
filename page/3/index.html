@@ -328,6 +328,191 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/java并发编程主要面临的几个问题-安全性-活跃性-性能/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/java并发编程主要面临的几个问题-安全性-活跃性-性能/" class="post-title-link" itemprop="url">JAVA并发编程主要面临的几个问题:安全性,活跃性,性能</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-18 18:49:00 / Modified: 22:44:49" itemprop="dateCreated datePublished" datetime="2019-03-18T18:49:00+08:00">2019-03-18</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>java并发编程的问题主要集中在安全性、活跃性、性能3个问题</p>
+<h2 id="安全性"><a href="#安全性" class="headerlink" title="安全性"></a>安全性</h2><p>主要防止竞态问题（race condition），如下代码,add10k中的set(get()+1)  是不安全的，因为他要依赖get方法的结果在set。虽然set和get加了锁但是+1这步操作不是原子性的操作。(有可能get俩个一样的值+1，在set回去，影响了预期结果)，这种后面的操作依赖前面操作的结果的操作被称为竞态操作。</p>
+<p>解决方法</p>
+<ol>
+<li>加锁synchronized(lock){}解决</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">long</span> count = <span class="number">0</span>;</span><br><span class="line">  <span class="function"><span class="keyword">synchronized</span> <span class="keyword">long</span> <span class="title">get</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> count；</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="function"><span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">set</span><span class="params">(<span class="keyword">long</span> v)</span></span>&#123;</span><br><span class="line">    count = v;</span><br><span class="line">  &#125; </span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">add10K</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> idx = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span>(idx++ &lt; <span class="number">10000</span>) &#123;</span><br><span class="line">      set(get()+<span class="number">1</span>)      </span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="活跃性"><a href="#活跃性" class="headerlink" title="活跃性"></a>活跃性</h2><p>要注意活锁和饿死的关系。</p>
+<ul>
+<li>饿死只一个线程被阻塞住或者锁住，但是一直没有得到资源，导致程序一直无法执行下去</li>
+<li>活锁：活锁是指线程一直尝试获取资源但是因为条件没法满足所以一直没法获取资源。和死锁相比，死锁是线程阻塞程序无法运行，活锁的线程的状态一直没有被锁住，一直在尝试获取资源，很快会耗光cpu的资源。</li>
+</ul>
+<p>解决方法：</p>
+<ul>
+<li>饿死可以采用公平锁，用fifo队列来解决锁争抢</li>
+<li>活锁：可以采用不同线程阻塞一个随机时间。减少竞争。</li>
+</ul>
+<h2 id="性能问题"><a href="#性能问题" class="headerlink" title="性能问题"></a>性能问题</h2><p>因为并发变成要对数据加锁，可能会影响系统的并发度，某些操作会变为串行，可以考虑用jdk里的并发包里提供的工具类解决，里面有许多无锁的工具。</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA中用等待、通知机制优化循环等待/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2056,190 +2241,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/2019学习计划/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/2019学习计划/" class="post-title-link" itemprop="url">2019学习计划</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-03-09 23:49:29" itemprop="dateCreated datePublished" datetime="2019-03-09T23:49:29+08:00">2019-03-09</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-17 23:23:01" itemprop="dateModified" datetime="2019-03-17T23:23:01+08:00">2019-03-17</time>
-              
-            
-          </span>
-
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="本年计划"><a href="#本年计划" class="headerlink" title="本年计划"></a>本年计划</h1><h2 id="JAVA"><a href="#JAVA" class="headerlink" title="JAVA"></a>JAVA</h2><ul>
-<li>java并发编程</li>
-<li>spring的源码</li>
-<li>nio的学习<ul>
-<li>netty的源</li>
-<li>netty构建服务发现demo</li>
-<li>netty聊天工具构建</li>
-</ul>
-</li>
-<li>算法的学习</li>
-</ul>
-<h2 id="消息队列"><a href="#消息队列" class="headerlink" title="消息队列"></a>消息队列</h2><ul>
-<li>rocketmq的源码，涉及到netty可以先看netty</li>
-</ul>
-<h2 id="NOSQL"><a href="#NOSQL" class="headerlink" title="NOSQL"></a>NOSQL</h2><ul>
-<li>REDIS的源码学习</li>
-</ul>
-<h1 id="本周计划"><a href="#本周计划" class="headerlink" title="本周计划"></a>本周计划</h1><p>Netty聊天软件服务端demo</p>
-<ul>
-<li><del>协议的自定义（Encoder）</del></li>
-<li><del>客户端和服务端通信</del></li>
-<li><del>客户端注册和服务端注册</del></li>
-<li>阶段性文档的整理（完成了哪些工作，有哪些坑）</li>
-</ul>
-<p>完成并发的学习和梳理</p>
-<ul>
-<li><del>完成HB原则和基础</del></li>
-<li><del>完成synchroized关键字</del></li>
-</ul>
-<p><del>调研下限流和断路器</del></p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2286,7 +2287,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">68</span>
+                    <span class="site-state-item-count">69</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

@@ -328,182 +328,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/如何用面向对象的思想写好并发程序/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/如何用面向对象的思想写好并发程序/" class="post-title-link" itemprop="url">如何用面向对象的思想写好并发程序</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-03-31 00:53:42" itemprop="dateCreated datePublished" datetime="2019-03-31T00:53:42+08:00">2019-03-31</time>
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="防止变量的共享"><a href="#防止变量的共享" class="headerlink" title="防止变量的共享"></a>防止变量的共享</h1><p>在声明一个变量时候要通过方法的封装暴露对象的修改和查询操作，以此为入口来控制变量的并发，对于不变的对象尽量声明成final类型，告诉别人这个便利不会被改变。</p>
-<h1 id="识别共享变量的条件"><a href="#识别共享变量的条件" class="headerlink" title="识别共享变量的条件"></a>识别共享变量的条件</h1><p>防止变量之间的竞态问题，比如下面的代码：设置了上限和下限，这里有个隐含的条件上限一定要&gt;=下限,虽然变量声明成了AtomicLong，但是在并发的时候需改时候遇到if条件可能会造成下限高于上限的问题。原因在于条件判断和修改结果不是原子操作，这是个典型的竞态问题。修改方案是set方法加synchronized</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SafeWM</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 库存上限</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> AtomicLong upper =</span><br><span class="line">        <span class="keyword">new</span> AtomicLong(<span class="number">0</span>);</span><br><span class="line">  <span class="comment">// 库存下限</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> AtomicLong lower =</span><br><span class="line">        <span class="keyword">new</span> AtomicLong(<span class="number">0</span>);</span><br><span class="line">  <span class="comment">// 设置库存上限</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">setUpper</span><span class="params">(<span class="keyword">long</span> v)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 检查参数合法性</span></span><br><span class="line">    <span class="keyword">if</span> (v &lt; lower.get()) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException();</span><br><span class="line">    &#125;</span><br><span class="line">    upper.set(v);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 设置库存下限</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">setLower</span><span class="params">(<span class="keyword">long</span> v)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 检查参数合法性</span></span><br><span class="line">    <span class="keyword">if</span> (v &gt; upper.get()) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException();</span><br><span class="line">    &#125;</span><br><span class="line">    lower.set(v);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 省略其他业务代码</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h1 id="制定并发访问策略"><a href="#制定并发访问策略" class="headerlink" title="制定并发访问策略"></a>制定并发访问策略</h1><ol>
-<li>防止共享</li>
-<li>采取不变模式。这样修改一个对象就是创建了一个新对象</li>
-<li>利用管程和其他并发工具来</li>
-</ol>
-<h2 id="要注意几点"><a href="#要注意几点" class="headerlink" title="要注意几点"></a>要注意几点</h2><ol>
-<li>采用成熟的工具类避免重复开发轮子</li>
-<li>尽量避免使用低级原语入synchronized、lock等方式，而是采用并罚保</li>
-<li>尽量以并发安全为主，尽量避免过早优化代码</li>
-</ol>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-排序/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2225,6 +2049,202 @@
 
 
     
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA中用等待、通知机制优化循环等待/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/JAVA中用等待、通知机制优化循环等待/" class="post-title-link" itemprop="url">JAVA中用等待、通知机制优化循环等待</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-18 14:35:08 / Modified: 23:02:33" itemprop="dateCreated datePublished" datetime="2019-03-18T14:35:08+08:00">2019-03-18</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="为什么要采用循环等待机制"><a href="#为什么要采用循环等待机制" class="headerlink" title="为什么要采用循环等待机制"></a>为什么要采用循环等待机制</h1><p>之前的文章在解决死锁中的打破：占有且等待中的代码中，采用了死循环的方式来处理竞争失败的情况。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//返回true</span></span><br><span class="line"> <span class="keyword">while</span> (!Allocator.getInstance().apply(<span class="keyword">this</span>, target)) &#123;&#125;</span><br></pre></td></tr></table></figure>
+<p>当线程之间竞争不激烈，或者apply方法耗时较短时候这个方案还好，反之，可能有时需要循环几万次才能获取锁这种情况就会大量的浪费cpu计算资源。</p>
+<h1 id="java中的等待通知机制的使用"><a href="#java中的等待通知机制的使用" class="headerlink" title="java中的等待通知机制的使用"></a>java中的等待通知机制的使用</h1><p>java中为我们提供了wait(),notify(),notifyAll()。方法配置synchronized完成通知等待。我们在不满足条件时候可以用lock.wait()来释放资源，进入等待状态，当满足提交过后，在调用notify()重新获取资源。</p>
+<h2 id="wait-的说明"><a href="#wait-的说明" class="headerlink" title="wait()的说明"></a>wait()的说明</h2><p>wait是Object对象的方法，实际上是和“锁”对象对应使用的，</p>
+<ol>
+<li>wait必须在synchronized代码块中，否则会报异常：IllegalMonitorStateException</li>
+<li>wait()方法必须和synchronized对应起来，即synchronized(c){},那么一定是c.wait()</li>
+</ol>
+<h2 id="notify-和notifyAll-方法的使用注意事项"><a href="#notify-和notifyAll-方法的使用注意事项" class="headerlink" title="notify()和notifyAll()方法的使用注意事项"></a>notify()和notifyAll()方法的使用注意事项</h2><ul>
+<li>当我们notfiy()之后，线程重新获取被保护资源。一定要在次判断锁条件，因为notify之后到资源重新被获取，这段时间有可能再次不满足条件。</li>
+<li>没有特殊情况尽量用notifyAll()方法。因为notify只会“唤醒”一个线程，有可能这个线程不是需要唤醒的线程导致执行效率低下。而notfiyAll会唤醒所有在等待的线程，并且同时竞争资源，保证会唤醒需要的唤醒的线程。</li>
+</ul>
+<p>之前的代码改造如下:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Allocator</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> Allocator instance = <span class="keyword">new</span> Allocator();</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Allocator <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">Allocator</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Set&lt;Account&gt; set = <span class="keyword">new</span> HashSet&lt;&gt;();</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">boolean</span> <span class="title">apply</span><span class="params">(Account from, Account to)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> (set.contains(from) || set.contains(to)) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="keyword">this</span>.wait();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        set.add(from);</span><br><span class="line">        set.add(to);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">free</span><span class="params">(Account from, Account to)</span> </span>&#123;</span><br><span class="line">        set.remove(from);</span><br><span class="line">        set.remove(to);</span><br><span class="line">        <span class="keyword">this</span>.notifyAll();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Account</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> balance;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">transfer</span><span class="params">(Account target, <span class="keyword">int</span> amt)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Allocator.getInstance().apply(<span class="keyword">this</span>, target);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123;</span><br><span class="line">                <span class="keyword">synchronized</span> (target) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (balance &gt;= amt) &#123;</span><br><span class="line">                        balance -= amt;</span><br><span class="line">                        target.setBalance(target.getBalance() + amt);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            Allocator.getInstance().free(<span class="keyword">this</span>, target);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="思考"><a href="#思考" class="headerlink" title="思考"></a>思考</h1><h2 id="wait-和sleep-的区别"><a href="#wait-和sleep-的区别" class="headerlink" title="wait()和sleep()的区别"></a>wait()和sleep()的区别</h2><p>wait</p>
+<ol>
+<li>wait是Object中的方法，和锁对应;wait要在Synchronized代码块中执行</li>
+<li>wait会释放被锁资源。</li>
+</ol>
+<p>sleep</p>
+<ol>
+<li>sleep是Thread中的静态方法，让当前线程休眠一段时间</li>
+<li>sleep是让出当前线程的执行权限，让优先级低的线程执行，但是不会释放锁资源，也就是说其他线程遇到synchronized代码快会阻塞住</li>
+</ol>
+<h2 id="wait的原理"><a href="#wait的原理" class="headerlink" title="wait的原理"></a>wait的原理</h2><p>  wait方法被调用后，当前线程会去掉锁标记，并且会将当前线程对象放入到对象资源池，知道notify或者notifyAll被调用。<br>  当notify或者notfiyAll被调用时候，会将对象资源池中的一个线程对象或者所有线程移入到锁标记资源池，在锁标记资源池的线程对象会争抢锁，获取资源，获取到资源的开始执行</p>
+<h2 id="wait有哪些被唤醒的方法"><a href="#wait有哪些被唤醒的方法" class="headerlink" title="wait有哪些被唤醒的方法"></a>wait有哪些被唤醒的方法</h2><p>lock.notify、lock.notifyAll</p>
+<p>wait(1000L)，时间到后</p>
+<p>thread.interrupt 别的线程调用线程的interrupt方法</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
   </section>
 
   
@@ -2271,7 +2291,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">78</span>
+                    <span class="site-state-item-count">77</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://liuhao163.github.io/"/>
-  <updated>2019-06-06T09:38:18.000Z</updated>
+  <updated>2019-06-06T09:38:11.000Z</updated>
   <id>https://liuhao163.github.io/</id>
   
   <author>
@@ -15,20 +15,6 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
-  
-  <entry>
-    <title>publish</title>
-    <link href="https://liuhao163.github.io/publish/"/>
-    <id>https://liuhao163.github.io/publish/</id>
-    <published>2019-06-06T09:38:18.000Z</published>
-    <updated>2019-06-06T09:38:18.000Z</updated>
-    
-    <summary type="html">
-    
-    </summary>
-    
-    
-  </entry>
   
   <entry>
     <title>JAVA并发案例分析-Guava中的限流与高效令牌桶算法</title>
@@ -588,6 +574,35 @@
       <category term="并发" scheme="https://liuhao163.github.io/tags/%E5%B9%B6%E5%8F%91/"/>
     
       <category term="aqs" scheme="https://liuhao163.github.io/tags/aqs/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>如何用面向对象的思想写好并发程序</title>
+    <link href="https://liuhao163.github.io/%E5%A6%82%E4%BD%95%E7%94%A8%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%9A%84%E6%80%9D%E6%83%B3%E5%86%99%E5%A5%BD%E5%B9%B6%E5%8F%91%E7%A8%8B%E5%BA%8F/"/>
+    <id>https://liuhao163.github.io/如何用面向对象的思想写好并发程序/</id>
+    <published>2019-03-30T16:53:42.000Z</published>
+    <updated>2019-03-30T16:53:42.000Z</updated>
+    
+    <content type="html"><![CDATA[<h1 id="防止变量的共享"><a href="#防止变量的共享" class="headerlink" title="防止变量的共享"></a>防止变量的共享</h1><p>在声明一个变量时候要通过方法的封装暴露对象的修改和查询操作，以此为入口来控制变量的并发，对于不变的对象尽量声明成final类型，告诉别人这个便利不会被改变。</p><h1 id="识别共享变量的条件"><a href="#识别共享变量的条件" class="headerlink" title="识别共享变量的条件"></a>识别共享变量的条件</h1><p>防止变量之间的竞态问题，比如下面的代码：设置了上限和下限，这里有个隐含的条件上限一定要&gt;=下限,虽然变量声明成了AtomicLong，但是在并发的时候需改时候遇到if条件可能会造成下限高于上限的问题。原因在于条件判断和修改结果不是原子操作，这是个典型的竞态问题。修改方案是set方法加synchronized</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SafeWM</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 库存上限</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> AtomicLong upper =</span><br><span class="line">        <span class="keyword">new</span> AtomicLong(<span class="number">0</span>);</span><br><span class="line">  <span class="comment">// 库存下限</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> AtomicLong lower =</span><br><span class="line">        <span class="keyword">new</span> AtomicLong(<span class="number">0</span>);</span><br><span class="line">  <span class="comment">// 设置库存上限</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">setUpper</span><span class="params">(<span class="keyword">long</span> v)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 检查参数合法性</span></span><br><span class="line">    <span class="keyword">if</span> (v &lt; lower.get()) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException();</span><br><span class="line">    &#125;</span><br><span class="line">    upper.set(v);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 设置库存下限</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">setLower</span><span class="params">(<span class="keyword">long</span> v)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 检查参数合法性</span></span><br><span class="line">    <span class="keyword">if</span> (v &gt; upper.get()) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException();</span><br><span class="line">    &#125;</span><br><span class="line">    lower.set(v);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 省略其他业务代码</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><h1 id="制定并发访问策略"><a href="#制定并发访问策略" class="headerlink" title="制定并发访问策略"></a>制定并发访问策略</h1><ol><li>防止共享</li><li>采取不变模式。这样修改一个对象就是创建了一个新对象</li><li>利用管程和其他并发工具来</li></ol><h2 id="要注意几点"><a href="#要注意几点" class="headerlink" title="要注意几点"></a>要注意几点</h2><ol><li>采用成熟的工具类避免重复开发轮子</li><li>尽量避免使用低级原语入synchronized、lock等方式，而是采用并罚保</li><li>尽量以并发安全为主，尽量避免过早优化代码</li></ol>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h1 id=&quot;防止变量的共享&quot;&gt;&lt;a href=&quot;#防止变量的共享&quot; class=&quot;headerlink&quot; title=&quot;防止变量的共享&quot;&gt;&lt;/a&gt;防止变量的共享&lt;/h1&gt;&lt;p&gt;在声明一个变量时候要通过方法的封装暴露对象的修改和查询操作，以此为入口来控制变量的并发，对于不变的对
+      
+    
+    </summary>
+    
+      <category term="java" scheme="https://liuhao163.github.io/categories/java/"/>
+    
+      <category term="并发" scheme="https://liuhao163.github.io/categories/java/%E5%B9%B6%E5%8F%91/"/>
+    
+    
+      <category term="java" scheme="https://liuhao163.github.io/tags/java/"/>
+    
+      <category term="并发" scheme="https://liuhao163.github.io/tags/%E5%B9%B6%E5%8F%91/"/>
     
   </entry>
   

@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://liuhao163.github.io/"/>
-  <updated>2019-06-06T09:38:11.000Z</updated>
+  <updated>2019-06-06T10:08:55.000Z</updated>
   <id>https://liuhao163.github.io/</id>
   
   <author>
@@ -15,6 +15,37 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>JAVA并发案例分析-Netty于Reactor模式</title>
+    <link href="https://liuhao163.github.io/JAVA%E5%B9%B6%E5%8F%91%E6%A1%88%E4%BE%8B%E5%88%86%E6%9E%90-Netty%E4%BA%8EReactor%E6%A8%A1%E5%BC%8F/"/>
+    <id>https://liuhao163.github.io/JAVA并发案例分析-Netty于Reactor模式/</id>
+    <published>2019-06-06T09:46:17.000Z</published>
+    <updated>2019-06-06T10:08:55.000Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="BIO的问题"><a href="#BIO的问题" class="headerlink" title="BIO的问题"></a>BIO的问题</h2><p> 痛点：因为JAVA和操作系统的BIO操作是阻塞的，也就是说在读操作的时候线程会被阻塞住。<br> 解决方案：</p><ul><li>利用Thread-Per-Message模式每个IO操作都用一个线程。</li><li>问题：在java中由于线程对象较重，在链接不多的时候还可以一旦链接很多的场景很块就会出现问题。</li></ul><h2 id="Nio和WorkThread模式"><a href="#Nio和WorkThread模式" class="headerlink" title="Nio和WorkThread模式"></a>Nio和WorkThread模式</h2><p>  我们可以利用WorkThread模式采用线程池来处理这种情况么？答案是BIO不可以因为BIO的IO操作会阻塞线程。这时候就要用到NIO。<br>  NIO的IO操作是不会阻塞线程的：<br>  以select模型为例子，简单来说：当一个IO请求发出后，不会阻塞当前线程，用户态的selecter会一直轮询FD检查是否IO请求的数据是否准备好，内核态会去准备数据，一旦内核态的数据准备好，会通知FD已经准备好<br>  这时候我们的WorkThread可以对这些准备好的FD去处理。</p><p>  上述这种模式我们叫它Reactor模式</p><h2 id="Reactor模式的示例"><a href="#Reactor模式的示例" class="headerlink" title="Reactor模式的示例"></a>Reactor模式的示例</h2><p><img src="./reactor01.png" alt="avator"></p><ul><li>Reactor：模式中最重要的类：<ul><li>负责调用操作系统的Selecter.select()函数，获取准备好的io-handlers</li><li>遍历io-handlers交给EventHandler</li><li>注册、移除EventHandler</li></ul></li><li>EventHandler:io请求的逻辑处理类</li><li>Selecter：封装操作系统IO模型的选择器epoll、select</li><li>io-heandler：封装操作系统io请求类</li></ul><h2 id="netty"><a href="#netty" class="headerlink" title="netty"></a>netty</h2><p><img src="./reactor02.png" alt="avator"></p><p>  如图：netty中的Reactor类就是EventLoop，Soekcet和Eventloop是稳定的多对1关系，而线程和EventLoop是稳定的1对1关系。绑定关系见源码的register<br>  而eventloop是封装在一个EventLoopGroup中的并且在其中实现了负载均衡。<br>  注意：netty的服务端往往需要俩个EventLoopGroup</p><ul><li>boosGroup用于处理io的链接请求，如果监听一个端口值需要分配一个eventloop否则会浪费</li><li>workGroup处理具体io的操作。</li></ul><p>原因是，操作系统的io决定的创建链接后会生成一个新的socker，为了性能我们会将这个socket放在其他的group中。</p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h2 id=&quot;BIO的问题&quot;&gt;&lt;a href=&quot;#BIO的问题&quot; class=&quot;headerlink&quot; title=&quot;BIO的问题&quot;&gt;&lt;/a&gt;BIO的问题&lt;/h2&gt;&lt;p&gt; 痛点：因为JAVA和操作系统的BIO操作是阻塞的，也就是说在读操作的时候线程会被阻塞住。&lt;br&gt; 解决方案
+      
+    
+    </summary>
+    
+      <category term="java" scheme="https://liuhao163.github.io/categories/java/"/>
+    
+      <category term="并发" scheme="https://liuhao163.github.io/categories/java/%E5%B9%B6%E5%8F%91/"/>
+    
+    
+      <category term="java" scheme="https://liuhao163.github.io/tags/java/"/>
+    
+      <category term="并发" scheme="https://liuhao163.github.io/tags/%E5%B9%B6%E5%8F%91/"/>
+    
+      <category term="案例分析" scheme="https://liuhao163.github.io/tags/%E6%A1%88%E4%BE%8B%E5%88%86%E6%9E%90/"/>
+    
+  </entry>
   
   <entry>
     <title>JAVA并发案例分析-Guava中的限流与高效令牌桶算法</title>
@@ -265,7 +296,7 @@
     <link href="https://liuhao163.github.io/Immutability%E6%A8%A1%E5%BC%8F%EF%BC%9A%E5%A6%82%E4%BD%95%E5%88%A9%E7%94%A8%E4%B8%8D%E5%8F%98%E6%80%A7%E8%A7%A3%E5%86%B3%E5%B9%B6%E5%8F%91%E9%97%AE%E9%A2%98%EF%BC%9F/"/>
     <id>https://liuhao163.github.io/Immutability模式：如何利用不变性解决并发问题？/</id>
     <published>2019-05-18T09:52:08.000Z</published>
-    <updated>2019-05-18T10:13:55.000Z</updated>
+    <updated>2019-06-06T10:01:40.000Z</updated>
     
     <content type="html"><![CDATA[<p>并发情况下如果对一个共享变量进行读写就会有并发问题，如果只有读是没有并发问题的，所以解决并发问题的一个重要思路就是不提供变量的写的功能</p><h2 id="如何快速实现不可变类"><a href="#如何快速实现不可变类" class="headerlink" title="如何快速实现不可变类"></a>如何快速实现不可变类</h2><ol><li>类的声明以及属性都要声明成final对象（类的声明是为了防止子类继承父类修改父类的属性）</li><li>只提供只读的方法，如果要修改对象，去创建一个新的不可变对象。</li></ol><p>例如String，是典型的一个不可变对象，String中的replace对象在修改时候我们是创建了一个新的不可变对象</p><h2 id="利用flyweight模式减少重复对象的创建"><a href="#利用flyweight模式减少重复对象的创建" class="headerlink" title="利用flyweight模式减少重复对象的创建"></a>利用flyweight模式减少重复对象的创建</h2><p>由于不可变对象不能修改，如果遇到修改话可能会产生大量的对象占用系统内存,为了避免这种情况发生JAVA采用了flyweight模式来减少对象的产生，用一句话概述</p><p>  提前缓存好一部分对象，如果没有在去创建，如果有就直接取用，因为这些对象是不可变的共享完全没问题。<br>  比较特殊的是Long，因为对象范围比较大，所以Long只保存了-128-127的对象。具体见代码</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Long <span class="title">valueOf</span><span class="params">(<span class="keyword">long</span> l)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">final</span> <span class="keyword">int</span> offset = <span class="number">128</span>;</span><br><span class="line">  <span class="comment">// [-128,127] 直接的数字做了缓存</span></span><br><span class="line">  <span class="keyword">if</span> (l &gt;= -<span class="number">128</span> &amp;&amp; l &lt;= <span class="number">127</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> LongCache</span><br><span class="line">      .cache[(<span class="keyword">int</span>)l + offset];</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> Long(l);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 缓存，等价于对象池</span></span><br><span class="line"><span class="comment">// 仅缓存 [-128,127] 直接的数字</span></span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">LongCache</span> </span>&#123;</span><br><span class="line">  <span class="keyword">static</span> <span class="keyword">final</span> Long cache[]= <span class="keyword">new</span> Long[-(-<span class="number">128</span>) + <span class="number">127</span> + <span class="number">1</span>];</span><br><span class="line"></span><br><span class="line">  <span class="keyword">static</span> &#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;cache.length; i++)</span><br><span class="line">      cache[i] = <span class="keyword">new</span> Long(i-<span class="number">128</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><h2 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h2><p>不可变对象的属性即时声明了不可变，但是他的属性也有可能改变如下</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//Foo 线程安全</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Foo</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> age = <span class="number">0</span>;</span><br><span class="line">    String name = <span class="string">"abc"</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">Bar</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> Foo foo=<span class="keyword">new</span> Foo();<span class="comment">//可改变foo里的属性</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span>[] i=<span class="keyword">new</span> <span class="keyword">int</span>[<span class="number">10</span>];<span class="comment">//可改变数组元素</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setAge</span><span class="params">(<span class="keyword">int</span> i)</span></span>&#123;</span><br><span class="line">        foo.age=i;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>不可变类作为属性本身不具备不可见性并且是线程不安全的</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//Foo 线程安全</span></span><br><span class="line"><span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">Foo</span></span>&#123;</span><br><span class="line">  <span class="keyword">final</span> <span class="keyword">int</span> age=<span class="number">0</span>;</span><br><span class="line">  <span class="keyword">final</span> <span class="keyword">int</span> name=<span class="string">"abc"</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//Bar 线程不安全</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Bar</span> </span>&#123;</span><br><span class="line">  Foo foo;<span class="comment">//并发时候会有问题</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">setFoo</span><span class="params">(Foo f)</span></span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.foo=f;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>]]></content>
     
@@ -508,11 +539,11 @@
       <category term="算法" scheme="https://liuhao163.github.io/categories/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84%E4%B8%8E%E7%AE%97%E6%B3%95/%E7%AE%97%E6%B3%95/"/>
     
     
-      <category term="算法" scheme="https://liuhao163.github.io/tags/%E7%AE%97%E6%B3%95/"/>
-    
       <category term="俩分法" scheme="https://liuhao163.github.io/tags/%E4%BF%A9%E5%88%86%E6%B3%95/"/>
     
       <category term="数据结构" scheme="https://liuhao163.github.io/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/"/>
+    
+      <category term="算法" scheme="https://liuhao163.github.io/tags/%E7%AE%97%E6%B3%95/"/>
     
   </entry>
   
@@ -574,35 +605,6 @@
       <category term="并发" scheme="https://liuhao163.github.io/tags/%E5%B9%B6%E5%8F%91/"/>
     
       <category term="aqs" scheme="https://liuhao163.github.io/tags/aqs/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>如何用面向对象的思想写好并发程序</title>
-    <link href="https://liuhao163.github.io/%E5%A6%82%E4%BD%95%E7%94%A8%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E7%9A%84%E6%80%9D%E6%83%B3%E5%86%99%E5%A5%BD%E5%B9%B6%E5%8F%91%E7%A8%8B%E5%BA%8F/"/>
-    <id>https://liuhao163.github.io/如何用面向对象的思想写好并发程序/</id>
-    <published>2019-03-30T16:53:42.000Z</published>
-    <updated>2019-03-30T16:53:42.000Z</updated>
-    
-    <content type="html"><![CDATA[<h1 id="防止变量的共享"><a href="#防止变量的共享" class="headerlink" title="防止变量的共享"></a>防止变量的共享</h1><p>在声明一个变量时候要通过方法的封装暴露对象的修改和查询操作，以此为入口来控制变量的并发，对于不变的对象尽量声明成final类型，告诉别人这个便利不会被改变。</p><h1 id="识别共享变量的条件"><a href="#识别共享变量的条件" class="headerlink" title="识别共享变量的条件"></a>识别共享变量的条件</h1><p>防止变量之间的竞态问题，比如下面的代码：设置了上限和下限，这里有个隐含的条件上限一定要&gt;=下限,虽然变量声明成了AtomicLong，但是在并发的时候需改时候遇到if条件可能会造成下限高于上限的问题。原因在于条件判断和修改结果不是原子操作，这是个典型的竞态问题。修改方案是set方法加synchronized</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SafeWM</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 库存上限</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> AtomicLong upper =</span><br><span class="line">        <span class="keyword">new</span> AtomicLong(<span class="number">0</span>);</span><br><span class="line">  <span class="comment">// 库存下限</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> AtomicLong lower =</span><br><span class="line">        <span class="keyword">new</span> AtomicLong(<span class="number">0</span>);</span><br><span class="line">  <span class="comment">// 设置库存上限</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">setUpper</span><span class="params">(<span class="keyword">long</span> v)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 检查参数合法性</span></span><br><span class="line">    <span class="keyword">if</span> (v &lt; lower.get()) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException();</span><br><span class="line">    &#125;</span><br><span class="line">    upper.set(v);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 设置库存下限</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">setLower</span><span class="params">(<span class="keyword">long</span> v)</span></span>&#123;</span><br><span class="line">    <span class="comment">// 检查参数合法性</span></span><br><span class="line">    <span class="keyword">if</span> (v &gt; upper.get()) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException();</span><br><span class="line">    &#125;</span><br><span class="line">    lower.set(v);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 省略其他业务代码</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><h1 id="制定并发访问策略"><a href="#制定并发访问策略" class="headerlink" title="制定并发访问策略"></a>制定并发访问策略</h1><ol><li>防止共享</li><li>采取不变模式。这样修改一个对象就是创建了一个新对象</li><li>利用管程和其他并发工具来</li></ol><h2 id="要注意几点"><a href="#要注意几点" class="headerlink" title="要注意几点"></a>要注意几点</h2><ol><li>采用成熟的工具类避免重复开发轮子</li><li>尽量避免使用低级原语入synchronized、lock等方式，而是采用并罚保</li><li>尽量以并发安全为主，尽量避免过早优化代码</li></ol>]]></content>
-    
-    <summary type="html">
-    
-      
-      
-        &lt;h1 id=&quot;防止变量的共享&quot;&gt;&lt;a href=&quot;#防止变量的共享&quot; class=&quot;headerlink&quot; title=&quot;防止变量的共享&quot;&gt;&lt;/a&gt;防止变量的共享&lt;/h1&gt;&lt;p&gt;在声明一个变量时候要通过方法的封装暴露对象的修改和查询操作，以此为入口来控制变量的并发，对于不变的对
-      
-    
-    </summary>
-    
-      <category term="java" scheme="https://liuhao163.github.io/categories/java/"/>
-    
-      <category term="并发" scheme="https://liuhao163.github.io/categories/java/%E5%B9%B6%E5%8F%91/"/>
-    
-    
-      <category term="java" scheme="https://liuhao163.github.io/tags/java/"/>
-    
-      <category term="并发" scheme="https://liuhao163.github.io/tags/%E5%B9%B6%E5%8F%91/"/>
     
   </entry>
   

@@ -4,6 +4,37 @@
   
     
     <entry>
+      <title>JAVA并发案例分析-Netty于Reactor模式</title>
+      <link href="/JAVA%E5%B9%B6%E5%8F%91%E6%A1%88%E4%BE%8B%E5%88%86%E6%9E%90-Netty%E4%BA%8EReactor%E6%A8%A1%E5%BC%8F/"/>
+      <url>/JAVA%E5%B9%B6%E5%8F%91%E6%A1%88%E4%BE%8B%E5%88%86%E6%9E%90-Netty%E4%BA%8EReactor%E6%A8%A1%E5%BC%8F/</url>
+      
+        <content type="html"><![CDATA[<h2 id="BIO的问题"><a href="#BIO的问题" class="headerlink" title="BIO的问题"></a>BIO的问题</h2><p> 痛点：因为JAVA和操作系统的BIO操作是阻塞的，也就是说在读操作的时候线程会被阻塞住。<br> 解决方案：</p><ul><li>利用Thread-Per-Message模式每个IO操作都用一个线程。</li><li>问题：在java中由于线程对象较重，在链接不多的时候还可以一旦链接很多的场景很块就会出现问题。</li></ul><h2 id="Nio和WorkThread模式"><a href="#Nio和WorkThread模式" class="headerlink" title="Nio和WorkThread模式"></a>Nio和WorkThread模式</h2><p>  我们可以利用WorkThread模式采用线程池来处理这种情况么？答案是BIO不可以因为BIO的IO操作会阻塞线程。这时候就要用到NIO。<br>  NIO的IO操作是不会阻塞线程的：<br>  以select模型为例子，简单来说：当一个IO请求发出后，不会阻塞当前线程，用户态的selecter会一直轮询FD检查是否IO请求的数据是否准备好，内核态会去准备数据，一旦内核态的数据准备好，会通知FD已经准备好<br>  这时候我们的WorkThread可以对这些准备好的FD去处理。</p><p>  上述这种模式我们叫它Reactor模式</p><h2 id="Reactor模式的示例"><a href="#Reactor模式的示例" class="headerlink" title="Reactor模式的示例"></a>Reactor模式的示例</h2><p><img src="./reactor01.png" alt="avator"></p><ul><li>Reactor：模式中最重要的类：<ul><li>负责调用操作系统的Selecter.select()函数，获取准备好的io-handlers</li><li>遍历io-handlers交给EventHandler</li><li>注册、移除EventHandler</li></ul></li><li>EventHandler:io请求的逻辑处理类</li><li>Selecter：封装操作系统IO模型的选择器epoll、select</li><li>io-heandler：封装操作系统io请求类</li></ul><h2 id="netty"><a href="#netty" class="headerlink" title="netty"></a>netty</h2><p><img src="./reactor02.png" alt="avator"></p><p>  如图：netty中的Reactor类就是EventLoop，Soekcet和Eventloop是稳定的多对1关系，而线程和EventLoop是稳定的1对1关系。绑定关系见源码的register<br>  而eventloop是封装在一个EventLoopGroup中的并且在其中实现了负载均衡。<br>  注意：netty的服务端往往需要俩个EventLoopGroup</p><ul><li>boosGroup用于处理io的链接请求，如果监听一个端口值需要分配一个eventloop否则会浪费</li><li>workGroup处理具体io的操作。</li></ul><p>原因是，操作系统的io决定的创建链接后会生成一个新的socker，为了性能我们会将这个socket放在其他的group中。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> java </category>
+          
+          <category> 并发 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> java </tag>
+            
+            <tag> 并发 </tag>
+            
+            <tag> 案例分析 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>JAVA并发案例分析-Guava中的限流与高效令牌桶算法</title>
       <link href="/JAVA%E5%B9%B6%E5%8F%91%E6%A1%88%E4%BE%8B%E5%88%86%E6%9E%90-%E4%BB%A4%E7%89%8C%E6%A1%B6%E7%AE%97%E6%B3%95/"/>
       <url>/JAVA%E5%B9%B6%E5%8F%91%E6%A1%88%E4%BE%8B%E5%88%86%E6%9E%90-%E4%BB%A4%E7%89%8C%E6%A1%B6%E7%AE%97%E6%B3%95/</url>
@@ -474,11 +505,11 @@
       
         <tags>
             
-            <tag> 算法 </tag>
-            
             <tag> 俩分法 </tag>
             
             <tag> 数据结构 </tag>
+            
+            <tag> 算法 </tag>
             
         </tags>
       
@@ -623,9 +654,9 @@
       
         <tags>
             
-            <tag> 算法 </tag>
-            
             <tag> 数据结构 </tag>
+            
+            <tag> 算法 </tag>
             
             <tag> 队列 </tag>
             
@@ -683,9 +714,9 @@
       
         <tags>
             
-            <tag> 算法 </tag>
-            
             <tag> 数据结构 </tag>
+            
+            <tag> 算法 </tag>
             
             <tag> 链表 </tag>
             
@@ -1634,6 +1665,27 @@
     
     
     <entry>
+      <title>mysql的锁-全局锁、表锁、行锁、间隙锁</title>
+      <link href="/mysql/mysql%E7%9A%84%E9%94%81/"/>
+      <url>/mysql/mysql%E7%9A%84%E9%94%81/</url>
+      
+        <content type="html"><![CDATA[<h1 id="mysql的锁"><a href="#mysql的锁" class="headerlink" title="mysql的锁"></a>mysql的锁</h1><h2 id="全局锁（FTWRL）"><a href="#全局锁（FTWRL）" class="headerlink" title="全局锁（FTWRL）"></a>全局锁（FTWRL）</h2><p>Mysql提供的针对数据库级别的对数据加读锁的功能:Flush tables with read lock。之后针对这个数据库的增删改、DDL、事物提交语句都会被堵塞住。他主要的用途是用于数据库全库的逻辑备份。</p><ul><li>优点：<ul><li>全局锁是数据库级别的，所有表引擎都支持，在数据的导出对库实例加锁，保持导出数据逻辑的一致性。</li><li>和设置数据库只读（set global readonly=true）相比，全局锁在当前链接异常或者中断的情况下可以自动释放，而设置数据库只读不能。</li></ul></li><li>缺点：导出操作如果对数据库加锁，数据库的变更操作会被lock住，解决方案：对于Innodb引擎，可以用mysql自带的mysqldump工具使用参数–single-transaction.</li></ul><h2 id="表级锁"><a href="#表级锁" class="headerlink" title="表级锁"></a>表级锁</h2><p>mysql的表级锁分俩种，一种是表锁，一种是元数据锁（meta data lock MDL）</p><h3 id="表锁"><a href="#表锁" class="headerlink" title="表锁"></a>表锁</h3><p>预发是 lock tables … read/write。可以用unlock主动释放锁。也可以在链接中断时候自动释放。<br>表锁对于自己和其他线程读写操作的限制如下：如果对一个表进行read/write锁。其他线程在写or读/写时都会堵塞；同时本线程也只能读or读写该表，其他表无法访问。</p><h3 id="元数据锁（MDL）"><a href="#元数据锁（MDL）" class="headerlink" title="元数据锁（MDL）"></a>元数据锁（MDL）</h3><p>该锁不用显示的使用，在访问表的时候会自动加上，他用来保证访问数据时候数据表结构的稳定性，他有如下特点：</p><ul><li>对一个表的数据CRUD时候，加MDL读锁；当修改表结构时候，加MDL写锁</li><li>读锁是不互斥的，因为这些操作不会该表结构，所以可以多个线程同时对表做CRUD；</li><li>读写锁之间，写锁之间是互斥的，也就是说当对表进行CRUD时候，为了保证返回数据的稳定性，DDL操作是堵塞的。</li></ul><p>由于上面MDL的读写锁机制，就会有下面这种情况，修改一个访问量很高的小表，会导致整个库挂掉：<br>比如:</p><ol><li>大量的select语句，加了MDL读锁，这时候是不会堵塞的;</li><li>这时候有一条alter表的语句需要执行，加了MDL写锁，开始block。</li><li>由于select量很大，alter会一直堵塞，这时候后续的select也会堵塞，很块连接池就被用完了。</li></ol><p>解决方法：<br>MariaDB 已经合并了 AliSQL的方法</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tbl_name <span class="keyword">NOWAIT</span> <span class="keyword">add</span> <span class="keyword">column</span> ...</span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tbl_name <span class="keyword">WAIT</span> N <span class="keyword">add</span> <span class="keyword">column</span> ...</span><br></pre></td></tr></table></figure><h2 id="行锁"><a href="#行锁" class="headerlink" title="行锁"></a>行锁</h2><p>为了加强数据库的并发度引入的锁的机制，他有如下几个特点：</p><ul><li>行锁是由mysql的表引擎决定，Innodb支持行锁，MyISM不支持行锁。</li><li>Innodb的行锁是两阶段锁：即数据需要锁的时候对数据涉及到的行加锁；在事务结束后才释放行锁；</li></ul><h3 id="如何减少行锁的锁冲突"><a href="#如何减少行锁的锁冲突" class="headerlink" title="如何减少行锁的锁冲突"></a>如何减少行锁的锁冲突</h3><p>为了减少锁的冲突，我们在事务中要把会引起锁冲突的语句往后放。因为事务是原子性的所以，在一个事务中，要么都成功要么都失败，所以我们在一个事务中根据业务需求可以把一些没有锁冲突的操作或者语句放在事务的前面先只是，可能会造成锁冲突的语句放在后面，减少锁冲突加大并发。</p><h3 id="死锁和死锁检测"><a href="#死锁和死锁检测" class="headerlink" title="死锁和死锁检测"></a>死锁和死锁检测</h3><ul><li>出现原因：循环的资源等待。举个例子：俩个事务，事务1:用户uid=1点赞,事务2：用户uid=1取消赞。如下：这时候在并发时候可能会造成死锁当事务1、事务2都执行完第一条语句时候，这时候事务1等待事务2执行完第二条语句释放，这时候事务2执行完第二条语句等待事务一释放</li></ul><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#事务1 点赞</span></span><br><span class="line"><span class="keyword">BEGIN</span> <span class="keyword">TRANSACTION</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> reply <span class="keyword">SET</span> like_ammount=like_ammount+<span class="number">1</span> <span class="keyword">WHERE</span> reply_id=<span class="number">1</span> ;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> user_sum <span class="keyword">SET</span> like_sum=like_sum+<span class="number">1</span> <span class="keyword">WHERE</span> uid=<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">COMMIT</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">#事务2取消赞</span></span><br><span class="line"><span class="keyword">BEGIN</span> <span class="keyword">TRANSACTION</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> user_sum <span class="keyword">SET</span> like_sum=like_sum<span class="number">-1</span> <span class="keyword">WHERE</span> uid=<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> reply <span class="keyword">SET</span> like_ammount=like_ammount<span class="number">-1</span> <span class="keyword">WHERE</span> reply_id=<span class="number">1</span> ;</span><br><span class="line"></span><br><span class="line"><span class="keyword">COMMIT</span>;</span><br></pre></td></tr></table></figure><ul><li>解决方法<ul><li>等待锁超时，用innodb_lock_wait_timeout来设置；（默认50s）</li><li>用死锁检查的方式innodb_deadlock_detect设置为on，表示开启，一旦发生死锁回滚死锁链条中的某个事务让其他事务可以进行；</li></ul></li></ul><h3 id="死锁检查真的很美好么？"><a href="#死锁检查真的很美好么？" class="headerlink" title="死锁检查真的很美好么？"></a>死锁检查真的很美好么？</h3><p>死锁检查是一个O(n*n)的时间复杂度的操作，因为每一个被堵塞的线程都会检查是否是自己导致了死锁。导致会有大量的线程做无谓的死锁检查，最终现象是CPU很高，但是并发度很低。</p><p>解决方案：</p><ul><li>粗暴的做法：如果确定没有死锁情况，关掉死锁检查。</li><li>控制并发度：客户端自己控制，最多只有N个线程同时进行修改，但是不排除一个库有多个客户端（比如多连接池）</li><li>中间件开发：如果发现请求数据一样的，进行排队减少冲突。（成本高）</li></ul><h2 id="间隙锁-gap-lock-与幻读"><a href="#间隙锁-gap-lock-与幻读" class="headerlink" title="间隙锁(gap lock) 与幻读"></a>间隙锁(gap lock) 与幻读</h2><p>什么是幻读？为什么会出现幻读？幻读有什么危害？</p><ul><li>事物在RR隔离级别下；</li><li>一个事物中，俩次查询涉及的条件相同，后面的语句出现了之前查询没有存在的数据。（注意：出现了新增的数据）；</li><li>为什么出现幻读：RR隔离级别下，当数据发生改变，采用当前读的原则</li><li>幻读的危害：破坏了业务的语意；违反了数据的一致性</li></ul><p>为什么需要间隙锁？当数据库的隔离级别是RR的情况下，由于Mysql的行锁在为数据上锁的时候需要数据在表中，也就是说对于新插入的数据mysql是无法上锁的。这样就会出现幻读的情况。innodb为了解决幻读引入了间隙锁。</p><h2 id="innodb是如何加间隙锁的"><a href="#innodb是如何加间隙锁的" class="headerlink" title="innodb是如何加间隙锁的"></a>innodb是如何加间隙锁的</h2><ol><li>当一个涉及到为数据加锁的语句执行时候，会为涉及到的数据加行锁，同时为整个表的数据之间加间隙锁（gap lock）,这个行锁+间隙锁也叫next-key-lock。</li><li>间隙锁是个左开，右闭的空间。比如一张表有如下数据  </li><li>间隙锁只会锁插入语句，其他的操作是不互斥的。</li></ol><p>具体例子说明</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">#表t(id, c(有索引))有数据（1，3），（1，5），（1，7），有如下3个事物，是不冲突的 t1 ,t2锁不冲突， t3会被间隙锁block</span></span><br><span class="line"><span class="comment">#间隙锁是(-∞,3],(3,5],(5,7],(7,supernum]</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#t1</span></span><br><span class="line">begion transaction;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span>  t <span class="keyword">where</span> c=<span class="number">5</span> <span class="keyword">for</span> <span class="keyword">update</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">#t2</span></span><br><span class="line">begion transaction;</span><br><span class="line"><span class="keyword">update</span> t <span class="keyword">set</span> c=<span class="number">1</span> <span class="keyword">where</span> c=<span class="number">5</span> <span class="keyword">for</span> <span class="keyword">share</span> <span class="keyword">mode</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">#t3</span></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t <span class="keyword">values</span>(<span class="number">3</span>,<span class="number">4</span>);</span><br></pre></td></tr></table></figure><h3 id="间隙锁的缺点"><a href="#间隙锁的缺点" class="headerlink" title="间隙锁的缺点"></a>间隙锁的缺点</h3><p>间隙锁也并不是万能的在某些情况下会造成死锁比如，下面的情况：</p><ol><li>判断断C=5是否存在；</li><li>不存在就insert,存在就update；</li><li>图中在并发的情况下，且c=5不存在，行锁无效，触发间隙锁，这时候事物2的insert需要等待事物1commit之后释放间隙锁。</li><li>但是事物1，因为也insert导致了，不能释放锁就触发了死锁。</li></ol><table><thead><tr><th>事物1</th><th>事物2</th></tr></thead><tbody><tr><td>begin transaction;</td><td>begin transaction;</td></tr><tr><td>select * from t where c=5 for update ;</td><td>select * from t where c=5  for share update;</td></tr><tr><td>select * from t where c=5 for update ;</td><td>select * from t where c=5  for share update;</td></tr><tr><td>-</td><td>insert into t values(5,5);</td></tr><tr><td>insert into t values(5,5);（dead lock）</td><td>-</td></tr></tbody></table><p>这种方式的解决方案，在满足业务的前提下，将事物的隔离级别改为RC，并且将binlog置为row。</p><h3 id="innodb对于数据加锁的原则"><a href="#innodb对于数据加锁的原则" class="headerlink" title="innodb对于数据加锁的原则"></a>innodb对于数据加锁的原则</h3><p>Q:锁是加在数据上还是加载索引中？<br>A:锁是加载索引中。（因为Mysql的数据是在磁盘中的，而索引是在内存中切有序的。所以按照mysql的能用内存用内存的原则是锁索引的）</p><ol><li>加锁的基本单位是next key lock；</li><li>查找到访问的对象会加锁；</li><li>对于查询等值唯一索引的数据加锁，会退化成行锁；</li><li>对于查询等值非唯一索引的数据加锁，当向右扫描到第一个不符合索引的数据时候，会退化成间隙锁；</li><li>注意：对于范围查找唯一索引，会访问到不满足条件的第一个值位置；</li></ol><p>所以准确的说，innodb在对数据加锁不是简单的为涉及到的数据加行锁，而是对要访问的数据加一个nextKeyLock，然后innodb在根据如上条件判断哪些数据加行锁，哪些数据不是行锁是间隙锁；（确定是查询范围锁的数据是x锁，中间不存在的数据间隙锁）</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> Mysql </category>
+          
+          <category> Mysql基础 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>其他</title>
       <link href="/mysql/%E5%85%B6%E4%BB%96/"/>
       <url>/mysql/%E5%85%B6%E4%BB%96/</url>
@@ -1653,11 +1705,11 @@
     
     
     <entry>
-      <title>mysql的锁-全局锁、表锁、行锁、间隙锁</title>
-      <link href="/mysql/mysql%E7%9A%84%E9%94%81/"/>
-      <url>/mysql/mysql%E7%9A%84%E9%94%81/</url>
+      <title>mysql更新数据的原理和流程-草稿</title>
+      <link href="/mysql/mysql%E7%9A%84%E6%95%B0%E6%8D%AE%E9%A1%B5%E6%9B%B4%E6%96%B0/"/>
+      <url>/mysql/mysql%E7%9A%84%E6%95%B0%E6%8D%AE%E9%A1%B5%E6%9B%B4%E6%96%B0/</url>
       
-        <content type="html"><![CDATA[<h1 id="mysql的锁"><a href="#mysql的锁" class="headerlink" title="mysql的锁"></a>mysql的锁</h1><h2 id="全局锁（FTWRL）"><a href="#全局锁（FTWRL）" class="headerlink" title="全局锁（FTWRL）"></a>全局锁（FTWRL）</h2><p>Mysql提供的针对数据库级别的对数据加读锁的功能:Flush tables with read lock。之后针对这个数据库的增删改、DDL、事物提交语句都会被堵塞住。他主要的用途是用于数据库全库的逻辑备份。</p><ul><li>优点：<ul><li>全局锁是数据库级别的，所有表引擎都支持，在数据的导出对库实例加锁，保持导出数据逻辑的一致性。</li><li>和设置数据库只读（set global readonly=true）相比，全局锁在当前链接异常或者中断的情况下可以自动释放，而设置数据库只读不能。</li></ul></li><li>缺点：导出操作如果对数据库加锁，数据库的变更操作会被lock住，解决方案：对于Innodb引擎，可以用mysql自带的mysqldump工具使用参数–single-transaction.</li></ul><h2 id="表级锁"><a href="#表级锁" class="headerlink" title="表级锁"></a>表级锁</h2><p>mysql的表级锁分俩种，一种是表锁，一种是元数据锁（meta data lock MDL）</p><h3 id="表锁"><a href="#表锁" class="headerlink" title="表锁"></a>表锁</h3><p>预发是 lock tables … read/write。可以用unlock主动释放锁。也可以在链接中断时候自动释放。<br>表锁对于自己和其他线程读写操作的限制如下：如果对一个表进行read/write锁。其他线程在写or读/写时都会堵塞；同时本线程也只能读or读写该表，其他表无法访问。</p><h3 id="元数据锁（MDL）"><a href="#元数据锁（MDL）" class="headerlink" title="元数据锁（MDL）"></a>元数据锁（MDL）</h3><p>该锁不用显示的使用，在访问表的时候会自动加上，他用来保证访问数据时候数据表结构的稳定性，他有如下特点：</p><ul><li>对一个表的数据CRUD时候，加MDL读锁；当修改表结构时候，加MDL写锁</li><li>读锁是不互斥的，因为这些操作不会该表结构，所以可以多个线程同时对表做CRUD；</li><li>读写锁之间，写锁之间是互斥的，也就是说当对表进行CRUD时候，为了保证返回数据的稳定性，DDL操作是堵塞的。</li></ul><p>由于上面MDL的读写锁机制，就会有下面这种情况，修改一个访问量很高的小表，会导致整个库挂掉：<br>比如:</p><ol><li>大量的select语句，加了MDL读锁，这时候是不会堵塞的;</li><li>这时候有一条alter表的语句需要执行，加了MDL写锁，开始block。</li><li>由于select量很大，alter会一直堵塞，这时候后续的select也会堵塞，很块连接池就被用完了。</li></ol><p>解决方法：<br>MariaDB 已经合并了 AliSQL的方法</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tbl_name <span class="keyword">NOWAIT</span> <span class="keyword">add</span> <span class="keyword">column</span> ...</span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tbl_name <span class="keyword">WAIT</span> N <span class="keyword">add</span> <span class="keyword">column</span> ...</span><br></pre></td></tr></table></figure><h2 id="行锁"><a href="#行锁" class="headerlink" title="行锁"></a>行锁</h2><p>为了加强数据库的并发度引入的锁的机制，他有如下几个特点：</p><ul><li>行锁是由mysql的表引擎决定，Innodb支持行锁，MyISM不支持行锁。</li><li>Innodb的行锁是两阶段锁：即数据需要锁的时候对数据涉及到的行加锁；在事务结束后才释放行锁；</li></ul><h3 id="如何减少行锁的锁冲突"><a href="#如何减少行锁的锁冲突" class="headerlink" title="如何减少行锁的锁冲突"></a>如何减少行锁的锁冲突</h3><p>为了减少锁的冲突，我们在事务中要把会引起锁冲突的语句往后放。因为事务是原子性的所以，在一个事务中，要么都成功要么都失败，所以我们在一个事务中根据业务需求可以把一些没有锁冲突的操作或者语句放在事务的前面先只是，可能会造成锁冲突的语句放在后面，减少锁冲突加大并发。</p><h3 id="死锁和死锁检测"><a href="#死锁和死锁检测" class="headerlink" title="死锁和死锁检测"></a>死锁和死锁检测</h3><ul><li>出现原因：循环的资源等待。举个例子：俩个事务，事务1:用户uid=1点赞,事务2：用户uid=1取消赞。如下：这时候在并发时候可能会造成死锁当事务1、事务2都执行完第一条语句时候，这时候事务1等待事务2执行完第二条语句释放，这时候事务2执行完第二条语句等待事务一释放</li></ul><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#事务1 点赞</span></span><br><span class="line"><span class="keyword">BEGIN</span> <span class="keyword">TRANSACTION</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> reply <span class="keyword">SET</span> like_ammount=like_ammount+<span class="number">1</span> <span class="keyword">WHERE</span> reply_id=<span class="number">1</span> ;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> user_sum <span class="keyword">SET</span> like_sum=like_sum+<span class="number">1</span> <span class="keyword">WHERE</span> uid=<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">COMMIT</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">#事务2取消赞</span></span><br><span class="line"><span class="keyword">BEGIN</span> <span class="keyword">TRANSACTION</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> user_sum <span class="keyword">SET</span> like_sum=like_sum<span class="number">-1</span> <span class="keyword">WHERE</span> uid=<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> reply <span class="keyword">SET</span> like_ammount=like_ammount<span class="number">-1</span> <span class="keyword">WHERE</span> reply_id=<span class="number">1</span> ;</span><br><span class="line"></span><br><span class="line"><span class="keyword">COMMIT</span>;</span><br></pre></td></tr></table></figure><ul><li>解决方法<ul><li>等待锁超时，用innodb_lock_wait_timeout来设置；（默认50s）</li><li>用死锁检查的方式innodb_deadlock_detect设置为on，表示开启，一旦发生死锁回滚死锁链条中的某个事务让其他事务可以进行；</li></ul></li></ul><h3 id="死锁检查真的很美好么？"><a href="#死锁检查真的很美好么？" class="headerlink" title="死锁检查真的很美好么？"></a>死锁检查真的很美好么？</h3><p>死锁检查是一个O(n*n)的时间复杂度的操作，因为每一个被堵塞的线程都会检查是否是自己导致了死锁。导致会有大量的线程做无谓的死锁检查，最终现象是CPU很高，但是并发度很低。</p><p>解决方案：</p><ul><li>粗暴的做法：如果确定没有死锁情况，关掉死锁检查。</li><li>控制并发度：客户端自己控制，最多只有N个线程同时进行修改，但是不排除一个库有多个客户端（比如多连接池）</li><li>中间件开发：如果发现请求数据一样的，进行排队减少冲突。（成本高）</li></ul><h2 id="间隙锁-gap-lock-与幻读"><a href="#间隙锁-gap-lock-与幻读" class="headerlink" title="间隙锁(gap lock) 与幻读"></a>间隙锁(gap lock) 与幻读</h2><p>什么是幻读？为什么会出现幻读？幻读有什么危害？</p><ul><li>事物在RR隔离级别下；</li><li>一个事物中，俩次查询涉及的条件相同，后面的语句出现了之前查询没有存在的数据。（注意：出现了新增的数据）；</li><li>为什么出现幻读：RR隔离级别下，当数据发生改变，采用当前读的原则</li><li>幻读的危害：破坏了业务的语意；违反了数据的一致性</li></ul><p>为什么需要间隙锁？当数据库的隔离级别是RR的情况下，由于Mysql的行锁在为数据上锁的时候需要数据在表中，也就是说对于新插入的数据mysql是无法上锁的。这样就会出现幻读的情况。innodb为了解决幻读引入了间隙锁。</p><h2 id="innodb是如何加间隙锁的"><a href="#innodb是如何加间隙锁的" class="headerlink" title="innodb是如何加间隙锁的"></a>innodb是如何加间隙锁的</h2><ol><li>当一个涉及到为数据加锁的语句执行时候，会为涉及到的数据加行锁，同时为整个表的数据之间加间隙锁（gap lock）,这个行锁+间隙锁也叫next-key-lock。</li><li>间隙锁是个左开，右闭的空间。比如一张表有如下数据  </li><li>间隙锁只会锁插入语句，其他的操作是不互斥的。</li></ol><p>具体例子说明</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">#表t(id, c(有索引))有数据（1，3），（1，5），（1，7），有如下3个事物，是不冲突的 t1 ,t2锁不冲突， t3会被间隙锁block</span></span><br><span class="line"><span class="comment">#间隙锁是(-∞,3],(3,5],(5,7],(7,supernum]</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#t1</span></span><br><span class="line">begion transaction;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span>  t <span class="keyword">where</span> c=<span class="number">5</span> <span class="keyword">for</span> <span class="keyword">update</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">#t2</span></span><br><span class="line">begion transaction;</span><br><span class="line"><span class="keyword">update</span> t <span class="keyword">set</span> c=<span class="number">1</span> <span class="keyword">where</span> c=<span class="number">5</span> <span class="keyword">for</span> <span class="keyword">share</span> <span class="keyword">mode</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">#t3</span></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t <span class="keyword">values</span>(<span class="number">3</span>,<span class="number">4</span>);</span><br></pre></td></tr></table></figure><h3 id="间隙锁的缺点"><a href="#间隙锁的缺点" class="headerlink" title="间隙锁的缺点"></a>间隙锁的缺点</h3><p>间隙锁也并不是万能的在某些情况下会造成死锁比如，下面的情况：</p><ol><li>判断断C=5是否存在；</li><li>不存在就insert,存在就update；</li><li>图中在并发的情况下，且c=5不存在，行锁无效，触发间隙锁，这时候事物2的insert需要等待事物1commit之后释放间隙锁。</li><li>但是事物1，因为也insert导致了，不能释放锁就触发了死锁。</li></ol><table><thead><tr><th>事物1</th><th>事物2</th></tr></thead><tbody><tr><td>begin transaction;</td><td>begin transaction;</td></tr><tr><td>select * from t where c=5 for update ;</td><td>select * from t where c=5  for share update;</td></tr><tr><td>select * from t where c=5 for update ;</td><td>select * from t where c=5  for share update;</td></tr><tr><td>-</td><td>insert into t values(5,5);</td></tr><tr><td>insert into t values(5,5);（dead lock）</td><td>-</td></tr></tbody></table><p>这种方式的解决方案，在满足业务的前提下，将事物的隔离级别改为RC，并且将binlog置为row。</p><h3 id="innodb对于数据加锁的原则"><a href="#innodb对于数据加锁的原则" class="headerlink" title="innodb对于数据加锁的原则"></a>innodb对于数据加锁的原则</h3><p>Q:锁是加在数据上还是加载索引中？<br>A:锁是加载索引中。（因为Mysql的数据是在磁盘中的，而索引是在内存中切有序的。所以按照mysql的能用内存用内存的原则是锁索引的）</p><ol><li>加锁的基本单位是next key lock；</li><li>查找到访问的对象会加锁；</li><li>对于查询等值唯一索引的数据加锁，会退化成行锁；</li><li>对于查询等值非唯一索引的数据加锁，当向右扫描到第一个不符合索引的数据时候，会退化成间隙锁；</li><li>注意：对于范围查找唯一索引，会访问到不满足条件的第一个值位置；</li></ol><p>所以准确的说，innodb在对数据加锁不是简单的为涉及到的数据加行锁，而是对要访问的数据加一个nextKeyLock，然后innodb在根据如上条件判断哪些数据加行锁，哪些数据不是行锁是间隙锁；（确定是查询范围锁的数据是x锁，中间不存在的数据间隙锁）</p>]]></content>
+        <content type="html"><![CDATA[<h1 id="mysql更新数据的原理和流程-草稿"><a href="#mysql更新数据的原理和流程-草稿" class="headerlink" title="mysql更新数据的原理和流程-草稿"></a>mysql更新数据的原理和流程-草稿</h1><p>本文介绍mysql更新数据的原理和流程</p><h2 id="为什么mysql更新的效率很高？"><a href="#为什么mysql更新的效率很高？" class="headerlink" title="为什么mysql更新的效率很高？"></a>为什么mysql更新的效率很高？</h2><ol><li>WAL机制：即更新内存中数据页，同时写redolog+binglog然后返回。后台慢慢将数据页刷到磁盘中。（随机写改为顺序写）</li><li>mysql的chagenbuffer。</li></ol><h2 id="为什么mysql偶尔会抖一下"><a href="#为什么mysql偶尔会抖一下" class="headerlink" title="为什么mysql偶尔会抖一下"></a>为什么mysql偶尔会抖一下</h2><p>刷新脏页<br>什么叫脏页？<br>什么时候触发脏页的flush。</p><ol><li>redolog写满；（尽量避免，因为这时候所有更新都被block主）</li><li>内存不足：需要加载新的数据页但是内存不够，将数据页淘汰，如果是脏页，就flush到磁盘；（至于为什么不直接淘汰，下次读的时候从redologmerge是出于性能考虑，每次加载的都是干净的数据页）</li><li>正常的时候，定时刷新</li><li>正常关闭mysql时候</li></ol><p>2是抖一下的原因<br>buf1fpool数据页三种状态（未使用，使用了但是干净页，使用了但是脏页）。<br>当数据页没在内存中时候，申请一个页面，如果没有未使用页面就需要淘汰页面，俩种情况，如果淘汰的页面过多，会影响性能</p><ol><li>干净页直接淘汰</li><li><p>脏页flush，淘汰</p><p>fio -filename=$filename -direct=1 -iodepth 1 -thread -rw=randrw -ioengine=psync -bs=16k -size=500M -numjobs=10 -runtime=10 -group_reporting -name=mytest</p></li></ol>]]></content>
       
       
       <categories>
@@ -1686,27 +1738,6 @@
           <category> Mysql </category>
           
           <category> Mysql高可用架构 </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
-      <title>mysql更新数据的原理和流程-草稿</title>
-      <link href="/mysql/mysql%E7%9A%84%E6%95%B0%E6%8D%AE%E9%A1%B5%E6%9B%B4%E6%96%B0/"/>
-      <url>/mysql/mysql%E7%9A%84%E6%95%B0%E6%8D%AE%E9%A1%B5%E6%9B%B4%E6%96%B0/</url>
-      
-        <content type="html"><![CDATA[<h1 id="mysql更新数据的原理和流程-草稿"><a href="#mysql更新数据的原理和流程-草稿" class="headerlink" title="mysql更新数据的原理和流程-草稿"></a>mysql更新数据的原理和流程-草稿</h1><p>本文介绍mysql更新数据的原理和流程</p><h2 id="为什么mysql更新的效率很高？"><a href="#为什么mysql更新的效率很高？" class="headerlink" title="为什么mysql更新的效率很高？"></a>为什么mysql更新的效率很高？</h2><ol><li>WAL机制：即更新内存中数据页，同时写redolog+binglog然后返回。后台慢慢将数据页刷到磁盘中。（随机写改为顺序写）</li><li>mysql的chagenbuffer。</li></ol><h2 id="为什么mysql偶尔会抖一下"><a href="#为什么mysql偶尔会抖一下" class="headerlink" title="为什么mysql偶尔会抖一下"></a>为什么mysql偶尔会抖一下</h2><p>刷新脏页<br>什么叫脏页？<br>什么时候触发脏页的flush。</p><ol><li>redolog写满；（尽量避免，因为这时候所有更新都被block主）</li><li>内存不足：需要加载新的数据页但是内存不够，将数据页淘汰，如果是脏页，就flush到磁盘；（至于为什么不直接淘汰，下次读的时候从redologmerge是出于性能考虑，每次加载的都是干净的数据页）</li><li>正常的时候，定时刷新</li><li>正常关闭mysql时候</li></ol><p>2是抖一下的原因<br>buf1fpool数据页三种状态（未使用，使用了但是干净页，使用了但是脏页）。<br>当数据页没在内存中时候，申请一个页面，如果没有未使用页面就需要淘汰页面，俩种情况，如果淘汰的页面过多，会影响性能</p><ol><li>干净页直接淘汰</li><li><p>脏页flush，淘汰</p><p>fio -filename=$filename -direct=1 -iodepth 1 -thread -rw=randrw -ioengine=psync -bs=16k -size=500M -numjobs=10 -runtime=10 -group_reporting -name=mytest</p></li></ol>]]></content>
-      
-      
-      <categories>
-          
-          <category> Mysql </category>
-          
-          <category> Mysql基础 </category>
           
       </categories>
       
@@ -1779,6 +1810,25 @@
     
     
     <entry>
+      <title>shell的积累</title>
+      <link href="/shell/index/"/>
+      <url>/shell/index/</url>
+      
+        <content type="html"><![CDATA[<h1 id="shell的积累"><a href="#shell的积累" class="headerlink" title="shell的积累"></a>shell的积累</h1><p>日常工作中linux的命令的积累</p><h2 id="删除N天的文件的命令-用于清理log"><a href="#删除N天的文件的命令-用于清理log" class="headerlink" title="删除N天的文件的命令-用于清理log"></a>删除N天的文件的命令-用于清理log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find ./ -mtime +1 -name "*.log*" -exec rm -rf &#123;&#125; \;</span><br></pre></td></tr></table></figure><h2 id="按天筛选log"><a href="#按天筛选log" class="headerlink" title="按天筛选log"></a>按天筛选log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -n '/2018-10-15 16:55:00/,/2018-10-15 23:59:59/p' log_path |grep "condition"</span><br></pre></td></tr></table></figure><h2 id="合并redis，用于单机环境的redis导入"><a href="#合并redis，用于单机环境的redis导入" class="headerlink" title="合并redis，用于单机环境的redis导入"></a>合并redis，用于单机环境的redis导入</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line">redis-cli -h srcIp -p 6379 -n 0 keys "*" | while read key</span><br><span class="line">do</span><br><span class="line">    redis-cli -h srcIp -p 6379 -n 0 --raw dump $key | perl -pe 'chomp if eof' | redis-cli -h dest -p 6379 -n 1 -x restore $key 0</span><br><span class="line">    echo "migrate key $key"</span><br><span class="line">done</span><br></pre></td></tr></table></figure>]]></content>
+      
+      
+      <categories>
+          
+          <category> Shell </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>Spring-Schedule多线程</title>
       <link href="/spring/spring-scheduled/"/>
       <url>/spring/spring-scheduled/</url>
@@ -1800,25 +1850,6 @@
     
     
     <entry>
-      <title>shell的积累</title>
-      <link href="/shell/index/"/>
-      <url>/shell/index/</url>
-      
-        <content type="html"><![CDATA[<h1 id="shell的积累"><a href="#shell的积累" class="headerlink" title="shell的积累"></a>shell的积累</h1><p>日常工作中linux的命令的积累</p><h2 id="删除N天的文件的命令-用于清理log"><a href="#删除N天的文件的命令-用于清理log" class="headerlink" title="删除N天的文件的命令-用于清理log"></a>删除N天的文件的命令-用于清理log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find ./ -mtime +1 -name "*.log*" -exec rm -rf &#123;&#125; \;</span><br></pre></td></tr></table></figure><h2 id="按天筛选log"><a href="#按天筛选log" class="headerlink" title="按天筛选log"></a>按天筛选log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -n '/2018-10-15 16:55:00/,/2018-10-15 23:59:59/p' log_path |grep "condition"</span><br></pre></td></tr></table></figure><h2 id="合并redis，用于单机环境的redis导入"><a href="#合并redis，用于单机环境的redis导入" class="headerlink" title="合并redis，用于单机环境的redis导入"></a>合并redis，用于单机环境的redis导入</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line">redis-cli -h srcIp -p 6379 -n 0 keys "*" | while read key</span><br><span class="line">do</span><br><span class="line">    redis-cli -h srcIp -p 6379 -n 0 --raw dump $key | perl -pe 'chomp if eof' | redis-cli -h dest -p 6379 -n 1 -x restore $key 0</span><br><span class="line">    echo "migrate key $key"</span><br><span class="line">done</span><br></pre></td></tr></table></figure>]]></content>
-      
-      
-      <categories>
-          
-          <category> Shell </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
       <title>mysql事务隔离级别</title>
       <link href="/mysql/mysql%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB/"/>
       <url>/mysql/mysql%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB/</url>
@@ -1831,27 +1862,6 @@
           <category> Mysql </category>
           
           <category> Mysql基础 </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
-      <title>mysql是怎么保证高可用的</title>
-      <link href="/mysql/mysql%E6%98%AF%E6%80%8E%E4%B9%88%E4%BF%9D%E8%AF%81%E9%AB%98%E5%8F%AF%E7%94%A8%E7%9A%84/"/>
-      <url>/mysql/mysql%E6%98%AF%E6%80%8E%E4%B9%88%E4%BF%9D%E8%AF%81%E9%AB%98%E5%8F%AF%E7%94%A8%E7%9A%84/</url>
-      
-        <content type="html"><![CDATA[<h1 id="mysql是怎么保证高可用的–如何解决主备延迟"><a href="#mysql是怎么保证高可用的–如何解决主备延迟" class="headerlink" title="mysql是怎么保证高可用的–如何解决主备延迟"></a>mysql是怎么保证高可用的–如何解决主备延迟</h1><p>mysql的主从同步会保证主库到从库的最终一致性，但是mysql的高可用，光有最终一致性是远远不够的。下面会讨论影响mysql主备高可用的因素以及解决方法。</p><h2 id="主备延迟"><a href="#主备延迟" class="headerlink" title="主备延迟"></a>主备延迟</h2><ul><li>我们在备库上可以执行命令：seconds_behind_master来查看备库的状态，会显示备库同步数据和主库的时间差（单位：秒），这个时间差计算方式是：同一事物，备库执行完binlog的时间-主库产生binlog的时间备库执行的binlog的时间，当然这个值越小越好。</li><li>在网络正常的情况下，主备同步binlog的时间往往很短，真正造成主备延迟的原因往往是relylog的消费赶不上binlog的生产。那么是什么造成主备延迟的呢</li></ul><h3 id="主备延迟的原因"><a href="#主备延迟的原因" class="headerlink" title="主备延迟的原因"></a>主备延迟的原因</h3><ol><li>主备库，备库的性能要不主库所在的的机器性能差；–目前很少见了，因为大多是双M配置，所以备库可能会变为主，所以在部署时候都会选择对称部署；</li><li>备库压力大，备库上很多的查询需求，比如备份数据，运营统计等会放在备库执行。在同步binlog时候往往也会占用查询的资源，导致备库的眼里很大，引起主备延迟</li><li>大事物，由于mysql是在主库上事物提交之后才开始传输binlog给备库，这样如果1个很大的事物在主库执行N长时间后，在同步给备库，备库在执行这个事物时候就会造成主从不一致。<ol><li>一次删除很多的数据，如：数据库快满了删除数据；</li><li>大表的DDL</li></ol></li><li>库的并行复制能力,具体放在<a href="./mysql是如何降低主备延迟的.html">mysql是如何降低主备延迟的</a></li></ol><h3 id="主备延迟的解决方案"><a href="#主备延迟的解决方案" class="headerlink" title="主备延迟的解决方案"></a>主备延迟的解决方案</h3><ol><li>首先对于双M架构，主备库建议对称部署，保证切换朱备库时候性能没有打的差别</li><li>建议根据需要一主多从，比如说：一个主备做为切换，一个从库作为数据备份，一个从库作为数据分析以及运营支持；</li><li>根本上杜绝大事物，对于删除可以考虑分批删除数据；DDL可以采用开源的工具进行入：gh-ost方案</li></ol><h2 id="主备切换的几种策略"><a href="#主备切换的几种策略" class="headerlink" title="主备切换的几种策略"></a>主备切换的几种策略</h2><h3 id="可靠性优先"><a href="#可靠性优先" class="headerlink" title="可靠性优先"></a>可靠性优先</h3><p>该策略可能会有一段时间服务不可用，流程如下：</p><ol><li>判断备库的seconds_behind_master的值，当相于一个值的时候进行第二步，否则一直重试；</li><li>主库设置readonly=true，即只读；</li><li>备库等待seconds_behind_master=0为止；</li><li>备库设置readonly=fase，即可写；</li><li>切换业务到备库；</li></ol><p>注：第一步的作用实际上是希望主库和从库的延时在小于一个阈值时候开始做切换，否则如果相差30分钟，直接切换，那么服务就会有30分钟不可用，业务方一般是不可忍受的。（当然。。。。某些时候我也作为业务方我也就忍了）</p><h3 id="可用性优先"><a href="#可用性优先" class="headerlink" title="可用性优先"></a>可用性优先</h3><p>和上面相比，保证业务的可用，但是会牺牲掉数据的一致性</p><ol><li>备库设置readonly=fase，即可写；</li><li>切换业务到备库；</li><li>主库设置eadonly=true</li></ol><p>注：在下面的情况会导致数据不一致，原因如下：（老的主库是A,备库是B）</p><ol><li>A插入了数据c(4)，还没有同步到B时候进行切换</li><li>这时候B变为主，B库插入数据c(5)，这条数据是（4，5）</li><li>然后B从A通过relylog重放数据是c(4)那条数据，这时候B库中(5，4)</li><li>A库通过重放relylog获取刚才c(5)的数据，这时候数据是（5，5）</li></ol><p><img src="/images/mysql/主备_高可用性切换_数据不一致.png" alt="avatar"></p><p>总结，Mysql作为数据的存储，还是应该优先保证数据的一致性，所以建议采用可靠性优先方案保证数据的一致性。否则，对于一些依赖写入的业务，可能因为在切换主备时候数据不一致引起逻辑的错误，而且由于往往写入不是一个单一的操作，这一次的不一致会导致后续的引发更多的问题，最终导致数据无法修复。</p><p>其他的好的建议：如果业务不依赖mysql的写入可以针对写入进行降级，比如：让数据先写到临时文件中，然后切换后慢慢的同步到mysql中。</p>]]></content>
-      
-      
-      <categories>
-          
-          <category> Mysql </category>
-          
-          <category> Mysql高可用架构 </category>
           
       </categories>
       
@@ -1892,6 +1902,27 @@
           <category> Mysql </category>
           
           <category> Mysql基础 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>mysql是怎么保证高可用的</title>
+      <link href="/mysql/mysql%E6%98%AF%E6%80%8E%E4%B9%88%E4%BF%9D%E8%AF%81%E9%AB%98%E5%8F%AF%E7%94%A8%E7%9A%84/"/>
+      <url>/mysql/mysql%E6%98%AF%E6%80%8E%E4%B9%88%E4%BF%9D%E8%AF%81%E9%AB%98%E5%8F%AF%E7%94%A8%E7%9A%84/</url>
+      
+        <content type="html"><![CDATA[<h1 id="mysql是怎么保证高可用的–如何解决主备延迟"><a href="#mysql是怎么保证高可用的–如何解决主备延迟" class="headerlink" title="mysql是怎么保证高可用的–如何解决主备延迟"></a>mysql是怎么保证高可用的–如何解决主备延迟</h1><p>mysql的主从同步会保证主库到从库的最终一致性，但是mysql的高可用，光有最终一致性是远远不够的。下面会讨论影响mysql主备高可用的因素以及解决方法。</p><h2 id="主备延迟"><a href="#主备延迟" class="headerlink" title="主备延迟"></a>主备延迟</h2><ul><li>我们在备库上可以执行命令：seconds_behind_master来查看备库的状态，会显示备库同步数据和主库的时间差（单位：秒），这个时间差计算方式是：同一事物，备库执行完binlog的时间-主库产生binlog的时间备库执行的binlog的时间，当然这个值越小越好。</li><li>在网络正常的情况下，主备同步binlog的时间往往很短，真正造成主备延迟的原因往往是relylog的消费赶不上binlog的生产。那么是什么造成主备延迟的呢</li></ul><h3 id="主备延迟的原因"><a href="#主备延迟的原因" class="headerlink" title="主备延迟的原因"></a>主备延迟的原因</h3><ol><li>主备库，备库的性能要不主库所在的的机器性能差；–目前很少见了，因为大多是双M配置，所以备库可能会变为主，所以在部署时候都会选择对称部署；</li><li>备库压力大，备库上很多的查询需求，比如备份数据，运营统计等会放在备库执行。在同步binlog时候往往也会占用查询的资源，导致备库的眼里很大，引起主备延迟</li><li>大事物，由于mysql是在主库上事物提交之后才开始传输binlog给备库，这样如果1个很大的事物在主库执行N长时间后，在同步给备库，备库在执行这个事物时候就会造成主从不一致。<ol><li>一次删除很多的数据，如：数据库快满了删除数据；</li><li>大表的DDL</li></ol></li><li>库的并行复制能力,具体放在<a href="./mysql是如何降低主备延迟的.html">mysql是如何降低主备延迟的</a></li></ol><h3 id="主备延迟的解决方案"><a href="#主备延迟的解决方案" class="headerlink" title="主备延迟的解决方案"></a>主备延迟的解决方案</h3><ol><li>首先对于双M架构，主备库建议对称部署，保证切换朱备库时候性能没有打的差别</li><li>建议根据需要一主多从，比如说：一个主备做为切换，一个从库作为数据备份，一个从库作为数据分析以及运营支持；</li><li>根本上杜绝大事物，对于删除可以考虑分批删除数据；DDL可以采用开源的工具进行入：gh-ost方案</li></ol><h2 id="主备切换的几种策略"><a href="#主备切换的几种策略" class="headerlink" title="主备切换的几种策略"></a>主备切换的几种策略</h2><h3 id="可靠性优先"><a href="#可靠性优先" class="headerlink" title="可靠性优先"></a>可靠性优先</h3><p>该策略可能会有一段时间服务不可用，流程如下：</p><ol><li>判断备库的seconds_behind_master的值，当相于一个值的时候进行第二步，否则一直重试；</li><li>主库设置readonly=true，即只读；</li><li>备库等待seconds_behind_master=0为止；</li><li>备库设置readonly=fase，即可写；</li><li>切换业务到备库；</li></ol><p>注：第一步的作用实际上是希望主库和从库的延时在小于一个阈值时候开始做切换，否则如果相差30分钟，直接切换，那么服务就会有30分钟不可用，业务方一般是不可忍受的。（当然。。。。某些时候我也作为业务方我也就忍了）</p><h3 id="可用性优先"><a href="#可用性优先" class="headerlink" title="可用性优先"></a>可用性优先</h3><p>和上面相比，保证业务的可用，但是会牺牲掉数据的一致性</p><ol><li>备库设置readonly=fase，即可写；</li><li>切换业务到备库；</li><li>主库设置eadonly=true</li></ol><p>注：在下面的情况会导致数据不一致，原因如下：（老的主库是A,备库是B）</p><ol><li>A插入了数据c(4)，还没有同步到B时候进行切换</li><li>这时候B变为主，B库插入数据c(5)，这条数据是（4，5）</li><li>然后B从A通过relylog重放数据是c(4)那条数据，这时候B库中(5，4)</li><li>A库通过重放relylog获取刚才c(5)的数据，这时候数据是（5，5）</li></ol><p><img src="/images/mysql/主备_高可用性切换_数据不一致.png" alt="avatar"></p><p>总结，Mysql作为数据的存储，还是应该优先保证数据的一致性，所以建议采用可靠性优先方案保证数据的一致性。否则，对于一些依赖写入的业务，可能因为在切换主备时候数据不一致引起逻辑的错误，而且由于往往写入不是一个单一的操作，这一次的不一致会导致后续的引发更多的问题，最终导致数据无法修复。</p><p>其他的好的建议：如果业务不依赖mysql的写入可以针对写入进行降级，比如：让数据先写到临时文件中，然后切换后慢慢的同步到mysql中。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> Mysql </category>
+          
+          <category> Mysql高可用架构 </category>
           
       </categories>
       

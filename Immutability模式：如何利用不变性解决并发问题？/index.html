@@ -104,7 +104,7 @@
 <meta property="og:site_name" content="liuhao163.github.io">
 <meta property="og:description" content="并发情况下如果对一个共享变量进行读写就会有并发问题，如果只有读是没有并发问题的，所以解决并发问题的一个重要思路就是不提供变量的写的功能 如何快速实现不可变类 类的声明以及属性都要声明成final对象（类的声明是为了防止子类继承父类修改父类的属性） 只提供只读的方法，如果要修改对象，去创建一个新的不可变对象。  例如String，是典型的一个不可变对象，String中的replace对象在修改时候我">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-05-18T10:13:55.000Z">
+<meta property="og:updated_time" content="2019-06-06T10:01:40.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Immutability模式：如何利用不变性解决并发问题？">
 <meta name="twitter:description" content="并发情况下如果对一个共享变量进行读写就会有并发问题，如果只有读是没有并发问题的，所以解决并发问题的一个重要思路就是不提供变量的写的功能 如何快速实现不可变类 类的声明以及属性都要声明成final对象（类的声明是为了防止子类继承父类修改父类的属性） 只提供只读的方法，如果要修改对象，去创建一个新的不可变对象。  例如String，是典型的一个不可变对象，String中的replace对象在修改时候我">
@@ -372,12 +372,24 @@
                 
               
 
-              <time title="Created: 2019-05-18 17:52:08 / Modified: 18:13:55" itemprop="dateCreated datePublished" datetime="2019-05-18T17:52:08+08:00">2019-05-18</time>
+              <time title="Created: 2019-05-18 17:52:08" itemprop="dateCreated datePublished" datetime="2019-05-18T17:52:08+08:00">2019-05-18</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-06-06 18:01:40" itemprop="dateModified" datetime="2019-06-06T18:01:40+08:00">2019-06-06</time>
               
             
           </span>
@@ -449,6 +461,7 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//Foo 线程安全</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Foo</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> age = <span class="number">0</span>;</span><br><span class="line">    String name = <span class="string">"abc"</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">Bar</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> Foo foo=<span class="keyword">new</span> Foo();<span class="comment">//可改变foo里的属性</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span>[] i=<span class="keyword">new</span> <span class="keyword">int</span>[<span class="number">10</span>];<span class="comment">//可改变数组元素</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setAge</span><span class="params">(<span class="keyword">int</span> i)</span></span>&#123;</span><br><span class="line">        foo.age=i;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>不可变类作为属性本身不具备不可见性并且是线程不安全的</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//Foo 线程安全</span></span><br><span class="line"><span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">Foo</span></span>&#123;</span><br><span class="line">  <span class="keyword">final</span> <span class="keyword">int</span> age=<span class="number">0</span>;</span><br><span class="line">  <span class="keyword">final</span> <span class="keyword">int</span> name=<span class="string">"abc"</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//Bar 线程不安全</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Bar</span> </span>&#123;</span><br><span class="line">  Foo foo;<span class="comment">//并发时候会有问题</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">setFoo</span><span class="params">(Foo f)</span></span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.foo=f;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
       
     </div>
 
@@ -567,7 +580,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">77</span>
+                    <span class="site-state-item-count">78</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

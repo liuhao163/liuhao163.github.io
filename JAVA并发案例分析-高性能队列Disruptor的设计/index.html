@@ -96,18 +96,18 @@
 
 
 
-  <meta name="description" content="Disruptor的使用方法 生产消费针对对象event,定义Event 构造Disruptor时候需要实现一个EventFactory，这里是LongEvent::new 消费者要注册是一个handleEvent 生产者要通过publishEvent  123456789101112131415161718192021222324252627282930313233343536373839//">
+  <meta name="description" content="Disruptor的使用方法 生产消费针对对象event,定义Event 构造Disruptor时候需要实现一个EventFactory，这里是LongEvent::new 消费者要注册是一个handleEvent 生产者要通过publishEvent  1234567891011121314151617181920212223242526272829303132333435363738// 自定">
 <meta name="keywords" content="java,并发,案例分析">
 <meta property="og:type" content="article">
 <meta property="og:title" content="JAVA并发案例分析-高性能队列Disruptor的设计">
 <meta property="og:url" content="https://liuhao163.github.io/JAVA并发案例分析-高性能队列Disruptor的设计/index.html">
 <meta property="og:site_name" content="liuhao163.github.io">
-<meta property="og:description" content="Disruptor的使用方法 生产消费针对对象event,定义Event 构造Disruptor时候需要实现一个EventFactory，这里是LongEvent::new 消费者要注册是一个handleEvent 生产者要通过publishEvent  123456789101112131415161718192021222324252627282930313233343536373839//">
+<meta property="og:description" content="Disruptor的使用方法 生产消费针对对象event,定义Event 构造Disruptor时候需要实现一个EventFactory，这里是LongEvent::new 消费者要注册是一个handleEvent 生产者要通过publishEvent  1234567891011121314151617181920212223242526272829303132333435363738// 自定">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-06-08T02:59:00.000Z">
+<meta property="og:updated_time" content="2019-06-15T04:30:29.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="JAVA并发案例分析-高性能队列Disruptor的设计">
-<meta name="twitter:description" content="Disruptor的使用方法 生产消费针对对象event,定义Event 构造Disruptor时候需要实现一个EventFactory，这里是LongEvent::new 消费者要注册是一个handleEvent 生产者要通过publishEvent  123456789101112131415161718192021222324252627282930313233343536373839//">
+<meta name="twitter:description" content="Disruptor的使用方法 生产消费针对对象event,定义Event 构造Disruptor时候需要实现一个EventFactory，这里是LongEvent::new 消费者要注册是一个handleEvent 生产者要通过publishEvent  1234567891011121314151617181920212223242526272829303132333435363738// 自定">
 
 
 
@@ -372,12 +372,24 @@
                 
               
 
-              <time title="Created: 2019-06-08 10:47:53 / Modified: 10:59:00" itemprop="dateCreated datePublished" datetime="2019-06-08T10:47:53+08:00">2019-06-08</time>
+              <time title="Created: 2019-06-08 10:47:53" itemprop="dateCreated datePublished" datetime="2019-06-08T10:47:53+08:00">2019-06-08</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-06-15 12:30:29" itemprop="dateModified" datetime="2019-06-15T12:30:29+08:00">2019-06-15</time>
               
             
           </span>
@@ -442,7 +454,7 @@
 <li>消费者要注册是一个handleEvent</li>
 <li>生产者要通过publishEvent</li>
 </ol>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 自定义 Event</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">LongEvent</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">long</span> value;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">set</span><span class="params">(<span class="keyword">long</span> value)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.value = value;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 指定 RingBuffer 大小,</span></span><br><span class="line"><span class="comment">// 必须是 2 的 N 次方</span></span><br><span class="line"><span class="keyword">int</span> bufferSize = <span class="number">1024</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 构建 Disruptor</span></span><br><span class="line">Disruptor&lt;LongEvent&gt; disruptor </span><br><span class="line">  = <span class="keyword">new</span> Disruptor&lt;&gt;(</span><br><span class="line">    LongEvent::<span class="keyword">new</span>,</span><br><span class="line">    bufferSize,</span><br><span class="line">    DaemonThreadFactory.INSTANCE);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 注册事件处理器</span></span><br><span class="line">disruptor.handleEventsWith(</span><br><span class="line">  (event, sequence, endOfBatch) -&gt;</span><br><span class="line">    System.out.println(<span class="string">"E: "</span>+event));</span><br><span class="line"></span><br><span class="line"><span class="comment">// 启动 Disruptor</span></span><br><span class="line">disruptor.start();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取 RingBuffer</span></span><br><span class="line">RingBuffer&lt;LongEvent&gt; ringBuffer </span><br><span class="line">  = disruptor.getRingBuffer();</span><br><span class="line"><span class="comment">// 生产 Event</span></span><br><span class="line">ByteBuffer bb = ByteBuffer.allocate(<span class="number">8</span>);</span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">long</span> l = <span class="number">0</span>; <span class="keyword">true</span>; l++)&#123;</span><br><span class="line">  bb.putLong(<span class="number">0</span>, l);</span><br><span class="line">  <span class="comment">// 生产者生产消息</span></span><br><span class="line">  ringBuffer.publishEvent(</span><br><span class="line">    (event, sequence, buffer) -&gt; </span><br><span class="line">      event.set(buffer.getLong(<span class="number">0</span>)), bb);</span><br><span class="line">  Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 自定义 Event</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">LongEvent</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">long</span> value;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">set</span><span class="params">(<span class="keyword">long</span> value)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.value = value;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 指定 RingBuffer 大小,</span></span><br><span class="line"><span class="comment">// 必须是 2 的 N 次方</span></span><br><span class="line"><span class="keyword">int</span> bufferSize = <span class="number">1024</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 构建 Disruptor</span></span><br><span class="line">Disruptor&lt;LongEvent&gt; disruptor</span><br><span class="line">  = <span class="keyword">new</span> Disruptor&lt;&gt;(</span><br><span class="line">    LongEvent::<span class="keyword">new</span>,</span><br><span class="line">    bufferSize,</span><br><span class="line">    DaemonThreadFactory.INSTANCE);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 注册事件处理器</span></span><br><span class="line">disruptor.handleEventsWith(</span><br><span class="line">  (event, sequence, endOfBatch) -&gt;</span><br><span class="line">    System.out.println(<span class="string">"E: "</span>+event));</span><br><span class="line"></span><br><span class="line"><span class="comment">// 启动 Disruptor</span></span><br><span class="line">disruptor.start();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取 RingBuffer</span></span><br><span class="line">RingBuffer&lt;LongEvent&gt; ringBuffer</span><br><span class="line">  = disruptor.getRingBuffer();</span><br><span class="line"><span class="comment">// 生产 Event</span></span><br><span class="line">ByteBuffer bb = ByteBuffer.allocate(<span class="number">8</span>);</span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">long</span> l = <span class="number">0</span>; <span class="keyword">true</span>; l++)&#123;</span><br><span class="line">  bb.putLong(<span class="number">0</span>, l);</span><br><span class="line">  <span class="comment">// 生产者生产消息</span></span><br><span class="line">  ringBuffer.publishEvent(</span><br><span class="line">    (event, sequence, buffer) -&gt; event.set(buffer.getLong(<span class="number">0</span>)), bb);</span><br><span class="line">  Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h2 id="Disruptor高效的要点"><a href="#Disruptor高效的要点" class="headerlink" title="Disruptor高效的要点"></a>Disruptor高效的要点</h2><ol>
 <li>数据结构采用RingBuffer并且针对RingBuffer做了如下的优化，初始化时候利用EventFactory的newInstance方法创建所有的元素，<ol>
 <li>由于一起创建所以这些元素在内存地址上是连续的，在消费元素时候有效的理由了CPU缓存（程序的局部性）当消费元素a的时候，a+1会加载到CPU的cashe中。</li>
@@ -453,6 +465,7 @@
 <li>CAS的无锁设计高效生产消费队列</li>
 </ol>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 生产者获取 n 个写入位置</span></span><br><span class="line"><span class="keyword">do</span> &#123;</span><br><span class="line">  <span class="comment">//cursor 类似于入队索引，指的是上次生产到这里</span></span><br><span class="line">  current = cursor.get();</span><br><span class="line">  <span class="comment">// 目标是在生产 n 个</span></span><br><span class="line">  next = current + n;</span><br><span class="line">  <span class="comment">// 减掉一个循环</span></span><br><span class="line">  <span class="keyword">long</span> wrapPoint = next - bufferSize;</span><br><span class="line">  <span class="comment">// 获取上一次的最小消费位置</span></span><br><span class="line">  <span class="keyword">long</span> cachedGatingSequence = gatingSequenceCache.get();</span><br><span class="line">  <span class="comment">// 没有足够的空余位置</span></span><br><span class="line">  <span class="keyword">if</span> (wrapPoint&gt;cachedGatingSequence || cachedGatingSequence&gt;current)&#123;</span><br><span class="line">    <span class="comment">// 重新计算所有消费者里面的最小值位置</span></span><br><span class="line">    <span class="keyword">long</span> gatingSequence = Util.getMinimumSequence(</span><br><span class="line">        gatingSequences, current);</span><br><span class="line">    <span class="comment">// 仍然没有足够的空余位置，出让 CPU 使用权，重新执行下一循环</span></span><br><span class="line">    <span class="keyword">if</span> (wrapPoint &gt; gatingSequence)&#123;</span><br><span class="line">      LockSupport.parkNanos(<span class="number">1</span>);</span><br><span class="line">      <span class="keyword">continue</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 从新设置上一次的最小消费位置</span></span><br><span class="line">    gatingSequenceCache.set(gatingSequence);</span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (cursor.compareAndSet(current, next))&#123;</span><br><span class="line">    <span class="comment">// 获取写入位置成功，跳出循环</span></span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125; <span class="keyword">while</span> (<span class="keyword">true</span>);</span><br></pre></td></tr></table></figure>
+
       
     </div>
 
@@ -501,6 +514,10 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/数据结构与算法-跳表/" rel="prev" title="数据结构与算法-跳表">
+                数据结构与算法-跳表 <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -569,7 +586,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">79</span>
+                    <span class="site-state-item-count">80</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -689,7 +706,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">26</span>
+                      
+                    
+                    <span class="site-state-item-count">27</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>

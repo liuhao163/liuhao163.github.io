@@ -4,6 +4,105 @@
   
     
     <entry>
+      <title>二叉搜索树</title>
+      <link href="/%E4%BA%8C%E5%8F%89%E6%90%9C%E7%B4%A2%E6%A0%91/"/>
+      <url>/%E4%BA%8C%E5%8F%89%E6%90%9C%E7%B4%A2%E6%A0%91/</url>
+      
+        <content type="html"><![CDATA[<!--二茬搜索树的find insert delete 建值冲突里解决方案(右子树)，找最大，最小后继节点，前驱节点。中序遍历输出有序数组。时间复杂度logn和散列比优势 --><h2 id="二叉查找树的定义（Binary-Search-Tree）"><a href="#二叉查找树的定义（Binary-Search-Tree）" class="headerlink" title="二叉查找树的定义（Binary Search Tree）"></a>二叉查找树的定义（Binary Search Tree）</h2><p>左子树每个节点的值要小于节点值，右子树每个节点的值都要大于该节点的值。对于大小相等的节点，两种做法，链表或者数组的方式保存，一种是当做大于该节点放在右子树，本文取第二种方法</p><h2 id="二叉查找树的查找操作"><a href="#二叉查找树的查找操作" class="headerlink" title="二叉查找树的查找操作"></a>二叉查找树的查找操作</h2><p>遍历或者递归查找树，如果该值小于节点的值从左子树查找，如果大于大于根节点从有子树查找</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//遍历方法</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> List&lt;TreeNode&gt; <span class="title">find</span><span class="params">(TreeNode tree, <span class="keyword">int</span> value)</span> </span>&#123;</span><br><span class="line">    TreeNode p = tree;</span><br><span class="line">    List&lt;TreeNode&gt; treeNodes = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">    <span class="keyword">while</span> (p != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (value &gt;= p.value) &#123;</span><br><span class="line">            <span class="keyword">if</span> (p.value == value) &#123;</span><br><span class="line">                treeNodes.add(p);</span><br><span class="line">            &#125;</span><br><span class="line">            p = p.right;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            p = p.left;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> treeNodes;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//递归</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> List&lt;TreeNode&gt; <span class="title">find</span><span class="params">(TreeNode tree, <span class="keyword">int</span> value)</span> </span>&#123;</span><br><span class="line">    TreeNode p = tree;</span><br><span class="line">    List&lt;TreeNode&gt; treeNodes = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">    <span class="keyword">if</span> (value &lt; p.value &amp;&amp; p.left != <span class="keyword">null</span>) &#123;</span><br><span class="line">        findNodeByValue(p.left, value, treeNodes);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (value &gt;= p.value &amp;&amp; p.right != <span class="keyword">null</span>) &#123;</span><br><span class="line">       findNodeByValue(p.right, value, treeNodes);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> treeNodes;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">findNodeByValue</span><span class="params">(TreeNode tree, <span class="keyword">int</span> value, List&lt;TreeNode&gt; treeNodes)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (tree == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (value &lt; tree.value) &#123;</span><br><span class="line">        findNodeByValue(tree.left, value, treeNodes);</span><br><span class="line">    &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">        <span class="comment">// if (value &gt;= tree.value)</span></span><br><span class="line">        <span class="keyword">if</span> (value == tree.value) &#123;</span><br><span class="line">            treeNodes.add(tree);</span><br><span class="line">        &#125;</span><br><span class="line">        findNodeByValue(tree.right, value, treeNodes);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><h2 id="二叉查找树的添加操作"><a href="#二叉查找树的添加操作" class="headerlink" title="二叉查找树的添加操作"></a>二叉查找树的添加操作</h2><p>新插入的值一般在叶子节点，所以遍历树，如果小于节点值，并且做节点是空就插入到左子树，如果大于节点的值并且节点为空插入有子树，否则继续遍历</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//遍历</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">insertNode</span><span class="params">(TreeNode treeNode, <span class="keyword">int</span> v)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    TreeNode p = treeNode;</span><br><span class="line">    <span class="keyword">while</span> (p != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (v&lt;p.value) &#123;</span><br><span class="line">            <span class="keyword">if</span> (p.left == <span class="keyword">null</span>) &#123;</span><br><span class="line">                p.left = <span class="keyword">new</span> TreeNode(v);</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            p = p.left;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">//</span></span><br><span class="line">            <span class="keyword">if</span> (p.right == <span class="keyword">null</span>) &#123;</span><br><span class="line">                p.right = <span class="keyword">new</span> TreeNode(v);</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            p = p.right;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//递归</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">insertNode</span><span class="params">(TreeNode treeNode, <span class="keyword">int</span> v)</span> </span>&#123;</span><br><span class="line">    TreeNode p = treeNode;</span><br><span class="line">    <span class="keyword">if</span> (v &lt; p.value) &#123;</span><br><span class="line">        <span class="keyword">if</span> (p.left == <span class="keyword">null</span>) &#123;</span><br><span class="line">            p.left = <span class="keyword">new</span> TreeNode(v);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        insertNode(p.left, v);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (v &gt;= p.value) &#123;</span><br><span class="line">        <span class="keyword">if</span> (p.right == <span class="keyword">null</span>) &#123;</span><br><span class="line">            p.right = <span class="keyword">new</span> TreeNode(v);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        insertNode(p.right, v);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><h2 id="二叉查找树的删除"><a href="#二叉查找树的删除" class="headerlink" title="二叉查找树的删除"></a>二叉查找树的删除</h2><ol><li>找到该节点， 如果遇到冲突，放在数组中</li><li>如果查找的节点叶子节点直接将父节点指向null<ol><li>如果只有左（右）子树，将该节点指向改节点中的左（右）子树</li><li>如果既有左子树，又有右子树，找第一个大于该节点的节点a，将a的值复制到该节点，然后删除a。</li></ol></li><li>从数组逆向遍历一个个删除。</li></ol><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> TreeNode <span class="title">delNode</span><span class="params">(TreeNode tree, <span class="keyword">int</span> v)</span> </span>&#123;</span><br><span class="line">    <span class="comment">//遍历树，找到相等节点放在eqNodes父节点放在pNodes</span></span><br><span class="line">    TreeNode node = tree;</span><br><span class="line">    List&lt;TreeNode&gt; eqNodes = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">    List&lt;TreeNode&gt; pNodes = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">    <span class="keyword">while</span> (node != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (v &lt; node.value) &#123;</span><br><span class="line">            <span class="keyword">if</span> (node.left!=<span class="keyword">null</span> &amp;&amp; node.left.value == v) &#123;</span><br><span class="line">                eqNodes.add(node.left);</span><br><span class="line">                pNodes.add(node);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            node = node.left;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (node.right!=<span class="keyword">null</span> &amp;&amp; node.right.value == v) &#123;</span><br><span class="line">                eqNodes.add(node.right);</span><br><span class="line">                pNodes.add(node);</span><br><span class="line">            &#125;</span><br><span class="line">            node = node.right;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//没有相等的</span></span><br><span class="line">    <span class="keyword">if</span> (eqNodes.size() == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> tree;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//后续遍历相等的节点一次删除</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = eqNodes.size() - <span class="number">1</span>; i &gt;= <span class="number">0</span>; i--) &#123;</span><br><span class="line">        node = eqNodes.get(i);</span><br><span class="line">        TreeNode parent = pNodes.get(i);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//同时有左右子树，找到右子树里最小的节点和父节点，将右子树最小的节点的值复制给之前要删除的节点</span></span><br><span class="line">        <span class="keyword">while</span> (node.left != <span class="keyword">null</span> &amp;&amp; node.right != <span class="keyword">null</span>) &#123;</span><br><span class="line">            TreeNode minNode = node.right;</span><br><span class="line">            TreeNode minPNode = node;</span><br><span class="line">            <span class="keyword">while</span> (minNode.left != <span class="keyword">null</span>) &#123;</span><br><span class="line">                minPNode = minNode;</span><br><span class="line">                minNode = minPNode.left;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//复制</span></span><br><span class="line">            node.value = minNode.value;</span><br><span class="line">            <span class="comment">//删除右子树最小的节点</span></span><br><span class="line">            node = minNode;</span><br><span class="line">            parent = minPNode;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//找到child树，不会出现左右子树同时存在的情况：P</span></span><br><span class="line">        TreeNode child = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">if</span> (node.left != <span class="keyword">null</span>) &#123;</span><br><span class="line">            child = node.left;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (node.right != <span class="keyword">null</span>) &#123;</span><br><span class="line">            child = node.right;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//开始删除如果parent是空，删的是根节点，如果node&lt;parent删除的是左子树，反之是右子树</span></span><br><span class="line">        <span class="keyword">if</span> (parent == <span class="keyword">null</span>) &#123;</span><br><span class="line">            tree = child;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (node.value &lt; parent.value) &#123;</span><br><span class="line">            parent.left = child;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            parent.right = child;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> tree;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><h2 id="时间复杂度"><a href="#时间复杂度" class="headerlink" title="时间复杂度"></a>时间复杂度</h2><p>查找、删除、添加的逻辑都是类似的时间复杂度和树的高度相关。节点和高度的关系如下:<br>  以完全二叉树为例，假设树的层级是H，非叶子节点是：1+2+4+8+…+(2的H-1次方)，叶子节点是【1~2的H次方】。H就是log(n-1)+1~Logn之间，所以时间复杂度是logN</p><h2 id="最坏情况"><a href="#最坏情况" class="headerlink" title="最坏情况"></a>最坏情况</h2><p>破坏平衡退化成链表。</p><h2 id="搜索树和散列比的其他功能"><a href="#搜索树和散列比的其他功能" class="headerlink" title="搜索树和散列比的其他功能"></a>搜索树和散列比的其他功能</h2><p>搜索数能很方便的找到最小节点、最大节点、找到前驱节点和后置节点代码如下。</p><p>搜索数如果想按从小到大打印可以通过中序遍历2Logn比散列要快。</p><p>和散列对比其他的优势：</p><ol><li>散列虽然查找是o(1)，但是考虑到hash函数以及hash冲突要遍历链表以及开发寻址，所以不一定效率高</li><li>hash冲突导致性能不稳定，搜索树通过平衡性能很稳定</li><li>散列需要扩容和缩容额外需要资源</li><li>负载因子不能太大容易造成内存浪费</li></ol>]]></content>
+      
+      
+      <categories>
+          
+          <category> 数据结构与算法 </category>
+          
+          <category> 数据结构 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 算法 </tag>
+            
+            <tag> 数据结构 </tag>
+            
+            <tag> 树 </tag>
+            
+            <tag> 二叉树 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>二叉树</title>
+      <link href="/%E4%BA%8C%E5%8F%89%E6%A0%91/"/>
+      <url>/%E4%BA%8C%E5%8F%89%E6%A0%91/</url>
+      
+        <content type="html"><![CDATA[<h2 id="树定义"><a href="#树定义" class="headerlink" title="树定义"></a>树定义</h2><p>非线性的数据结构，线性数据结构（数组、链表等数据结构）。<br>  树节点的关系：同级的节点叫做兄弟节点、下级节点叫做子节点、上级节点叫父节点、如果父节点为空叫做做根节点、最下层节点叫叶子节点。<br>  常用的名词：<br>    高度：从叶子节点到跟节点的距离<br>    深度：从根节点到叶子节点的距离<br>    层：深度-1</p><h2 id="二叉树"><a href="#二叉树" class="headerlink" title="二叉树"></a>二叉树</h2><ul><li>满二叉树：所有叶子节点均在最后一层，除叶子节点以外的节点都是满节点状态。</li><li>完全二叉树：所有叶子节点均在最后俩层，最后一层的叶子节点都在左边，并且非叶子节点都是满节点状态。</li></ul><h2 id="二叉树的遍历"><a href="#二叉树的遍历" class="headerlink" title="二叉树的遍历"></a>二叉树的遍历</h2><p>见代码，都会用到递归算法。</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//前序遍历：自己--&gt;left--&gt;right</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">frontForeach</span><span class="params">(TreeNode node)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (node != <span class="keyword">null</span>) &#123;</span><br><span class="line">        System.out.println(node.value);</span><br><span class="line">        frontForeach(node.left);</span><br><span class="line">        frontForeach(node.right);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//中序遍历：left--&gt;自己--&gt;right</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">midForeach</span><span class="params">(TreeNode node)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (node != <span class="keyword">null</span>) &#123;</span><br><span class="line">        midForeach(node.left);</span><br><span class="line">        System.out.println(node.value);</span><br><span class="line">        midForeach(node.right);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//后续遍历：left--&gt;right--&gt;自己</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">backForeach</span><span class="params">(TreeNode node)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (node != <span class="keyword">null</span>) &#123;</span><br><span class="line">        backForeach(node.left);</span><br><span class="line">        backForeach(node.right);</span><br><span class="line">        System.out.println(node.value);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><h2 id="什么样的二叉树适合用数组表示"><a href="#什么样的二叉树适合用数组表示" class="headerlink" title="什么样的二叉树适合用数组表示"></a>什么样的二叉树适合用数组表示</h2><p>满二叉树以及完全二叉树适合用数组标识因为节点的公式是,根节点是数组下标为1的元素开始，他的子节点节点依次是2<em>(arrayIndx)，2</em>(arrayIndx)+1。因为普通的二叉树会浪费很多空间。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 数据结构与算法 </category>
+          
+          <category> 数据结构 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 算法 </tag>
+            
+            <tag> 数据结构 </tag>
+            
+            <tag> 树 </tag>
+            
+            <tag> 二叉树 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>hash算法的应用</title>
+      <link href="/hash%E7%AE%97%E6%B3%95%E7%9A%84%E5%BA%94%E7%94%A8/"/>
+      <url>/hash%E7%AE%97%E6%B3%95%E7%9A%84%E5%BA%94%E7%94%A8/</url>
+      
+        <content type="html"><![CDATA[<h2 id="hash算法的标准"><a href="#hash算法的标准" class="headerlink" title="hash算法的标准"></a>hash算法的标准</h2><ol><li>不能逆向推导出原数据</li><li>对输入数据很敏感，改了一bit，最后得到的hash值也不相同</li><li>散列冲突概率很小</li><li>算法执行效率高</li></ol><h2 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h2><h3 id="安全加密"><a href="#安全加密" class="headerlink" title="安全加密"></a>安全加密</h3><p>  我们在保存数据时候可以对数据用hash函数进行加密比如：MD5、SHA、DES、AES</p><p>  hash算法做安全加密应该尽量避免hash冲突，但是也不可能完全避免，但是概率很低比如MD5的范围如下：</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">2</span>^<span class="number">128</span>=<span class="number">340282366920938463463374607431768211456</span></span><br></pre></td></tr></table></figure><p>  加密算法越高级效果越好，但是相应的性能会越差</p><h3 id="唯一标识"><a href="#唯一标识" class="headerlink" title="唯一标识"></a>唯一标识</h3><p>  我们可以通过hash函数作为数据的唯一标识，比如对一个图片的搜索我们如果一个个比对他们的2进制码会很耗时，我们可以抽样踩点进行hash计算，然后hash相同的在去比较是否。</p><h3 id="数据校验"><a href="#数据校验" class="headerlink" title="数据校验"></a>数据校验</h3><p>  大数据可能会被分块保存，我们只需要记录每一块的hash值，当文件块下载完成后进行hash值的校验，校验文件是否完整</p><h3 id="散列函数"><a href="#散列函数" class="headerlink" title="散列函数"></a>散列函数</h3><p>  因为hash函数冲突的概率很低，所以我们可以利用hash作为散列函数</p><h3 id="负载均衡"><a href="#负载均衡" class="headerlink" title="负载均衡"></a>负载均衡</h3><p>  session-sticky模式的访问，对于客户端请求hash之后和服务器个数取模，这样保证每个请求都打到同一个后端</p><h3 id="数据分片"><a href="#数据分片" class="headerlink" title="数据分片"></a>数据分片</h3><p>  对于海量数据我们可以将数据hash之后分散到各服务器节点中，这样在计算的时候根据数据hash取模到某个服务器节点计算（map-reduce思想）</p><h3 id="分布式存储"><a href="#分布式存储" class="headerlink" title="分布式存储"></a>分布式存储</h3><p>  海量数据根据数据的hash分片落到某一个节点上，理论上可以存储无数的数据，常用于nosql的存储，不过要注意一致性hash，防止节点变更大量的数据进行rehash。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 数据结构与算法 </category>
+          
+          <category> 数据结构 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 算法 </tag>
+            
+            <tag> 数据结构 </tag>
+            
+            <tag> Hash </tag>
+            
+            <tag> 散列 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>Nginx--常用参数</title>
       <link href="/Nginx-%E5%B8%B8%E7%94%A8%E5%8F%82%E6%95%B0/"/>
       <url>/Nginx-%E5%B8%B8%E7%94%A8%E5%8F%82%E6%95%B0/</url>
@@ -625,9 +724,9 @@
             
             <tag> 算法 </tag>
             
-            <tag> 俩分法 </tag>
-            
             <tag> 数据结构 </tag>
+            
+            <tag> 俩分法 </tag>
             
         </tags>
       
@@ -847,11 +946,11 @@
     
     
     <entry>
-      <title>JAVA线程-为什么局部变量是线程安全的</title>
-      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/"/>
-      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/</url>
+      <title>JAVA线程-开启多少线程合适</title>
+      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/"/>
+      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/</url>
       
-        <content type="html"><![CDATA[<h1 id="方法是如何被执行"><a href="#方法是如何被执行" class="headerlink" title="方法是如何被执行"></a>方法是如何被执行</h1><p>例如下面的程序</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">7</span>；</span><br><span class="line"><span class="keyword">int</span>[] b = fibonacci(a);</span><br><span class="line"><span class="keyword">int</span>[] c = b;</span><br></pre></td></tr></table></figure><p>当jvm调用fibonacci(a)时，通过cpu的寄存器找到方法的地址。cpu支持一种栈结构，他和方法息息相关，所以一般叫做调用栈。<br>栈这种数据结构的特点是后进先出，所以当一个遇到方法嵌套时候比如a–&gt;b–&gt;c，那么入栈的时候就是c–&gt;b–&gt;a，执行顺序也是c–&gt;b–&gt;a。</p><h1 id="方法中的局部变量"><a href="#方法中的局部变量" class="headerlink" title="方法中的局部变量"></a>方法中的局部变量</h1><p>  方法实际上是以栈帧为单位入栈的，一个方法从入口到返回都在一个栈帧中，栈帧和方法的生命周期是一样的，当方法结束，栈帧也就失效了，而方法中的局部变量都是保存在栈帧中的，他的生命周期也是在方法内部。且为了线程之间不相互干扰，每个线程都有一个独立的栈帧。综上，栈帧是线程安全的。</p><p>  这种方式有个名词叫线程封闭，即仅在单线程内访问数据，不共享就没有线程安全的问题。例如：我们常用的数据库连接池，connection的方法并没有声明线程安全，我们在使用中都是在一个方法内获取conenection，查询数据，关闭connecton，这这种线程封闭方式来解决线程安全的问题。</p>]]></content>
+        <content type="html"><![CDATA[<h1 id="为什么要使用多线程"><a href="#为什么要使用多线程" class="headerlink" title="为什么要使用多线程"></a>为什么要使用多线程</h1><p>  我们评价一个操作系统性能好的系统往往是俩点低延迟、高吞吐。做到这俩点，往往需要一优化算法，二有效利用硬件。对于一不在此讨论的范畴，而硬件利用率大致往往分俩类，即cpu的利用率，和i/o的利用。<br>  单线程时代：我们的程序往往是cpu和io设备相互配合执行，所以一个单线程的程序执行cpu操作时候io就要停下来等待cpu完成，为了提高io和cpu的利用率，操作系统为我们提供了多线程技术。<br>  线程1处理cpu的计算，线程2处理io请求。处理玩io请求后在切换回来，这样利用率就得到了提高</p><h1 id="线程多了就一定快么"><a href="#线程多了就一定快么" class="headerlink" title="线程多了就一定快么"></a>线程多了就一定快么</h1><p>  针对我们程序的特点分为，io密集型和计算密集型俩种。如果io操作执行的比例比较大就是io密集型，如果cpu计算的比例比较大就是计算密集型。<br>  在单核时代，对于计算密集型的业务增加线程反而会拖慢程序执行效率，因为只有一个核，所以同时只能有一个线程在运行，增加线程反而加大了线程切换的损耗。<br>  在多核时代，对于计算密集型的业务是可以通过增加线程提高性能的，但是设置应该是cpu的核数+1，充分利用起cpu。<br>  对于io密集型的业务，由于一般io的耗时比cpu要多的多，那么线程往往是cpu的核数*io耗时/cpu耗时+1。</p>]]></content>
       
       
       <categories>
@@ -876,11 +975,11 @@
     
     
     <entry>
-      <title>JAVA线程-开启多少线程合适</title>
-      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/"/>
-      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/</url>
+      <title>JAVA线程-为什么局部变量是线程安全的</title>
+      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/"/>
+      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/</url>
       
-        <content type="html"><![CDATA[<h1 id="为什么要使用多线程"><a href="#为什么要使用多线程" class="headerlink" title="为什么要使用多线程"></a>为什么要使用多线程</h1><p>  我们评价一个操作系统性能好的系统往往是俩点低延迟、高吞吐。做到这俩点，往往需要一优化算法，二有效利用硬件。对于一不在此讨论的范畴，而硬件利用率大致往往分俩类，即cpu的利用率，和i/o的利用。<br>  单线程时代：我们的程序往往是cpu和io设备相互配合执行，所以一个单线程的程序执行cpu操作时候io就要停下来等待cpu完成，为了提高io和cpu的利用率，操作系统为我们提供了多线程技术。<br>  线程1处理cpu的计算，线程2处理io请求。处理玩io请求后在切换回来，这样利用率就得到了提高</p><h1 id="线程多了就一定快么"><a href="#线程多了就一定快么" class="headerlink" title="线程多了就一定快么"></a>线程多了就一定快么</h1><p>  针对我们程序的特点分为，io密集型和计算密集型俩种。如果io操作执行的比例比较大就是io密集型，如果cpu计算的比例比较大就是计算密集型。<br>  在单核时代，对于计算密集型的业务增加线程反而会拖慢程序执行效率，因为只有一个核，所以同时只能有一个线程在运行，增加线程反而加大了线程切换的损耗。<br>  在多核时代，对于计算密集型的业务是可以通过增加线程提高性能的，但是设置应该是cpu的核数+1，充分利用起cpu。<br>  对于io密集型的业务，由于一般io的耗时比cpu要多的多，那么线程往往是cpu的核数*io耗时/cpu耗时+1。</p>]]></content>
+        <content type="html"><![CDATA[<h1 id="方法是如何被执行"><a href="#方法是如何被执行" class="headerlink" title="方法是如何被执行"></a>方法是如何被执行</h1><p>例如下面的程序</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">7</span>；</span><br><span class="line"><span class="keyword">int</span>[] b = fibonacci(a);</span><br><span class="line"><span class="keyword">int</span>[] c = b;</span><br></pre></td></tr></table></figure><p>当jvm调用fibonacci(a)时，通过cpu的寄存器找到方法的地址。cpu支持一种栈结构，他和方法息息相关，所以一般叫做调用栈。<br>栈这种数据结构的特点是后进先出，所以当一个遇到方法嵌套时候比如a–&gt;b–&gt;c，那么入栈的时候就是c–&gt;b–&gt;a，执行顺序也是c–&gt;b–&gt;a。</p><h1 id="方法中的局部变量"><a href="#方法中的局部变量" class="headerlink" title="方法中的局部变量"></a>方法中的局部变量</h1><p>  方法实际上是以栈帧为单位入栈的，一个方法从入口到返回都在一个栈帧中，栈帧和方法的生命周期是一样的，当方法结束，栈帧也就失效了，而方法中的局部变量都是保存在栈帧中的，他的生命周期也是在方法内部。且为了线程之间不相互干扰，每个线程都有一个独立的栈帧。综上，栈帧是线程安全的。</p><p>  这种方式有个名词叫线程封闭，即仅在单线程内访问数据，不共享就没有线程安全的问题。例如：我们常用的数据库连接池，connection的方法并没有声明线程安全，我们在使用中都是在一个方法内获取conenection，查询数据，关闭connecton，这这种线程封闭方式来解决线程安全的问题。</p>]]></content>
       
       
       <categories>
@@ -1783,25 +1882,6 @@
     
     
     <entry>
-      <title>其他</title>
-      <link href="/mysql/%E5%85%B6%E4%BB%96/"/>
-      <url>/mysql/%E5%85%B6%E4%BB%96/</url>
-      
-        <content type="html"><![CDATA[<h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><p>查询长事物的语句</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> information_schema.innodb_trx <span class="keyword">where</span> TIME_TO_SEC(<span class="keyword">timediff</span>(<span class="keyword">now</span>(),trx_started))&gt;<span class="number">60</span></span><br></pre></td></tr></table></figure>]]></content>
-      
-      
-      <categories>
-          
-          <category> Mysql </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
       <title>mysql的锁-全局锁、表锁、行锁、间隙锁</title>
       <link href="/mysql/mysql%E7%9A%84%E9%94%81/"/>
       <url>/mysql/mysql%E7%9A%84%E9%94%81/</url>
@@ -1823,18 +1903,16 @@
     
     
     <entry>
-      <title>mysql更新数据的原理和流程-草稿</title>
-      <link href="/mysql/mysql%E7%9A%84%E6%95%B0%E6%8D%AE%E9%A1%B5%E6%9B%B4%E6%96%B0/"/>
-      <url>/mysql/mysql%E7%9A%84%E6%95%B0%E6%8D%AE%E9%A1%B5%E6%9B%B4%E6%96%B0/</url>
+      <title>其他</title>
+      <link href="/mysql/%E5%85%B6%E4%BB%96/"/>
+      <url>/mysql/%E5%85%B6%E4%BB%96/</url>
       
-        <content type="html"><![CDATA[<h1 id="mysql更新数据的原理和流程-草稿"><a href="#mysql更新数据的原理和流程-草稿" class="headerlink" title="mysql更新数据的原理和流程-草稿"></a>mysql更新数据的原理和流程-草稿</h1><p>本文介绍mysql更新数据的原理和流程</p><h2 id="为什么mysql更新的效率很高？"><a href="#为什么mysql更新的效率很高？" class="headerlink" title="为什么mysql更新的效率很高？"></a>为什么mysql更新的效率很高？</h2><ol><li>WAL机制：即更新内存中数据页，同时写redolog+binglog然后返回。后台慢慢将数据页刷到磁盘中。（随机写改为顺序写）</li><li>mysql的chagenbuffer。</li></ol><h2 id="为什么mysql偶尔会抖一下"><a href="#为什么mysql偶尔会抖一下" class="headerlink" title="为什么mysql偶尔会抖一下"></a>为什么mysql偶尔会抖一下</h2><p>刷新脏页<br>什么叫脏页？<br>什么时候触发脏页的flush。</p><ol><li>redolog写满；（尽量避免，因为这时候所有更新都被block主）</li><li>内存不足：需要加载新的数据页但是内存不够，将数据页淘汰，如果是脏页，就flush到磁盘；（至于为什么不直接淘汰，下次读的时候从redologmerge是出于性能考虑，每次加载的都是干净的数据页）</li><li>正常的时候，定时刷新</li><li>正常关闭mysql时候</li></ol><p>2是抖一下的原因<br>buf1fpool数据页三种状态（未使用，使用了但是干净页，使用了但是脏页）。<br>当数据页没在内存中时候，申请一个页面，如果没有未使用页面就需要淘汰页面，俩种情况，如果淘汰的页面过多，会影响性能</p><ol><li>干净页直接淘汰</li><li><p>脏页flush，淘汰</p><p>fio -filename=$filename -direct=1 -iodepth 1 -thread -rw=randrw -ioengine=psync -bs=16k -size=500M -numjobs=10 -runtime=10 -group_reporting -name=mytest</p></li></ol>]]></content>
+        <content type="html"><![CDATA[<h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><p>查询长事物的语句</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> information_schema.innodb_trx <span class="keyword">where</span> TIME_TO_SEC(<span class="keyword">timediff</span>(<span class="keyword">now</span>(),trx_started))&gt;<span class="number">60</span></span><br></pre></td></tr></table></figure>]]></content>
       
       
       <categories>
           
           <category> Mysql </category>
-          
-          <category> Mysql基础 </category>
           
       </categories>
       
@@ -1856,6 +1934,27 @@
           <category> Mysql </category>
           
           <category> Mysql高可用架构 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>mysql更新数据的原理和流程-草稿</title>
+      <link href="/mysql/mysql%E7%9A%84%E6%95%B0%E6%8D%AE%E9%A1%B5%E6%9B%B4%E6%96%B0/"/>
+      <url>/mysql/mysql%E7%9A%84%E6%95%B0%E6%8D%AE%E9%A1%B5%E6%9B%B4%E6%96%B0/</url>
+      
+        <content type="html"><![CDATA[<h1 id="mysql更新数据的原理和流程-草稿"><a href="#mysql更新数据的原理和流程-草稿" class="headerlink" title="mysql更新数据的原理和流程-草稿"></a>mysql更新数据的原理和流程-草稿</h1><p>本文介绍mysql更新数据的原理和流程</p><h2 id="为什么mysql更新的效率很高？"><a href="#为什么mysql更新的效率很高？" class="headerlink" title="为什么mysql更新的效率很高？"></a>为什么mysql更新的效率很高？</h2><ol><li>WAL机制：即更新内存中数据页，同时写redolog+binglog然后返回。后台慢慢将数据页刷到磁盘中。（随机写改为顺序写）</li><li>mysql的chagenbuffer。</li></ol><h2 id="为什么mysql偶尔会抖一下"><a href="#为什么mysql偶尔会抖一下" class="headerlink" title="为什么mysql偶尔会抖一下"></a>为什么mysql偶尔会抖一下</h2><p>刷新脏页<br>什么叫脏页？<br>什么时候触发脏页的flush。</p><ol><li>redolog写满；（尽量避免，因为这时候所有更新都被block主）</li><li>内存不足：需要加载新的数据页但是内存不够，将数据页淘汰，如果是脏页，就flush到磁盘；（至于为什么不直接淘汰，下次读的时候从redologmerge是出于性能考虑，每次加载的都是干净的数据页）</li><li>正常的时候，定时刷新</li><li>正常关闭mysql时候</li></ol><p>2是抖一下的原因<br>buf1fpool数据页三种状态（未使用，使用了但是干净页，使用了但是脏页）。<br>当数据页没在内存中时候，申请一个页面，如果没有未使用页面就需要淘汰页面，俩种情况，如果淘汰的页面过多，会影响性能</p><ol><li>干净页直接淘汰</li><li><p>脏页flush，淘汰</p><p>fio -filename=$filename -direct=1 -iodepth 1 -thread -rw=randrw -ioengine=psync -bs=16k -size=500M -numjobs=10 -runtime=10 -group_reporting -name=mytest</p></li></ol>]]></content>
+      
+      
+      <categories>
+          
+          <category> Mysql </category>
+          
+          <category> Mysql基础 </category>
           
       </categories>
       
@@ -1907,16 +2006,18 @@
     
     
     <entry>
-      <title>shell的积累</title>
-      <link href="/shell/index/"/>
-      <url>/shell/index/</url>
+      <title>Spring-Schedule多线程</title>
+      <link href="/spring/spring-scheduled/"/>
+      <url>/spring/spring-scheduled/</url>
       
-        <content type="html"><![CDATA[<h1 id="shell的积累"><a href="#shell的积累" class="headerlink" title="shell的积累"></a>shell的积累</h1><p>日常工作中linux的命令的积累</p><h2 id="删除N天的文件的命令-用于清理log"><a href="#删除N天的文件的命令-用于清理log" class="headerlink" title="删除N天的文件的命令-用于清理log"></a>删除N天的文件的命令-用于清理log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find ./ -mtime +1 -name "*.log*" -exec rm -rf &#123;&#125; \;</span><br></pre></td></tr></table></figure><h2 id="按天筛选log"><a href="#按天筛选log" class="headerlink" title="按天筛选log"></a>按天筛选log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -n '/2018-10-15 16:55:00/,/2018-10-15 23:59:59/p' log_path |grep "condition"</span><br></pre></td></tr></table></figure><h2 id="合并redis，用于单机环境的redis导入"><a href="#合并redis，用于单机环境的redis导入" class="headerlink" title="合并redis，用于单机环境的redis导入"></a>合并redis，用于单机环境的redis导入</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line">redis-cli -h srcIp -p 6379 -n 0 keys "*" | while read key</span><br><span class="line">do</span><br><span class="line">    redis-cli -h srcIp -p 6379 -n 0 --raw dump $key | perl -pe 'chomp if eof' | redis-cli -h dest -p 6379 -n 1 -x restore $key 0</span><br><span class="line">    echo "migrate key $key"</span><br><span class="line">done</span><br></pre></td></tr></table></figure>]]></content>
+        <content type="html"><![CDATA[<h1 id="Spring多线程执行任务"><a href="#Spring多线程执行任务" class="headerlink" title="Spring多线程执行任务"></a>Spring多线程执行任务</h1><p>用Spring执行定时任务，spring默认是单线程执行的也就是说，多个任务会存在等待阻塞情况</p><h2 id="多线程方案"><a href="#多线程方案" class="headerlink" title="多线程方案"></a>多线程方案</h2><p>用如下方法注入</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ScheduleConfigure</span> <span class="keyword">implements</span> <span class="title">SchedulingConfigurer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">configureTasks</span><span class="params">(ScheduledTaskRegistrar taskRegistrar)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//设定一个长度10的定时任务线程池</span></span><br><span class="line">        taskRegistrar.setScheduler(Executors.newScheduledThreadPool(<span class="number">2</span>));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>]]></content>
       
       
       <categories>
           
-          <category> Shell </category>
+          <category> java </category>
+          
+          <category> spring </category>
           
       </categories>
       
@@ -1947,18 +2048,16 @@
     
     
     <entry>
-      <title>Spring-Schedule多线程</title>
-      <link href="/spring/spring-scheduled/"/>
-      <url>/spring/spring-scheduled/</url>
+      <title>shell的积累</title>
+      <link href="/shell/index/"/>
+      <url>/shell/index/</url>
       
-        <content type="html"><![CDATA[<h1 id="Spring多线程执行任务"><a href="#Spring多线程执行任务" class="headerlink" title="Spring多线程执行任务"></a>Spring多线程执行任务</h1><p>用Spring执行定时任务，spring默认是单线程执行的也就是说，多个任务会存在等待阻塞情况</p><h2 id="多线程方案"><a href="#多线程方案" class="headerlink" title="多线程方案"></a>多线程方案</h2><p>用如下方法注入</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ScheduleConfigure</span> <span class="keyword">implements</span> <span class="title">SchedulingConfigurer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">configureTasks</span><span class="params">(ScheduledTaskRegistrar taskRegistrar)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//设定一个长度10的定时任务线程池</span></span><br><span class="line">        taskRegistrar.setScheduler(Executors.newScheduledThreadPool(<span class="number">2</span>));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>]]></content>
+        <content type="html"><![CDATA[<h1 id="shell的积累"><a href="#shell的积累" class="headerlink" title="shell的积累"></a>shell的积累</h1><p>日常工作中linux的命令的积累</p><h2 id="删除N天的文件的命令-用于清理log"><a href="#删除N天的文件的命令-用于清理log" class="headerlink" title="删除N天的文件的命令-用于清理log"></a>删除N天的文件的命令-用于清理log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find ./ -mtime +1 -name "*.log*" -exec rm -rf &#123;&#125; \;</span><br></pre></td></tr></table></figure><h2 id="按天筛选log"><a href="#按天筛选log" class="headerlink" title="按天筛选log"></a>按天筛选log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -n '/2018-10-15 16:55:00/,/2018-10-15 23:59:59/p' log_path |grep "condition"</span><br></pre></td></tr></table></figure><h2 id="合并redis，用于单机环境的redis导入"><a href="#合并redis，用于单机环境的redis导入" class="headerlink" title="合并redis，用于单机环境的redis导入"></a>合并redis，用于单机环境的redis导入</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line">redis-cli -h srcIp -p 6379 -n 0 keys "*" | while read key</span><br><span class="line">do</span><br><span class="line">    redis-cli -h srcIp -p 6379 -n 0 --raw dump $key | perl -pe 'chomp if eof' | redis-cli -h dest -p 6379 -n 1 -x restore $key 0</span><br><span class="line">    echo "migrate key $key"</span><br><span class="line">done</span><br></pre></td></tr></table></figure>]]></content>
       
       
       <categories>
           
-          <category> java </category>
-          
-          <category> spring </category>
+          <category> Shell </category>
           
       </categories>
       
@@ -1973,27 +2072,6 @@
       <url>/mysql/mysql%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB/</url>
       
         <content type="html"><![CDATA[<h1 id="mysql事务的隔离级别以及实现原理"><a href="#mysql事务的隔离级别以及实现原理" class="headerlink" title="mysql事务的隔离级别以及实现原理"></a>mysql事务的隔离级别以及实现原理</h1><h2 id="事务基础"><a href="#事务基础" class="headerlink" title="事务基础"></a>事务基础</h2><p>启动事务的几种方式</p><ol><li>显式启动事务语句， begin 或 start transaction，提交是commit，回滚是rollback</li><li>set autocommit=0,每个CURD都会启动事务且需要手动commit/rollback。</li><li>在实际使用用，我们一般不采用2这种方式启动事务。</li></ol><p>如何查看mysql事务的隔离级别，下面说明事务的隔离级别是读提交</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">variables</span> <span class="keyword">like</span> <span class="string">'transaction_isolation'</span>;</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----------------------+----------------+</span></span><br><span class="line"></span><br><span class="line">| Variable_name | Value |</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----------------------+----------------+</span></span><br><span class="line"></span><br><span class="line">| transaction_isolation | READ-COMMITTED |</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----------------------+----------------+</span></span><br></pre></td></tr></table></figure><h2 id="事务的几种隔离级别"><a href="#事务的几种隔离级别" class="headerlink" title="事务的几种隔离级别"></a>事务的几种隔离级别</h2><p>mysql的事务隔离级别分为：读未提交、读已提交（RC）、可重复读（RR）、串行，他们具体表现如下：</p><ul><li>读未提交：事务中每个查询语句都获取当前数据的最新值。</li><li>读已提交：事务中每个查询语句获取的都是其他事务提交后的相关数据的最新值，Oracle的默认事务隔离级别。</li><li>可重复读：Mysql的Innodb的默认事务隔离级别。</li><li>串行：每个事务需要一个一个的执行。</li></ul><h2 id="mysql事务隔离方式的实现方式（只讨论RC-和-RR）"><a href="#mysql事务隔离方式的实现方式（只讨论RC-和-RR）" class="headerlink" title="mysql事务隔离方式的实现方式（只讨论RC 和 RR）"></a>mysql事务隔离方式的实现方式（只讨论RC 和 RR）</h2><p>mysql的事务隔离实现机制采用的是一致性读视图（consistent read view）。即Mysql在事务启动时对整个数据库拍了一个快照。</p><ul><li>RR是在事务开始时候创建一致性视图</li><li>RC是在事务中的每条sql语句执行前执行</li></ul><p>具体的实现逻辑如下：</p><ol><li>Innodb对没个每个事务会分配一个transaction id,该ID是严格自增的ID。</li><li>Innodb中每行数据是有多版本的，每个版本的数据会包含一个row_txid。将修改成这个版本数据的transaction id赋值给row_txid。</li><li>这个版本不是物理存在的是虚拟的，即在一个事务中一旦发现该行数据不可见，则需要根据row_txid对象的事务+undolog找到可见的数据，具体见下面5。</li><li>当一个事务启动时候会，会维护一个数组，这个数组包含这个事务开始之后，这时候所有活跃的transaction id（所谓即未提交的事务）。数组的取值范围如下：低水位是当前事务中最小的transId，高水位数组中最大的transaction id+1；数组关系可见下图：</li><li>当这个事务去读数据时候，会有如下情况：<ol><li>判断如果这条数据row tx_id&lt;低水位，说明当前的数据在本事务创建前已经被提交过了，所以可见；</li><li>判断如果这条数据row tx_id&gt;高水位，说明当前的数据在本事务创建之后被提交过了，所以不可见，需要通过undolog找回之前的版本；</li><li>判断如果这条数据row tx_id在数组区间，如果row tx_id是数组范围内的值，说明事务未提交过，所以不可见；发只，说明该数据是已经被其他事务提交生成的，所以可见；</li></ol></li></ol><p><img src="/images/mysql/mysql_tx_array.png" alt="avatar"></p><p>上面的规则比较拗口，翻译过来就是：如果数据的版本是先于本事务开始前生成的可见，如果后于本事务开始前生成的本可见。</p><h2 id="mysql如何保证多个事务同时修改一条数据的准确性"><a href="#mysql如何保证多个事务同时修改一条数据的准确性" class="headerlink" title="mysql如何保证多个事务同时修改一条数据的准确性"></a>mysql如何保证多个事务同时修改一条数据的准确性</h2><p>思考下面问题：</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">因为mysql在update时候实际上是先select在更新，所以在RR隔离级别中。</span><br><span class="line">俩个同时开始未提交的事务修改同一条语句这时候因为一致性视图，会不会导致一个事务的修改是无效的呢？</span><br></pre></td></tr></table></figure><p>答案是不会的。<br>因为mysql在修改时会遵循一个原则：读当前值，当更新数据时候都是先读后写，所以这时候值能读当前值。俩个事务同时更新一条数据的流程和原理如下：</p><ol><li>当并发进行更新时，对数据进行加x锁，后面的更新操作会block住，直到其他的事务提交后才继续下去；</li><li>由于更新是当前读，所以数据被本事务被更新过后，由于row tx_id就是当前事务，所以读到的值是新的值；</li></ol><h2 id="隔离级别RR如此那RC呢"><a href="#隔离级别RR如此那RC呢" class="headerlink" title="隔离级别RR如此那RC呢"></a>隔离级别RR如此那RC呢</h2><p>其实原理是一样的。只是RR是每一次事务开始时候创建一致性视图，而隔离级别RC则是在事务中每一条sql语句在执行前都要创建一个一致性视图，这样视图是动态的，每条sql语句根据上面提到的规则都要去确定数据的可见性。</p>]]></content>
-      
-      
-      <categories>
-          
-          <category> Mysql </category>
-          
-          <category> Mysql基础 </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
-      <title>mysql数据的完整性--草稿</title>
-      <link href="/mysql/mysql%E5%88%A0%E9%99%A4%E6%95%B0%E6%8D%AE-%E9%87%8A%E6%94%BE%E8%A1%A8%E7%A9%BA%E9%97%B4/"/>
-      <url>/mysql/mysql%E5%88%A0%E9%99%A4%E6%95%B0%E6%8D%AE-%E9%87%8A%E6%94%BE%E8%A1%A8%E7%A9%BA%E9%97%B4/</url>
-      
-        <content type="html"><![CDATA[<h1 id="mysql的数据删除的原理"><a href="#mysql的数据删除的原理" class="headerlink" title="mysql的数据删除的原理"></a>mysql的数据删除的原理</h1><p>我的数据删除了为什么表还是这么大？</p><h2 id="mysql删除数据的原理"><a href="#mysql删除数据的原理" class="headerlink" title="mysql删除数据的原理"></a>mysql删除数据的原理</h2><p>  mysql采用标记删除法，即并不是物理删除而是采用标记删除。<br>  delete数据时候：数据标记为可服用，如果插入的数据在这个数据页，可复用这个空间，例如：索引页的范围内可复用，超过了则需要插入新的空间。<br>  delete整个数据页：如果数据页上所有数据被删除，则整个数据页可复用。</p><h2 id="数据页的分裂和合并"><a href="#数据页的分裂和合并" class="headerlink" title="数据页的分裂和合并"></a>数据页的分裂和合并</h2><p>  如果数据页利用率小，数据页会合并。<br>  如果数据页满了，中间插入会导致数据页分裂。</p><h2 id="释放表空间"><a href="#释放表空间" class="headerlink" title="释放表空间"></a>释放表空间</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE t ENGINE=innodb;</span><br></pre></td></tr></table></figure><p>在mysql5.5会有MDL锁，不能Online执行</p><p>在mysql5.6会有online ddl机制，但是会小号CPU和IO（因为扫表），大表请谨慎。</p><p>这两种区别<br>5.5是在server层,copy出tmp_table，这时候不能对原表进行操作，然后copy到老表中。<br>5.6是在innodb层,copy出tmp_file,改的写row_log,然后重放生成逻辑一直的新表，tmp_file inplace操作到老表中。（tmp_file是个inplace操作）</p>]]></content>
       
       
       <categories>
@@ -2050,6 +2128,48 @@
     
     
     <entry>
+      <title>mysql数据的完整性--草稿</title>
+      <link href="/mysql/mysql%E5%88%A0%E9%99%A4%E6%95%B0%E6%8D%AE-%E9%87%8A%E6%94%BE%E8%A1%A8%E7%A9%BA%E9%97%B4/"/>
+      <url>/mysql/mysql%E5%88%A0%E9%99%A4%E6%95%B0%E6%8D%AE-%E9%87%8A%E6%94%BE%E8%A1%A8%E7%A9%BA%E9%97%B4/</url>
+      
+        <content type="html"><![CDATA[<h1 id="mysql的数据删除的原理"><a href="#mysql的数据删除的原理" class="headerlink" title="mysql的数据删除的原理"></a>mysql的数据删除的原理</h1><p>我的数据删除了为什么表还是这么大？</p><h2 id="mysql删除数据的原理"><a href="#mysql删除数据的原理" class="headerlink" title="mysql删除数据的原理"></a>mysql删除数据的原理</h2><p>  mysql采用标记删除法，即并不是物理删除而是采用标记删除。<br>  delete数据时候：数据标记为可服用，如果插入的数据在这个数据页，可复用这个空间，例如：索引页的范围内可复用，超过了则需要插入新的空间。<br>  delete整个数据页：如果数据页上所有数据被删除，则整个数据页可复用。</p><h2 id="数据页的分裂和合并"><a href="#数据页的分裂和合并" class="headerlink" title="数据页的分裂和合并"></a>数据页的分裂和合并</h2><p>  如果数据页利用率小，数据页会合并。<br>  如果数据页满了，中间插入会导致数据页分裂。</p><h2 id="释放表空间"><a href="#释放表空间" class="headerlink" title="释放表空间"></a>释放表空间</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE t ENGINE=innodb;</span><br></pre></td></tr></table></figure><p>在mysql5.5会有MDL锁，不能Online执行</p><p>在mysql5.6会有online ddl机制，但是会小号CPU和IO（因为扫表），大表请谨慎。</p><p>这两种区别<br>5.5是在server层,copy出tmp_table，这时候不能对原表进行操作，然后copy到老表中。<br>5.6是在innodb层,copy出tmp_file,改的写row_log,然后重放生成逻辑一直的新表，tmp_file inplace操作到老表中。（tmp_file是个inplace操作）</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> Mysql </category>
+          
+          <category> Mysql基础 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>MySql是如何降低主备延迟的</title>
+      <link href="/mysql/mysql%E6%98%AF%E5%A6%82%E4%BD%95%E9%99%8D%E4%BD%8E%E4%B8%BB%E5%A4%87%E5%BB%B6%E8%BF%9F%E7%9A%84/"/>
+      <url>/mysql/mysql%E6%98%AF%E5%A6%82%E4%BD%95%E9%99%8D%E4%BD%8E%E4%B8%BB%E5%A4%87%E5%BB%B6%E8%BF%9F%E7%9A%84/</url>
+      
+        <content type="html"><![CDATA[<h1 id="MySql是如何降低主备延迟的"><a href="#MySql是如何降低主备延迟的" class="headerlink" title="MySql是如何降低主备延迟的"></a>MySql是如何降低主备延迟的</h1><p>上一章<a href="./mysql是怎么保证高可用的.html">MySQL是怎么保证高可用的</a>，中提到了主库的并行复制能力会影响主备的延迟。在mysql5.6之前，rely_log被sql_thread重放写入备库，这里的sql_thread只能单线程消费，所以会很大程度降低mysql数据库的吞吐，在TPS高的时候就会有很大的延迟。如果想增强吞吐就要多sql_thread并行处理relay_log，如图：</p><p><img src="/images/mysql/mysql_多sqlthread.png" alt="avatar"></p><p>但是mysql并行的主从并行复制要遵守如下原则：</p><ol><li>对于不同的事务的binlog如果修改同一行数据，为了避免相互覆盖，不能并行运行只能串行</li><li>对于相同事务的binlog，为了保证事务的完整性，不能并行复制，</li></ol><h2 id="5-5之前的主从复制策略"><a href="#5-5之前的主从复制策略" class="headerlink" title="5.5之前的主从复制策略"></a>5.5之前的主从复制策略</h2><p>在5.5的时候，为了增强mysql的从库消费relay_log的吞吐，使用者自己实现了主从复制的策略主要有俩种：</p><h3 id="按表并行复制"><a href="#按表并行复制" class="headerlink" title="按表并行复制"></a>按表并行复制</h3><ul><li>每个work维护一个hash_table，key是binlog的dbname+tablename；</li><li>当一个binlog分配给coordainator，coordainator会循环检查这个binlog的key(dbname+tablename)，是否在work的hash_table中，如果出现说明这个binlog和这个worker冲突；<ul><li>如果只有一个冲突，交给这个work处理；</li><li>如果大于一个冲突，coordainator进入等待；</li><li>如果没有冲突，交给空闲的worker处理；</li></ul></li><li>当worker处理完后会把key从hash_table中删掉；</li></ul><h3 id="按行并行复制"><a href="#按行并行复制" class="headerlink" title="按行并行复制"></a>按行并行复制</h3><p>和上面类似，只不过这次并行控制的粒度更细，只要保证binlog不是修改的同一行数据即可并行复制，那么hash_table的key就变为binlog的dbname+table+唯一健的值（主键+唯一索引），光有主键不够一定要带上唯一索引的值，否则如下情况会报唯一建冲突。</p><p>注：c=原有的值是1,当备库并行复制时候先执行sessionB,由于这时候sessionA还没执行，会报唯一建冲突<br>| sessionA | sessionB |<br>| —— | —— |<br>| update t set c=5 where id=1 ; | - |<br>| - | update t set c=1 where id=1; |</p><h3 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h3><ol><li>必须要能通过解析binlog获取dbname,tablename,pk,uniqekey，所以binlog要是row类型；</li><li>必须有主键；</li><li>不能有外键；(因为外键的级联更新不在binlog中，所以建冲突就不准确)</li><li>按表的策略：在对热点表的时候coordainator会频繁进入等待，又变成了单线程复制；</li><li>按行的策略：要计算hashtable的key需要额外解析pk和uniquekey所以需要额外的开销；</li></ol><h2 id="Mysql5-6的并行复制策略"><a href="#Mysql5-6的并行复制策略" class="headerlink" title="Mysql5.6的并行复制策略"></a>Mysql5.6的并行复制策略</h2><h3 id="按照库名并行复制"><a href="#按照库名并行复制" class="headerlink" title="按照库名并行复制"></a>按照库名并行复制</h3><p>优点：</p><ol><li>构造hash很快，只需要库名；</li><li>binlog即使不是row也能很方便获取库名；</li></ol><p>缺点：</p><ol><li>若果服务器上只有一个库，优化效果不明显；</li></ol><h2 id="MariaDB的并行复制策略"><a href="#MariaDB的并行复制策略" class="headerlink" title="MariaDB的并行复制策略"></a>MariaDB的并行复制策略</h2><p>它的思想是思想是模拟主库运行：利用group commit,每一组事务能同时提交一定是不冲突的；那么主库commit之后就将一组的binlog一起并行执行</p><ul><li>为每个group commit分配个递增的commit_id；</li><li>将commit_id写入到binlog中</li><li>同一个commit_id的binglog分到不同的worker上去。</li><li>执行完这个commit_id后在执行下一个commit_id的binlog。</li></ul><p>缺点：</p><ol><li>并不是真正的象主库并行，主库当一组事物在commit阶段时候，下一组事物是在运行中的。而从库消费的时候只能是一组一组的消费，所以还是会造成主备的延迟。</li><li>当一组有一个很大的事物在worker中运行时候看，其他的worker先运行完了也只能等在哪里。</li></ol><h2 id="MySql5-7的并行复制的策略"><a href="#MySql5-7的并行复制的策略" class="headerlink" title="MySql5.7的并行复制的策略"></a>MySql5.7的并行复制的策略</h2><p>采用类似的MariaDb的类似的赋值策略由slave-parallel-type参数控制：</p><ul><li>DATABASE时候采用类似5.6的并行复制策略</li><li>LOGICAL_CLOCK时候采用MariaDb的并行复制策略，但是做了优化；</li></ul><p>和MariaDb相比，将binlog的执行时期从commit阶段放到了2PC的redolog的prepare阶段，mysql认为事物进入prepare阶段就说明数据是可靠的可以进行主从复制了。</p><ul><li>同时处于 prepare 状态的事务，在备库执行时是可以并行的</li><li>处于 prepare 状态的事务，与处于 commit 状态之间，在备库执行时也是可以并行的。</li></ul><p>我们可以通过binlog_group_commit_sync_delay和binlog_group_commit_sync_no_delay参数故意拉长主库的binlog从write到fsync的时间，减少binlog的写盘次数，制造更多同时在prepare时期的binlog，加大并行度。</p><h3 id="MySql5-7-22的并行复制优化"><a href="#MySql5-7-22的并行复制优化" class="headerlink" title="MySql5.7.22的并行复制优化"></a>MySql5.7.22的并行复制优化</h3><p>增加参数binlog-transaction-dependency-tracking。</p><ol><li>COMMIT_ORDER:和上面说的策略一样；但是如果是追历史数据还是会退化成单线程，所以适合线上库。</li><li>WRITESET：对于事务更新的每一行计算hash值，组成集合writeset，如果俩个事务没有操作相同的行，也就是writeset没有交集，就可以并行。</li><li>WRITESET_SESSION：多了一个约束，即在主库上同一个线程先后执行的事务，在从库上也要保证同样的顺序。</li></ol><p>和之前5.5的按行并行复制策略很类似但是有几点优化：</p><ol><li>hash值提前算好了，减少了主从同步时候的压力；</li><li>不需要在从库每次都把所有woker遍历一遍找出是否冲突；</li><li>备库不用解析binlog对备库的binlog格式无要求；</li></ol><p>思考如下：<br>假设一个 MySQL 5.7.22 版本的主库，单线程插入了很多数据，3小时候，搭建从库开始同步数据binlog-transaction-dependency-tracking改如何设置？<br>答：建议采用 WRITESET，因为是单线程插入，如果采用WRITESET_SESSION，那么会退化成单线程同步relaylog。COMMIT_ORDER因为是追历史数据，所以会退化成单线程</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> Mysql </category>
+          
+          <category> Mysql高可用架构 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>Mysql是如何保证数据不丢失的</title>
       <link href="/mysql/mysql%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%A2%E5%A4%B1/"/>
       <url>/mysql/mysql%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%A2%E5%A4%B1/</url>
@@ -2090,27 +2210,6 @@
     
     
     <entry>
-      <title>MySql是如何降低主备延迟的</title>
-      <link href="/mysql/mysql%E6%98%AF%E5%A6%82%E4%BD%95%E9%99%8D%E4%BD%8E%E4%B8%BB%E5%A4%87%E5%BB%B6%E8%BF%9F%E7%9A%84/"/>
-      <url>/mysql/mysql%E6%98%AF%E5%A6%82%E4%BD%95%E9%99%8D%E4%BD%8E%E4%B8%BB%E5%A4%87%E5%BB%B6%E8%BF%9F%E7%9A%84/</url>
-      
-        <content type="html"><![CDATA[<h1 id="MySql是如何降低主备延迟的"><a href="#MySql是如何降低主备延迟的" class="headerlink" title="MySql是如何降低主备延迟的"></a>MySql是如何降低主备延迟的</h1><p>上一章<a href="./mysql是怎么保证高可用的.html">MySQL是怎么保证高可用的</a>，中提到了主库的并行复制能力会影响主备的延迟。在mysql5.6之前，rely_log被sql_thread重放写入备库，这里的sql_thread只能单线程消费，所以会很大程度降低mysql数据库的吞吐，在TPS高的时候就会有很大的延迟。如果想增强吞吐就要多sql_thread并行处理relay_log，如图：</p><p><img src="/images/mysql/mysql_多sqlthread.png" alt="avatar"></p><p>但是mysql并行的主从并行复制要遵守如下原则：</p><ol><li>对于不同的事务的binlog如果修改同一行数据，为了避免相互覆盖，不能并行运行只能串行</li><li>对于相同事务的binlog，为了保证事务的完整性，不能并行复制，</li></ol><h2 id="5-5之前的主从复制策略"><a href="#5-5之前的主从复制策略" class="headerlink" title="5.5之前的主从复制策略"></a>5.5之前的主从复制策略</h2><p>在5.5的时候，为了增强mysql的从库消费relay_log的吞吐，使用者自己实现了主从复制的策略主要有俩种：</p><h3 id="按表并行复制"><a href="#按表并行复制" class="headerlink" title="按表并行复制"></a>按表并行复制</h3><ul><li>每个work维护一个hash_table，key是binlog的dbname+tablename；</li><li>当一个binlog分配给coordainator，coordainator会循环检查这个binlog的key(dbname+tablename)，是否在work的hash_table中，如果出现说明这个binlog和这个worker冲突；<ul><li>如果只有一个冲突，交给这个work处理；</li><li>如果大于一个冲突，coordainator进入等待；</li><li>如果没有冲突，交给空闲的worker处理；</li></ul></li><li>当worker处理完后会把key从hash_table中删掉；</li></ul><h3 id="按行并行复制"><a href="#按行并行复制" class="headerlink" title="按行并行复制"></a>按行并行复制</h3><p>和上面类似，只不过这次并行控制的粒度更细，只要保证binlog不是修改的同一行数据即可并行复制，那么hash_table的key就变为binlog的dbname+table+唯一健的值（主键+唯一索引），光有主键不够一定要带上唯一索引的值，否则如下情况会报唯一建冲突。</p><p>注：c=原有的值是1,当备库并行复制时候先执行sessionB,由于这时候sessionA还没执行，会报唯一建冲突<br>| sessionA | sessionB |<br>| —— | —— |<br>| update t set c=5 where id=1 ; | - |<br>| - | update t set c=1 where id=1; |</p><h3 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h3><ol><li>必须要能通过解析binlog获取dbname,tablename,pk,uniqekey，所以binlog要是row类型；</li><li>必须有主键；</li><li>不能有外键；(因为外键的级联更新不在binlog中，所以建冲突就不准确)</li><li>按表的策略：在对热点表的时候coordainator会频繁进入等待，又变成了单线程复制；</li><li>按行的策略：要计算hashtable的key需要额外解析pk和uniquekey所以需要额外的开销；</li></ol><h2 id="Mysql5-6的并行复制策略"><a href="#Mysql5-6的并行复制策略" class="headerlink" title="Mysql5.6的并行复制策略"></a>Mysql5.6的并行复制策略</h2><h3 id="按照库名并行复制"><a href="#按照库名并行复制" class="headerlink" title="按照库名并行复制"></a>按照库名并行复制</h3><p>优点：</p><ol><li>构造hash很快，只需要库名；</li><li>binlog即使不是row也能很方便获取库名；</li></ol><p>缺点：</p><ol><li>若果服务器上只有一个库，优化效果不明显；</li></ol><h2 id="MariaDB的并行复制策略"><a href="#MariaDB的并行复制策略" class="headerlink" title="MariaDB的并行复制策略"></a>MariaDB的并行复制策略</h2><p>它的思想是思想是模拟主库运行：利用group commit,每一组事务能同时提交一定是不冲突的；那么主库commit之后就将一组的binlog一起并行执行</p><ul><li>为每个group commit分配个递增的commit_id；</li><li>将commit_id写入到binlog中</li><li>同一个commit_id的binglog分到不同的worker上去。</li><li>执行完这个commit_id后在执行下一个commit_id的binlog。</li></ul><p>缺点：</p><ol><li>并不是真正的象主库并行，主库当一组事物在commit阶段时候，下一组事物是在运行中的。而从库消费的时候只能是一组一组的消费，所以还是会造成主备的延迟。</li><li>当一组有一个很大的事物在worker中运行时候看，其他的worker先运行完了也只能等在哪里。</li></ol><h2 id="MySql5-7的并行复制的策略"><a href="#MySql5-7的并行复制的策略" class="headerlink" title="MySql5.7的并行复制的策略"></a>MySql5.7的并行复制的策略</h2><p>采用类似的MariaDb的类似的赋值策略由slave-parallel-type参数控制：</p><ul><li>DATABASE时候采用类似5.6的并行复制策略</li><li>LOGICAL_CLOCK时候采用MariaDb的并行复制策略，但是做了优化；</li></ul><p>和MariaDb相比，将binlog的执行时期从commit阶段放到了2PC的redolog的prepare阶段，mysql认为事物进入prepare阶段就说明数据是可靠的可以进行主从复制了。</p><ul><li>同时处于 prepare 状态的事务，在备库执行时是可以并行的</li><li>处于 prepare 状态的事务，与处于 commit 状态之间，在备库执行时也是可以并行的。</li></ul><p>我们可以通过binlog_group_commit_sync_delay和binlog_group_commit_sync_no_delay参数故意拉长主库的binlog从write到fsync的时间，减少binlog的写盘次数，制造更多同时在prepare时期的binlog，加大并行度。</p><h3 id="MySql5-7-22的并行复制优化"><a href="#MySql5-7-22的并行复制优化" class="headerlink" title="MySql5.7.22的并行复制优化"></a>MySql5.7.22的并行复制优化</h3><p>增加参数binlog-transaction-dependency-tracking。</p><ol><li>COMMIT_ORDER:和上面说的策略一样；但是如果是追历史数据还是会退化成单线程，所以适合线上库。</li><li>WRITESET：对于事务更新的每一行计算hash值，组成集合writeset，如果俩个事务没有操作相同的行，也就是writeset没有交集，就可以并行。</li><li>WRITESET_SESSION：多了一个约束，即在主库上同一个线程先后执行的事务，在从库上也要保证同样的顺序。</li></ol><p>和之前5.5的按行并行复制策略很类似但是有几点优化：</p><ol><li>hash值提前算好了，减少了主从同步时候的压力；</li><li>不需要在从库每次都把所有woker遍历一遍找出是否冲突；</li><li>备库不用解析binlog对备库的binlog格式无要求；</li></ol><p>思考如下：<br>假设一个 MySQL 5.7.22 版本的主库，单线程插入了很多数据，3小时候，搭建从库开始同步数据binlog-transaction-dependency-tracking改如何设置？<br>答：建议采用 WRITESET，因为是单线程插入，如果采用WRITESET_SESSION，那么会退化成单线程同步relaylog。COMMIT_ORDER因为是追历史数据，所以会退化成单线程</p>]]></content>
-      
-      
-      <categories>
-          
-          <category> Mysql </category>
-          
-          <category> Mysql高可用架构 </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
       <title>mysql基础知识--草稿</title>
       <link href="/mysql/mysql%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/"/>
       <url>/mysql/mysql%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/</url>
@@ -2132,25 +2231,6 @@
     
     
     <entry>
-      <title>源代码说明</title>
-      <link href="/netty/%E8%AF%B4%E6%98%8E/"/>
-      <url>/netty/%E8%AF%B4%E6%98%8E/</url>
-      
-        <content type="html"><![CDATA[<h1 id="netty-源码的学习"><a href="#netty-源码的学习" class="headerlink" title="netty 源码的学习"></a>netty 源码的学习</h1><p>netty源码学习的git地址：<a href="https://github.com/liuhao163/netty.git" target="_blank" rel="noopener">https://github.com/liuhao163/netty.git</a></p><p>branch:4.1-ericliu</p>]]></content>
-      
-      
-      <categories>
-          
-          <category> netty </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
       <title>mysql是如何保证主从同步的（binlog）--草稿</title>
       <link href="/mysql/mysql%E6%98%AF%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E4%B8%BB%E4%BB%8E%E5%90%8C%E6%AD%A5%E7%9A%84%EF%BC%88binlog%EF%BC%89/"/>
       <url>/mysql/mysql%E6%98%AF%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E4%B8%BB%E4%BB%8E%E5%90%8C%E6%AD%A5%E7%9A%84%EF%BC%88binlog%EF%BC%89/</url>
@@ -2163,6 +2243,25 @@
           <category> Mysql </category>
           
           <category> Mysql高可用架构 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>源代码说明</title>
+      <link href="/netty/%E8%AF%B4%E6%98%8E/"/>
+      <url>/netty/%E8%AF%B4%E6%98%8E/</url>
+      
+        <content type="html"><![CDATA[<h1 id="netty-源码的学习"><a href="#netty-源码的学习" class="headerlink" title="netty 源码的学习"></a>netty 源码的学习</h1><p>netty源码学习的git地址：<a href="https://github.com/liuhao163/netty.git" target="_blank" rel="noopener">https://github.com/liuhao163/netty.git</a></p><p>branch:4.1-ericliu</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> netty </category>
           
       </categories>
       

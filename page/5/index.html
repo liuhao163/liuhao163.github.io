@@ -328,6 +328,233 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA线程的生命周期/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/JAVA线程的生命周期/" class="post-title-link" itemprop="url">JAVA线程的生命周期</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-19 13:27:48" itemprop="dateCreated datePublished" datetime="2019-03-19T13:27:48+08:00">2019-03-19</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-28 23:06:31" itemprop="dateModified" datetime="2019-03-28T23:06:31+08:00">2019-03-28</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="操作系统的线程生命周期"><a href="#操作系统的线程生命周期" class="headerlink" title="操作系统的线程生命周期"></a>操作系统的线程生命周期</h1><p>初始状态，可运行状态，运行状态，终止状态，休眠状态，他们之间的转化关系如图：</p>
+<p><img src="./thread1.png" alt="avator"></p>
+<ul>
+<li>初始状态:线程被创建，但是还未分配cpu执行的状态。</li>
+<li>可运行状态:指线程可以分配cpu执行。</li>
+<li>运行状态:有cpu空闲时候分配cpu执行，当线程被分配给cpu执行时候，变为可执行状态。</li>
+<li>终止状态:线程执行完成或者异常终止。</li>
+<li>休眠状态:线程调用阻塞的api或者等待某个事件执行的时候会变为休眠状态。</li>
+</ul>
+<p>jvm将由于将线程的调度交给操作系统，所以将可运行状态和运行状态和在了一起，因为jvm不关心这俩个状态的具体情况。</p>
+<h1 id="java线程的生命周期"><a href="#java线程的生命周期" class="headerlink" title="java线程的生命周期"></a>java线程的生命周期</h1><p>NEW（初始装填）、RUNABLE（可运行/运行状态）、TERMINATED（终止状态）、BLOCK（阻塞）、WAIT（等待）、TIME_WAIT（有时限等待）</p>
+<p>其中BLOCK、WAIT、TIME_WAIT都属于休眠关系</p>
+<p><img src="./thread2.png" alt="avator"></p>
+<ul>
+<li>NEW:当线程对象被创建出来的时候线程处于该状态，这时候还未对其分配cpu。具体方法是集成Thread类并且实现run方法，或者狗仔一个Thread对象把一个Runnable的接口实现传进去。</li>
+<li>NEW–&gt;RUNABLE:调用thread.start()方法线程变为RUNABLE状态。</li>
+<li>RUNABLE–&gt;休眠状态：java的休眠状态有三种BLOCK、WAIT、TIME_WAIT，分别是<ul>
+<li>RUNABLE–&gt;BLOCK：当遇到synchronized代码块时候，如果竞争失败当前线程进入block状态。等待进入到线程又会变为RUNABLE状态，注意在java中如调用到了阻塞的api，是不会切换到block状态的，比如调用io的api，当前线程依然是RUNABLE状态这点要注意。</li>
+<li>RUNABLE–&gt;WAIT：如下3中情况会让当前线程进入到wait状态<ul>
+<li>object.wait(),没有时间限制的wait，需要调用object.notify()或者object.notifyAll()</li>
+<li>调用了其他线程的join()，没有时间限制的join，需要等待当前join的线程终止。</li>
+<li>调用了LockSupport.park(),没有事件限制的park，对应的方法是LockSupport.unPark()</li>
+</ul>
+</li>
+<li>RUNABLE–&gt;TIME_WAIT：同上就是上面3种情况或者方法的有时间版本</li>
+</ul>
+</li>
+<li>RUNABLE–&gt;TERMINATED：<ul>
+<li>线程执行结束</li>
+<li>stop()或者interrupt()方法</li>
+</ul>
+</li>
+</ul>
+<h1 id="线程终止的方法"><a href="#线程终止的方法" class="headerlink" title="线程终止的方法"></a>线程终止的方法</h1><p>当一个线程执行一个很耗时的逻辑时候，可能会终止该线程的操作，比如并发情况下的网络超时，为了防止资源耗尽往往要终止。上面提到了stop或者interrupt方法</p>
+<ul>
+<li>stop方法已经不建议使用了，因为会立即杀死线程，同时不会释放synchronized的锁，所以后面的线程都会阻塞。</li>
+<li><p>interrupt方法相对来说就会“温柔”很多，它只是对线程了interrupt标记，当调用thread.interrupt()方法有俩种方式退出线程</p>
+<ul>
+<li>主动退出：对于一个一直执行的线程来说可以通过判断t1.isInterrupted()来判断是否该终端</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> Thread t1 = <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">          <span class="keyword">while</span>(!t1.isInterrupted())&#123;</span><br><span class="line">              <span class="comment">//do something</span></span><br><span class="line">          &#125;</span><br><span class="line">      &#125;);</span><br></pre></td></tr></table></figure>
+<ul>
+<li>异常退出：对于执行了wait sleep这种线程我们可以通过异常捕获来判断线程的终端，因为他们会抛出InterruptedException异常</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> Thread t1 = <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">         <span class="keyword">synchronized</span> (lock) &#123;</span><br><span class="line">             <span class="keyword">try</span> &#123;</span><br><span class="line">                 lock.wait();</span><br><span class="line">             &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                 e.printStackTrace();</span><br><span class="line">                 <span class="keyword">return</span>;</span><br><span class="line">             &#125;</span><br><span class="line">             <span class="comment">//do something</span></span><br><span class="line"></span><br><span class="line">             <span class="comment">//这时候会输出false因为interrupt会被清除</span></span><br><span class="line">             System.out.println(t1.isInterrupted());</span><br><span class="line">         &#125;</span><br><span class="line">     &#125;);</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>注意：当抛出InterruptedException异常后线程的interrupt标记会被清楚如果这时候在判断isInterrupted()方法就又变成了false</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA中的管程/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2079,210 +2306,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/排查java异常进程的方法/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/排查java异常进程的方法/" class="post-title-link" itemprop="url">排查java异常进程的方法</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-03-10 00:04:14" itemprop="dateCreated datePublished" datetime="2019-03-10T00:04:14+08:00">2019-03-10</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-12 23:52:35" itemprop="dateModified" datetime="2019-03-12T23:52:35+08:00">2019-03-12</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm优化/" itemprop="url" rel="index"><span itemprop="name">jvm优化</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="定位JAVA进程中异常线程的方法"><a href="#定位JAVA进程中异常线程的方法" class="headerlink" title="定位JAVA进程中异常线程的方法"></a>定位JAVA进程中异常线程的方法</h1><p>日常使用中我们往往会遇到JAVA进程内存飙高，程序hang住，cpu的load过高等情况。这时候往往需要定位到JAVA的实例看下具体占用CPU、内存过高的线程都在做什么？<br>下面总结了下如何定位JAVA问题线程的方法。</p>
-<h2 id="找到有问题的JVM进程"><a href="#找到有问题的JVM进程" class="headerlink" title="找到有问题的JVM进程"></a>找到有问题的JVM进程</h2><p>linux命令：top–找到有问题的JAVA进程<br>  shift+p 按照cpu排序<br>  shift+m按照内存排序</p>
-<h2 id="查看有问题JAVA进程中的线程"><a href="#查看有问题JAVA进程中的线程" class="headerlink" title="查看有问题JAVA进程中的线程"></a>查看有问题JAVA进程中的线程</h2><p>linux命令：top -H -p  pid 查看pid进程下所有有问题的线程</p>
-<ol>
-<li>将十进制数换成16进制：printf “%x\n” tid</li>
-<li>查看进程下的线程正在执行的方法： jstack pid |grep nid=0x【tid】 -A 30</li>
-</ol>
-<h2 id="jstack查看出来的线程信息梳理"><a href="#jstack查看出来的线程信息梳理" class="headerlink" title="jstack查看出来的线程信息梳理"></a>jstack查看出来的线程信息梳理</h2><p>线程的几种状态</p>
-<ol>
-<li>RUNNABLE，线程处于执行中</li>
-<li>BLOCKED，线程被阻塞</li>
-<li>WAITING，线程正在等待</li>
-</ol>
-<p>对于锁的竞争，可参照下面的思路排查问题：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">线程1获取到锁，处于RUNNABLE状态，线程2处于BLOCK状态；  </span><br><span class="line">1、locked &lt;0x000000076bf62208&gt;说明线程1对地址为0x000000076bf62208对象进行了加锁；  </span><br><span class="line">2、waiting to lock &lt;0x000000076bf62208&gt; 说明线程2在等待地址为0x000000076bf62208对象上的锁；  </span><br><span class="line">3、waiting for monitor entry [0x000000001e21f000]说明线程1是通过synchronized关键字进入了监视器的临界区，并处于&quot;Entry Set&quot;队列，等待monitor；</span><br></pre></td></tr></table></figure>
-<h2 id="jmap查看JVM系统信息的命令"><a href="#jmap查看JVM系统信息的命令" class="headerlink" title="jmap查看JVM系统信息的命令"></a>jmap查看JVM系统信息的命令</h2><p>查找JVM中系统的大小和个数</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">按照个数统计  </span><br><span class="line">  jmap -histo:live  pid|grep keyword|sort -k 2 -g -r|head -10</span><br><span class="line"></span><br><span class="line">按照占用大小统计</span><br><span class="line">  jmap -histo:live  pid|grep keyword|sort -k 2 -g -r|head -10</span><br></pre></td></tr></table></figure>
-<p>查看JVM中Heap的情况</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -heap pid</span><br></pre></td></tr></table></figure>
-<p>情况如下</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">Attaching to process ID Pid, please <span class="built_in">wait</span>...</span><br><span class="line">Debugger attached successfully.</span><br><span class="line">Server compiler detected.</span><br><span class="line">JVM version is 25.65-b01</span><br><span class="line"></span><br><span class="line">using parallel threads <span class="keyword">in</span> the new generation.</span><br><span class="line">using thread-local object allocation.</span><br><span class="line">Concurrent Mark-Sweep GC</span><br><span class="line"></span><br><span class="line">Heap Configuration:</span><br><span class="line">   MinHeapFreeRatio         = 40</span><br><span class="line">   MaxHeapFreeRatio         = 70</span><br><span class="line">   MaxHeapSize              = 4294967296 (4096.0MB)</span><br><span class="line">   NewSize                  = 858980352 (819.1875MB)</span><br><span class="line">   MaxNewSize               = 858980352 (819.1875MB)</span><br><span class="line">   OldSize                  = 3435986944 (3276.8125MB)</span><br><span class="line">   NewRatio                 = 4</span><br><span class="line">   SurvivorRatio            = 8</span><br><span class="line">   MetaspaceSize            = 21807104 (20.796875MB)</span><br><span class="line">   CompressedClassSpaceSize = 1073741824 (1024.0MB)</span><br><span class="line">   MaxMetaspaceSize         = 17592186044415 MB</span><br><span class="line">   G1HeapRegionSize         = 0 (0.0MB)</span><br><span class="line"></span><br><span class="line">Heap Usage:</span><br><span class="line">New Generation (Eden + 1 Survivor Space):</span><br><span class="line">   capacity = 773128192 (737.3125MB)</span><br><span class="line">   used     = 9882512 (9.424697875976562MB)</span><br><span class="line">   free     = 763245680 (727.8878021240234MB)</span><br><span class="line">   1.2782501145683225% used</span><br><span class="line">Eden Space: (Edn区)</span><br><span class="line">   capacity = 687276032 (655.4375MB)</span><br><span class="line">   used     = 9882512 (9.424697875976562MB)</span><br><span class="line">   free     = 677393520 (646.0128021240234MB)</span><br><span class="line">   1.4379247260000476% used</span><br><span class="line">From Space: (Survivor中的From)</span><br><span class="line">   capacity = 85852160 (81.875MB)</span><br><span class="line">   used     = 0 (0.0MB)</span><br><span class="line">   free     = 85852160 (81.875MB)</span><br><span class="line">   0.0% used</span><br><span class="line">To Space: (Survivor中的To)</span><br><span class="line">   capacity = 85852160 (81.875MB)</span><br><span class="line">   used     = 0 (0.0MB)</span><br><span class="line">   free     = 85852160 (81.875MB)</span><br><span class="line">   0.0% used</span><br><span class="line">concurrent mark-sweep generation: （老年代）</span><br><span class="line">   capacity = 3435986944 (3276.8125MB)</span><br><span class="line">   used     = 258117296 (246.1598358154297MB)</span><br><span class="line">   free     = 3177869648 (3030.6526641845703MB)</span><br><span class="line">   7.512173364067357% used</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/4/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><span class="space">&hellip;</span><a class="page-number" href="/page/9/">9</a><a class="extend next" rel="next" href="/page/6/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
+    <a class="extend prev" rel="prev" href="/page/4/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><span class="page-number current">5</span><a class="page-number" href="/page/6/">6</a><span class="space">&hellip;</span><a class="page-number" href="/page/10/">10</a><a class="extend next" rel="next" href="/page/6/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
   </nav>
 
 
@@ -2324,7 +2352,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">90</span>
+                    <span class="site-state-item-count">91</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2464,7 +2492,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">35</span>
+                      
+                    
+                    <span class="site-state-item-count">36</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>

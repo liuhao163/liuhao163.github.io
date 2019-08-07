@@ -328,6 +328,906 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/误删数据后的处理/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/误删数据后的处理/" class="post-title-link" itemprop="url">误删数据后的处理</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-15 10:28:12" itemprop="dateCreated datePublished" datetime="2019-02-15T10:28:12+08:00">2019-02-15</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql高可用架构/" itemprop="url" rel="index"><span itemprop="name">Mysql高可用架构</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="误删数据的几种情况"><a href="#误删数据的几种情况" class="headerlink" title="误删数据的几种情况"></a>误删数据的几种情况</h1><p>对于误删除数据进行了简单的分类：</p>
+<ol>
+<li>使用delete语句误删除数据航；</li>
+<li>使用droptable或者truncate table误删除表数据；</li>
+<li>使用dropdatabase语句误删除数据库；</li>
+<li>使用rm命令删除整个mysql实例；</li>
+</ol>
+<h2 id="误删行–用delete"><a href="#误删行–用delete" class="headerlink" title="误删行–用delete"></a>误删行–用delete</h2><ul>
+<li>方法：可使用工具Flashback来恢复误删除的数据；</li>
+<li>条件：使用FalshBack的条件，binlog_format=row和 binlog_row_image=FULL</li>
+<li>原理：解析binlog，并且把binlog的逆向修改，那会原数据库重放；</li>
+<li>注意：<ul>
+<li>逆向后不要重新那回主库重放，要先从一个林水库开始，然后由临时库在恢复到主库上，防止直接在一个在线的主库上还原，破坏了数据关联，造成数据2次破坏；</li>
+<li>数据库的防范于未然：sql语句的安全模式：set [global] sql_safe_updates = 1，这样当update delete没有where条件时候就会报错；</li>
+</ul>
+</li>
+</ul>
+<h2 id="drop-table或者truncate-table"><a href="#drop-table或者truncate-table" class="headerlink" title="drop table或者truncate table"></a>drop table或者truncate table</h2><p>  delete删除全表往往性能会很差，因为要写undolog redolog binlog等，这时候如果有删除全表的需求就可以考虑用：drop table或者truncate table来删除<br>。<br>  当使用这几个命令时候我们的binlog是statement格式的，所以也没法用上面的方法恢复数据。</p>
+<p>  误删库表恢复的流程是怎样的呢？</p>
+<ol>
+<li>去最后一次全量备份的库，恢复出一个临时库；</li>
+<li>在日志备份里，取当前备份点之后的日志，除了误删除的语句，应用到临时库中；</li>
+</ol>
+<p>如图：<br><img src="误删数据后的处理/误删库恢复流程.png" alt="avator"></p>
+<p>注意：</p>
+<ol>
+<li>如果临时库的实例上有多个数据库，在使用mysqlbinlog命令可以加上–database参数，来指定误删除库；</li>
+<li>恢复数据跳过误删除的binlog的方法上：<ol>
+<li>如果原实例没有GTID模式:我们只能在备份日志中先找到误删除的那个操作用-stop-position参数执行前的日志，在用-start-position从误删除之后的操作执行；</li>
+<li>GTID模式:我们可以在临时库上执行：set gtid_next=gtid1;begin;commit；先把这个gtid加到临时库的gtidset中，之后重放binlog会自动跳过这个操作</li>
+</ol>
+</li>
+</ol>
+<h3 id="恢复表和库的加速"><a href="#恢复表和库的加速" class="headerlink" title="恢复表和库的加速"></a>恢复表和库的加速</h3><p>上面的做法还是不够快，因为：</p>
+<ol>
+<li>如果是误删表：我们期望只恢复这张表的数据，但是mysqlbinlog工具不能只解析一张表的日志；</li>
+<li>用mysqlbinlog恢复出的应用日志，只能是单线程恢复，无法利用并行复制的功能；</li>
+</ol>
+<p>解决方案：</p>
+<p>第一种方法：临时库在被全量恢复（设置了gtid后）后，将这个临时库置为主库的从库，然后这个临时库在执行start salve之前执行；</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#让临时库只同步误删除的表，同时主-&gt;备可以利用并行复制</span></span><br><span class="line"><span class="keyword">change</span> <span class="keyword">replication</span> filter replicate_do_table = (tbl_name)</span><br></pre></td></tr></table></figure>
+<p>如图：<br><img src="误删数据后的处理/误删库加速.png" alt="avator"></p>
+<h3 id="mysql的binlog丢失"><a href="#mysql的binlog丢失" class="headerlink" title="mysql的binlog丢失"></a>mysql的binlog丢失</h3><p>有一种情况，如果要恢复的是个很久远的库，备库上又不能无限制的保存binlog,导致需要的binlog备库没有log的情况该如何操作呢？</p>
+<ol>
+<li>假设临时库上需要的master.000005，而备库上从master.000007开始的，意味这我们要从备份系统上下载master.000005，master.000006放到备库上</li>
+<li>之后打开备库的master.index文件上（根据配置名字可能不同），加上”./master.000005”，”./master.000006”</li>
+<li>重启备库，让备库识别这俩个文件</li>
+<li>建立主备关系开始同步数据</li>
+</ol>
+<p>综上：误删库的恢复是通过定期全量备份+增量备份来恢复数据库，建议DBA把流程做成自动化，同时定期演练减伤损失。</p>
+<h2 id="搭建延迟复制备库"><a href="#搭建延迟复制备库" class="headerlink" title="搭建延迟复制备库"></a>搭建延迟复制备库</h2><p>假设：当一个大库的备份周期是1周一备份，同时在第6天发生了误操作，这时候就要恢复6天的binlog，恢复时间可能是按天计的，对于在线业务是不允许的。这时候我们可以通过搭建一个延迟赋值的备库来解决。</p>
+<ol>
+<li>这个机制是mysql5.6之后引入的有一个机制，我们在备库可以通过命令CHANGE MASTER TO MASTER_DELAY=N（单位：秒），即延迟N秒同步命令。</li>
+<li>比如：CHANGE MASTER TO MASTER_DELAY=3600，那么当一个误操作发生后，这个备库会在一个小时以后收到这条命令，我们可以在这段时间内stop salve;</li>
+<li>然后恢复这一个小时的数据并且跳过这个命令即可；</li>
+</ol>
+<h2 id="预防误删除库-表的方法"><a href="#预防误删除库-表的方法" class="headerlink" title="预防误删除库/表的方法"></a>预防误删除库/表的方法</h2><p>我们应该尽量最大化的目标误删除操作：</p>
+<ol>
+<li><p>账号分离：</p>
+<ol>
+<li>业务账号应该只有MDL权限</li>
+<li>日常的数据查询值用只读账号</li>
+</ol>
+</li>
+<li><p>指定操作规范：</p>
+<ol>
+<li>删除表前线对表改名，观察一段时间</li>
+<li>该表明要有命名规范比如_to_be_deleted</li>
+</ol>
+</li>
+</ol>
+<h2 id="rm删除"><a href="#rm删除" class="headerlink" title="rm删除"></a>rm删除</h2><p>HA会选取一个从库作为主库，我们只需要回复这个机器即可；<br>为防止这个事情发生可以做跨机房或者跨城市备份</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql索引/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/mysql/mysql索引/" class="post-title-link" itemprop="url">mysql的索引--草稿</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-08 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-08T00:00:00+08:00">2019-02-08</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="mysql的索引-草稿"><a href="#mysql的索引-草稿" class="headerlink" title="mysql的索引-草稿"></a>mysql的索引-草稿</h1><p>唯一索引和普通索引区别<br>  读：<br>    唯一索引在查询上和普通索引的差距不大<br>    原因：mysql是将整个数据页加载到内存中，1个数据页有16KB，可以加载很多数据（都是索引和主键指针），儿唯一索引和普通索引的区别就是查询完后是break还是continue<br>  写：<br>    唯一索引，需要在每次写入时候读取数据判断是否唯一，所以不能利用changebuffer。所以更新需要将数据页cp到内存中更新。（如果数据页不巧没在内存中，性能消耗就会很大，数据页加载涉及到随机读）<br>    数据更新，只需要将数据写到changebuffer中，然后在下次用到数据（或者定时）将changebuffer，merge到数据页，所以会很快。</p>
+<p>索引的使用上<br>  索引使用是在优化器上进行的。优化器使用索引的依据是索引的基数（不重复的数据，可以用show index xxx看索引基数），使用基数大的索引。当频繁的删除，有可能导致基数不准选错索引。<br>  同时优化器在判断索引时候回考虑，会表的可能有可能会因为回表导致，选错索引</p>
+<p>  方法<br>  用ANALYZE TABLE table;优化索引<br>  删除不需要的索引</p>
+<p>有什么情况用不到索引<br>  原则：对于索引字段进行计算不会走上索引，会采用全索引遍历或者全表扫描<br>  例如：</p>
+<pre><code>1. 索引字段加减；a+1=1000
+2. 字段类型转化 比如 id=&apos;1111&apos;---&gt;CAST(id ,varchar)=&apos;1111&apos;
+3. 字段隐式类型转化：比如CAST(id,utf8mb4)=&apos;xxx&apos;
+</code></pre>
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql的锁/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/mysql/mysql的锁/" class="post-title-link" itemprop="url">mysql的锁-全局锁、表锁、行锁、间隙锁</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-07 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-07T00:00:00+08:00">2019-02-07</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="mysql的锁"><a href="#mysql的锁" class="headerlink" title="mysql的锁"></a>mysql的锁</h1><h2 id="全局锁（FTWRL）"><a href="#全局锁（FTWRL）" class="headerlink" title="全局锁（FTWRL）"></a>全局锁（FTWRL）</h2><p>Mysql提供的针对数据库级别的对数据加读锁的功能:Flush tables with read lock。之后针对这个数据库的增删改、DDL、事物提交语句都会被堵塞住。他主要的用途是用于数据库全库的逻辑备份。</p>
+<ul>
+<li>优点：<ul>
+<li>全局锁是数据库级别的，所有表引擎都支持，在数据的导出对库实例加锁，保持导出数据逻辑的一致性。</li>
+<li>和设置数据库只读（set global readonly=true）相比，全局锁在当前链接异常或者中断的情况下可以自动释放，而设置数据库只读不能。</li>
+</ul>
+</li>
+<li>缺点：导出操作如果对数据库加锁，数据库的变更操作会被lock住，解决方案：对于Innodb引擎，可以用mysql自带的mysqldump工具使用参数–single-transaction.</li>
+</ul>
+<h2 id="表级锁"><a href="#表级锁" class="headerlink" title="表级锁"></a>表级锁</h2><p>mysql的表级锁分俩种，一种是表锁，一种是元数据锁（meta data lock MDL）</p>
+<h3 id="表锁"><a href="#表锁" class="headerlink" title="表锁"></a>表锁</h3><p>预发是 lock tables … read/write。可以用unlock主动释放锁。也可以在链接中断时候自动释放。<br>表锁对于自己和其他线程读写操作的限制如下：如果对一个表进行read/write锁。其他线程在写or读/写时都会堵塞；同时本线程也只能读or读写该表，其他表无法访问。</p>
+<h3 id="元数据锁（MDL）"><a href="#元数据锁（MDL）" class="headerlink" title="元数据锁（MDL）"></a>元数据锁（MDL）</h3><p>该锁不用显示的使用，在访问表的时候会自动加上，他用来保证访问数据时候数据表结构的稳定性，他有如下特点：</p>
+<ul>
+<li>对一个表的数据CRUD时候，加MDL读锁；当修改表结构时候，加MDL写锁</li>
+<li>读锁是不互斥的，因为这些操作不会该表结构，所以可以多个线程同时对表做CRUD；</li>
+<li>读写锁之间，写锁之间是互斥的，也就是说当对表进行CRUD时候，为了保证返回数据的稳定性，DDL操作是堵塞的。</li>
+</ul>
+<p>由于上面MDL的读写锁机制，就会有下面这种情况，修改一个访问量很高的小表，会导致整个库挂掉：<br>比如:</p>
+<ol>
+<li>大量的select语句，加了MDL读锁，这时候是不会堵塞的;</li>
+<li>这时候有一条alter表的语句需要执行，加了MDL写锁，开始block。</li>
+<li>由于select量很大，alter会一直堵塞，这时候后续的select也会堵塞，很块连接池就被用完了。</li>
+</ol>
+<p>解决方法：<br>MariaDB 已经合并了 AliSQL的方法</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tbl_name <span class="keyword">NOWAIT</span> <span class="keyword">add</span> <span class="keyword">column</span> ...</span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tbl_name <span class="keyword">WAIT</span> N <span class="keyword">add</span> <span class="keyword">column</span> ...</span><br></pre></td></tr></table></figure>
+<h2 id="行锁"><a href="#行锁" class="headerlink" title="行锁"></a>行锁</h2><p>为了加强数据库的并发度引入的锁的机制，他有如下几个特点：</p>
+<ul>
+<li>行锁是由mysql的表引擎决定，Innodb支持行锁，MyISM不支持行锁。</li>
+<li>Innodb的行锁是两阶段锁：即数据需要锁的时候对数据涉及到的行加锁；在事务结束后才释放行锁；</li>
+</ul>
+<h3 id="如何减少行锁的锁冲突"><a href="#如何减少行锁的锁冲突" class="headerlink" title="如何减少行锁的锁冲突"></a>如何减少行锁的锁冲突</h3><p>为了减少锁的冲突，我们在事务中要把会引起锁冲突的语句往后放。因为事务是原子性的所以，在一个事务中，要么都成功要么都失败，所以我们在一个事务中根据业务需求可以把一些没有锁冲突的操作或者语句放在事务的前面先只是，可能会造成锁冲突的语句放在后面，减少锁冲突加大并发。</p>
+<h3 id="死锁和死锁检测"><a href="#死锁和死锁检测" class="headerlink" title="死锁和死锁检测"></a>死锁和死锁检测</h3><ul>
+<li>出现原因：循环的资源等待。举个例子：俩个事务，事务1:用户uid=1点赞,事务2：用户uid=1取消赞。如下：这时候在并发时候可能会造成死锁当事务1、事务2都执行完第一条语句时候，这时候事务1等待事务2执行完第二条语句释放，这时候事务2执行完第二条语句等待事务一释放</li>
+</ul>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#事务1 点赞</span></span><br><span class="line"><span class="keyword">BEGIN</span> <span class="keyword">TRANSACTION</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> reply <span class="keyword">SET</span> like_ammount=like_ammount+<span class="number">1</span> <span class="keyword">WHERE</span> reply_id=<span class="number">1</span> ;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> user_sum <span class="keyword">SET</span> like_sum=like_sum+<span class="number">1</span> <span class="keyword">WHERE</span> uid=<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">COMMIT</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">#事务2取消赞</span></span><br><span class="line"><span class="keyword">BEGIN</span> <span class="keyword">TRANSACTION</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> user_sum <span class="keyword">SET</span> like_sum=like_sum<span class="number">-1</span> <span class="keyword">WHERE</span> uid=<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> reply <span class="keyword">SET</span> like_ammount=like_ammount<span class="number">-1</span> <span class="keyword">WHERE</span> reply_id=<span class="number">1</span> ;</span><br><span class="line"></span><br><span class="line"><span class="keyword">COMMIT</span>;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>解决方法<ul>
+<li>等待锁超时，用innodb_lock_wait_timeout来设置；（默认50s）</li>
+<li>用死锁检查的方式innodb_deadlock_detect设置为on，表示开启，一旦发生死锁回滚死锁链条中的某个事务让其他事务可以进行；</li>
+</ul>
+</li>
+</ul>
+<h3 id="死锁检查真的很美好么？"><a href="#死锁检查真的很美好么？" class="headerlink" title="死锁检查真的很美好么？"></a>死锁检查真的很美好么？</h3><p>死锁检查是一个O(n*n)的时间复杂度的操作，因为每一个被堵塞的线程都会检查是否是自己导致了死锁。导致会有大量的线程做无谓的死锁检查，最终现象是CPU很高，但是并发度很低。</p>
+<p>解决方案：</p>
+<ul>
+<li>粗暴的做法：如果确定没有死锁情况，关掉死锁检查。</li>
+<li>控制并发度：客户端自己控制，最多只有N个线程同时进行修改，但是不排除一个库有多个客户端（比如多连接池）</li>
+<li>中间件开发：如果发现请求数据一样的，进行排队减少冲突。（成本高）</li>
+</ul>
+<h2 id="间隙锁-gap-lock-与幻读"><a href="#间隙锁-gap-lock-与幻读" class="headerlink" title="间隙锁(gap lock) 与幻读"></a>间隙锁(gap lock) 与幻读</h2><p>什么是幻读？为什么会出现幻读？幻读有什么危害？</p>
+<ul>
+<li>事物在RR隔离级别下；</li>
+<li>一个事物中，俩次查询涉及的条件相同，后面的语句出现了之前查询没有存在的数据。（注意：出现了新增的数据）；</li>
+<li>为什么出现幻读：RR隔离级别下，当数据发生改变，采用当前读的原则</li>
+<li>幻读的危害：破坏了业务的语意；违反了数据的一致性</li>
+</ul>
+<p>为什么需要间隙锁？当数据库的隔离级别是RR的情况下，由于Mysql的行锁在为数据上锁的时候需要数据在表中，也就是说对于新插入的数据mysql是无法上锁的。这样就会出现幻读的情况。innodb为了解决幻读引入了间隙锁。</p>
+<h2 id="innodb是如何加间隙锁的"><a href="#innodb是如何加间隙锁的" class="headerlink" title="innodb是如何加间隙锁的"></a>innodb是如何加间隙锁的</h2><ol>
+<li>当一个涉及到为数据加锁的语句执行时候，会为涉及到的数据加行锁，同时为整个表的数据之间加间隙锁（gap lock）,这个行锁+间隙锁也叫next-key-lock。</li>
+<li>间隙锁是个左开，右闭的空间。比如一张表有如下数据  </li>
+<li>间隙锁只会锁插入语句，其他的操作是不互斥的。</li>
+</ol>
+<p>具体例子说明</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">#表t(id, c(有索引))有数据（1，3），（1，5），（1，7），有如下3个事物，是不冲突的 t1 ,t2锁不冲突， t3会被间隙锁block</span></span><br><span class="line"><span class="comment">#间隙锁是(-∞,3],(3,5],(5,7],(7,supernum]</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#t1</span></span><br><span class="line">begion transaction;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span>  t <span class="keyword">where</span> c=<span class="number">5</span> <span class="keyword">for</span> <span class="keyword">update</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">#t2</span></span><br><span class="line">begion transaction;</span><br><span class="line"><span class="keyword">update</span> t <span class="keyword">set</span> c=<span class="number">1</span> <span class="keyword">where</span> c=<span class="number">5</span> <span class="keyword">for</span> <span class="keyword">share</span> <span class="keyword">mode</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">#t3</span></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t <span class="keyword">values</span>(<span class="number">3</span>,<span class="number">4</span>);</span><br></pre></td></tr></table></figure>
+<h3 id="间隙锁的缺点"><a href="#间隙锁的缺点" class="headerlink" title="间隙锁的缺点"></a>间隙锁的缺点</h3><p>间隙锁也并不是万能的在某些情况下会造成死锁比如，下面的情况：</p>
+<ol>
+<li>判断断C=5是否存在；</li>
+<li>不存在就insert,存在就update；</li>
+<li>图中在并发的情况下，且c=5不存在，行锁无效，触发间隙锁，这时候事物2的insert需要等待事物1commit之后释放间隙锁。</li>
+<li>但是事物1，因为也insert导致了，不能释放锁就触发了死锁。</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>事物1</th>
+<th>事物2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>begin transaction;</td>
+<td>begin transaction;</td>
+</tr>
+<tr>
+<td>select * from t where c=5 for update ;</td>
+<td>select * from t where c=5  for share update;</td>
+</tr>
+<tr>
+<td>select * from t where c=5 for update ;</td>
+<td>select * from t where c=5  for share update;</td>
+</tr>
+<tr>
+<td>-</td>
+<td>insert into t values(5,5);</td>
+</tr>
+<tr>
+<td>insert into t values(5,5);（dead lock）</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<p>这种方式的解决方案，在满足业务的前提下，将事物的隔离级别改为RC，并且将binlog置为row。</p>
+<h3 id="innodb对于数据加锁的原则"><a href="#innodb对于数据加锁的原则" class="headerlink" title="innodb对于数据加锁的原则"></a>innodb对于数据加锁的原则</h3><p>Q:锁是加在数据上还是加载索引中？<br>A:锁是加载索引中。（因为Mysql的数据是在磁盘中的，而索引是在内存中切有序的。所以按照mysql的能用内存用内存的原则是锁索引的）</p>
+<ol>
+<li>加锁的基本单位是next key lock；</li>
+<li>查找到访问的对象会加锁；</li>
+<li>对于查询等值唯一索引的数据加锁，会退化成行锁；</li>
+<li>对于查询等值非唯一索引的数据加锁，当向右扫描到第一个不符合索引的数据时候，会退化成间隙锁；</li>
+<li>注意：对于范围查找唯一索引，会访问到不满足条件的第一个值位置；</li>
+</ol>
+<p>所以准确的说，innodb在对数据加锁不是简单的为涉及到的数据加行锁，而是对要访问的数据加一个nextKeyLock，然后innodb在根据如上条件判断哪些数据加行锁，哪些数据不是行锁是间隙锁；（确定是查询范围锁的数据是x锁，中间不存在的数据间隙锁）</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/其他/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/mysql/其他/" class="post-title-link" itemprop="url">其他</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-07 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-07T00:00:00+08:00">2019-02-07</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><p>查询长事物的语句</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> information_schema.innodb_trx <span class="keyword">where</span> TIME_TO_SEC(<span class="keyword">timediff</span>(<span class="keyword">now</span>(),trx_started))&gt;<span class="number">60</span></span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql的数据页更新/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1665,779 +2565,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/shell/index/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/shell/index/" class="post-title-link" itemprop="url">shell的积累</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-04 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-04T00:00:00+08:00">2019-02-04</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Shell/" itemprop="url" rel="index"><span itemprop="name">Shell</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="shell的积累"><a href="#shell的积累" class="headerlink" title="shell的积累"></a>shell的积累</h1><p>日常工作中linux的命令的积累</p>
-<h2 id="删除N天的文件的命令-用于清理log"><a href="#删除N天的文件的命令-用于清理log" class="headerlink" title="删除N天的文件的命令-用于清理log"></a>删除N天的文件的命令-用于清理log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find ./ -mtime +1 -name "*.log*" -exec rm -rf &#123;&#125; \;</span><br></pre></td></tr></table></figure>
-<h2 id="按天筛选log"><a href="#按天筛选log" class="headerlink" title="按天筛选log"></a>按天筛选log</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sed -n '/2018-10-15 16:55:00/,/2018-10-15 23:59:59/p' log_path |grep "condition"</span><br></pre></td></tr></table></figure>
-<h2 id="合并redis，用于单机环境的redis导入"><a href="#合并redis，用于单机环境的redis导入" class="headerlink" title="合并redis，用于单机环境的redis导入"></a>合并redis，用于单机环境的redis导入</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line">redis-cli -h srcIp -p 6379 -n 0 keys "*" | while read key</span><br><span class="line">do</span><br><span class="line">    redis-cli -h srcIp -p 6379 -n 0 --raw dump $key | perl -pe 'chomp if eof' | redis-cli -h dest -p 6379 -n 1 -x restore $key 0</span><br><span class="line">    echo "migrate key $key"</span><br><span class="line">done</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/spring/spring-scheduled/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/spring/spring-scheduled/" class="post-title-link" itemprop="url">Spring-Schedule多线程</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-04 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-04T00:00:00+08:00">2019-02-04</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/" itemprop="url" rel="index"><span itemprop="name">spring</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="Spring多线程执行任务"><a href="#Spring多线程执行任务" class="headerlink" title="Spring多线程执行任务"></a>Spring多线程执行任务</h1><p>用Spring执行定时任务，spring默认是单线程执行的也就是说，多个任务会存在等待阻塞情况</p>
-<h2 id="多线程方案"><a href="#多线程方案" class="headerlink" title="多线程方案"></a>多线程方案</h2><p>用如下方法注入</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Configuration</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ScheduleConfigure</span> <span class="keyword">implements</span> <span class="title">SchedulingConfigurer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">configureTasks</span><span class="params">(ScheduledTaskRegistrar taskRegistrar)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//设定一个长度10的定时任务线程池</span></span><br><span class="line">        taskRegistrar.setScheduler(Executors.newScheduledThreadPool(<span class="number">2</span>));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql删除数据-释放表空间/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/mysql/mysql删除数据-释放表空间/" class="post-title-link" itemprop="url">mysql数据的完整性--草稿</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-03 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-03T00:00:00+08:00">2019-02-03</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="mysql的数据删除的原理"><a href="#mysql的数据删除的原理" class="headerlink" title="mysql的数据删除的原理"></a>mysql的数据删除的原理</h1><p>我的数据删除了为什么表还是这么大？</p>
-<h2 id="mysql删除数据的原理"><a href="#mysql删除数据的原理" class="headerlink" title="mysql删除数据的原理"></a>mysql删除数据的原理</h2><p>  mysql采用标记删除法，即并不是物理删除而是采用标记删除。<br>  delete数据时候：数据标记为可服用，如果插入的数据在这个数据页，可复用这个空间，例如：索引页的范围内可复用，超过了则需要插入新的空间。<br>  delete整个数据页：如果数据页上所有数据被删除，则整个数据页可复用。</p>
-<h2 id="数据页的分裂和合并"><a href="#数据页的分裂和合并" class="headerlink" title="数据页的分裂和合并"></a>数据页的分裂和合并</h2><p>  如果数据页利用率小，数据页会合并。<br>  如果数据页满了，中间插入会导致数据页分裂。</p>
-<h2 id="释放表空间"><a href="#释放表空间" class="headerlink" title="释放表空间"></a>释放表空间</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE t ENGINE=innodb;</span><br></pre></td></tr></table></figure>
-<p>在mysql5.5会有MDL锁，不能Online执行</p>
-<p>在mysql5.6会有online ddl机制，但是会小号CPU和IO（因为扫表），大表请谨慎。</p>
-<p>这两种区别<br>5.5是在server层,copy出tmp_table，这时候不能对原表进行操作，然后copy到老表中。<br>5.6是在innodb层,copy出tmp_file,改的写row_log,然后重放生成逻辑一直的新表，tmp_file inplace操作到老表中。（tmp_file是个inplace操作）</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql是怎么保证高可用的/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/mysql/mysql是怎么保证高可用的/" class="post-title-link" itemprop="url">mysql是怎么保证高可用的</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-03 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-03T00:00:00+08:00">2019-02-03</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql高可用架构/" itemprop="url" rel="index"><span itemprop="name">Mysql高可用架构</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="mysql是怎么保证高可用的–如何解决主备延迟"><a href="#mysql是怎么保证高可用的–如何解决主备延迟" class="headerlink" title="mysql是怎么保证高可用的–如何解决主备延迟"></a>mysql是怎么保证高可用的–如何解决主备延迟</h1><p>mysql的主从同步会保证主库到从库的最终一致性，但是mysql的高可用，光有最终一致性是远远不够的。下面会讨论影响mysql主备高可用的因素以及解决方法。</p>
-<h2 id="主备延迟"><a href="#主备延迟" class="headerlink" title="主备延迟"></a>主备延迟</h2><ul>
-<li>我们在备库上可以执行命令：seconds_behind_master来查看备库的状态，会显示备库同步数据和主库的时间差（单位：秒），这个时间差计算方式是：同一事物，备库执行完binlog的时间-主库产生binlog的时间备库执行的binlog的时间，当然这个值越小越好。</li>
-<li>在网络正常的情况下，主备同步binlog的时间往往很短，真正造成主备延迟的原因往往是relylog的消费赶不上binlog的生产。那么是什么造成主备延迟的呢</li>
-</ul>
-<h3 id="主备延迟的原因"><a href="#主备延迟的原因" class="headerlink" title="主备延迟的原因"></a>主备延迟的原因</h3><ol>
-<li>主备库，备库的性能要不主库所在的的机器性能差；–目前很少见了，因为大多是双M配置，所以备库可能会变为主，所以在部署时候都会选择对称部署；</li>
-<li>备库压力大，备库上很多的查询需求，比如备份数据，运营统计等会放在备库执行。在同步binlog时候往往也会占用查询的资源，导致备库的眼里很大，引起主备延迟</li>
-<li>大事物，由于mysql是在主库上事物提交之后才开始传输binlog给备库，这样如果1个很大的事物在主库执行N长时间后，在同步给备库，备库在执行这个事物时候就会造成主从不一致。<ol>
-<li>一次删除很多的数据，如：数据库快满了删除数据；</li>
-<li>大表的DDL</li>
-</ol>
-</li>
-<li>库的并行复制能力,具体放在<a href="./mysql是如何降低主备延迟的.html">mysql是如何降低主备延迟的</a></li>
-</ol>
-<h3 id="主备延迟的解决方案"><a href="#主备延迟的解决方案" class="headerlink" title="主备延迟的解决方案"></a>主备延迟的解决方案</h3><ol>
-<li>首先对于双M架构，主备库建议对称部署，保证切换朱备库时候性能没有打的差别</li>
-<li>建议根据需要一主多从，比如说：一个主备做为切换，一个从库作为数据备份，一个从库作为数据分析以及运营支持；</li>
-<li>根本上杜绝大事物，对于删除可以考虑分批删除数据；DDL可以采用开源的工具进行入：gh-ost方案</li>
-</ol>
-<h2 id="主备切换的几种策略"><a href="#主备切换的几种策略" class="headerlink" title="主备切换的几种策略"></a>主备切换的几种策略</h2><h3 id="可靠性优先"><a href="#可靠性优先" class="headerlink" title="可靠性优先"></a>可靠性优先</h3><p>该策略可能会有一段时间服务不可用，流程如下：</p>
-<ol>
-<li>判断备库的seconds_behind_master的值，当相于一个值的时候进行第二步，否则一直重试；</li>
-<li>主库设置readonly=true，即只读；</li>
-<li>备库等待seconds_behind_master=0为止；</li>
-<li>备库设置readonly=fase，即可写；</li>
-<li>切换业务到备库；</li>
-</ol>
-<p>注：第一步的作用实际上是希望主库和从库的延时在小于一个阈值时候开始做切换，否则如果相差30分钟，直接切换，那么服务就会有30分钟不可用，业务方一般是不可忍受的。（当然。。。。某些时候我也作为业务方我也就忍了）</p>
-<h3 id="可用性优先"><a href="#可用性优先" class="headerlink" title="可用性优先"></a>可用性优先</h3><p>和上面相比，保证业务的可用，但是会牺牲掉数据的一致性</p>
-<ol>
-<li>备库设置readonly=fase，即可写；</li>
-<li>切换业务到备库；</li>
-<li>主库设置eadonly=true</li>
-</ol>
-<p>注：在下面的情况会导致数据不一致，原因如下：（老的主库是A,备库是B）</p>
-<ol>
-<li>A插入了数据c(4)，还没有同步到B时候进行切换</li>
-<li>这时候B变为主，B库插入数据c(5)，这条数据是（4，5）</li>
-<li>然后B从A通过relylog重放数据是c(4)那条数据，这时候B库中(5，4)</li>
-<li>A库通过重放relylog获取刚才c(5)的数据，这时候数据是（5，5）</li>
-</ol>
-<p><img src="/images/mysql/主备_高可用性切换_数据不一致.png" alt="avatar"></p>
-<p>总结，Mysql作为数据的存储，还是应该优先保证数据的一致性，所以建议采用可靠性优先方案保证数据的一致性。否则，对于一些依赖写入的业务，可能因为在切换主备时候数据不一致引起逻辑的错误，而且由于往往写入不是一个单一的操作，这一次的不一致会导致后续的引发更多的问题，最终导致数据无法修复。</p>
-<p>其他的好的建议：如果业务不依赖mysql的写入可以针对写入进行降级，比如：让数据先写到临时文件中，然后切换后慢慢的同步到mysql中。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/8/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/8/">8</a><span class="page-number current">9</span><a class="page-number" href="/page/10/">10</a><a class="extend next" rel="next" href="/page/10/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
+    <a class="extend prev" rel="prev" href="/page/8/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/8/">8</a><span class="page-number current">9</span><a class="page-number" href="/page/10/">10</a><a class="page-number" href="/page/11/">11</a><a class="extend next" rel="next" href="/page/10/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
   </nav>
 
 
@@ -2479,7 +2611,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">97</span>
+                    <span class="site-state-item-count">101</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2536,7 +2668,11 @@
                     
                       
                     
-                    <span class="site-state-item-count">21</span>
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">23</span>
                     <span class="site-state-item-name">categories</span>
                   </a>
                 </div>

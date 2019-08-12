@@ -328,6 +328,221 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA并发基础-内存模型/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/JAVA并发基础-内存模型/" class="post-title-link" itemprop="url">JAVA并发基础-内存模型</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-11 13:46:48" itemprop="dateCreated datePublished" datetime="2019-03-11T13:46:48+08:00">2019-03-11</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-13 00:05:21" itemprop="dateModified" datetime="2019-03-13T00:05:21+08:00">2019-03-13</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="引起并发bug的3个主因"><a href="#引起并发bug的3个主因" class="headerlink" title="引起并发bug的3个主因"></a>引起并发bug的3个主因</h1><h2 id="缓存导致的可见性"><a href="#缓存导致的可见性" class="headerlink" title="缓存导致的可见性"></a>缓存导致的可见性</h2><p>由于cpu拥有自己独立的缓存空间，多线程+多核CPU并发修改同一个变量的流程是：</p>
+<ol>
+<li>每个线程对应的CPU都加载内存中的变量到自己的缓存中；</li>
+<li>修改变量，存入到CPU中缓存中；</li>
+<li>数据从CPU的缓存输入到，内存中；</li>
+</ol>
+<p>由于cpu的缓存是独立的对其他线程不可见，所以就会出现在并发情况下内存中的变量相互覆盖。如图：</p>
+<p><img src="./cpu2.png" alt="avator"></p>
+<h2 id="线程切换的原子性"><a href="#线程切换的原子性" class="headerlink" title="线程切换的原子性"></a>线程切换的原子性</h2><p>  1个cpu可以“同时”执行多个进程，这里的“指的是，cpu在执行进程时候是通过在进程直接切换，每个进程执行一小段时候实现的。但是进程之间内存不共享，它们的切换需要修改内存地址，开销比较大。所以操作系统一般改为在一个进程替换切换线程来实现并发，因为线程共享内存，切换不需要修改内存地址。但是线程之间的切换往往会引起并发上的bug。<br>  如：我们在一个进程中的俩个线程都对一个变量做累加1000，往往结果不会等于2000，这就是在一个cpu下，俩个线程在执行上来回切换执行导致。如流程如下图下图：</p>
+<p>  <img src="./thread1.png" alt="avator"></p>
+<h2 id="编译优化的指令顺序"><a href="#编译优化的指令顺序" class="headerlink" title="编译优化的指令顺序"></a>编译优化的指令顺序</h2><p>  现代的编译器为了性能往往会对指令重排序，这就会导致一些奇怪的bug，如下双重检查的单例模式：</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">  <span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Singleton</span> </span>&#123;</span><br><span class="line">  <span class="keyword">static</span> Singleton instance;</span><br><span class="line">  <span class="function"><span class="keyword">static</span> Singleton <span class="title">getInstance</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (instance == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">synchronized</span>(Singleton.class) &#123;</span><br><span class="line">        <span class="keyword">if</span> (instance == <span class="keyword">null</span>)</span><br><span class="line">          instance = <span class="keyword">new</span> Singleton();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> instance;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>线程A在执行这段代码的instance = new Singleton();在cpu的指令是3条命令，我们期望的步骤是：</p>
+<ol>
+<li>初始化地址&amp;M</li>
+<li>在&amp;M地址上new Singleton()</li>
+<li>&amp;M赋值给instance</li>
+</ol>
+<p>而实际上是</p>
+<ol>
+<li>初始化地址&amp;M</li>
+<li>&amp;M赋值给instance</li>
+<li>在&amp;M地址上new Singleton()</li>
+</ol>
+<p>这样线程B和A同时调用getInstance()的时候，有可能线程B执行第一个判断时候，由于编译器指令优化A已经instance=&amp;M，所以B判断instance不为空直接返回，但是这时候&amp;M还没有new Singleton()导致这空指针异常。</p>
+<h1 id="java的内存模型"><a href="#java的内存模型" class="headerlink" title="java的内存模型"></a>java的内存模型</h1><p>由于java线程间通信采用的是共享内存的方式，所以遇到上述的指令重排序往往会引起一些bug，在此基础上，java采用了synchronized、volatile、final关键字以及6个Happens-Before规则来约束指令重排序。</p>
+<h2 id="happens-before原则"><a href="#happens-before原则" class="headerlink" title="happens-before原则"></a>happens-before原则</h2><h3 id="同一线程，前面的操作happens-before于后面的操作"><a href="#同一线程，前面的操作happens-before于后面的操作" class="headerlink" title="同一线程，前面的操作happens-before于后面的操作"></a>同一线程，前面的操作happens-before于后面的操作</h3><p>参考代码1，x=42一定happens-before v=true</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 以下代码来源于【参考 1】</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">VolatileExample</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> x = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">volatile</span> <span class="keyword">boolean</span> v = <span class="keyword">false</span>;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">writer</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    x = <span class="number">42</span>;</span><br><span class="line">    v = <span class="keyword">true</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">reader</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (v == <span class="keyword">true</span>) &#123;</span><br><span class="line">      <span class="comment">// 这里 x 会是多少呢？</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="volatile关键字修饰的变量，写happens-before读操作"><a href="#volatile关键字修饰的变量，写happens-before读操作" class="headerlink" title="volatile关键字修饰的变量，写happens-before读操作"></a>volatile关键字修饰的变量，写happens-before读操作</h3><p>结合代码1：如果线程a、b同时执行，线程a调用writer，线程b调用reader，那么v一定等于true</p>
+<h3 id="happens-before传递性-a–-gt-b-b–-gt-c-则-a–-gt-c"><a href="#happens-before传递性-a–-gt-b-b–-gt-c-则-a–-gt-c" class="headerlink" title="happens-before传递性 a–&gt;b b–&gt;c 则 a–&gt;c"></a>happens-before传递性 a–&gt;b b–&gt;c 则 a–&gt;c</h3><p>结合这条规则和1、2看，x一定=42。因为x=42–&gt;v=true v=true–&gt;v==true 所以 x=42</p>
+<h3 id="synchronized关键字，不同线程-解锁happens-before加锁"><a href="#synchronized关键字，不同线程-解锁happens-before加锁" class="headerlink" title="synchronized关键字，不同线程 解锁happens-before加锁"></a>synchronized关键字，不同线程 解锁happens-before加锁</h3><p>线程b，和线程a同时执行下面代码，线程a获取锁之后执行完成并且释放锁，这时候b执行，x的值一定是12。即线程a操作hanppens-before b</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123; <span class="comment">// 此处自动加锁</span></span><br><span class="line">  <span class="comment">// x 是共享变量, 初始值 =10</span></span><br><span class="line">  <span class="keyword">if</span> (<span class="keyword">this</span>.x &lt; <span class="number">12</span>) &#123;</span><br><span class="line">    <span class="keyword">this</span>.x = <span class="number">12</span>;</span><br><span class="line">  &#125;  </span><br><span class="line">&#125; <span class="comment">// 此处自动解锁</span></span><br></pre></td></tr></table></figure>
+<h3 id="线程strat"><a href="#线程strat" class="headerlink" title="线程strat()"></a>线程strat()</h3><p>线程a调用了线程b.start()，那么a的变量和操作，线程b可见</p>
+<h3 id="线程的join"><a href="#线程的join" class="headerlink" title="线程的join()"></a>线程的join()</h3><p>线程b在线程a中调用了b.join()，那么b里的共享变量和共享操作，a可见</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Thread B = <span class="keyword">new</span> Thread(()-&gt;&#123;</span><br><span class="line">  <span class="comment">// 此处对共享变量 var 修改</span></span><br><span class="line">  <span class="keyword">var</span> = <span class="number">66</span>;</span><br><span class="line">&#125;);</span><br><span class="line"><span class="comment">// 例如此处对共享变量修改，</span></span><br><span class="line"><span class="comment">// 则这个修改结果对线程 B 可见</span></span><br><span class="line"><span class="comment">// 主线程启动子线程</span></span><br><span class="line">B.start();</span><br><span class="line">B.join()</span><br><span class="line"><span class="comment">// 子线程所有对共享变量的修改</span></span><br><span class="line"><span class="comment">// 在主线程调用 B.join() 之后皆可见</span></span><br><span class="line"><span class="comment">// 此例中，var==66</span></span><br></pre></td></tr></table></figure>
+<h2 id="final的应用"><a href="#final的应用" class="headerlink" title="final的应用"></a>final的应用</h2><p>说明该变量初始化后即不变，其他线程访问时候也一定是一个完全初始化的变量，这就可以解决前面提到的双重检查单例线程不安全的问题。但是要小心溢出问题。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 以下代码来源于【参考 1】</span></span><br><span class="line"><span class="keyword">final</span> <span class="keyword">int</span> x;</span><br><span class="line"><span class="comment">// 错误的构造函数</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">FinalFieldExample</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  x = <span class="number">3</span>;</span><br><span class="line">  y = <span class="number">4</span>;</span><br><span class="line">  <span class="comment">// 此处就是讲 this 逸出，</span></span><br><span class="line">  global.obj = <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JVM调试的常用命令/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2067,208 +2282,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Mysql自增ID用完了怎么办/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/Mysql自增ID用完了怎么办/" class="post-title-link" itemprop="url">Mysql自增ID用完了怎么办</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-03-02 14:07:29 / Modified: 14:32:13" itemprop="dateCreated datePublished" datetime="2019-03-02T14:07:29+08:00">2019-03-02</time>
-            
-
-            
-              
-
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="表自增ID"><a href="#表自增ID" class="headerlink" title="表自增ID"></a>表自增ID</h1><ol>
-<li>如果主键是auto_incrment，如果达到了最大值，不会在增长，这时候写入会报主键冲突</li>
-<li>如果没指定，会用dict_sys.row_id的值，作为主键，长度6字节，如果达到最大值会从0开始循环写入</li>
-</ol>
-<p>所以，推荐这只auto_incrment，毕竟报主键冲突比覆盖以前的数据要好的多。</p>
-<h1 id="XID"><a href="#XID" class="headerlink" title="XID"></a>XID</h1><p>mysql对应事物的ID，Mysql的内存中会维护一个golbal_query_id的变量，改变量在内存中重启会清0，每次执行语句会吧当前值赋值给Query_id，并且+1,<br>如果当前语句是事务中的一个语句那么会把这个Xid赋值给事物ID</p>
-<p>Mysql在重启后由于会清零，同时会有一个新的binlog所以一个binlog中xid是不冲突的。但是如果执行时间过长，理论上也可能会冲突吗，因为XID到达最大值后会从0开始分配，只不过这个值太大了2E64-1,所以冲突只存在在理论中。</p>
-<h1 id="Innodb-trxid"><a href="#Innodb-trxid" class="headerlink" title="Innodb trxid"></a>Innodb trxid</h1><p>  区别于XID，XID是Server层的trxId是innodb层的</p>
-<p>  innodb内部维护了个max_trx_id，每次申请时候会获取当前的max_trx_id，然后max_trx_id+1；</p>
-<p>  inndob的事务可见性核心思想是：每次更新都更新了数据的trx_id，当一个事务读到数据的时候判断一致性视图和当前trx_id的关系</p>
-<p>  对于正在执行的事物可以通过：information_schema.innodb_trx表中看到当前事务的trx_id;</p>
-<p>  注意trx_id的分配规则：</p>
-<ol>
-<li>只读事物不分配trx_id，把当前事物的trx_id变量的指针地址转成int+2e48<ol>
-<li>这么做的好处是只读事物中，指针地址不会变，同一个只读事务在innodb_locks和innodb_trx查出来的trx_id是一致的；</li>
-<li>不同的事务由于指针地址会变，查出来的trx_id一定是不同的</li>
-<li>加上2e48也是能区别于读写事物</li>
-</ol>
-</li>
-<li><p>同时trx_id可能看到不只加了1：</p>
-<ol>
-<li>因为update和delete操作也会+1，（标记删除，放到purge队列中）</li>
-<li>innodb的后台操作比如表的索引信息统计等都会+1</li>
-</ol>
-<p>只读事务不分配trx_id的好处</p>
-</li>
-<li><p>减少事务视图中活跃事务数，innodb在创建一致性视图时候值需要copy读写事物的trx_id就好了</p>
-</li>
-<li><p>可以减少trx_id的申请次数</p>
-<p>trx_id是被持久化不会清0的所以当到达最大值后，会从0开始，这时候就可能会出现脏读。因为后续的数据trx_id变小了，变成可见的了，但是因为这个值是2e48-1所以这个错误也只存在于理论上。（50万TPS，要跑17.8年）</p>
-</li>
-</ol>
-<h1 id="thread-id"><a href="#thread-id" class="headerlink" title="thread_id"></a>thread_id</h1><p>mysql有个thread_id_counter每次分配完后+1，如果到达最大值后会从0开始，这时候会看到俩个一样的thread_id</p>
-<p>不过mysql在分配时候有一个逻辑来处理这种情况</p>
-<p>thread_ids是个唯一数组，添加失败后会一直循环（待验证）</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">do</span> &#123;</span><br><span class="line">  new_id= thread_id_counter++;</span><br><span class="line">&#125; <span class="keyword">while</span> (!thread_ids.insert_unique(new_id).second);</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2315,7 +2328,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">102</span>
+                    <span class="site-state-item-count">103</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

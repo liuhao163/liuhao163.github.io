@@ -328,6 +328,190 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/ReadWriteLock-如何快速事先一个完备的缓存/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/ReadWriteLock-如何快速事先一个完备的缓存/" class="post-title-link" itemprop="url">ReadWriteLock:如何快速实现一个完备的缓存</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-04-21 13:40:38" itemprop="dateCreated datePublished" datetime="2019-04-21T13:40:38+08:00">2019-04-21</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-04-24 19:51:13" itemprop="dateModified" datetime="2019-04-24T19:51:13+08:00">2019-04-24</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="ReadWirteLock的作用和说明"><a href="#ReadWirteLock的作用和说明" class="headerlink" title="ReadWirteLock的作用和说明"></a>ReadWirteLock的作用和说明</h2><p>ReadWriteLock是锁的一种，他适合哪种读多写少的场景，做有名的就是缓存场景。因为他们的读锁是不互斥的，但是读锁和写锁、写锁之间是互斥的。具体使用方法如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Cache</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">final</span> Map&lt;K, V&gt; m =</span><br><span class="line">    <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">  <span class="keyword">final</span> ReadWriteLock rwl =</span><br><span class="line">    <span class="keyword">new</span> ReentrantReadWriteLock();</span><br><span class="line">  <span class="comment">// 读锁</span></span><br><span class="line">  <span class="keyword">final</span> Lock r = rwl.readLock();</span><br><span class="line">  <span class="comment">// 写锁</span></span><br><span class="line">  <span class="keyword">final</span> Lock w = rwl.writeLock();</span><br><span class="line">  <span class="comment">// 读缓存</span></span><br><span class="line">  <span class="function">V <span class="title">get</span><span class="params">(K key)</span> </span>&#123;</span><br><span class="line">    r.lock();</span><br><span class="line">    <span class="keyword">try</span> &#123; <span class="keyword">return</span> m.get(key); &#125;</span><br><span class="line">    <span class="keyword">finally</span> &#123; r.unlock(); &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 写缓存</span></span><br><span class="line">  <span class="function">V <span class="title">put</span><span class="params">(String key, Data v)</span> </span>&#123;</span><br><span class="line">    w.lock();</span><br><span class="line">    <span class="keyword">try</span> &#123; <span class="keyword">return</span> m.put(key, v); &#125;</span><br><span class="line">    <span class="keyword">finally</span> &#123; w.unlock(); &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>进一步的实现懒加载</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Cache</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">final</span> Map&lt;K, V&gt; m =</span><br><span class="line">    <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">final</span> ReadWriteLock rwl = <span class="keyword">new</span> ReentrantReadWriteLock();</span><br><span class="line">  <span class="keyword">final</span> Lock r = rwl.readLock();</span><br><span class="line">  <span class="keyword">final</span> Lock w = rwl.writeLock();</span><br><span class="line">  <span class="function">V <span class="title">get</span><span class="params">(K key)</span> </span>&#123;</span><br><span class="line">    V v = <span class="keyword">null</span>;</span><br><span class="line">    <span class="comment">// 读缓存</span></span><br><span class="line">    r.lock();         ①</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      v = m.get(key); ②</span><br><span class="line">    &#125; <span class="keyword">finally</span>&#123;</span><br><span class="line">      r.unlock();     ③</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 缓存中存在，返回</span></span><br><span class="line">    <span class="keyword">if</span>(v != <span class="keyword">null</span>) &#123;   ④</span><br><span class="line">      <span class="keyword">return</span> v;</span><br><span class="line">    &#125;  </span><br><span class="line">    <span class="comment">// 缓存中不存在，查询数据库</span></span><br><span class="line">    w.lock();         ⑤</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="comment">// 再次验证</span></span><br><span class="line">      <span class="comment">// 其他线程可能已经查询过数据库</span></span><br><span class="line">      v = m.get(key); ⑥</span><br><span class="line">      <span class="keyword">if</span>(v == <span class="keyword">null</span>)&#123;  ⑦</span><br><span class="line">        <span class="comment">// 查询数据库</span></span><br><span class="line">        v= 省略代码无数</span><br><span class="line">        m.put(key, v);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">finally</span>&#123;</span><br><span class="line">      w.unlock();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> v;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="读写锁的升级和降级"><a href="#读写锁的升级和降级" class="headerlink" title="读写锁的升级和降级"></a>读写锁的升级和降级</h2><p>注意，读写锁是不支持锁的升级的即，在读锁中升级到写锁，因为读锁和写锁互斥，因为读锁升级到写锁的时候，读写锁互斥、写锁需要等待读锁释放，而读锁被写锁阻塞住会造成死锁,但是反过来写锁降级是可以的</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CachedData</span> </span>&#123;</span><br><span class="line">  Object data;</span><br><span class="line">  <span class="keyword">volatile</span> <span class="keyword">boolean</span> cacheValid;</span><br><span class="line">  <span class="keyword">final</span> ReadWriteLock rwl =</span><br><span class="line">    <span class="keyword">new</span> ReentrantReadWriteLock();</span><br><span class="line">  <span class="comment">// 读锁  </span></span><br><span class="line">  <span class="keyword">final</span> Lock r = rwl.readLock();</span><br><span class="line">  <span class="comment">// 写锁</span></span><br><span class="line">  <span class="keyword">final</span> Lock w = rwl.writeLock();</span><br><span class="line">  </span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">processCachedData</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 获取读锁</span></span><br><span class="line">    r.lock();</span><br><span class="line">    <span class="keyword">if</span> (!cacheValid) &#123;</span><br><span class="line">      <span class="comment">// 释放读锁，因为不允许读锁的升级</span></span><br><span class="line">      r.unlock();</span><br><span class="line">      <span class="comment">// 获取写锁</span></span><br><span class="line">      w.lock();</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 再次检查状态  </span></span><br><span class="line">        <span class="keyword">if</span> (!cacheValid) &#123;</span><br><span class="line">          data = ...</span><br><span class="line">          cacheValid = <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 释放写锁前，降级为读锁</span></span><br><span class="line">        <span class="comment">// 降级是可以的</span></span><br><span class="line">        r.lock(); ①</span><br><span class="line">      &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="comment">// 释放写锁</span></span><br><span class="line">        w.unlock();</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 此处仍然持有读锁</span></span><br><span class="line">    <span class="keyword">try</span> &#123;use(data);&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">finally</span> &#123;r.unlock();&#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Semaphore-如何构建限流器/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2034,187 +2218,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA线程-开启多少线程合适/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/JAVA线程-开启多少线程合适/" class="post-title-link" itemprop="url">JAVA线程-开启多少线程合适</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-03-22 15:56:22" itemprop="dateCreated datePublished" datetime="2019-03-22T15:56:22+08:00">2019-03-22</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-25 23:54:24" itemprop="dateModified" datetime="2019-03-25T23:54:24+08:00">2019-03-25</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="为什么要使用多线程"><a href="#为什么要使用多线程" class="headerlink" title="为什么要使用多线程"></a>为什么要使用多线程</h1><p>  我们评价一个操作系统性能好的系统往往是俩点低延迟、高吞吐。做到这俩点，往往需要一优化算法，二有效利用硬件。对于一不在此讨论的范畴，而硬件利用率大致往往分俩类，即cpu的利用率，和i/o的利用。<br>  单线程时代：我们的程序往往是cpu和io设备相互配合执行，所以一个单线程的程序执行cpu操作时候io就要停下来等待cpu完成，为了提高io和cpu的利用率，操作系统为我们提供了多线程技术。<br>  线程1处理cpu的计算，线程2处理io请求。处理玩io请求后在切换回来，这样利用率就得到了提高</p>
-<h1 id="线程多了就一定快么"><a href="#线程多了就一定快么" class="headerlink" title="线程多了就一定快么"></a>线程多了就一定快么</h1><p>  针对我们程序的特点分为，io密集型和计算密集型俩种。如果io操作执行的比例比较大就是io密集型，如果cpu计算的比例比较大就是计算密集型。<br>  在单核时代，对于计算密集型的业务增加线程反而会拖慢程序执行效率，因为只有一个核，所以同时只能有一个线程在运行，增加线程反而加大了线程切换的损耗。<br>  在多核时代，对于计算密集型的业务是可以通过增加线程提高性能的，但是设置应该是cpu的核数+1，充分利用起cpu。<br>  对于io密集型的业务，由于一般io的耗时比cpu要多的多，那么线程往往是cpu的核数*io耗时/cpu耗时+1。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2261,7 +2264,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">102</span>
+                    <span class="site-state-item-count">103</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

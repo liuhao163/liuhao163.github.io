@@ -328,6 +328,607 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA并发基础-内存模型/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/JAVA并发基础-内存模型/" class="post-title-link" itemprop="url">JAVA并发基础-内存模型</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-11 13:46:48" itemprop="dateCreated datePublished" datetime="2019-03-11T13:46:48+08:00">2019-03-11</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-13 00:05:21" itemprop="dateModified" datetime="2019-03-13T00:05:21+08:00">2019-03-13</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="引起并发bug的3个主因"><a href="#引起并发bug的3个主因" class="headerlink" title="引起并发bug的3个主因"></a>引起并发bug的3个主因</h1><h2 id="缓存导致的可见性"><a href="#缓存导致的可见性" class="headerlink" title="缓存导致的可见性"></a>缓存导致的可见性</h2><p>由于cpu拥有自己独立的缓存空间，多线程+多核CPU并发修改同一个变量的流程是：</p>
+<ol>
+<li>每个线程对应的CPU都加载内存中的变量到自己的缓存中；</li>
+<li>修改变量，存入到CPU中缓存中；</li>
+<li>数据从CPU的缓存输入到，内存中；</li>
+</ol>
+<p>由于cpu的缓存是独立的对其他线程不可见，所以就会出现在并发情况下内存中的变量相互覆盖。如图：</p>
+<p><img src="./cpu2.png" alt="avator"></p>
+<h2 id="线程切换的原子性"><a href="#线程切换的原子性" class="headerlink" title="线程切换的原子性"></a>线程切换的原子性</h2><p>  1个cpu可以“同时”执行多个进程，这里的“指的是，cpu在执行进程时候是通过在进程直接切换，每个进程执行一小段时候实现的。但是进程之间内存不共享，它们的切换需要修改内存地址，开销比较大。所以操作系统一般改为在一个进程替换切换线程来实现并发，因为线程共享内存，切换不需要修改内存地址。但是线程之间的切换往往会引起并发上的bug。<br>  如：我们在一个进程中的俩个线程都对一个变量做累加1000，往往结果不会等于2000，这就是在一个cpu下，俩个线程在执行上来回切换执行导致。如流程如下图下图：</p>
+<p>  <img src="./thread1.png" alt="avator"></p>
+<h2 id="编译优化的指令顺序"><a href="#编译优化的指令顺序" class="headerlink" title="编译优化的指令顺序"></a>编译优化的指令顺序</h2><p>  现代的编译器为了性能往往会对指令重排序，这就会导致一些奇怪的bug，如下双重检查的单例模式：</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">  <span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Singleton</span> </span>&#123;</span><br><span class="line">  <span class="keyword">static</span> Singleton instance;</span><br><span class="line">  <span class="function"><span class="keyword">static</span> Singleton <span class="title">getInstance</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (instance == <span class="keyword">null</span>) &#123;</span><br><span class="line">      <span class="keyword">synchronized</span>(Singleton.class) &#123;</span><br><span class="line">        <span class="keyword">if</span> (instance == <span class="keyword">null</span>)</span><br><span class="line">          instance = <span class="keyword">new</span> Singleton();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> instance;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>线程A在执行这段代码的instance = new Singleton();在cpu的指令是3条命令，我们期望的步骤是：</p>
+<ol>
+<li>初始化地址&amp;M</li>
+<li>在&amp;M地址上new Singleton()</li>
+<li>&amp;M赋值给instance</li>
+</ol>
+<p>而实际上是</p>
+<ol>
+<li>初始化地址&amp;M</li>
+<li>&amp;M赋值给instance</li>
+<li>在&amp;M地址上new Singleton()</li>
+</ol>
+<p>这样线程B和A同时调用getInstance()的时候，有可能线程B执行第一个判断时候，由于编译器指令优化A已经instance=&amp;M，所以B判断instance不为空直接返回，但是这时候&amp;M还没有new Singleton()导致这空指针异常。</p>
+<h1 id="java的内存模型"><a href="#java的内存模型" class="headerlink" title="java的内存模型"></a>java的内存模型</h1><p>由于java线程间通信采用的是共享内存的方式，所以遇到上述的指令重排序往往会引起一些bug，在此基础上，java采用了synchronized、volatile、final关键字以及6个Happens-Before规则来约束指令重排序。</p>
+<h2 id="happens-before原则"><a href="#happens-before原则" class="headerlink" title="happens-before原则"></a>happens-before原则</h2><h3 id="同一线程，前面的操作happens-before于后面的操作"><a href="#同一线程，前面的操作happens-before于后面的操作" class="headerlink" title="同一线程，前面的操作happens-before于后面的操作"></a>同一线程，前面的操作happens-before于后面的操作</h3><p>参考代码1，x=42一定happens-before v=true</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 以下代码来源于【参考 1】</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">VolatileExample</span> </span>&#123;</span><br><span class="line">  <span class="keyword">int</span> x = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">volatile</span> <span class="keyword">boolean</span> v = <span class="keyword">false</span>;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">writer</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    x = <span class="number">42</span>;</span><br><span class="line">    v = <span class="keyword">true</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">reader</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (v == <span class="keyword">true</span>) &#123;</span><br><span class="line">      <span class="comment">// 这里 x 会是多少呢？</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="volatile关键字修饰的变量，写happens-before读操作"><a href="#volatile关键字修饰的变量，写happens-before读操作" class="headerlink" title="volatile关键字修饰的变量，写happens-before读操作"></a>volatile关键字修饰的变量，写happens-before读操作</h3><p>结合代码1：如果线程a、b同时执行，线程a调用writer，线程b调用reader，那么v一定等于true</p>
+<h3 id="happens-before传递性-a–-gt-b-b–-gt-c-则-a–-gt-c"><a href="#happens-before传递性-a–-gt-b-b–-gt-c-则-a–-gt-c" class="headerlink" title="happens-before传递性 a–&gt;b b–&gt;c 则 a–&gt;c"></a>happens-before传递性 a–&gt;b b–&gt;c 则 a–&gt;c</h3><p>结合这条规则和1、2看，x一定=42。因为x=42–&gt;v=true v=true–&gt;v==true 所以 x=42</p>
+<h3 id="synchronized关键字，不同线程-解锁happens-before加锁"><a href="#synchronized关键字，不同线程-解锁happens-before加锁" class="headerlink" title="synchronized关键字，不同线程 解锁happens-before加锁"></a>synchronized关键字，不同线程 解锁happens-before加锁</h3><p>线程b，和线程a同时执行下面代码，线程a获取锁之后执行完成并且释放锁，这时候b执行，x的值一定是12。即线程a操作hanppens-before b</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123; <span class="comment">// 此处自动加锁</span></span><br><span class="line">  <span class="comment">// x 是共享变量, 初始值 =10</span></span><br><span class="line">  <span class="keyword">if</span> (<span class="keyword">this</span>.x &lt; <span class="number">12</span>) &#123;</span><br><span class="line">    <span class="keyword">this</span>.x = <span class="number">12</span>;</span><br><span class="line">  &#125;  </span><br><span class="line">&#125; <span class="comment">// 此处自动解锁</span></span><br></pre></td></tr></table></figure>
+<h3 id="线程strat"><a href="#线程strat" class="headerlink" title="线程strat()"></a>线程strat()</h3><p>线程a调用了线程b.start()，那么a的变量和操作，线程b可见</p>
+<h3 id="线程的join"><a href="#线程的join" class="headerlink" title="线程的join()"></a>线程的join()</h3><p>线程b在线程a中调用了b.join()，那么b里的共享变量和共享操作，a可见</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Thread B = <span class="keyword">new</span> Thread(()-&gt;&#123;</span><br><span class="line">  <span class="comment">// 此处对共享变量 var 修改</span></span><br><span class="line">  <span class="keyword">var</span> = <span class="number">66</span>;</span><br><span class="line">&#125;);</span><br><span class="line"><span class="comment">// 例如此处对共享变量修改，</span></span><br><span class="line"><span class="comment">// 则这个修改结果对线程 B 可见</span></span><br><span class="line"><span class="comment">// 主线程启动子线程</span></span><br><span class="line">B.start();</span><br><span class="line">B.join()</span><br><span class="line"><span class="comment">// 子线程所有对共享变量的修改</span></span><br><span class="line"><span class="comment">// 在主线程调用 B.join() 之后皆可见</span></span><br><span class="line"><span class="comment">// 此例中，var==66</span></span><br></pre></td></tr></table></figure>
+<h2 id="final的应用"><a href="#final的应用" class="headerlink" title="final的应用"></a>final的应用</h2><p>说明该变量初始化后即不变，其他线程访问时候也一定是一个完全初始化的变量，这就可以解决前面提到的双重检查单例线程不安全的问题。但是要小心溢出问题。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 以下代码来源于【参考 1】</span></span><br><span class="line"><span class="keyword">final</span> <span class="keyword">int</span> x;</span><br><span class="line"><span class="comment">// 错误的构造函数</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">FinalFieldExample</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  x = <span class="number">3</span>;</span><br><span class="line">  y = <span class="number">4</span>;</span><br><span class="line">  <span class="comment">// 此处就是讲 this 逸出，</span></span><br><span class="line">  global.obj = <span class="keyword">this</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JVM调试的常用命令/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/JVM调试的常用命令/" class="post-title-link" itemprop="url">JVM调试的常用命令</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-10 00:05:29" itemprop="dateCreated datePublished" datetime="2019-03-10T00:05:29+08:00">2019-03-10</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-12 23:52:35" itemprop="dateModified" datetime="2019-03-12T23:52:35+08:00">2019-03-12</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm优化/" itemprop="url" rel="index"><span itemprop="name">jvm优化</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="java性能调优的主要几个工具"><a href="#java性能调优的主要几个工具" class="headerlink" title="java性能调优的主要几个工具"></a>java性能调优的主要几个工具</h1><p>通过jstack打印堆栈信息，得知线程的使用情况<br>通过jstat打印堆中gc以及对象的情况<br>通过jmap详细分析堆中内存的个数大小，必要时可以dump出来结合jhat查看</p>
+<h2 id="jstack"><a href="#jstack" class="headerlink" title="jstack"></a>jstack</h2><p>打印JAVA的堆栈信息</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">jstack &lt;pid&gt;</span><br></pre></td></tr></table></figure>
+<h2 id="jstat"><a href="#jstat" class="headerlink" title="jstat"></a>jstat</h2><p>统计gc、JVM的情况</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">统计gc的情况</span><br><span class="line">jstat -gcutil &lt;pid&gt; <span class="number">2000</span> <span class="number">30</span></span><br><span class="line">  S0     S1     E      O      M     CCS    YGC     YGCT    FGC    FGCT     GCT</span><br></pre></td></tr></table></figure>
+<h2 id="jmap"><a href="#jmap" class="headerlink" title="jmap"></a>jmap</h2><p>统计jvm的内存中类的使用情况</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">按数量排序</span><br><span class="line">jmap -histo:live &lt;pid&gt;|grep xxxx|sort -k <span class="number">2</span> -g -r|head</span><br><span class="line"></span><br><span class="line">按大小排序</span><br><span class="line">jmap -histo:live &lt;pid&gt;|grep xxxx|sort -k <span class="number">3</span> -g -r|head</span><br><span class="line"></span><br><span class="line">`</span><br></pre></td></tr></table></figure>
+<p>配合jhat使用</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">jmap -dump:live,file=xxx.log pid</span><br><span class="line">jhat xxx.log</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/排查java异常进程的方法/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/排查java异常进程的方法/" class="post-title-link" itemprop="url">排查java异常进程的方法</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-10 00:04:14" itemprop="dateCreated datePublished" datetime="2019-03-10T00:04:14+08:00">2019-03-10</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-12 23:52:35" itemprop="dateModified" datetime="2019-03-12T23:52:35+08:00">2019-03-12</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm优化/" itemprop="url" rel="index"><span itemprop="name">jvm优化</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="定位JAVA进程中异常线程的方法"><a href="#定位JAVA进程中异常线程的方法" class="headerlink" title="定位JAVA进程中异常线程的方法"></a>定位JAVA进程中异常线程的方法</h1><p>日常使用中我们往往会遇到JAVA进程内存飙高，程序hang住，cpu的load过高等情况。这时候往往需要定位到JAVA的实例看下具体占用CPU、内存过高的线程都在做什么？<br>下面总结了下如何定位JAVA问题线程的方法。</p>
+<h2 id="找到有问题的JVM进程"><a href="#找到有问题的JVM进程" class="headerlink" title="找到有问题的JVM进程"></a>找到有问题的JVM进程</h2><p>linux命令：top–找到有问题的JAVA进程<br>  shift+p 按照cpu排序<br>  shift+m按照内存排序</p>
+<h2 id="查看有问题JAVA进程中的线程"><a href="#查看有问题JAVA进程中的线程" class="headerlink" title="查看有问题JAVA进程中的线程"></a>查看有问题JAVA进程中的线程</h2><p>linux命令：top -H -p  pid 查看pid进程下所有有问题的线程</p>
+<ol>
+<li>将十进制数换成16进制：printf “%x\n” tid</li>
+<li>查看进程下的线程正在执行的方法： jstack pid |grep nid=0x【tid】 -A 30</li>
+</ol>
+<h2 id="jstack查看出来的线程信息梳理"><a href="#jstack查看出来的线程信息梳理" class="headerlink" title="jstack查看出来的线程信息梳理"></a>jstack查看出来的线程信息梳理</h2><p>线程的几种状态</p>
+<ol>
+<li>RUNNABLE，线程处于执行中</li>
+<li>BLOCKED，线程被阻塞</li>
+<li>WAITING，线程正在等待</li>
+</ol>
+<p>对于锁的竞争，可参照下面的思路排查问题：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">线程1获取到锁，处于RUNNABLE状态，线程2处于BLOCK状态；  </span><br><span class="line">1、locked &lt;0x000000076bf62208&gt;说明线程1对地址为0x000000076bf62208对象进行了加锁；  </span><br><span class="line">2、waiting to lock &lt;0x000000076bf62208&gt; 说明线程2在等待地址为0x000000076bf62208对象上的锁；  </span><br><span class="line">3、waiting for monitor entry [0x000000001e21f000]说明线程1是通过synchronized关键字进入了监视器的临界区，并处于&quot;Entry Set&quot;队列，等待monitor；</span><br></pre></td></tr></table></figure>
+<h2 id="jmap查看JVM系统信息的命令"><a href="#jmap查看JVM系统信息的命令" class="headerlink" title="jmap查看JVM系统信息的命令"></a>jmap查看JVM系统信息的命令</h2><p>查找JVM中系统的大小和个数</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">按照个数统计  </span><br><span class="line">  jmap -histo:live  pid|grep keyword|sort -k 2 -g -r|head -10</span><br><span class="line"></span><br><span class="line">按照占用大小统计</span><br><span class="line">  jmap -histo:live  pid|grep keyword|sort -k 2 -g -r|head -10</span><br></pre></td></tr></table></figure>
+<p>查看JVM中Heap的情况</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -heap pid</span><br></pre></td></tr></table></figure>
+<p>情况如下</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line">Attaching to process ID Pid, please <span class="built_in">wait</span>...</span><br><span class="line">Debugger attached successfully.</span><br><span class="line">Server compiler detected.</span><br><span class="line">JVM version is 25.65-b01</span><br><span class="line"></span><br><span class="line">using parallel threads <span class="keyword">in</span> the new generation.</span><br><span class="line">using thread-local object allocation.</span><br><span class="line">Concurrent Mark-Sweep GC</span><br><span class="line"></span><br><span class="line">Heap Configuration:</span><br><span class="line">   MinHeapFreeRatio         = 40</span><br><span class="line">   MaxHeapFreeRatio         = 70</span><br><span class="line">   MaxHeapSize              = 4294967296 (4096.0MB)</span><br><span class="line">   NewSize                  = 858980352 (819.1875MB)</span><br><span class="line">   MaxNewSize               = 858980352 (819.1875MB)</span><br><span class="line">   OldSize                  = 3435986944 (3276.8125MB)</span><br><span class="line">   NewRatio                 = 4</span><br><span class="line">   SurvivorRatio            = 8</span><br><span class="line">   MetaspaceSize            = 21807104 (20.796875MB)</span><br><span class="line">   CompressedClassSpaceSize = 1073741824 (1024.0MB)</span><br><span class="line">   MaxMetaspaceSize         = 17592186044415 MB</span><br><span class="line">   G1HeapRegionSize         = 0 (0.0MB)</span><br><span class="line"></span><br><span class="line">Heap Usage:</span><br><span class="line">New Generation (Eden + 1 Survivor Space):</span><br><span class="line">   capacity = 773128192 (737.3125MB)</span><br><span class="line">   used     = 9882512 (9.424697875976562MB)</span><br><span class="line">   free     = 763245680 (727.8878021240234MB)</span><br><span class="line">   1.2782501145683225% used</span><br><span class="line">Eden Space: (Edn区)</span><br><span class="line">   capacity = 687276032 (655.4375MB)</span><br><span class="line">   used     = 9882512 (9.424697875976562MB)</span><br><span class="line">   free     = 677393520 (646.0128021240234MB)</span><br><span class="line">   1.4379247260000476% used</span><br><span class="line">From Space: (Survivor中的From)</span><br><span class="line">   capacity = 85852160 (81.875MB)</span><br><span class="line">   used     = 0 (0.0MB)</span><br><span class="line">   free     = 85852160 (81.875MB)</span><br><span class="line">   0.0% used</span><br><span class="line">To Space: (Survivor中的To)</span><br><span class="line">   capacity = 85852160 (81.875MB)</span><br><span class="line">   used     = 0 (0.0MB)</span><br><span class="line">   free     = 85852160 (81.875MB)</span><br><span class="line">   0.0% used</span><br><span class="line">concurrent mark-sweep generation: （老年代）</span><br><span class="line">   capacity = 3435986944 (3276.8125MB)</span><br><span class="line">   used     = 258117296 (246.1598358154297MB)</span><br><span class="line">   free     = 3177869648 (3030.6526641845703MB)</span><br><span class="line">   7.512173364067357% used</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/查看GC的利器之一GCVIEWER/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1681,595 +2282,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Mysql自增ID用完了怎么办/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/Mysql自增ID用完了怎么办/" class="post-title-link" itemprop="url">Mysql自增ID用完了怎么办</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-03-02 14:07:29 / Modified: 14:32:13" itemprop="dateCreated datePublished" datetime="2019-03-02T14:07:29+08:00">2019-03-02</time>
-            
-
-            
-              
-
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="表自增ID"><a href="#表自增ID" class="headerlink" title="表自增ID"></a>表自增ID</h1><ol>
-<li>如果主键是auto_incrment，如果达到了最大值，不会在增长，这时候写入会报主键冲突</li>
-<li>如果没指定，会用dict_sys.row_id的值，作为主键，长度6字节，如果达到最大值会从0开始循环写入</li>
-</ol>
-<p>所以，推荐这只auto_incrment，毕竟报主键冲突比覆盖以前的数据要好的多。</p>
-<h1 id="XID"><a href="#XID" class="headerlink" title="XID"></a>XID</h1><p>mysql对应事物的ID，Mysql的内存中会维护一个golbal_query_id的变量，改变量在内存中重启会清0，每次执行语句会吧当前值赋值给Query_id，并且+1,<br>如果当前语句是事务中的一个语句那么会把这个Xid赋值给事物ID</p>
-<p>Mysql在重启后由于会清零，同时会有一个新的binlog所以一个binlog中xid是不冲突的。但是如果执行时间过长，理论上也可能会冲突吗，因为XID到达最大值后会从0开始分配，只不过这个值太大了2E64-1,所以冲突只存在在理论中。</p>
-<h1 id="Innodb-trxid"><a href="#Innodb-trxid" class="headerlink" title="Innodb trxid"></a>Innodb trxid</h1><p>  区别于XID，XID是Server层的trxId是innodb层的</p>
-<p>  innodb内部维护了个max_trx_id，每次申请时候会获取当前的max_trx_id，然后max_trx_id+1；</p>
-<p>  inndob的事务可见性核心思想是：每次更新都更新了数据的trx_id，当一个事务读到数据的时候判断一致性视图和当前trx_id的关系</p>
-<p>  对于正在执行的事物可以通过：information_schema.innodb_trx表中看到当前事务的trx_id;</p>
-<p>  注意trx_id的分配规则：</p>
-<ol>
-<li>只读事物不分配trx_id，把当前事物的trx_id变量的指针地址转成int+2e48<ol>
-<li>这么做的好处是只读事物中，指针地址不会变，同一个只读事务在innodb_locks和innodb_trx查出来的trx_id是一致的；</li>
-<li>不同的事务由于指针地址会变，查出来的trx_id一定是不同的</li>
-<li>加上2e48也是能区别于读写事物</li>
-</ol>
-</li>
-<li><p>同时trx_id可能看到不只加了1：</p>
-<ol>
-<li>因为update和delete操作也会+1，（标记删除，放到purge队列中）</li>
-<li>innodb的后台操作比如表的索引信息统计等都会+1</li>
-</ol>
-<p>只读事务不分配trx_id的好处</p>
-</li>
-<li><p>减少事务视图中活跃事务数，innodb在创建一致性视图时候值需要copy读写事物的trx_id就好了</p>
-</li>
-<li><p>可以减少trx_id的申请次数</p>
-<p>trx_id是被持久化不会清0的所以当到达最大值后，会从0开始，这时候就可能会出现脏读。因为后续的数据trx_id变小了，变成可见的了，但是因为这个值是2e48-1所以这个错误也只存在于理论上。（50万TPS，要跑17.8年）</p>
-</li>
-</ol>
-<h1 id="thread-id"><a href="#thread-id" class="headerlink" title="thread_id"></a>thread_id</h1><p>mysql有个thread_id_counter每次分配完后+1，如果到达最大值后会从0开始，这时候会看到俩个一样的thread_id</p>
-<p>不过mysql在分配时候有一个逻辑来处理这种情况</p>
-<p>thread_ids是个唯一数组，添加失败后会一直循环（待验证）</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">do</span> &#123;</span><br><span class="line">  new_id= thread_id_counter++;</span><br><span class="line">&#125; <span class="keyword">while</span> (!thread_ids.insert_unique(new_id).second);</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/要不要使用分区表/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/要不要使用分区表/" class="post-title-link" itemprop="url">要不要使用分区表</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-03-01 23:47:43" itemprop="dateCreated datePublished" datetime="2019-03-01T23:47:43+08:00">2019-03-01</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-02 14:01:10" itemprop="dateModified" datetime="2019-03-02T14:01:10+08:00">2019-03-02</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql架构/" itemprop="url" rel="index"><span itemprop="name">Mysql架构</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="mysql的分区表"><a href="#mysql的分区表" class="headerlink" title="mysql的分区表"></a>mysql的分区表</h1><p>分区表是什么？他有什么好处？有什么坏处？为什么不建议生产环境上使用分区表？</p>
-<p>测试的脚本如下</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> <span class="string">`t`</span> (</span><br><span class="line">  <span class="string">`ftime`</span> datetime <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`c`</span> <span class="built_in">int</span>(<span class="number">11</span>) <span class="keyword">DEFAULT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="keyword">KEY</span> (<span class="string">`ftime`</span>)</span><br><span class="line">) <span class="keyword">ENGINE</span>=<span class="keyword">InnoDB</span> <span class="keyword">DEFAULT</span> <span class="keyword">CHARSET</span>=latin1</span><br><span class="line"><span class="keyword">PARTITION</span> <span class="keyword">BY</span> <span class="keyword">RANGE</span> (<span class="keyword">YEAR</span>(ftime))</span><br><span class="line">(<span class="keyword">PARTITION</span> p_2017 <span class="keyword">VALUES</span> <span class="keyword">LESS</span> <span class="keyword">THAN</span> (<span class="number">2017</span>) <span class="keyword">ENGINE</span> = <span class="keyword">InnoDB</span>,</span><br><span class="line"> <span class="keyword">PARTITION</span> p_2018 <span class="keyword">VALUES</span> <span class="keyword">LESS</span> <span class="keyword">THAN</span> (<span class="number">2018</span>) <span class="keyword">ENGINE</span> = <span class="keyword">InnoDB</span>,</span><br><span class="line"> <span class="keyword">PARTITION</span> p_2019 <span class="keyword">VALUES</span> <span class="keyword">LESS</span> <span class="keyword">THAN</span> (<span class="number">2019</span>) <span class="keyword">ENGINE</span> = <span class="keyword">InnoDB</span>,</span><br><span class="line"><span class="keyword">PARTITION</span> p_others <span class="keyword">VALUES</span> <span class="keyword">LESS</span> <span class="keyword">THAN</span> MAXVALUE <span class="keyword">ENGINE</span> = <span class="keyword">InnoDB</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t <span class="keyword">values</span>(<span class="string">'2017-4-1'</span>,<span class="number">1</span>),(<span class="string">'2018-4-1'</span>,<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
-<p>可以看到表空间下，有一个frm文件和4个ibd文件说明</p>
-<ul>
-<li>server层这是一个表</li>
-<li>innodb的引擎层这是4个表</li>
-</ul>
-<h2 id="分区表引擎层行为"><a href="#分区表引擎层行为" class="headerlink" title="分区表引擎层行为"></a>分区表引擎层行为</h2><h3 id="对于innodb来说"><a href="#对于innodb来说" class="headerlink" title="对于innodb来说"></a>对于innodb来说</h3><p>因为mysql的间隙锁和行锁是在引擎层做的，所以同一张表，分区表和普通的表的加锁规则可能会有所不同。还是用咱们例子对于分区表加锁的流程如下<br><img src="./分区表1.png" alt="avator"></p>
-<p>而如果一个普通表他的加锁规则如下<br><img src="./分区表1.jpg" alt="avator"></p>
-<p>原因是2018-02-1这条数据是在另一个分区，所以SessionA的间隙锁范围没设计到，儿2017-12-1这条数据和SessionA在同一分区所以被block住</p>
-<h3 id="对于myisam来说"><a href="#对于myisam来说" class="headerlink" title="对于myisam来说"></a>对于myisam来说</h3><p>由于myisam是表锁，但是这个由于引擎上分区表被分成了四张表所以，会造成下面的情况，破坏了引擎原生锁的规则<br><img src="./分区表1.png" alt="avator"></p>
-<h3 id="其他的坑"><a href="#其他的坑" class="headerlink" title="其他的坑"></a>其他的坑</h3><p>对于mysisam表采用的是通用分区策略，第一次访问分区表，会把表分区都走一遍，所以如果一个分区很大比如超过1024个，而我们的句柄数只有1024，这时候很可能会报错<br>对于innodb没有这个问题，因为采用的是本地分区策略，在后续版本Myisam已经不支持分区表了（5.7 deprecated,8.0正式弃用）</p>
-<h2 id="分区表对于Server层来说"><a href="#分区表对于Server层来说" class="headerlink" title="分区表对于Server层来说"></a>分区表对于Server层来说</h2><p>因为server层对于分区表看成是一张表，所以在MDL的时候不同分区的DDL会被block主。如图：<br><img src="./分区表3.png" alt="avator"></p>
-<h2 id="分区表应用场景"><a href="#分区表应用场景" class="headerlink" title="分区表应用场景"></a>分区表应用场景</h2><p>对于业务来说只看到一张表，所以很简洁，并且可以随时添加新的分区，以及按照历史分区清理表数据</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>由于分区表的特性会破坏引擎层的锁的定义，所以不建议在生产环境使用，建议采用手工分区的方式</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/grant后一定要flush-privileges/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/grant后一定要flush-privileges/" class="post-title-link" itemprop="url">grant后一定要flush privileges</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-03-01 23:47:23" itemprop="dateCreated datePublished" datetime="2019-03-01T23:47:23+08:00">2019-03-01</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-02 13:15:53" itemprop="dateModified" datetime="2019-03-02T13:15:53+08:00">2019-03-02</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql运维/" itemprop="url" rel="index"><span itemprop="name">Mysql运维</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="创建用户"><a href="#创建用户" class="headerlink" title="创建用户"></a>创建用户</h1><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">user</span> <span class="string">'ua'</span>@<span class="string">'%'</span> <span class="keyword">identified</span> <span class="keyword">by</span> <span class="string">'pa'</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">revoke</span> <span class="keyword">all</span> <span class="keyword">privileges</span> <span class="keyword">on</span> *.* <span class="keyword">from</span> <span class="string">'ua'</span>@<span class="string">'%'</span>;</span><br></pre></td></tr></table></figure>
-<p>这条命令有俩个含义</p>
-<ol>
-<li>磁盘中，数据库mysql.user表插入一个用户</li>
-<li>内存中同步用户。</li>
-</ol>
-<p>这时候是不需要flush privileges的。只有当我们手动修改一张表时候为了让内存和数据库表同步才需要执行该命令。</p>
-<p>添加权限的方式具体参加Mysql手册</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/7/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><span class="page-number current">8</span><a class="page-number" href="/page/9/">9</a><span class="space">&hellip;</span><a class="page-number" href="/page/11/">11</a><a class="extend next" rel="next" href="/page/9/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
+    <a class="extend prev" rel="prev" href="/page/7/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/7/">7</a><span class="page-number current">8</span><a class="page-number" href="/page/9/">9</a><span class="space">&hellip;</span><a class="page-number" href="/page/12/">12</a><a class="extend next" rel="next" href="/page/9/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
   </nav>
 
 
@@ -2311,7 +2328,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">110</span>
+                    <span class="site-state-item-count">113</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2374,7 +2391,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">25</span>
+                      
+                    
+                    <span class="site-state-item-count">26</span>
                     <span class="site-state-item-name">categories</span>
                   </a>
                 </div>

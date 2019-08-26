@@ -328,6 +328,571 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/ReadWriteLock-如何快速事先一个完备的缓存/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/ReadWriteLock-如何快速事先一个完备的缓存/" class="post-title-link" itemprop="url">ReadWriteLock:如何快速实现一个完备的缓存</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-04-21 13:40:38" itemprop="dateCreated datePublished" datetime="2019-04-21T13:40:38+08:00">2019-04-21</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-04-24 19:51:13" itemprop="dateModified" datetime="2019-04-24T19:51:13+08:00">2019-04-24</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="ReadWirteLock的作用和说明"><a href="#ReadWirteLock的作用和说明" class="headerlink" title="ReadWirteLock的作用和说明"></a>ReadWirteLock的作用和说明</h2><p>ReadWriteLock是锁的一种，他适合哪种读多写少的场景，做有名的就是缓存场景。因为他们的读锁是不互斥的，但是读锁和写锁、写锁之间是互斥的。具体使用方法如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Cache</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">final</span> Map&lt;K, V&gt; m =</span><br><span class="line">    <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">  <span class="keyword">final</span> ReadWriteLock rwl =</span><br><span class="line">    <span class="keyword">new</span> ReentrantReadWriteLock();</span><br><span class="line">  <span class="comment">// 读锁</span></span><br><span class="line">  <span class="keyword">final</span> Lock r = rwl.readLock();</span><br><span class="line">  <span class="comment">// 写锁</span></span><br><span class="line">  <span class="keyword">final</span> Lock w = rwl.writeLock();</span><br><span class="line">  <span class="comment">// 读缓存</span></span><br><span class="line">  <span class="function">V <span class="title">get</span><span class="params">(K key)</span> </span>&#123;</span><br><span class="line">    r.lock();</span><br><span class="line">    <span class="keyword">try</span> &#123; <span class="keyword">return</span> m.get(key); &#125;</span><br><span class="line">    <span class="keyword">finally</span> &#123; r.unlock(); &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 写缓存</span></span><br><span class="line">  <span class="function">V <span class="title">put</span><span class="params">(String key, Data v)</span> </span>&#123;</span><br><span class="line">    w.lock();</span><br><span class="line">    <span class="keyword">try</span> &#123; <span class="keyword">return</span> m.put(key, v); &#125;</span><br><span class="line">    <span class="keyword">finally</span> &#123; w.unlock(); &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>进一步的实现懒加载</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Cache</span>&lt;<span class="title">K</span>,<span class="title">V</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">final</span> Map&lt;K, V&gt; m =</span><br><span class="line">    <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line"></span><br><span class="line">  <span class="keyword">final</span> ReadWriteLock rwl = <span class="keyword">new</span> ReentrantReadWriteLock();</span><br><span class="line">  <span class="keyword">final</span> Lock r = rwl.readLock();</span><br><span class="line">  <span class="keyword">final</span> Lock w = rwl.writeLock();</span><br><span class="line">  <span class="function">V <span class="title">get</span><span class="params">(K key)</span> </span>&#123;</span><br><span class="line">    V v = <span class="keyword">null</span>;</span><br><span class="line">    <span class="comment">// 读缓存</span></span><br><span class="line">    r.lock();         ①</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      v = m.get(key); ②</span><br><span class="line">    &#125; <span class="keyword">finally</span>&#123;</span><br><span class="line">      r.unlock();     ③</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 缓存中存在，返回</span></span><br><span class="line">    <span class="keyword">if</span>(v != <span class="keyword">null</span>) &#123;   ④</span><br><span class="line">      <span class="keyword">return</span> v;</span><br><span class="line">    &#125;  </span><br><span class="line">    <span class="comment">// 缓存中不存在，查询数据库</span></span><br><span class="line">    w.lock();         ⑤</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="comment">// 再次验证</span></span><br><span class="line">      <span class="comment">// 其他线程可能已经查询过数据库</span></span><br><span class="line">      v = m.get(key); ⑥</span><br><span class="line">      <span class="keyword">if</span>(v == <span class="keyword">null</span>)&#123;  ⑦</span><br><span class="line">        <span class="comment">// 查询数据库</span></span><br><span class="line">        v= 省略代码无数</span><br><span class="line">        m.put(key, v);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">finally</span>&#123;</span><br><span class="line">      w.unlock();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> v;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="读写锁的升级和降级"><a href="#读写锁的升级和降级" class="headerlink" title="读写锁的升级和降级"></a>读写锁的升级和降级</h2><p>注意，读写锁是不支持锁的升级的即，在读锁中升级到写锁，因为读锁和写锁互斥，因为读锁升级到写锁的时候，读写锁互斥、写锁需要等待读锁释放，而读锁被写锁阻塞住会造成死锁,但是反过来写锁降级是可以的</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CachedData</span> </span>&#123;</span><br><span class="line">  Object data;</span><br><span class="line">  <span class="keyword">volatile</span> <span class="keyword">boolean</span> cacheValid;</span><br><span class="line">  <span class="keyword">final</span> ReadWriteLock rwl =</span><br><span class="line">    <span class="keyword">new</span> ReentrantReadWriteLock();</span><br><span class="line">  <span class="comment">// 读锁  </span></span><br><span class="line">  <span class="keyword">final</span> Lock r = rwl.readLock();</span><br><span class="line">  <span class="comment">// 写锁</span></span><br><span class="line">  <span class="keyword">final</span> Lock w = rwl.writeLock();</span><br><span class="line">  </span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">processCachedData</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 获取读锁</span></span><br><span class="line">    r.lock();</span><br><span class="line">    <span class="keyword">if</span> (!cacheValid) &#123;</span><br><span class="line">      <span class="comment">// 释放读锁，因为不允许读锁的升级</span></span><br><span class="line">      r.unlock();</span><br><span class="line">      <span class="comment">// 获取写锁</span></span><br><span class="line">      w.lock();</span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 再次检查状态  </span></span><br><span class="line">        <span class="keyword">if</span> (!cacheValid) &#123;</span><br><span class="line">          data = ...</span><br><span class="line">          cacheValid = <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 释放写锁前，降级为读锁</span></span><br><span class="line">        <span class="comment">// 降级是可以的</span></span><br><span class="line">        r.lock(); ①</span><br><span class="line">      &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="comment">// 释放写锁</span></span><br><span class="line">        w.unlock();</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 此处仍然持有读锁</span></span><br><span class="line">    <span class="keyword">try</span> &#123;use(data);&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">finally</span> &#123;r.unlock();&#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Semaphore-如何构建限流器/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/Semaphore-如何构建限流器/" class="post-title-link" itemprop="url">Semaphore:如何构建限流器</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-04-21 12:53:22" itemprop="dateCreated datePublished" datetime="2019-04-21T12:53:22+08:00">2019-04-21</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-04-24 19:07:59" itemprop="dateModified" datetime="2019-04-24T19:07:59+08:00">2019-04-24</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="信号量模型"><a href="#信号量模型" class="headerlink" title="信号量模型"></a>信号量模型</h1><p>如图：</p>
+<p><img src="./信号量模型.png" alt="avatar"></p>
+<p>简单来说就是一个队列，一个计数器，三个方法</p>
+<p> init()–初始化队列和信号量<br> down()–信号量-1如果&lt;0,当前线程阻塞，并且进入队列等待。<br> up()–信号量+1如果&gt;=0,则唤醒一个线程别且把它从当前队列中剔除。</p>
+<h1 id="在java当中的Semaphore的使用"><a href="#在java当中的Semaphore的使用" class="headerlink" title="在java当中的Semaphore的使用"></a>在java当中的Semaphore的使用</h1> <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"> <span class="keyword">static</span> <span class="keyword">int</span> count;</span><br><span class="line"><span class="comment">// 初始化信号量</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">final</span> Semaphore s </span><br><span class="line">    = <span class="keyword">new</span> Semaphore(<span class="number">1</span>);</span><br><span class="line"><span class="comment">// 用信号量保证互斥    </span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">addOne</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  s.acquire();</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    count+=<span class="number">1</span>;</span><br><span class="line">  &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    s.release();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>信号量是如何保证原子性的呢？<br>俩个线程都执行s.acquire()是原子性的会修改计数器，假设线程1先执行，所以计数器是0，线程2为-1，因为线程2小于0所以线程2阻塞，并且将当前线程加入到队列中线程1大于等于0所以线程1执行count+=1;这时候线程1执行s.release();计数器为0，大于等于0，所以唤醒队列中的一个线程。</p>
+<h1 id="Semaphore的作用"><a href="#Semaphore的作用" class="headerlink" title="Semaphore的作用"></a>Semaphore的作用</h1><p>和Lock相比可以同时允许多个线程同时访问临界区。下面的代码是事先了一个队列</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ObjPool</span>&lt;<span class="title">T</span>, <span class="title">R</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">final</span> List&lt;T&gt; pool;</span><br><span class="line">  <span class="comment">// 用信号量实现限流器</span></span><br><span class="line">  <span class="keyword">final</span> Semaphore sem;</span><br><span class="line">  <span class="comment">// 构造函数</span></span><br><span class="line">  ObjPool(<span class="keyword">int</span> size, T t)&#123;</span><br><span class="line">    pool = <span class="keyword">new</span> Vector&lt;T&gt;()&#123;&#125;;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;size; i++)&#123;</span><br><span class="line">      pool.add(t);</span><br><span class="line">    &#125;</span><br><span class="line">    sem = <span class="keyword">new</span> Semaphore(size);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 利用对象池的对象，调用 func</span></span><br><span class="line">  <span class="function">R <span class="title">exec</span><span class="params">(Function&lt;T,R&gt; func)</span> </span>&#123;</span><br><span class="line">    T t = <span class="keyword">null</span>;</span><br><span class="line">    sem.acquire();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      t = pool.remove(<span class="number">0</span>);</span><br><span class="line">      <span class="keyword">return</span> func.apply(t);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">      pool.add(t);</span><br><span class="line">      sem.release();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 创建对象池</span></span><br><span class="line">ObjPool&lt;Long, String&gt; pool = </span><br><span class="line">  <span class="keyword">new</span> ObjPool&lt;Long, String&gt;(<span class="number">10</span>, <span class="number">2</span>);</span><br><span class="line"><span class="comment">// 通过对象池获取 t，之后执行  </span></span><br><span class="line">pool.exec(t -&gt; &#123;</span><br><span class="line">    System.out.println(t);</span><br><span class="line">    <span class="keyword">return</span> t.toString();</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-二分法查找/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/数据结构与算法-二分法查找/" class="post-title-link" itemprop="url">数据结构与算法-俩分法查找</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-04-01 19:38:00" itemprop="dateCreated datePublished" datetime="2019-04-01T19:38:00+08:00">2019-04-01</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-04-09 21:18:46" itemprop="dateModified" datetime="2019-04-09T21:18:46+08:00">2019-04-09</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/" itemprop="url" rel="index"><span itemprop="name">数据结构与算法</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/算法/" itemprop="url" rel="index"><span itemprop="name">算法</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="俩分法的时间复杂度"><a href="#俩分法的时间复杂度" class="headerlink" title="俩分法的时间复杂度"></a>俩分法的时间复杂度</h1><p>效率很高，时间复杂度是O(logN)。但是条件也比较苛刻</p>
+<ol>
+<li>必须是有序数组的，支持通过下表随机访问。如果用链表会退化成时间复杂度O(n)</li>
+<li>数组必须有序，所以在查找前需要对数组进行排序，</li>
+<li>数量太小不适合二分查找法。因为在数据量小的时候LogN不见得比遍历数组要快</li>
+<li>数量太大不适合二分查找法，因为数组要申请一片连续空间的内存如果太大，可能内存会不够用。</li>
+</ol>
+<h1 id="二分查找法的俩种实现方式"><a href="#二分查找法的俩种实现方式" class="headerlink" title="二分查找法的俩种实现方式"></a>二分查找法的俩种实现方式</h1><p>递归</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">search</span><span class="params">(<span class="keyword">int</span>[] a, <span class="keyword">int</span> dest)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> l = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> h = a.length - <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (l == h) &#123;</span><br><span class="line">        <span class="keyword">return</span> a[l] == dest ? l : -<span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//开始查找每次取出一半</span></span><br><span class="line">    <span class="keyword">return</span> search(a, l, h, dest);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">search</span><span class="params">(<span class="keyword">int</span>[] a, <span class="keyword">int</span> l, <span class="keyword">int</span> h, <span class="keyword">int</span> dest)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (l &gt;= h) &#123;</span><br><span class="line">        <span class="keyword">return</span> a[l] == dest ? l : -<span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//取中点，如果==跳出递归，如果a[mid]&gt;dest 下一次就是l--mid-1，反之下一次是mid+1,high</span></span><br><span class="line">    <span class="keyword">int</span> mid = l + ((h - l) &gt;&gt; <span class="number">1</span>);</span><br><span class="line">    <span class="keyword">if</span> (a[mid]==dest)&#123;</span><br><span class="line">        <span class="keyword">return</span> mid;</span><br><span class="line">    &#125;<span class="keyword">else</span> <span class="keyword">if</span>(a[mid]&gt;dest)&#123;</span><br><span class="line">        <span class="keyword">return</span> search(a,l,mid-<span class="number">1</span>,dest);</span><br><span class="line">    &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">        <span class="comment">//a[mid]&lt;dest</span></span><br><span class="line">        <span class="keyword">return</span> search(a,mid+<span class="number">1</span>,h,dest);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>循环</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">search</span><span class="params">(<span class="keyword">int</span>[] a, <span class="keyword">int</span> dest)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> l = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> h = a.length - <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (l == h) &#123;</span><br><span class="line">        <span class="keyword">return</span> a[l] == dest ? l : -<span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//循环查找</span></span><br><span class="line">    <span class="keyword">while</span> (l &lt;= h) &#123;</span><br><span class="line">        <span class="keyword">int</span> mid = l + (h - l) / <span class="number">2</span>;</span><br><span class="line">        <span class="keyword">if</span> (a[mid] == dest) &#123;</span><br><span class="line">            <span class="keyword">return</span> mid;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (a[mid] &lt; dest) &#123;</span><br><span class="line">            l=mid+<span class="number">1</span>;</span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">           h=mid-<span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>例子：算一个数的平方跟</p>
+<p>这到例子主要是讲解，二分法的解决思路，先确认查找范围x比1大1–x,如果x在0和1之间0–1,然后用二分法求解mid最接近结果。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">double</span> <span class="title">squart</span><span class="params">(<span class="keyword">double</span> x, <span class="keyword">int</span> n)</span> </span>&#123;</span><br><span class="line">    <span class="comment">//快速返回</span></span><br><span class="line">    <span class="keyword">if</span> (x == <span class="number">0</span> || x == <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> x;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">double</span> l = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">double</span> h = x;</span><br><span class="line">    <span class="comment">//如果x在0-&gt;1之间</span></span><br><span class="line">    <span class="keyword">if</span> (x &gt; <span class="number">0</span> &amp;&amp; x &lt; <span class="number">1</span>) &#123;</span><br><span class="line">        l = <span class="number">0</span>;</span><br><span class="line">        h = <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">long</span> base = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">1</span>;</span><br><span class="line">    <span class="keyword">while</span> (i &lt;= n) &#123;</span><br><span class="line">        base = base * <span class="number">10</span>;</span><br><span class="line">        i++;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//递归调用</span></span><br><span class="line">    <span class="keyword">double</span> ret = squart(x, l, h, <span class="number">1.00f</span> / base);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> BigDecimal(ret).setScale(n, BigDecimal.ROUND_HALF_UP).doubleValue();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//二分查找</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">double</span> <span class="title">squart</span><span class="params">(<span class="keyword">double</span> x, <span class="keyword">double</span> l, <span class="keyword">double</span> h, <span class="keyword">float</span> p)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (l &gt;= h) &#123;</span><br><span class="line">        <span class="keyword">return</span> l;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">double</span> mid = l + (h - l) / <span class="number">2</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (mid * mid &gt; x) &#123;</span><br><span class="line">        <span class="keyword">return</span> squart(x, l, mid, p);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (mid * mid &lt; x) &#123;</span><br><span class="line">        <span class="keyword">return</span> squart(x, mid, h, p);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> mid;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="二分法变形查找"><a href="#二分法变形查找" class="headerlink" title="二分法变形查找"></a>二分法变形查找</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">searchLastEq</span><span class="params">(<span class="keyword">int</span> a[], <span class="keyword">int</span> d)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> l = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> h = a.length - <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (l &lt;= h) &#123;</span><br><span class="line">        <span class="keyword">int</span> m = l + ((h - l) &gt;&gt; <span class="number">1</span>);</span><br><span class="line">        <span class="keyword">if</span> (a[m] &gt; d) &#123;</span><br><span class="line">            h = m - <span class="number">1</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (a[m] &lt; d) &#123;</span><br><span class="line">            l = m + <span class="number">1</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">//注意找最后一个eq所以如果相等就判断后一位是否相等如果不相等返回，如果相等，说明要取的值在右边，l=m+1</span></span><br><span class="line">            <span class="keyword">if</span> (m == a.length - <span class="number">1</span> || a[m + <span class="number">1</span>] != d) &#123;</span><br><span class="line">                System.out.printf(<span class="string">"最后个相等%s的Index=%s,v=%s\n"</span>, d, m, a[m]);</span><br><span class="line">                <span class="keyword">return</span> m;</span><br><span class="line">            &#125;</span><br><span class="line">            l = m + <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    System.out.println(<span class="string">"最后一个相等的没找到"</span>);</span><br><span class="line">    <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">searchFirstEq</span><span class="params">(<span class="keyword">int</span> a[], <span class="keyword">int</span> d)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> l = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> h = a.length - <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (l &lt;= h) &#123;</span><br><span class="line">        <span class="keyword">int</span> m = l + ((h - l) &gt;&gt; <span class="number">1</span>);</span><br><span class="line">        <span class="keyword">if</span> (a[m] &gt; d) &#123;</span><br><span class="line">            h = m - <span class="number">1</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (a[m] &lt; d) &#123;</span><br><span class="line">            l = m + <span class="number">1</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">//注意找第一个eq所以如果相等就判断前一位是否相等如果不相等返回，如果相等，说明要取的值在左边，h=m-1</span></span><br><span class="line">            <span class="keyword">if</span> (m == <span class="number">0</span> || a[m - <span class="number">1</span>] != d) &#123;</span><br><span class="line">                System.out.printf(<span class="string">"第一个相等%s的Index=%s,v=%s\n"</span>, d, m, a[m]);</span><br><span class="line">                <span class="keyword">return</span> m;</span><br><span class="line">            &#125;</span><br><span class="line">            h = m - <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    System.out.println(<span class="string">"第一个相等的没找到"</span>);</span><br><span class="line">    <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * ..a[m]...6,7,d,9.....--&gt;7</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> a</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> d</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">searchRecentLte</span><span class="params">(<span class="keyword">int</span> a[], <span class="keyword">int</span> d)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> l = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> h = a.length;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (l &lt;= h) &#123;</span><br><span class="line">        <span class="keyword">int</span> m = l + ((h - l) &gt;&gt; <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//如题，找d左边的第一值，当a[m]&lt;=d的时候说明m在左边，然后一直往右边找，直到找到后面大于d的返回，</span></span><br><span class="line">        <span class="comment">// 如果右边依然&lt;=d，说明要找的值还在右边，二分法l=m+1</span></span><br><span class="line">        <span class="comment">// 如果a[m]&gt;d，不符合条件说明要找的值在m的左边，需要h=m-1</span></span><br><span class="line">        <span class="keyword">if</span> (a[m] &lt;= d) &#123;</span><br><span class="line">            <span class="keyword">if</span> (m == <span class="number">0</span> || a[m + <span class="number">1</span>] &gt; d) &#123;</span><br><span class="line">                System.out.printf(<span class="string">"最后(最近的小于等于)小于等于%s的数的(Index=%s,v=%s)\n"</span>, d, m, a[m]);</span><br><span class="line">                <span class="keyword">return</span> m;</span><br><span class="line">            &#125;</span><br><span class="line">            l = m + <span class="number">1</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            h = m - <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * .....6,7,d,9..a[m]...--&gt;9</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> a</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> d</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">searchRecentGte</span><span class="params">(<span class="keyword">int</span> a[], <span class="keyword">int</span> d)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> l = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">int</span> h = a.length - <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (l &lt;= h) &#123;</span><br><span class="line">        <span class="keyword">int</span> m = l + ((h - l) &gt;&gt; <span class="number">1</span>);</span><br><span class="line">        <span class="comment">//如题：找d右边的第一个值，如果a[m]&gt;=d，要一直向左找，找到m==0或者m的左边小于d的数，返回m</span></span><br><span class="line">        <span class="comment">// 如果a[m-1]依然大于d，说明要照的数在左边，h=m-1</span></span><br><span class="line">        <span class="comment">// 如果a[m]&lt;d，说明要照的数在右边，l=m+1</span></span><br><span class="line">        <span class="keyword">if</span>(a[m]&gt;=d)&#123;</span><br><span class="line">            <span class="keyword">if</span>(m==<span class="number">0</span>|| a[m-<span class="number">1</span>]&lt;d)&#123;</span><br><span class="line">                System.out.printf(<span class="string">"第一个(最近的大于等于)大于等于%s的数的(Index=%s,v=%s)\n"</span>, d, m, a[m]);</span><br><span class="line">                <span class="keyword">return</span> m;</span><br><span class="line">            &#125;</span><br><span class="line">            h=m-<span class="number">1</span>;</span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            <span class="comment">//a[m]&lt;d</span></span><br><span class="line">            l=m+<span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>课后作业-leetcode33</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span>[] a = <span class="keyword">new</span> <span class="keyword">int</span>[]&#123;<span class="number">4</span>, <span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>, <span class="number">0</span>, <span class="number">1</span>, <span class="number">2</span>&#125;;</span><br><span class="line">        <span class="keyword">int</span> target = <span class="number">5</span>;</span><br><span class="line">        System.out.println(search(a, target));</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">search</span><span class="params">(<span class="keyword">int</span>[] a, <span class="keyword">int</span> d)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> l = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">int</span> h = a.length - <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> (l &lt;= h) &#123;</span><br><span class="line">            <span class="keyword">if</span> (a[l] == d) &#123;</span><br><span class="line">                <span class="keyword">return</span> l;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (a[h] == d) &#123;</span><br><span class="line">                <span class="keyword">return</span> h;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">int</span> m = l + ((h - l) &gt;&gt; <span class="number">1</span>);</span><br><span class="line">            <span class="keyword">if</span> (a[m] == d) &#123;</span><br><span class="line">                <span class="keyword">return</span> m;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (a[m] &gt; a[l]) &#123;</span><br><span class="line">                <span class="keyword">if</span> (a[m] &gt; d) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (a[l] &lt; d) &#123;</span><br><span class="line">                        h = m - <span class="number">1</span>;</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        l = m + <span class="number">1</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line"><span class="comment">//                    a[m]&lt;d</span></span><br><span class="line">                    l = m + <span class="number">1</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">//a[m]&lt;a[l]</span></span><br><span class="line">                <span class="keyword">if</span> (a[m] &gt; d) &#123;</span><br><span class="line">                    h = m - <span class="number">1</span>;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">//a[m]&lt;d</span></span><br><span class="line">                    <span class="keyword">if</span> (a[h] &gt; d) &#123;</span><br><span class="line">                        l = m + <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        h = m - <span class="number">1</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-线性排序/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1653,603 +2218,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA线程-开启多少线程合适/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/JAVA线程-开启多少线程合适/" class="post-title-link" itemprop="url">JAVA线程-开启多少线程合适</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-03-22 15:56:22" itemprop="dateCreated datePublished" datetime="2019-03-22T15:56:22+08:00">2019-03-22</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-25 23:54:24" itemprop="dateModified" datetime="2019-03-25T23:54:24+08:00">2019-03-25</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="为什么要使用多线程"><a href="#为什么要使用多线程" class="headerlink" title="为什么要使用多线程"></a>为什么要使用多线程</h1><p>  我们评价一个操作系统性能好的系统往往是俩点低延迟、高吞吐。做到这俩点，往往需要一优化算法，二有效利用硬件。对于一不在此讨论的范畴，而硬件利用率大致往往分俩类，即cpu的利用率，和i/o的利用。<br>  单线程时代：我们的程序往往是cpu和io设备相互配合执行，所以一个单线程的程序执行cpu操作时候io就要停下来等待cpu完成，为了提高io和cpu的利用率，操作系统为我们提供了多线程技术。<br>  线程1处理cpu的计算，线程2处理io请求。处理玩io请求后在切换回来，这样利用率就得到了提高</p>
-<h1 id="线程多了就一定快么"><a href="#线程多了就一定快么" class="headerlink" title="线程多了就一定快么"></a>线程多了就一定快么</h1><p>  针对我们程序的特点分为，io密集型和计算密集型俩种。如果io操作执行的比例比较大就是io密集型，如果cpu计算的比例比较大就是计算密集型。<br>  在单核时代，对于计算密集型的业务增加线程反而会拖慢程序执行效率，因为只有一个核，所以同时只能有一个线程在运行，增加线程反而加大了线程切换的损耗。<br>  在多核时代，对于计算密集型的业务是可以通过增加线程提高性能的，但是设置应该是cpu的核数+1，充分利用起cpu。<br>  对于io密集型的业务，由于一般io的耗时比cpu要多的多，那么线程往往是cpu的核数*io耗时/cpu耗时+1。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA线程-方法中的局部变量是线程安全的么/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/JAVA线程-方法中的局部变量是线程安全的么/" class="post-title-link" itemprop="url">JAVA线程-为什么局部变量是线程安全的</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-03-22 15:56:22" itemprop="dateCreated datePublished" datetime="2019-03-22T15:56:22+08:00">2019-03-22</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-28 22:30:30" itemprop="dateModified" datetime="2019-03-28T22:30:30+08:00">2019-03-28</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="方法是如何被执行"><a href="#方法是如何被执行" class="headerlink" title="方法是如何被执行"></a>方法是如何被执行</h1><p>例如下面的程序</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">7</span>；</span><br><span class="line"><span class="keyword">int</span>[] b = fibonacci(a);</span><br><span class="line"><span class="keyword">int</span>[] c = b;</span><br></pre></td></tr></table></figure>
-<p>当jvm调用fibonacci(a)时，通过cpu的寄存器找到方法的地址。cpu支持一种栈结构，他和方法息息相关，所以一般叫做调用栈。<br>栈这种数据结构的特点是后进先出，所以当一个遇到方法嵌套时候比如a–&gt;b–&gt;c，那么入栈的时候就是c–&gt;b–&gt;a，执行顺序也是c–&gt;b–&gt;a。</p>
-<h1 id="方法中的局部变量"><a href="#方法中的局部变量" class="headerlink" title="方法中的局部变量"></a>方法中的局部变量</h1><p>  方法实际上是以栈帧为单位入栈的，一个方法从入口到返回都在一个栈帧中，栈帧和方法的生命周期是一样的，当方法结束，栈帧也就失效了，而方法中的局部变量都是保存在栈帧中的，他的生命周期也是在方法内部。且为了线程之间不相互干扰，每个线程都有一个独立的栈帧。综上，栈帧是线程安全的。</p>
-<p>  这种方式有个名词叫线程封闭，即仅在单线程内访问数据，不共享就没有线程安全的问题。例如：我们常用的数据库连接池，connection的方法并没有声明线程安全，我们在使用中都是在一个方法内获取conenection，查询数据，关闭connecton，这这种线程封闭方式来解决线程安全的问题。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA线程的生命周期/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/JAVA线程的生命周期/" class="post-title-link" itemprop="url">JAVA线程的生命周期</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-03-19 13:27:48" itemprop="dateCreated datePublished" datetime="2019-03-19T13:27:48+08:00">2019-03-19</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-28 23:06:31" itemprop="dateModified" datetime="2019-03-28T23:06:31+08:00">2019-03-28</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="操作系统的线程生命周期"><a href="#操作系统的线程生命周期" class="headerlink" title="操作系统的线程生命周期"></a>操作系统的线程生命周期</h1><p>初始状态，可运行状态，运行状态，终止状态，休眠状态，他们之间的转化关系如图：</p>
-<p><img src="./thread1.png" alt="avator"></p>
-<ul>
-<li>初始状态:线程被创建，但是还未分配cpu执行的状态。</li>
-<li>可运行状态:指线程可以分配cpu执行。</li>
-<li>运行状态:有cpu空闲时候分配cpu执行，当线程被分配给cpu执行时候，变为可执行状态。</li>
-<li>终止状态:线程执行完成或者异常终止。</li>
-<li>休眠状态:线程调用阻塞的api或者等待某个事件执行的时候会变为休眠状态。</li>
-</ul>
-<p>jvm将由于将线程的调度交给操作系统，所以将可运行状态和运行状态和在了一起，因为jvm不关心这俩个状态的具体情况。</p>
-<h1 id="java线程的生命周期"><a href="#java线程的生命周期" class="headerlink" title="java线程的生命周期"></a>java线程的生命周期</h1><p>NEW（初始装填）、RUNABLE（可运行/运行状态）、TERMINATED（终止状态）、BLOCK（阻塞）、WAIT（等待）、TIME_WAIT（有时限等待）</p>
-<p>其中BLOCK、WAIT、TIME_WAIT都属于休眠关系</p>
-<p><img src="./thread2.png" alt="avator"></p>
-<ul>
-<li>NEW:当线程对象被创建出来的时候线程处于该状态，这时候还未对其分配cpu。具体方法是集成Thread类并且实现run方法，或者狗仔一个Thread对象把一个Runnable的接口实现传进去。</li>
-<li>NEW–&gt;RUNABLE:调用thread.start()方法线程变为RUNABLE状态。</li>
-<li>RUNABLE–&gt;休眠状态：java的休眠状态有三种BLOCK、WAIT、TIME_WAIT，分别是<ul>
-<li>RUNABLE–&gt;BLOCK：当遇到synchronized代码块时候，如果竞争失败当前线程进入block状态。等待进入到线程又会变为RUNABLE状态，注意在java中如调用到了阻塞的api，是不会切换到block状态的，比如调用io的api，当前线程依然是RUNABLE状态这点要注意。</li>
-<li>RUNABLE–&gt;WAIT：如下3中情况会让当前线程进入到wait状态<ul>
-<li>object.wait(),没有时间限制的wait，需要调用object.notify()或者object.notifyAll()</li>
-<li>调用了其他线程的join()，没有时间限制的join，需要等待当前join的线程终止。</li>
-<li>调用了LockSupport.park(),没有事件限制的park，对应的方法是LockSupport.unPark()</li>
-</ul>
-</li>
-<li>RUNABLE–&gt;TIME_WAIT：同上就是上面3种情况或者方法的有时间版本</li>
-</ul>
-</li>
-<li>RUNABLE–&gt;TERMINATED：<ul>
-<li>线程执行结束</li>
-<li>stop()或者interrupt()方法</li>
-</ul>
-</li>
-</ul>
-<h1 id="线程终止的方法"><a href="#线程终止的方法" class="headerlink" title="线程终止的方法"></a>线程终止的方法</h1><p>当一个线程执行一个很耗时的逻辑时候，可能会终止该线程的操作，比如并发情况下的网络超时，为了防止资源耗尽往往要终止。上面提到了stop或者interrupt方法</p>
-<ul>
-<li>stop方法已经不建议使用了，因为会立即杀死线程，同时不会释放synchronized的锁，所以后面的线程都会阻塞。</li>
-<li><p>interrupt方法相对来说就会“温柔”很多，它只是对线程了interrupt标记，当调用thread.interrupt()方法有俩种方式退出线程</p>
-<ul>
-<li>主动退出：对于一个一直执行的线程来说可以通过判断t1.isInterrupted()来判断是否该终端</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> Thread t1 = <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">          <span class="keyword">while</span>(!t1.isInterrupted())&#123;</span><br><span class="line">              <span class="comment">//do something</span></span><br><span class="line">          &#125;</span><br><span class="line">      &#125;);</span><br></pre></td></tr></table></figure>
-<ul>
-<li>异常退出：对于执行了wait sleep这种线程我们可以通过异常捕获来判断线程的终端，因为他们会抛出InterruptedException异常</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">final</span> Thread t1 = <span class="keyword">new</span> Thread(() -&gt; &#123;</span><br><span class="line">         <span class="keyword">synchronized</span> (lock) &#123;</span><br><span class="line">             <span class="keyword">try</span> &#123;</span><br><span class="line">                 lock.wait();</span><br><span class="line">             &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                 e.printStackTrace();</span><br><span class="line">                 <span class="keyword">return</span>;</span><br><span class="line">             &#125;</span><br><span class="line">             <span class="comment">//do something</span></span><br><span class="line"></span><br><span class="line">             <span class="comment">//这时候会输出false因为interrupt会被清除</span></span><br><span class="line">             System.out.println(t1.isInterrupted());</span><br><span class="line">         &#125;</span><br><span class="line">     &#125;);</span><br></pre></td></tr></table></figure>
-</li>
-</ul>
-<p>注意：当抛出InterruptedException异常后线程的interrupt标记会被清楚如果这时候在判断isInterrupted()方法就又变成了false</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/5/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/page/7/">7</a><span class="space">&hellip;</span><a class="page-number" href="/page/11/">11</a><a class="extend next" rel="next" href="/page/7/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
+    <a class="extend prev" rel="prev" href="/page/5/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/page/7/">7</a><span class="space">&hellip;</span><a class="page-number" href="/page/12/">12</a><a class="extend next" rel="next" href="/page/7/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
   </nav>
 
 
@@ -2291,7 +2264,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">110</span>
+                    <span class="site-state-item-count">113</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2354,7 +2327,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">25</span>
+                      
+                    
+                    <span class="site-state-item-count">26</span>
                     <span class="site-state-item-name">categories</span>
                   </a>
                 </div>

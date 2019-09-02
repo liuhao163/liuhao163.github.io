@@ -328,6 +328,223 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql的排序/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/mysql/mysql的排序/" class="post-title-link" itemprop="url">mysql的排序</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-05 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-05T00:00:00+08:00">2019-02-05</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="mysql排序-order-by的原理"><a href="#mysql排序-order-by的原理" class="headerlink" title="mysql排序 order by的原理"></a>mysql排序 order by的原理</h1><h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>下面的语句用按照姓名排序，我们看下执行计划，Extra有一段‘Using filesort’，说明Mysql用的用到了排序</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">explain</span> <span class="keyword">select</span> city,<span class="keyword">name</span>,age <span class="keyword">from</span> t <span class="keyword">where</span> city=<span class="string">'杭州'</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">name</span> <span class="keyword">limit</span> <span class="number">1000</span>  ;</span><br><span class="line"></span><br><span class="line"><span class="comment">#执行计划</span></span><br><span class="line">1 SIMPLE t NULL ref city city 66 const 1 100.00 Using index condition; Using filesort</span><br></pre></td></tr></table></figure>
+<h2 id="排序的过程"><a href="#排序的过程" class="headerlink" title="排序的过程"></a>排序的过程</h2><p>mysql在排序操作中会用到sort_buffer和临时文件，sort_buffer的大小由sort_buffer_size参数决定</p>
+<ul>
+<li>sort_buffer:是Mysql为排序操作开辟的一块内存空间，会将需要查询的字段以及排序字段放在内存空间中，进行排序操作。</li>
+<li>临时文件：如果字段太多sort_buffer容量不够了会借用到临时文件进行存储，会将需要排序的文件分成N份，同时排序排序完成后在进行合并。</li>
+</ul>
+<h3 id="全字段排序"><a href="#全字段排序" class="headerlink" title="全字段排序"></a>全字段排序</h3><p>全字段排序需要的流程</p>
+<ol>
+<li>初始化sort_buffer,确定要放进去的字段</li>
+<li>根据索引等条件取出满足条件的主键ID</li>
+<li>回表查询出需要显示的字段，将需要的字段放到sort_buffer中，如果用到临时文件，加载到临时文件中</li>
+<li>内存中排序</li>
+<li>返回结果</li>
+</ol>
+<h3 id="rowid排序"><a href="#rowid排序" class="headerlink" title="rowid排序"></a>rowid排序</h3><p>如果Mysql判断单行占用的空间很大，会采用rowid方式进行排序,可以用如下方式进行设置。受max_length_for_sort_data指标来控制</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> max_length_for_sort_data = <span class="number">16</span>;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>初始化sort_buffer,确定排序字段和主键ID</li>
+<li>根据索引等条件取出满足条件的主键ID</li>
+<li>将需要排序和主键ID放到sort_buffer中，如果用到临时文件，加载到临时文件中</li>
+<li>内存中排序，得到排好序的排序字段值–主键ID</li>
+<li>回表查询数据</li>
+<li>返回结果</li>
+</ol>
+<h3 id="全字段排序-vs-rowid-排序"><a href="#全字段排序-vs-rowid-排序" class="headerlink" title="全字段排序 vs rowid 排序"></a>全字段排序 vs rowid 排序</h3><p>rowid比全字段排序多了一次回表操作，理论上来说mysql能用内存尽量用内存，减少磁盘操作，所以理论上来说rowid排序性能会低于全字段排序</p>
+<h3 id="如何优化排序"><a href="#如何优化排序" class="headerlink" title="如何优化排序"></a>如何优化排序</h3><p>使用索引：因为索引本身是有序的，合理利用索引，这样排序就可以用索引避免使用临时文件和sort_buffer进行排序。如例子中的语句可以创建（city,name）的索引，可以用执行计划看出来。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#创建索引（city,name）注意顺序</span></span><br><span class="line"><span class="keyword">explain</span> <span class="keyword">select</span> city,<span class="keyword">name</span>,age <span class="keyword">from</span> t <span class="keyword">where</span> city=<span class="string">'杭州'</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">name</span> <span class="keyword">limit</span> <span class="number">1000</span>  ;</span><br><span class="line"></span><br><span class="line"><span class="comment">#执行计划</span></span><br><span class="line">1 SIMPLE t NULL ref idx idx 66 const 1 100.00 Using index condition</span><br></pre></td></tr></table></figure>
+<h3 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h3><p>判断排序语句是否用了临时文件，是那种排序方式的语句</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 打开 optimizer_trace，只对本线程有效 */</span></span><br><span class="line"><span class="keyword">SET</span> optimizer_trace=<span class="string">'enabled=on'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* @a 保存 Innodb_rows_read 的初始值 */</span></span><br><span class="line"><span class="keyword">select</span> VARIABLE_VALUE <span class="keyword">into</span> @a <span class="keyword">from</span>  performance_schema.session_status <span class="keyword">where</span> variable_name = <span class="string">'Innodb_rows_read'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 执行语句 */</span></span><br><span class="line"><span class="keyword">select</span> city, <span class="keyword">name</span>,age <span class="keyword">from</span> t <span class="keyword">where</span> city=<span class="string">'杭州'</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">name</span> <span class="keyword">limit</span> <span class="number">1000</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 查看 OPTIMIZER_TRACE 输出 */</span></span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="string">`information_schema`</span>.<span class="string">`OPTIMIZER_TRACE`</span>\G</span><br><span class="line"></span><br><span class="line"><span class="comment">/* @b 保存 Innodb_rows_read 的当前值 */</span></span><br><span class="line"><span class="keyword">select</span> VARIABLE_VALUE <span class="keyword">into</span> @b <span class="keyword">from</span> performance_schema.session_status <span class="keyword">where</span> variable_name = <span class="string">'Innodb_rows_read'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 计算 Innodb_rows_read 差值 */</span></span><br><span class="line"><span class="keyword">select</span> @b-@a;</span><br></pre></td></tr></table></figure>
+<p>如何判断排序类型</p>
+<ol>
+<li>SELECT * FROM <code>information_schema</code>.<code>OPTIMIZER_TRACE</code>\G，之后的json对象看filesort_summary段<ol>
+<li>sort_mode是sort_key, rowid是全字段排序</li>
+<li>sort_mode是sort_key, packed_additional_fields采用全字段排序</li>
+</ol>
+</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">            "filesort_summary": &#123;</span><br><span class="line">              "rows": 1001, <span class="comment">#取的字段</span></span><br><span class="line">              "examined_rows": 110501, <span class="comment">#扫描行数</span></span><br><span class="line">              "number_of_tmp_files": 0, <span class="comment">#历史文件个数</span></span><br><span class="line">              "sort_buffer_size": 17024,</span><br><span class="line">              "sort_mode": "&lt;sort_key, rowid&gt;"</span><br><span class="line">            &#125;</span><br><span class="line"><span class="comment">#如果是rowid排序实际扫描行数是examined_rows+rows（因为回了一次表）</span></span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql读写分离的那些坑/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2250,257 +2467,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql是如何降低主备延迟的/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/mysql/mysql是如何降低主备延迟的/" class="post-title-link" itemprop="url">MySql是如何降低主备延迟的</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-02 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-02T00:00:00+08:00">2019-02-02</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql高可用架构/" itemprop="url" rel="index"><span itemprop="name">Mysql高可用架构</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="MySql是如何降低主备延迟的"><a href="#MySql是如何降低主备延迟的" class="headerlink" title="MySql是如何降低主备延迟的"></a>MySql是如何降低主备延迟的</h1><p>上一章<a href="./mysql是怎么保证高可用的.html">MySQL是怎么保证高可用的</a>，中提到了主库的并行复制能力会影响主备的延迟。在mysql5.6之前，rely_log被sql_thread重放写入备库，这里的sql_thread只能单线程消费，所以会很大程度降低mysql数据库的吞吐，在TPS高的时候就会有很大的延迟。如果想增强吞吐就要多sql_thread并行处理relay_log，如图：</p>
-<p><img src="/images/mysql/mysql_多sqlthread.png" alt="avatar"></p>
-<p>但是mysql并行的主从并行复制要遵守如下原则：</p>
-<ol>
-<li>对于不同的事务的binlog如果修改同一行数据，为了避免相互覆盖，不能并行运行只能串行</li>
-<li>对于相同事务的binlog，为了保证事务的完整性，不能并行复制，</li>
-</ol>
-<h2 id="5-5之前的主从复制策略"><a href="#5-5之前的主从复制策略" class="headerlink" title="5.5之前的主从复制策略"></a>5.5之前的主从复制策略</h2><p>在5.5的时候，为了增强mysql的从库消费relay_log的吞吐，使用者自己实现了主从复制的策略主要有俩种：</p>
-<h3 id="按表并行复制"><a href="#按表并行复制" class="headerlink" title="按表并行复制"></a>按表并行复制</h3><ul>
-<li>每个work维护一个hash_table，key是binlog的dbname+tablename；</li>
-<li>当一个binlog分配给coordainator，coordainator会循环检查这个binlog的key(dbname+tablename)，是否在work的hash_table中，如果出现说明这个binlog和这个worker冲突；<ul>
-<li>如果只有一个冲突，交给这个work处理；</li>
-<li>如果大于一个冲突，coordainator进入等待；</li>
-<li>如果没有冲突，交给空闲的worker处理；</li>
-</ul>
-</li>
-<li>当worker处理完后会把key从hash_table中删掉；</li>
-</ul>
-<h3 id="按行并行复制"><a href="#按行并行复制" class="headerlink" title="按行并行复制"></a>按行并行复制</h3><p>和上面类似，只不过这次并行控制的粒度更细，只要保证binlog不是修改的同一行数据即可并行复制，那么hash_table的key就变为binlog的dbname+table+唯一健的值（主键+唯一索引），光有主键不够一定要带上唯一索引的值，否则如下情况会报唯一建冲突。</p>
-<p>注：c=原有的值是1,当备库并行复制时候先执行sessionB,由于这时候sessionA还没执行，会报唯一建冲突<br>| sessionA | sessionB |<br>| —— | —— |<br>| update t set c=5 where id=1 ; | - |<br>| - | update t set c=1 where id=1; |</p>
-<h3 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h3><ol>
-<li>必须要能通过解析binlog获取dbname,tablename,pk,uniqekey，所以binlog要是row类型；</li>
-<li>必须有主键；</li>
-<li>不能有外键；(因为外键的级联更新不在binlog中，所以建冲突就不准确)</li>
-<li>按表的策略：在对热点表的时候coordainator会频繁进入等待，又变成了单线程复制；</li>
-<li>按行的策略：要计算hashtable的key需要额外解析pk和uniquekey所以需要额外的开销；</li>
-</ol>
-<h2 id="Mysql5-6的并行复制策略"><a href="#Mysql5-6的并行复制策略" class="headerlink" title="Mysql5.6的并行复制策略"></a>Mysql5.6的并行复制策略</h2><h3 id="按照库名并行复制"><a href="#按照库名并行复制" class="headerlink" title="按照库名并行复制"></a>按照库名并行复制</h3><p>优点：</p>
-<ol>
-<li>构造hash很快，只需要库名；</li>
-<li>binlog即使不是row也能很方便获取库名；</li>
-</ol>
-<p>缺点：</p>
-<ol>
-<li>若果服务器上只有一个库，优化效果不明显；</li>
-</ol>
-<h2 id="MariaDB的并行复制策略"><a href="#MariaDB的并行复制策略" class="headerlink" title="MariaDB的并行复制策略"></a>MariaDB的并行复制策略</h2><p>它的思想是思想是模拟主库运行：利用group commit,每一组事务能同时提交一定是不冲突的；那么主库commit之后就将一组的binlog一起并行执行</p>
-<ul>
-<li>为每个group commit分配个递增的commit_id；</li>
-<li>将commit_id写入到binlog中</li>
-<li>同一个commit_id的binglog分到不同的worker上去。</li>
-<li>执行完这个commit_id后在执行下一个commit_id的binlog。</li>
-</ul>
-<p>缺点：</p>
-<ol>
-<li>并不是真正的象主库并行，主库当一组事物在commit阶段时候，下一组事物是在运行中的。而从库消费的时候只能是一组一组的消费，所以还是会造成主备的延迟。</li>
-<li>当一组有一个很大的事物在worker中运行时候看，其他的worker先运行完了也只能等在哪里。</li>
-</ol>
-<h2 id="MySql5-7的并行复制的策略"><a href="#MySql5-7的并行复制的策略" class="headerlink" title="MySql5.7的并行复制的策略"></a>MySql5.7的并行复制的策略</h2><p>采用类似的MariaDb的类似的赋值策略由slave-parallel-type参数控制：</p>
-<ul>
-<li>DATABASE时候采用类似5.6的并行复制策略</li>
-<li>LOGICAL_CLOCK时候采用MariaDb的并行复制策略，但是做了优化；</li>
-</ul>
-<p>和MariaDb相比，将binlog的执行时期从commit阶段放到了2PC的redolog的prepare阶段，mysql认为事物进入prepare阶段就说明数据是可靠的可以进行主从复制了。</p>
-<ul>
-<li>同时处于 prepare 状态的事务，在备库执行时是可以并行的</li>
-<li>处于 prepare 状态的事务，与处于 commit 状态之间，在备库执行时也是可以并行的。</li>
-</ul>
-<p>我们可以通过binlog_group_commit_sync_delay和binlog_group_commit_sync_no_delay参数故意拉长主库的binlog从write到fsync的时间，减少binlog的写盘次数，制造更多同时在prepare时期的binlog，加大并行度。</p>
-<h3 id="MySql5-7-22的并行复制优化"><a href="#MySql5-7-22的并行复制优化" class="headerlink" title="MySql5.7.22的并行复制优化"></a>MySql5.7.22的并行复制优化</h3><p>增加参数binlog-transaction-dependency-tracking。</p>
-<ol>
-<li>COMMIT_ORDER:和上面说的策略一样；但是如果是追历史数据还是会退化成单线程，所以适合线上库。</li>
-<li>WRITESET：对于事务更新的每一行计算hash值，组成集合writeset，如果俩个事务没有操作相同的行，也就是writeset没有交集，就可以并行。</li>
-<li>WRITESET_SESSION：多了一个约束，即在主库上同一个线程先后执行的事务，在从库上也要保证同样的顺序。</li>
-</ol>
-<p>和之前5.5的按行并行复制策略很类似但是有几点优化：</p>
-<ol>
-<li>hash值提前算好了，减少了主从同步时候的压力；</li>
-<li>不需要在从库每次都把所有woker遍历一遍找出是否冲突；</li>
-<li>备库不用解析binlog对备库的binlog格式无要求；</li>
-</ol>
-<p>思考如下：<br>假设一个 MySQL 5.7.22 版本的主库，单线程插入了很多数据，3小时候，搭建从库开始同步数据binlog-transaction-dependency-tracking改如何设置？<br>答：建议采用 WRITESET，因为是单线程插入，如果采用WRITESET_SESSION，那么会退化成单线程同步relaylog。COMMIT_ORDER因为是追历史数据，所以会退化成单线程</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2547,7 +2513,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">114</span>
+                    <span class="site-state-item-count">115</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2614,7 +2580,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">27</span>
+                      
+                    
+                    <span class="site-state-item-count">28</span>
                     <span class="site-state-item-name">categories</span>
                   </a>
                 </div>
@@ -2721,7 +2689,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">47</span>
+                      
+                    
+                    <span class="site-state-item-count">48</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>

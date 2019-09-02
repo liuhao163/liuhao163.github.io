@@ -328,6 +328,201 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-搜索引擎中的算法和数据结构/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/数据结构与算法-搜索引擎中的算法和数据结构/" class="post-title-link" itemprop="url">数据结构与算法-搜索引擎中的算法和数据结构</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-08-14 14:45:43 / Modified: 17:03:25" itemprop="dateCreated datePublished" datetime="2019-08-14T14:45:43+08:00">2019-08-14</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/" itemprop="url" rel="index"><span itemprop="name">数据结构与算法</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/应用篇/" itemprop="url" rel="index"><span itemprop="name">应用篇</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>搜索引擎分为如下四个部分</p>
+<h2 id="爬虫抓取"><a href="#爬虫抓取" class="headerlink" title="爬虫抓取"></a>爬虫抓取</h2><ol>
+<li>利用graph的bfs方式遍历，每个url就是一个vertex,用links.bin作为bfs搜索的队列，这样支持断点续排，并且也能减少内存的使用</li>
+<li>由于网页的量巨大，我们可以用bloomfilter进行排重，这样能减少内存空间，即bloomfilter.bin</li>
+<li>保存原始网页docs_row.bin,格式是docs_id–&gt;docs_content,docs_id由一个中心计数器生成</li>
+</ol>
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><ol>
+<li>抽取文本信息：去掉网页中的标签等信息 可以理由ac自动机</li>
+<li>创建临时索引：然后对文本进行分词<ol>
+<li>创建tmp_index.bin，格式是：term_id–&gt;doc_id</li>
+<li>创建term_id.bin,格式是：term_id–&gt;term （散列表）</li>
+<li>term_id通过一个中心计数器生成</li>
+</ol>
+</li>
+</ol>
+<h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><ol>
+<li>分析网页，简历倒排索引：即term_id–&gt;doc_id1,doc_id2,doc_id3。由于临时索引很大，我们可以采用多路归并排序（map-reduce）进行归并，index.bin</li>
+<li>记录term在倒排索引偏移量的文档term_offset.bin</li>
+</ol>
+<p>如图：<br><img src="数据结构与算法-搜索引擎中的算法和数据结构/google_idx.jpg" alt="avator"></p>
+<h2 id="查询"><a href="#查询" class="headerlink" title="查询"></a>查询</h2><p>我们通过上面提到的文件：term_id.bin、term_offset.bin、index.bin、docs_id.bin，</p>
+<ol>
+<li>想通过且此获取k个term</li>
+<li>在通过term_id.bin获取term_id</li>
+<li>在通过term_offset.bin找到索引中对应的doc_id，看那个doc_id出现的次数最多就说明哪个服务客户需要就排在前面</li>
+<li>按照3的顺序在docs_id.bin查找顺序。</li>
+</ol>
+<h2 id="摘要实现原理"><a href="#摘要实现原理" class="headerlink" title="摘要实现原理"></a>摘要实现原理</h2><p>我们在创建临时索引时候可以将摘要和doc_ic以及term_id存入到schema.bin中，需要的时候查询出来。<br>网页快照可以将doc_id–&gt;doc_row用lru的算法存入到shap_shot.bin中。</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-Redis中的数据结构/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2052,187 +2247,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-算法思想-分治算法/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/数据结构与算法-算法思想-分治算法/" class="post-title-link" itemprop="url">数据结构与算法-分治算法</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-07-25 17:36:03" itemprop="dateCreated datePublished" datetime="2019-07-25T17:36:03+08:00">2019-07-25</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-07-29 16:33:50" itemprop="dateModified" datetime="2019-07-29T16:33:50+08:00">2019-07-29</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/" itemprop="url" rel="index"><span itemprop="name">数据结构与算法</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/算法/" itemprop="url" rel="index"><span itemprop="name">算法</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>todo</p>
-<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">type</span> ReversedCount <span class="keyword">struct</span> &#123;</span><br><span class="line">    Num <span class="keyword">int</span></span><br><span class="line">    A   []<span class="keyword">int</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(this *ReversedCount)</span> <span class="title">Count</span><span class="params">(p <span class="keyword">int</span>, r <span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> p &gt;= r &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	m := (r + p) / <span class="number">2</span></span><br><span class="line"></span><br><span class="line">	this.Count(p, m)</span><br><span class="line">	this.Count(m+<span class="number">1</span>, r)</span><br><span class="line"></span><br><span class="line">	this.merge(p, m, r)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(this *ReversedCount)</span> <span class="title">merge</span><span class="params">(p <span class="keyword">int</span>, m <span class="keyword">int</span>, r <span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">	j := p</span><br><span class="line">	k := m + <span class="number">1</span></span><br><span class="line">	tmp := <span class="built_in">make</span>([]<span class="keyword">int</span>, r-p+<span class="number">1</span>)</span><br><span class="line">	i := <span class="number">0</span></span><br><span class="line">	<span class="keyword">for</span> j &lt;= m &amp;&amp; k &lt;= r &#123;</span><br><span class="line">		<span class="keyword">if</span> this.A[j] &lt;= this.A[k] &#123;</span><br><span class="line">			tmp[i] = this.A[j]</span><br><span class="line">			j++</span><br><span class="line">			i++</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			tmp[i] = this.A[k]</span><br><span class="line">			<span class="comment">/**</span></span><br><span class="line"><span class="comment">			1.数组分为俩部分分别为前半部分a[p,m]，以及后版部分a[m+1,r]</span></span><br><span class="line"><span class="comment">            2.这时候因为A[K]&lt;A[J]，又因为前半部分的数组是有序的，所以前半部分的数组的剩余部分都是逆序的，统计这部分元素个数即可</span></span><br><span class="line"><span class="comment">			3.计算方法m-j+1,解释：</span></span><br><span class="line"><span class="comment">				j是之前已经有了j个比A[k]小的元素，由于前半数组是有序的，所以从m-j+1个之后都是比a[j]大的元素了。</span></span><br><span class="line"><span class="comment">				+1是因为结果药品包含当前元素（这个地方当时写错了）</span></span><br><span class="line"><span class="comment">			*/</span></span><br><span class="line">			this.Num += m - j + <span class="number">1</span></span><br><span class="line">			k++</span><br><span class="line">			i++</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> j &lt;= m &#123;</span><br><span class="line">		tmp[i] = this.A[j]</span><br><span class="line">		i++</span><br><span class="line">		j++</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> k &lt;= r &#123;</span><br><span class="line">		tmp[i] = this.A[k]</span><br><span class="line">		i++</span><br><span class="line">		k++</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">for</span> idx, i := <span class="keyword">range</span> tmp &#123;</span><br><span class="line">		this.A[p+idx] = i</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2279,7 +2293,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">114</span>
+                    <span class="site-state-item-count">115</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2346,7 +2360,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">27</span>
+                      
+                    
+                    <span class="site-state-item-count">28</span>
                     <span class="site-state-item-name">categories</span>
                   </a>
                 </div>
@@ -2453,7 +2469,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">47</span>
+                      
+                    
+                    <span class="site-state-item-count">48</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>

@@ -328,6 +328,191 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/cpu的负载与线程以及进程之间的切换/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/cpu的负载与线程以及进程之间的切换/" class="post-title-link" itemprop="url">cpu的负载与线程以及进程之间的切换</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-09-02 12:52:51 / Modified: 13:12:13" itemprop="dateCreated datePublished" datetime="2019-09-02T12:52:51+08:00">2019-09-02</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/linux/cpu/" itemprop="url" rel="index"><span itemprop="name">cpu</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>在开发中我们经常会提到线程以及进程的切换代价很高。它们的主要开销在哪里呢？我们的程序运行往往需要程序计数器以及cpu寄存器即CPU的上下文，当程序进程切换时候需要记录下当前的程序计数器以及cpi寄存器的状态。由于这俩个模块是有内核态管理的所以要切换到内核态去执行。在执行完后在切换回用户态。</p>
+<h2 id="程序用户态和内核态之间的切换–特权模式切换"><a href="#程序用户态和内核态之间的切换–特权模式切换" class="headerlink" title="程序用户态和内核态之间的切换–特权模式切换"></a>程序用户态和内核态之间的切换–特权模式切换</h2><p>如上所述，用户态访问的资源受限，无法直接操作硬件，所以一次操作需要在内核态和内存态之间切换，比如一次IO的读操作，我们要先调用open，在read，在write写入到标准输出流程。涉及到3次系统操作，每次系统操作都是用户态–&gt;内核态–&gt;用户态的切换关系</p>
+<h2 id="cpu进程的切换"><a href="#cpu进程的切换" class="headerlink" title="cpu进程的切换"></a>cpu进程的切换</h2><p>进程是持有资源的最小单位，当多个进程竞争CPU资源时候就会发生进程间的cpu上下文切换，具体有以下3种情况</p>
+<ol>
+<li>系统资源不足时候会让出CPU资源，挂起当前进程进行进程的切换</li>
+<li>主动的CPU上下文切换，cpu为所有的资源分配了时间片，当时间片结束后会进行进程的切换</li>
+<li>响应硬件的中断事件，进行上下文切换。</li>
+<li>程序通过sleep等方式</li>
+<li>有更高优先级的程序进入</li>
+</ol>
+<p>进程的管理、切换发生在内核态，但是运行在内核态，所以要保存当前进程的程序计数器以及cpu寄存器、程序的栈和虚拟内存，同时要加载下一个运行的进程的上述的数据，比较消耗性能，往往在微妙级别，如果过多的进程间上下文切换会影响性能</p>
+<h2 id="cpu线程的切换"><a href="#cpu线程的切换" class="headerlink" title="cpu线程的切换"></a>cpu线程的切换</h2><p>线程是最小的调度单位，在进行线程切换时候，除了进程切换的数据外，还要保存线程自己的栈和虚拟内存。</p>
+<p>但是</p>
+<ol>
+<li>线程切换如果俩个线程属于同一个进程，只需要修改内核态的cpu寄存器和程序计数器即可</li>
+<li>如果切换的线程隶属于不同进程，同cpu进程的切换</li>
+</ol>
+<p>所以线程切换的性能要优于进程的切换</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/cpu的负载以及常用命令/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -373,12 +558,24 @@
                 
               
 
-              <time title="Created: 2019-08-28 13:29:19 / Modified: 13:51:08" itemprop="dateCreated datePublished" datetime="2019-08-28T13:29:19+08:00">2019-08-28</time>
+              <time title="Created: 2019-08-28 13:29:19" itemprop="dateCreated datePublished" datetime="2019-08-28T13:29:19+08:00">2019-08-28</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-09-02 12:53:22" itemprop="dateModified" datetime="2019-09-02T12:53:22+08:00">2019-09-02</time>
               
             
           </span>
@@ -402,7 +599,7 @@
                   , 
                 
               
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/linux/shell/" itemprop="url" rel="index"><span itemprop="name">shell</span></a></span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/linux/cpu/" itemprop="url" rel="index"><span itemprop="name">cpu</span></a></span>
 
                 
                 
@@ -739,12 +936,24 @@
                 
               
 
-              <time title="Created: 2019-08-26 14:18:40 / Modified: 21:15:41" itemprop="dateCreated datePublished" datetime="2019-08-26T14:18:40+08:00">2019-08-26</time>
+              <time title="Created: 2019-08-26 14:18:40" itemprop="dateCreated datePublished" datetime="2019-08-26T14:18:40+08:00">2019-08-26</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-08-29 20:53:27" itemprop="dateModified" datetime="2019-08-29T20:53:27+08:00">2019-08-29</time>
               
             
           </span>
@@ -813,7 +1022,8 @@
         
           
             <p>rocketmq的消息的存储模块，broker角色支持ASYNC_MASTER,SYNC_MASTER,SLAVE</p>
-<p>## </p>
+<h2 id="broker的主要属性"><a href="#broker的主要属性" class="headerlink" title="broker的主要属性"></a>broker的主要属性</h2><p>命令是<br>mqbroker -m</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">namesrvAddr=</span><br><span class="line">brokerIP1=<span class="number">10.96</span>.83.21</span><br><span class="line">brokerName=localhost</span><br><span class="line">brokerClusterName=DefaultCluster</span><br><span class="line">brokerId=<span class="number">0</span></span><br><span class="line">autoCreateTopicEnable=<span class="keyword">true</span></span><br><span class="line">autoCreateSubscriptionGroup=<span class="keyword">true</span></span><br><span class="line">msgTraceTopicName=RMQ_SYS_TRACE_TOPIC</span><br><span class="line">traceTopicEnable=<span class="keyword">false</span></span><br><span class="line">rejectTransactionMessage=<span class="keyword">false</span></span><br><span class="line">fetchNamesrvAddrByAddressServer=<span class="keyword">false</span></span><br><span class="line">transactionTimeOut=<span class="number">6000</span></span><br><span class="line">transactionCheckMax=<span class="number">15</span></span><br><span class="line">transactionCheckInterval=<span class="number">60000</span></span><br><span class="line">aclEnable=<span class="keyword">false</span></span><br><span class="line">storePathRootDir=/root/store</span><br><span class="line">storePathCommitLog=/root/store/commitlog</span><br><span class="line">flushIntervalCommitLog=<span class="number">500</span></span><br><span class="line">commitIntervalCommitLog=<span class="number">200</span></span><br><span class="line">flushCommitLogTimed=<span class="keyword">false</span></span><br><span class="line">deleteWhen=<span class="number">04</span></span><br><span class="line">fileReservedTime=<span class="number">72</span></span><br><span class="line">maxTransferBytesOnMessageInMemory=<span class="number">262144</span></span><br><span class="line">maxTransferCountOnMessageInMemory=<span class="number">32</span></span><br><span class="line">maxTransferBytesOnMessageInDisk=<span class="number">65536</span></span><br><span class="line">maxTransferCountOnMessageInDisk=<span class="number">8</span></span><br><span class="line">accessMessageInMemoryMaxRatio=<span class="number">40</span></span><br><span class="line">messageIndexEnable=<span class="keyword">true</span></span><br><span class="line">messageIndexSafe=<span class="keyword">false</span></span><br><span class="line">haMasterAddress=</span><br><span class="line">brokerRole=ASYNC_MASTER</span><br><span class="line">flushDiskType=ASYNC_FLUSH</span><br><span class="line">cleanFileForciblyEnable=<span class="keyword">true</span></span><br><span class="line">transientStorePoolEnable=<span class="keyword">false</span></span><br></pre></td></tr></table></figure>
 
           
         
@@ -1969,201 +2179,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-搜索引擎中的算法和数据结构/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/数据结构与算法-搜索引擎中的算法和数据结构/" class="post-title-link" itemprop="url">数据结构与算法-搜索引擎中的算法和数据结构</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-08-14 14:45:43 / Modified: 17:03:25" itemprop="dateCreated datePublished" datetime="2019-08-14T14:45:43+08:00">2019-08-14</time>
-            
-
-            
-              
-
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/" itemprop="url" rel="index"><span itemprop="name">数据结构与算法</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/应用篇/" itemprop="url" rel="index"><span itemprop="name">应用篇</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>搜索引擎分为如下四个部分</p>
-<h2 id="爬虫抓取"><a href="#爬虫抓取" class="headerlink" title="爬虫抓取"></a>爬虫抓取</h2><ol>
-<li>利用graph的bfs方式遍历，每个url就是一个vertex,用links.bin作为bfs搜索的队列，这样支持断点续排，并且也能减少内存的使用</li>
-<li>由于网页的量巨大，我们可以用bloomfilter进行排重，这样能减少内存空间，即bloomfilter.bin</li>
-<li>保存原始网页docs_row.bin,格式是docs_id–&gt;docs_content,docs_id由一个中心计数器生成</li>
-</ol>
-<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><ol>
-<li>抽取文本信息：去掉网页中的标签等信息 可以理由ac自动机</li>
-<li>创建临时索引：然后对文本进行分词<ol>
-<li>创建tmp_index.bin，格式是：term_id–&gt;doc_id</li>
-<li>创建term_id.bin,格式是：term_id–&gt;term （散列表）</li>
-<li>term_id通过一个中心计数器生成</li>
-</ol>
-</li>
-</ol>
-<h2 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h2><ol>
-<li>分析网页，简历倒排索引：即term_id–&gt;doc_id1,doc_id2,doc_id3。由于临时索引很大，我们可以采用多路归并排序（map-reduce）进行归并，index.bin</li>
-<li>记录term在倒排索引偏移量的文档term_offset.bin</li>
-</ol>
-<p>如图：<br><img src="数据结构与算法-搜索引擎中的算法和数据结构/google_idx.jpg" alt="avator"></p>
-<h2 id="查询"><a href="#查询" class="headerlink" title="查询"></a>查询</h2><p>我们通过上面提到的文件：term_id.bin、term_offset.bin、index.bin、docs_id.bin，</p>
-<ol>
-<li>想通过且此获取k个term</li>
-<li>在通过term_id.bin获取term_id</li>
-<li>在通过term_offset.bin找到索引中对应的doc_id，看那个doc_id出现的次数最多就说明哪个服务客户需要就排在前面</li>
-<li>按照3的顺序在docs_id.bin查找顺序。</li>
-</ol>
-<h2 id="摘要实现原理"><a href="#摘要实现原理" class="headerlink" title="摘要实现原理"></a>摘要实现原理</h2><p>我们在创建临时索引时候可以将摘要和doc_ic以及term_id存入到schema.bin中，需要的时候查询出来。<br>网页快照可以将doc_id–&gt;doc_row用lru的算法存入到shap_shot.bin中。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2210,7 +2225,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">114</span>
+                    <span class="site-state-item-count">115</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2277,7 +2292,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">27</span>
+                      
+                    
+                    <span class="site-state-item-count">28</span>
                     <span class="site-state-item-name">categories</span>
                   </a>
                 </div>
@@ -2384,7 +2401,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">47</span>
+                      
+                    
+                    <span class="site-state-item-count">48</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>

@@ -328,6 +328,204 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql的数据页更新/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/mysql/mysql的数据页更新/" class="post-title-link" itemprop="url">mysql更新数据的原理和流程-草稿</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-06 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-06T00:00:00+08:00">2019-02-06</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="mysql更新数据的原理和流程-草稿"><a href="#mysql更新数据的原理和流程-草稿" class="headerlink" title="mysql更新数据的原理和流程-草稿"></a>mysql更新数据的原理和流程-草稿</h1><p>本文介绍mysql更新数据的原理和流程</p>
+<h2 id="为什么mysql更新的效率很高？"><a href="#为什么mysql更新的效率很高？" class="headerlink" title="为什么mysql更新的效率很高？"></a>为什么mysql更新的效率很高？</h2><ol>
+<li>WAL机制：即更新内存中数据页，同时写redolog+binglog然后返回。后台慢慢将数据页刷到磁盘中。（随机写改为顺序写）</li>
+<li>mysql的chagenbuffer。</li>
+</ol>
+<h2 id="为什么mysql偶尔会抖一下"><a href="#为什么mysql偶尔会抖一下" class="headerlink" title="为什么mysql偶尔会抖一下"></a>为什么mysql偶尔会抖一下</h2><p>刷新脏页<br>什么叫脏页？<br>什么时候触发脏页的flush。</p>
+<ol>
+<li>redolog写满；（尽量避免，因为这时候所有更新都被block主）</li>
+<li>内存不足：需要加载新的数据页但是内存不够，将数据页淘汰，如果是脏页，就flush到磁盘；（至于为什么不直接淘汰，下次读的时候从redologmerge是出于性能考虑，每次加载的都是干净的数据页）</li>
+<li>正常的时候，定时刷新</li>
+<li>正常关闭mysql时候</li>
+</ol>
+<p>2是抖一下的原因<br>buf1fpool数据页三种状态（未使用，使用了但是干净页，使用了但是脏页）。<br>当数据页没在内存中时候，申请一个页面，如果没有未使用页面就需要淘汰页面，俩种情况，如果淘汰的页面过多，会影响性能</p>
+<ol>
+<li>干净页直接淘汰</li>
+<li><p>脏页flush，淘汰</p>
+<p>fio -filename=$filename -direct=1 -iodepth 1 -thread -rw=randrw -ioengine=psync -bs=16k -size=500M -numjobs=10 -runtime=10 -group_reporting -name=mytest</p>
+</li>
+</ol>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/如何判断mysql的主从出现问题/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2242,183 +2440,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/netty/ByteBuf/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/netty/ByteBuf/" class="post-title-link" itemprop="url">ByteBuf</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-03 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-03T00:00:00+08:00">2019-02-03</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/netty/" itemprop="url" rel="index"><span itemprop="name">netty</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="ByteBuf"><a href="#ByteBuf" class="headerlink" title="ByteBuf"></a>ByteBuf</h1><p>介绍Netty中的ByteBuf</p>
-<h2 id="byteBuf种类"><a href="#byteBuf种类" class="headerlink" title="byteBuf种类"></a>byteBuf种类</h2><p>netty中的byteBuf除了JDK中的heapBuffer和directBuffer还有compositeBuffer类型</p>
-<p>传统的Java的nio操作都是ByteBuffer.allocate(int capacity)实际上是神了一个HeapBuffer。当通过Socket传输对象时候我们实际上是申请了一块临时的DirectBuffer（堆外内存），将数据copy到DirectBuffer,在write出去。所以HeapBuffer传输数据会有数据copy,DirectBuffer没有数据copy。但是申请和管理DirectBuffer会更复杂更慢。</p>
-<h3 id="Heap-Buffer-堆缓冲区"><a href="#Heap-Buffer-堆缓冲区" class="headerlink" title="Heap Buffer 堆缓冲区"></a>Heap Buffer 堆缓冲区</h3><p>ByteBuf将数据存储在JVM的堆空间，通过将数据存储在数组中实现的。<br>  优点是：由于数据存储在JVM的堆中可以快速创建和快速释放，并且提供了数组的直接快速访问的方法。<br>  缺点是：每次读写数据都要先将数据拷贝到直接缓冲区再进行传递。</p>
-<h3 id="Direct-Buffer-直接缓冲区"><a href="#Direct-Buffer-直接缓冲区" class="headerlink" title="Direct Buffer 直接缓冲区"></a>Direct Buffer 直接缓冲区</h3><p>在堆之外直接分配内存，直接缓冲区不会占用堆的容量。<br>  优点是：在使用Socket传递数据时性能很好，由于数据直接在内存中，不存在从JVM拷贝数据到直接缓冲区的过程，性能好。<br>  缺点是：因为Direct Buffer是直接在内存中，所以分配内存空间和释放内存比堆缓冲区更复杂和慢</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2465,7 +2486,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">116</span>
+                    <span class="site-state-item-count">117</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

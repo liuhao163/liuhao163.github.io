@@ -4,6 +4,39 @@
   
     
     <entry>
+      <title>RocketMq-源码学习-消息的存储(**持久化消息队列的重点**)</title>
+      <link href="/RocketMq-%E6%BA%90%E7%A0%81%E5%AD%A6%E4%B9%A0-Store-%E6%B6%88%E6%81%AF%E7%9A%84%E5%AD%98%E5%82%A8/"/>
+      <url>/RocketMq-%E6%BA%90%E7%A0%81%E5%AD%A6%E4%B9%A0-Store-%E6%B6%88%E6%81%AF%E7%9A%84%E5%AD%98%E5%82%A8/</url>
+      
+        <content type="html"><![CDATA[<blockquote><p>broker的一个重点就是消息的持久化，它决定这MQ的使用场景、性能、以及可用性</p></blockquote><h2 id="SendMessageProcessor"><a href="#SendMessageProcessor" class="headerlink" title="SendMessageProcessor"></a>SendMessageProcessor</h2><p>  上一节提到的broker在启动过程。其中registerProcessor()方法中第一个就初始化了SendMessageProcessor。<br>  SendMessageProcessor采用模板模式，实现了抽象类AbstractSendMessageProcessor，并且实现了NettyRequestProcessor，它是netty的事件的处理类。</p><h3 id="关键方法"><a href="#关键方法" class="headerlink" title="关键方法"></a>关键方法</h3><h4 id="processRequest"><a href="#processRequest" class="headerlink" title="processRequest"></a>processRequest</h4><p>实现了NettyRequestProcessor接口的processRequest发方法</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 消息队列 </category>
+          
+          <category> rocketmq </category>
+          
+          <category> 源码学习 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
+            
+            <tag> rocketmq </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>cpu的负载与线程以及进程之间的切换</title>
       <link href="/cpu%E7%9A%84%E8%B4%9F%E8%BD%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E4%BB%A5%E5%8F%8A%E8%BF%9B%E7%A8%8B%E4%B9%8B%E9%97%B4%E7%9A%84%E5%88%87%E6%8D%A2/"/>
       <url>/cpu%E7%9A%84%E8%B4%9F%E8%BD%BD%E4%B8%8E%E7%BA%BF%E7%A8%8B%E4%BB%A5%E5%8F%8A%E8%BF%9B%E7%A8%8B%E4%B9%8B%E9%97%B4%E7%9A%84%E5%88%87%E6%8D%A2/</url>
@@ -39,7 +72,7 @@
       <link href="/RocketMq-%E6%BA%90%E7%A0%81%E5%AD%A6%E4%B9%A0%E9%9B%B6%E6%8F%90%E5%89%8D%E7%9A%84%E4%B8%80%E4%BA%9B%E5%87%86%E5%A4%87/"/>
       <url>/RocketMq-%E6%BA%90%E7%A0%81%E5%AD%A6%E4%B9%A0%E9%9B%B6%E6%8F%90%E5%89%8D%E7%9A%84%E4%B8%80%E4%BA%9B%E5%87%86%E5%A4%87/</url>
       
-        <content type="html"><![CDATA[<p>看源码的一些准备工作，以下逻辑会出现多次。</p><h2 id="RemotingServer"><a href="#RemotingServer" class="headerlink" title="RemotingServer"></a>RemotingServer</h2><p>rocketMq采用NettyRemotingServer来处理各个组件之间的网络通信。</p><h3 id="处理消息的方式"><a href="#处理消息的方式" class="headerlink" title="处理消息的方式"></a>处理消息的方式</h3><p>NettyRemotingServer处理ChannelRead事件是通过NettyRemotingServer的内部类NettyServerHandler</p><ul><li>注册消息的：通过registerProcessor方法，每种消息根据requestcode，来制定消息处理方式。<ul><li>维护了processorTable对象，HashMap&lt;Integer/<em> request code </em>/, Pair&lt;NettyRequestProcessor, ExecutorService&gt;&gt;</li><li>每一种request指定一个ExecutorService和一个registerProcessor来处理</li></ul></li><li>处理消息：通过调用processMessageReceived来处理。</li></ul><h2 id="store模块相关"><a href="#store模块相关" class="headerlink" title="store模块相关"></a>store模块相关</h2><p>mmp </p>]]></content>
+        <content type="html"><![CDATA[<p>看源码的一些准备工作，以下逻辑会出现多次。</p><h2 id="RemotingServer"><a href="#RemotingServer" class="headerlink" title="RemotingServer"></a>RemotingServer</h2><p>rocketMq采用NettyRemotingServer来处理各个组件之间的网络通信。</p><h3 id="处理消息的方式"><a href="#处理消息的方式" class="headerlink" title="处理消息的方式"></a>处理消息的方式</h3><p>NettyRemotingServer的channelRead0()–&gt;NettyServerHandler.processMessageReceived–&gt;NettyServerHandler.processRequestCommand的processorTable处理，其中processorTable的方法是通过下面的方式注册进去</p><ul><li>注册消息的：通过registerProcessor方法，每种消息根据requestcode，来制定消息处理方式。<ul><li>维护了processorTable对象，HashMap&lt;Integer/<em> request code </em>/, Pair&lt;NettyRequestProcessor, ExecutorService&gt;&gt;</li><li>每一种request指定一个ExecutorService和一个registerProcessor来处理</li></ul></li><li>处理消息：通过调用processMessageReceived来处理。</li></ul><h2 id="store模块相关"><a href="#store模块相关" class="headerlink" title="store模块相关"></a>store模块相关</h2><p>mmp</p>]]></content>
       
       
       <categories>

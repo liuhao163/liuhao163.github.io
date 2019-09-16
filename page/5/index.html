@@ -328,6 +328,199 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA并发案例分析-Netty于Reactor模式/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/JAVA并发案例分析-Netty于Reactor模式/" class="post-title-link" itemprop="url">JAVA并发案例分析-Netty于Reactor模式</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-06-06 17:46:17 / Modified: 18:08:55" itemprop="dateCreated datePublished" datetime="2019-06-06T17:46:17+08:00">2019-06-06</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="BIO的问题"><a href="#BIO的问题" class="headerlink" title="BIO的问题"></a>BIO的问题</h2><p> 痛点：因为JAVA和操作系统的BIO操作是阻塞的，也就是说在读操作的时候线程会被阻塞住。<br> 解决方案：</p>
+<ul>
+<li>利用Thread-Per-Message模式每个IO操作都用一个线程。</li>
+<li>问题：在java中由于线程对象较重，在链接不多的时候还可以一旦链接很多的场景很块就会出现问题。</li>
+</ul>
+<h2 id="Nio和WorkThread模式"><a href="#Nio和WorkThread模式" class="headerlink" title="Nio和WorkThread模式"></a>Nio和WorkThread模式</h2><p>  我们可以利用WorkThread模式采用线程池来处理这种情况么？答案是BIO不可以因为BIO的IO操作会阻塞线程。这时候就要用到NIO。<br>  NIO的IO操作是不会阻塞线程的：<br>  以select模型为例子，简单来说：当一个IO请求发出后，不会阻塞当前线程，用户态的selecter会一直轮询FD检查是否IO请求的数据是否准备好，内核态会去准备数据，一旦内核态的数据准备好，会通知FD已经准备好<br>  这时候我们的WorkThread可以对这些准备好的FD去处理。</p>
+<p>  上述这种模式我们叫它Reactor模式</p>
+<h2 id="Reactor模式的示例"><a href="#Reactor模式的示例" class="headerlink" title="Reactor模式的示例"></a>Reactor模式的示例</h2><p><img src="./reactor01.png" alt="avator"></p>
+<ul>
+<li>Reactor：模式中最重要的类：<ul>
+<li>负责调用操作系统的Selecter.select()函数，获取准备好的io-handlers</li>
+<li>遍历io-handlers交给EventHandler</li>
+<li>注册、移除EventHandler</li>
+</ul>
+</li>
+<li>EventHandler:io请求的逻辑处理类</li>
+<li>Selecter：封装操作系统IO模型的选择器epoll、select</li>
+<li>io-heandler：封装操作系统io请求类</li>
+</ul>
+<h2 id="netty"><a href="#netty" class="headerlink" title="netty"></a>netty</h2><p><img src="./reactor02.png" alt="avator"></p>
+<p>  如图：netty中的Reactor类就是EventLoop，Soekcet和Eventloop是稳定的多对1关系，而线程和EventLoop是稳定的1对1关系。绑定关系见源码的register<br>  而eventloop是封装在一个EventLoopGroup中的并且在其中实现了负载均衡。<br>  注意：netty的服务端往往需要俩个EventLoopGroup</p>
+<ul>
+<li>boosGroup用于处理io的链接请求，如果监听一个端口值需要分配一个eventloop否则会浪费</li>
+<li>workGroup处理具体io的操作。</li>
+</ul>
+<p>原因是，操作系统的io决定的创建链接后会生成一个新的socker，为了性能我们会将这个socket放在其他的group中。</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA并发案例分析-令牌桶算法/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1971,217 +2164,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Future：如何用多线程实现最优的“烧水泡茶”程序？/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/Future：如何用多线程实现最优的“烧水泡茶”程序？/" class="post-title-link" itemprop="url">Future：如何用多线程实现最优的“烧水泡茶”程序？</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-04-28 20:26:01" itemprop="dateCreated datePublished" datetime="2019-04-28T20:26:01+08:00">2019-04-28</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-05-18 17:51:45" itemprop="dateModified" datetime="2019-05-18T17:51:45+08:00">2019-05-18</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>线程池中可以通过Future模式实现对异步任务的状态的监控和获取异步任务的结果，具体见ExecutorService下的3个方法</p>
-<h2 id="获取异步任务的结果"><a href="#获取异步任务的结果" class="headerlink" title="获取异步任务的结果"></a>获取异步任务的结果</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 提交 Runnable 任务</span></span><br><span class="line">Future&lt;?&gt; submit(Runnable task)</span><br><span class="line"><span class="comment">// 提交 Callable 任务</span></span><br><span class="line">&lt;T&gt; <span class="function">Future&lt;T&gt; <span class="title">submit</span><span class="params">(Callable&lt;T&gt; task)</span></span>;</span><br><span class="line"><span class="comment">// 提交 Runnable 任务及结果引用  </span></span><br><span class="line">&lt;T&gt; <span class="function">Future&lt;T&gt; <span class="title">submit</span><span class="params">(Runnable task, T result)</span></span>;</span><br></pre></td></tr></table></figure>
-<p>第一个方法是无返回值很类似join方法<br>第二个方法是可以获取task的返回值<br>第三个方法是可以通过T result来实现俩个线程之间的交互。如下</p>
-<h2 id="FutreTask"><a href="#FutreTask" class="headerlink" title="FutreTask"></a>FutreTask</h2><p>和Furtre很类似但是它继承自Furture和Runable可以作为对象传递给线程池或者线程。然后通过get来获取执行结果。如下代码，开水泡茶问题</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">FutureTest</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> ExecutorService executor = Executors.newFixedThreadPool(<span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> ExecutionException, InterruptedException </span>&#123;</span><br><span class="line">        FutureTask&lt;String&gt; ft2 = <span class="keyword">new</span> FutureTask&lt;&gt;(() -&gt; &#123;</span><br><span class="line">            System.out.println(<span class="string">"洗茶杯"</span>);</span><br><span class="line">            Thread.sleep(<span class="number">1000L</span>);</span><br><span class="line"></span><br><span class="line">            System.out.println(<span class="string">"找茶叶"</span>);</span><br><span class="line">            Thread.sleep(<span class="number">1000L</span>);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> <span class="string">"龙井"</span>;</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        FutureTask&lt;String&gt; ft1 = <span class="keyword">new</span> FutureTask&lt;&gt;(() -&gt; &#123;</span><br><span class="line">            System.out.println(<span class="string">"洗茶壶"</span>);</span><br><span class="line">            Thread.sleep(<span class="number">1000L</span>);</span><br><span class="line"></span><br><span class="line">            System.out.println(<span class="string">"烧水"</span>);</span><br><span class="line">            Thread.sleep(<span class="number">10000L</span>);</span><br><span class="line">            System.out.println(<span class="string">"水开了"</span>);</span><br><span class="line">            String ret = ft2.get();</span><br><span class="line">            <span class="keyword">return</span> <span class="string">"上茶"</span>+ret;</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        executor.submit(ft1);</span><br><span class="line">        executor.submit(ft2);</span><br><span class="line">        System.out.println(ft1.get());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>近期的使用场景：<br>  比如一个很大的列表查询，你可以拆分成10个线程同时查询然后在查询完后合并成一个结果集。</p>
-<h2 id="CompletableFuture"><a href="#CompletableFuture" class="headerlink" title="CompletableFuture"></a>CompletableFuture</h2><p>简化Future的线程调度难度。构造函数是4个静态方法</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 使用默认线程池</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> CompletableFuture&lt;Void&gt; <span class="title">runAsync</span><span class="params">(Runnable runnable)</span></span></span><br><span class="line"><span class="function"><span class="keyword">static</span> &lt;U&gt; CompletableFuture&lt;U&gt; <span class="title">supplyAsync</span><span class="params">(Supplier&lt;U&gt; supplier)</span></span></span><br><span class="line"><span class="function"><span class="comment">// 可以指定线程池  对于IO这种消耗线程的方式强烈推荐</span></span></span><br><span class="line"><span class="function"><span class="keyword">static</span> CompletableFuture&lt;Void&gt; <span class="title">runAsync</span><span class="params">(Runnable runnable, Executor executor)</span></span></span><br><span class="line"><span class="function"><span class="keyword">static</span> &lt;U&gt; CompletableFuture&lt;U&gt; <span class="title">supplyAsync</span><span class="params">(Supplier&lt;U&gt; supplier, Executor executor)</span></span></span><br></pre></td></tr></table></figure>
-<p>ft1完成后执行的操作</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"># Function对象有参数有返回值</span><br><span class="line"><span class="function">CompletionStage&lt;R&gt; <span class="title">thenApply</span><span class="params">(fn)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;R&gt; <span class="title">thenApplyAsync</span><span class="params">(fn)</span></span>;</span><br><span class="line"></span><br><span class="line"># Consumer对象有参数无返回值</span><br><span class="line"><span class="function">CompletionStage&lt;Void&gt; <span class="title">thenAccept</span><span class="params">(consumer)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;Void&gt; <span class="title">thenAcceptAsync</span><span class="params">(consumer)</span></span>;</span><br><span class="line"></span><br><span class="line"># Runnable对象无参数无返回值</span><br><span class="line"><span class="function">CompletionStage&lt;Void&gt; <span class="title">thenRun</span><span class="params">(action)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;Void&gt; <span class="title">thenRunAsync</span><span class="params">(action)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function">CompletionStage&lt;R&gt; <span class="title">thenCompose</span><span class="params">(fn)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;R&gt; <span class="title">thenComposeAsync</span><span class="params">(fn)</span></span>;</span><br></pre></td></tr></table></figure>
-<h3 id="And合并关系"><a href="#And合并关系" class="headerlink" title="And合并关系"></a>And合并关系</h3><p>ft1、ft2都结束后做一些操作，类似join。方法区别如上</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">CompletionStage&lt;R&gt; <span class="title">thenCombine</span><span class="params">(other, fn)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;R&gt; <span class="title">thenCombineAsync</span><span class="params">(other, fn)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;Void&gt; <span class="title">thenAcceptBoth</span><span class="params">(other, consumer)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;Void&gt; <span class="title">thenAcceptBothAsync</span><span class="params">(other, consumer)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;Void&gt; <span class="title">runAfterBoth</span><span class="params">(other, action)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;Void&gt; <span class="title">runAfterBothAsync</span><span class="params">(other, action)</span></span>;</span><br></pre></td></tr></table></figure>
-<h3 id="OR或者关系"><a href="#OR或者关系" class="headerlink" title="OR或者关系"></a>OR或者关系</h3><p>ft1、ft2有一个完成</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">CompletionStage <span class="title">applyToEither</span><span class="params">(other, fn)</span></span>;</span><br><span class="line"><span class="function">CompletionStage <span class="title">applyToEitherAsync</span><span class="params">(other, fn)</span></span>;</span><br><span class="line"><span class="function">CompletionStage <span class="title">acceptEither</span><span class="params">(other, consumer)</span></span>;</span><br><span class="line"><span class="function">CompletionStage <span class="title">acceptEitherAsync</span><span class="params">(other, consumer)</span></span>;</span><br><span class="line"><span class="function">CompletionStage <span class="title">runAfterEither</span><span class="params">(other, action)</span></span>;</span><br><span class="line"><span class="function">CompletionStage <span class="title">runAfterEitherAsync</span><span class="params">(other, action)</span></span>;</span><br></pre></td></tr></table></figure>
-<h3 id="异常处理"><a href="#异常处理" class="headerlink" title="异常处理"></a>异常处理</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">CompletionStage <span class="title">exceptionally</span><span class="params">(fn)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;R&gt; <span class="title">whenComplete</span><span class="params">(consumer)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;R&gt; <span class="title">whenCompleteAsync</span><span class="params">(consumer)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;R&gt; <span class="title">handle</span><span class="params">(fn)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;R&gt; <span class="title">handleAsync</span><span class="params">(fn)</span></span>;</span><br></pre></td></tr></table></figure>
-<h2 id="CompletionService"><a href="#CompletionService" class="headerlink" title="CompletionService"></a>CompletionService</h2><p>我们用ThreadPool和Future优化了步编程中协作的部分，取代了线程的join。但是我们在实际使用中往往会碰到下面的问题，具体见代码</p>
-<ol>
-<li>运行了3个异步任务，分别用了15s,10s,5s。</li>
-<li>之后会在另一个线程池对这些任务的结果进行计算。这时候在计算的线程池中会变成串行，由于1任务过久，所以任务2，3即便先完成了前面的步骤也要等1完成后在执行</li>
-</ol>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> ExecutionException, InterruptedException </span>&#123;</span><br><span class="line">    ExecutorService threadPool = Executors.newFixedThreadPool(<span class="number">3</span>);</span><br><span class="line"></span><br><span class="line">    Future&lt;Integer&gt; ft1 = threadPool.submit(() -&gt; &#123;</span><br><span class="line">        Thread.sleep(<span class="number">15000</span>);</span><br><span class="line">        System.out.println(<span class="string">"ft1 sleep 15s return 1"</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    Future&lt;Integer&gt; ft2 = threadPool.submit(() -&gt; &#123;</span><br><span class="line">        Thread.sleep(<span class="number">10000</span>);</span><br><span class="line">        System.out.println(<span class="string">"ft2 sleep 10s return 2"</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">2</span>;</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    Future&lt;Integer&gt; ft3 = threadPool.submit(() -&gt; &#123;</span><br><span class="line">        Thread.sleep(<span class="number">5000</span>);</span><br><span class="line">        System.out.println(<span class="string">"ft3 sleep 5s return 3"</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">3</span>;</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    ExecutorService calT=Executors.newSingleThreadExecutor();</span><br><span class="line">    Future ftRes=calT.submit(()-&gt;&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            System.out.println(<span class="string">"save:"</span>+ft1.get());</span><br><span class="line">            System.out.println(<span class="string">"save:"</span>+ft2.get());</span><br><span class="line">            System.out.println(<span class="string">"save:"</span>+ft3.get());</span><br><span class="line">            <span class="comment">//todo 比较大小</span></span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (ExecutionException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    ftRes.get();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>如果对这段代码进一步优化呢我们可以采用增加阻塞队列的方式。许多人加个阻塞队列就好了。异步执行的结果加入到阻塞队列中，最终通过阻塞队列后去方法。如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">BlockingQueue&lt;Integer&gt; queue=<span class="keyword">new</span> ArrayBlockingQueue&lt;Integer&gt;(<span class="number">3</span>);</span><br><span class="line">ExecutorService calT=Executors.newFixedThreadPool(<span class="number">3</span>);</span><br><span class="line">calT.execute(()-&gt; &#123;</span><br><span class="line">        queue.put(ft1.get());</span><br><span class="line">&#125;);</span><br><span class="line">calT.execute(()-&gt; &#123;</span><br><span class="line">    queue.put(ft2.get());</span><br><span class="line">&#125;);</span><br><span class="line">calT.execute(()-&gt; &#123;</span><br><span class="line">    queue.put(ft3.get());</span><br><span class="line">&#125;);</span><br><span class="line"><span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;<span class="number">3</span>;i++)&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">"save:"</span>+  queue.take());</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">System.out.println(<span class="string">"all finish"</span>);</span><br></pre></td></tr></table></figure>
-<p>确实能解决上述的问题，JAVA8之后为我们提供了更方便的写法（实现原理相同）,即：CompletionService,有另种狗仔方法</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">new</span> ExecutorCompletionService(Executor executor); <span class="comment">//LinkedBlockingQueue 默认使用</span></span><br><span class="line"><span class="keyword">new</span> ExecutorCompletionService(Executor executor,BlockingQueue&lt;Future&lt;V&gt;&gt; completionQueue)</span><br></pre></td></tr></table></figure>
-<p>上面的程序可以简写为这样</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">ExecutorCompletionService&lt;Integer&gt; ecs=<span class="keyword">new</span> ExecutorCompletionService(threadPool,queue);</span><br><span class="line">       ecs.submit(callable1);</span><br><span class="line">       ecs.submit(callable2);</span><br><span class="line">       ecs.submit(callable3);</span><br><span class="line">       <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;<span class="number">3</span>;i++)&#123;</span><br><span class="line">           <span class="keyword">try</span> &#123;</span><br><span class="line">               System.out.println(<span class="string">"save:"</span>+   ecs.take().get());</span><br><span class="line">           &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">               e.printStackTrace();</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br></pre></td></tr></table></figure>
-<p>关于take()和pool()区别。take()在队列为空会阻塞线程，poll如果队列为空会返回null，</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Future&lt;V&gt; <span class="title">submit</span><span class="params">(Callable&lt;V&gt; task)</span></span>;</span><br><span class="line"><span class="function">Future&lt;V&gt; <span class="title">submit</span><span class="params">(Runnable task, V result)</span></span>;</span><br><span class="line"><span class="function">Future&lt;V&gt; <span class="title">take</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException</span>;</span><br><span class="line"><span class="function">Future&lt;V&gt; <span class="title">poll</span><span class="params">()</span></span>;</span><br><span class="line"><span class="function">Future&lt;V&gt; <span class="title">poll</span><span class="params">(<span class="keyword">long</span> timeout, TimeUnit unit)</span> <span class="keyword">throws</span> InterruptedException</span>;<span class="comment">//会等待一段时间。</span></span><br></pre></td></tr></table></figure>
-<h3 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景"></a>使用场景</h3><p>Dubbo的Forking Cluster模式,对于实时性较高的操作，consumer端会同时并行调用俩个请求，哪个现有结果优先返回，代码如下，不过缺点是比较浪费资源</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  *</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> fork 并行度是2</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> timeOutMills 超时时间</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> callable 逻辑方法</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> &lt;T&gt; 返回值，多个方法返回第一个返回的</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"> <span class="keyword">public</span> &lt;T&gt; <span class="function">T <span class="title">forkCluster</span><span class="params">(<span class="keyword">int</span> fork, <span class="keyword">int</span> timeOutMills, Callable&lt;T&gt; callable)</span> </span>&#123;</span><br><span class="line">     ExecutorCompletionService&lt;T&gt; forkService = <span class="keyword">new</span> ExecutorCompletionService(Executors.newFixedThreadPool(fork), <span class="keyword">new</span> ArrayBlockingQueue&lt;&gt;(fork));</span><br><span class="line">     List&lt;Future&lt;T&gt;&gt; ftContainer=<span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">     <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">2</span>; i++) &#123;</span><br><span class="line">         ftContainer.add(forkService.submit(callable));</span><br><span class="line">     &#125;</span><br><span class="line"></span><br><span class="line">     <span class="keyword">try</span> &#123;</span><br><span class="line">         T result = forkService.poll(timeOutMills, TimeUnit.MILLISECONDS).get();</span><br><span class="line">         <span class="keyword">if</span> (result == <span class="keyword">null</span>) &#123;</span><br><span class="line">             <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">"返回结果为空抛异常"</span>);</span><br><span class="line">         &#125;</span><br><span class="line">         <span class="keyword">return</span> result;</span><br><span class="line">     &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">         e.printStackTrace();</span><br><span class="line">         <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">"返回结果为空抛异常"</span>);</span><br><span class="line">     &#125; <span class="keyword">catch</span> (ExecutionException e) &#123;</span><br><span class="line">         e.printStackTrace();</span><br><span class="line">         <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">"返回结果为空抛异常"</span>);</span><br><span class="line">     &#125;<span class="keyword">finally</span> &#123;</span><br><span class="line">         ftContainer.forEach(ft-&gt;&#123;</span><br><span class="line">             ft.cancel(<span class="keyword">true</span>);</span><br><span class="line">         &#125;);</span><br><span class="line">     &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
-<h2 id="Fork-join用分治思想加速我们的递归"><a href="#Fork-join用分治思想加速我们的递归" class="headerlink" title="Fork/join用分治思想加速我们的递归"></a>Fork/join用分治思想加速我们的递归</h2><p>待完善</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2228,7 +2210,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">117</span>
+                    <span class="site-state-item-count">118</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2297,7 +2279,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">28</span>
+                      
+                    
+                    <span class="site-state-item-count">29</span>
                     <span class="site-state-item-name">categories</span>
                   </a>
                 </div>

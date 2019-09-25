@@ -328,6 +328,577 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/RockeMq-初始以及demo的注解/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/RockeMq-初始以及demo的注解/" class="post-title-link" itemprop="url">RockeMq-初始以及demo的注解</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-08-25 21:44:35" itemprop="dateCreated datePublished" datetime="2019-08-25T21:44:35+08:00">2019-08-25</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-08-26 14:18:03" itemprop="dateModified" datetime="2019-08-26T14:18:03+08:00">2019-08-26</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/" itemprop="url" rel="index"><span itemprop="name">消息队列</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/" itemprop="url" rel="index"><span itemprop="name">rocketmq</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="producer"><a href="#producer" class="headerlink" title="producer"></a>producer</h2><h2 id="send-one-way"><a href="#send-one-way" class="headerlink" title="send-one-way"></a>send-one-way</h2><p>发送后不会检查发送状态,方法返回值void，常用于log的收集</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">producer.sendOneway(msg)</span><br></pre></td></tr></table></figure>
+<p>send-sync</p>
+<p>同步发送场景，发送后会返回sendResult用于检查发送状态，适合于订单等场景</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">producer.sendOneway(msg)</span><br></pre></td></tr></table></figure>
+<p>send-async</p>
+<p>异步发送场景，安全性介于上述两者之间，会有发送结果但是在SendCallback回调中处理</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">producer.send(msg,<span class="keyword">new</span> SendCallback() &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onSuccess</span><span class="params">(SendResult sendResult)</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"producer sendResult="</span>+sendResult);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onException</span><span class="params">(Throwable e)</span> </span>&#123;</span><br><span class="line">        System.out.printf(<span class="string">"%-10d Exception %s %n"</span>, -<span class="number">1</span>, e);</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+<h2 id="consumer"><a href="#consumer" class="headerlink" title="consumer"></a>consumer</h2><h3 id="保续消费"><a href="#保续消费" class="headerlink" title="保续消费"></a>保续消费</h3><p>客户端:send(Message msg, MessageQueueSelector selector, Object arg)</p>
+<ul>
+<li>实现MessageQueueSelector</li>
+</ul>
+<p>消费者</p>
+<ul>
+<li>MessageListenerOrderly:保续消费</li>
+</ul>
+<h3 id="ack机制"><a href="#ack机制" class="headerlink" title="ack机制"></a>ack机制</h3><ul>
+<li>ConsumeConcurrentlyStatus.CONSUME_SUCCESS：消费成功</li>
+<li>ConsumeConcurrentlyStatus.RECONSUME_LATER：重复消费。rocketmq会放到重试队列,这个重试TOPIC的名字是%RETRY%+consumergroup的名字</li>
+</ul>
+<p>注意：</p>
+<ol>
+<li>如果业务的回调没有处理好而抛出异常，会认为是消费失败当ConsumeConcurrentlyStatus.RECONSUME_LATER处理。</li>
+<li>当使用顺序消费的回调MessageListenerOrderly时，由于顺序消费是要前者消费成功才能继续消费，所以没有ConsumeConcurrentlyStatus.RECONSUME_LATER的这个状态，只有ConsumeOrderlyStatus.SUSPEND_CURRENT_QUEUE_A_MOMENT来暂停队列的其余消费，直到原消息不断重试成功为止才能继续消费。</li>
+</ol>
+<h3 id="offset的控制"><a href="#offset的控制" class="headerlink" title="offset的控制"></a>offset的控制</h3><p>和kafka类似的机制。</p>
+<h3 id="todo"><a href="#todo" class="headerlink" title="todo"></a>todo</h3><ol>
+<li>后续补充对offset的理解</li>
+<li>保续消费的实现</li>
+</ol>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/消息队列/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/消息队列/" class="post-title-link" itemprop="url">消息队列基础</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-08-19 21:01:30" itemprop="dateCreated datePublished" datetime="2019-08-19T21:01:30+08:00">2019-08-19</time>
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/" itemprop="url" rel="index"><span itemprop="name">消息队列</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>at-least-once：如果producer收到来自Kafka broker的确认（ack）或者acks = all，则表示该消息已经写入到Kafka。但如果producer ack超时或收到错误，则可能会重试发送消息，客户端会认为该消息未写入Kafka。如果broker在发送Ack之前失败，但在消息成功写入Kafka之后，此重试将导致该消息被写入两次，因此消息会被不止一次地传递给最终consumer，这种策略可能导致重复的工作和不正确的结果。</p>
+<p>at-most-once：如果在ack超时或返回错误时producer不重试，则该消息可能最终不会写入Kafka，因此不会传递给consumer。在大多数情况下，这样做是为了避免重复的可能性，业务上必须接收数据传递可能的丢失。</p>
+<p>exactly-once：即使producer重试发送消息，消息也会保证最多一次地传递给最终consumer。该语义是最理想的，但也难以实现，这是因为它需要消息系统本身与生产和消费消息的应用程序进行协作。例如如果在消费消息成功后，将Kafka consumer的偏移量rollback，我们将会再次从该偏移量开始接收消息。这表明消息传递系统和客户端应用程序必须配合调整才能实现excactly-once。</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/RocketMq-集群搭建笔记/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/RocketMq-集群搭建笔记/" class="post-title-link" itemprop="url">RocketMq-集群搭建笔记</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-08-18 20:27:59" itemprop="dateCreated datePublished" datetime="2019-08-18T20:27:59+08:00">2019-08-18</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-08-19 21:12:24" itemprop="dateModified" datetime="2019-08-19T21:12:24+08:00">2019-08-19</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/" itemprop="url" rel="index"><span itemprop="name">消息队列</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/" itemprop="url" rel="index"><span itemprop="name">rocketmq</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="服务器准备"><a href="#服务器准备" class="headerlink" title="服务器准备"></a>服务器准备</h2><p>10.96.115.40         mq-01              broker-a<br>10.96.83.21          mq-02              broker-b<br>10.96.83.21          mq-02              broker-a-s<br>10.96.115.40         mq-01              broker-b-s<br>10.96.83.21、10.96.115.40          mq-01、mq-02    nameserver、console</p>
+<h2 id="代码准备"><a href="#代码准备" class="headerlink" title="代码准备"></a>代码准备</h2><p>采用的是源码编译,</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">git clone https:<span class="comment">//github.com/apache/rocketmq.git</span></span><br><span class="line"></span><br><span class="line">cd rocketmq</span><br><span class="line"></span><br><span class="line">mvn -Prelease-all -DskipTests clean install -U</span><br><span class="line"></span><br><span class="line">cp -rf distribution/target/rocketmq-<span class="number">4.5</span>.2/rocketmq-<span class="number">4.5</span>.2/  &#123;workdir&#125;/rocketmq-<span class="number">4.5</span>.2</span><br><span class="line"></span><br><span class="line">cd &#123;workdir&#125;/rocketmq-<span class="number">4.5</span>.2</span><br></pre></td></tr></table></figure>
+<h2 id="启动nameserver"><a href="#启动nameserver" class="headerlink" title="启动nameserver"></a>启动nameserver</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup sh bin/mqnamesrv &amp;</span><br></pre></td></tr></table></figure>
+<h2 id="启动borker"><a href="#启动borker" class="headerlink" title="启动borker"></a>启动borker</h2><p>很贴心的为我们准备了配置的模板2m-2s-async、2m-2s-sync、2m-noslave</p>
+<ul>
+<li>10.96.115.40是broker-a、broker-b-s</li>
+<li>10.96.83.21是broker-b、broker-a-s</li>
+</ul>
+<h3 id="10-96-115-40的操作"><a href="#10-96-115-40的操作" class="headerlink" title="10.96.115.40的操作"></a>10.96.115.40的操作</h3><p>broker-a的配置</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">namesrvAddr=<span class="number">10.96</span>.115.40:<span class="number">9876</span>;<span class="number">10.96</span>.83.21:<span class="number">9876</span>    <span class="comment">//所关联的namesrv地址</span></span><br><span class="line">brokerClusterName=TestCluster     <span class="comment">//集群名称</span></span><br><span class="line">brokerName=broker-a</span><br><span class="line">brokerId=<span class="number">0</span>                                                 <span class="comment">//0代表主</span></span><br><span class="line">deleteWhen=<span class="number">04</span></span><br><span class="line">fileReservedTime=<span class="number">48</span></span><br><span class="line">brokerRole=ASYNC_MASTER             <span class="comment">//角色</span></span><br><span class="line">flushDiskType=ASYNC_FLUSH           <span class="comment">//异步刷盘</span></span><br><span class="line">storePathRootDir=/home/xiaoju/logs/rocketmqlogs/store  </span><br><span class="line">storePathCommitLog=/home/xiaoju/logs/rocketmqlogs/store/commitlog  <span class="comment">//日志存放目录</span></span><br><span class="line">listenPort=<span class="number">10900</span></span><br></pre></td></tr></table></figure>
+<p>broker-b-s的配置</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">namesrvAddr=<span class="number">10.96</span>.115.40:<span class="number">9876</span>;<span class="number">10.96</span>.83.21:<span class="number">9876</span></span><br><span class="line">brokerClusterName=TestCluster</span><br><span class="line">brokerName=broker-b</span><br><span class="line">brokerId=<span class="number">1</span></span><br><span class="line">deleteWhen=<span class="number">04</span></span><br><span class="line">fileReservedTime=<span class="number">48</span></span><br><span class="line">brokerRole=SLAVE</span><br><span class="line">flushDiskType=ASYNC_FLUSH</span><br><span class="line">listenPort=<span class="number">10910</span>   <span class="comment">//更改端口号，同一台机器上两个broker不可采用同一端口</span></span><br><span class="line"></span><br><span class="line">storePathRootDir=/opt/logs/rocketmqlogs/store  </span><br><span class="line">storePathCommitLog=/opt/logs/rocketmqlogs/store/commitlog</span><br></pre></td></tr></table></figure>
+<p>启动broker</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cd &#123;workdir&#125;/rocketmq-4.5.2</span><br><span class="line">nohup sh bin/mqbroker -c /home/xiaoju/rocketmq-4.5.2/conf/2m-2s-async/broker-a.properties &amp;</span><br><span class="line">nohup sh bin/mqbroker -c /home/xiaoju/rocketmq-4.5.2/conf/2m-2s-async/broker-b-s.properties &amp;</span><br></pre></td></tr></table></figure>
+<h3 id="10-96-83-21的操作"><a href="#10-96-83-21的操作" class="headerlink" title="10.96.83.21的操作"></a>10.96.83.21的操作</h3><p>broker-b的配置</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">namesrvAddr=<span class="number">10.96</span>.115.40:<span class="number">9876</span>;<span class="number">10.96</span>.83.21:<span class="number">9876</span></span><br><span class="line">brokerClusterName=TestCluster</span><br><span class="line">brokerName=broker-b</span><br><span class="line">brokerId=<span class="number">0</span></span><br><span class="line">deleteWhen=<span class="number">04</span></span><br><span class="line">fileReservedTime=<span class="number">48</span></span><br><span class="line">brokerRole=ASYNC_MASTER</span><br><span class="line">flushDiskType=ASYNC_FLUSH</span><br><span class="line">storePathRootDir=/home/xiaoju/logs/rocketmqlogs/store  </span><br><span class="line">storePathCommitLog=/home/xiaoju/logs/rocketmqlogs/store/commitlog</span><br><span class="line">listenPort=<span class="number">10900</span></span><br></pre></td></tr></table></figure>
+<p>broker-a-s的配置</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">namesrvAddr=<span class="number">10.96</span>.115.40:<span class="number">9876</span>;<span class="number">10.96</span>.83.21:<span class="number">9876</span></span><br><span class="line">brokerClusterName=TestCluster</span><br><span class="line">brokerName=broker-a</span><br><span class="line">brokerId=<span class="number">1</span></span><br><span class="line">deleteWhen=<span class="number">04</span></span><br><span class="line">fileReservedTime=<span class="number">48</span></span><br><span class="line">brokerRole=SLAVE</span><br><span class="line">flushDiskType=ASYNC_FLUSH</span><br><span class="line">listenPort=<span class="number">10910</span></span><br><span class="line">storePathRootDir=/opt/logs/rocketmqlogs/store</span><br><span class="line">storePathCommitLog=/opt/logs/rocketmqlogs/store/commitlog</span><br></pre></td></tr></table></figure>
+<p>启动broker</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cd &#123;workdir&#125;/rocketmq-4.5.2</span><br><span class="line">nohup sh bin/mqbroker -c /home/xiaoju/rocketmq-4.5.2/conf/2m-2s-async/broker-b.properties &amp;</span><br><span class="line">nohup sh bin/mqbroker -c /home/xiaoju/rocketmq-4.5.2/conf/2m-2s-async/broker-a-s.properties &amp;</span><br></pre></td></tr></table></figure>
+<h2 id="启动rocketmq-console"><a href="#启动rocketmq-console" class="headerlink" title="启动rocketmq-console"></a>启动rocketmq-console</h2><p>一个springboot工程</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone https://github.com/apache/rocketmq-externals.git</span><br></pre></td></tr></table></figure>
+<h2 id="mqadmin常用命令"><a href="#mqadmin常用命令" class="headerlink" title="mqadmin常用命令"></a>mqadmin常用命令</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line">查看帮助：</span><br><span class="line"><span class="meta">#</span> sh mqadmin &lt;command&gt; -h</span><br><span class="line">查询Producer的网络连接情况：</span><br><span class="line"><span class="meta">#</span> sh mqadmin producerConnection -n localhost:9876 -g &lt;producer-group&gt; -t &lt;producer-topic&gt;</span><br><span class="line">查询Consumer的网络连接情况：</span><br><span class="line"><span class="meta">#</span> sh mqadmin consumerConnection -n localhost:9876 -g &lt;consumer-group&gt;</span><br><span class="line">查询Consumer的消费状态：</span><br><span class="line"><span class="meta">#</span> sh mqadmin consumerProgress -n localhost:9876 -g &lt;consumer-group&gt;</span><br><span class="line"></span><br><span class="line">查询消息是否发送成功</span><br><span class="line">获取指定Topic：</span><br><span class="line"><span class="meta">#</span> sh mqadmin topicList -n localhost:9876 | grep &lt;topicName&gt;</span><br><span class="line">查看Topic状态：</span><br><span class="line"><span class="meta">#</span> sh mqadmin topicStatus -n localhost:9876 -t &lt;topicName&gt;</span><br><span class="line">根据offset获取消息：</span><br><span class="line"><span class="meta">#</span> sh sh mqadmin queryMsgByOffset -n localhost:9876 -b &lt;broker-name&gt; -i &lt;queueId&gt; -o &lt;offset&gt; -t &lt;topicName&gt;</span><br><span class="line">根据offsetMsgId查询消息：</span><br><span class="line"><span class="meta">#</span> sh sh mqadmin queryMsgById -n localhost:9876 -i &lt;offsetMsgId&gt;</span><br><span class="line"></span><br><span class="line">查询消息是否被消费成功</span><br><span class="line">查询消息详情：</span><br><span class="line"><span class="meta">#</span> sh mqadmin queryMsgById -i &#123;MsgId&#125; -n &#123;NameServerAddr&#125;</span><br><span class="line">查看Consumer Group订阅了哪些TOPIC：</span><br><span class="line"><span class="meta">#</span> sh mqadmin consumerProgress -g &lt;ConsumerGroup&gt; -n &lt;NameServerAddr&gt;</span><br><span class="line"></span><br><span class="line">查询TOPIC被哪些Consumer Group订阅了</span><br><span class="line">没有查询特定TOPIC订阅情况，只能查询所有后再过滤：</span><br><span class="line"><span class="meta">#</span> sh mqadmin statsAll -n &lt;NameServerAddr&gt; | grep &lt;TOPIC&gt;</span><br><span class="line">返回结果：#Topic #Consumer Group #InTPS #OutTPS #InMsg24Hour #OutMsg24Hour</span><br><span class="line"></span><br><span class="line">关闭nameserver和所有的broker:</span><br><span class="line"><span class="meta">#</span> sh mqshutdown namesrv</span><br><span class="line"><span class="meta">#</span> sh mqshutdown broker</span><br><span class="line"></span><br><span class="line">查看所有消费组group:</span><br><span class="line"><span class="meta">#</span> sh mqadmin consumerProgress -n 192.168.23.159:9876</span><br><span class="line">查看指定消费组（kevinGroupConsumer）下的所有topic数据堆积情况：</span><br><span class="line"><span class="meta">#</span> sh mqadmin consumerProgress -n 192.168.23.159:9876 -g kevinGroupConsumer</span><br><span class="line">查看所有topic :</span><br><span class="line"><span class="meta">#</span> sh mqadmin topicList -n 192.168.23.159:9876</span><br><span class="line">查看topic信息列表详情统计</span><br><span class="line"><span class="meta">#</span> sh mqadmin topicstatus -n 192.168.23.159:9876 -t myTopicTest1</span><br><span class="line">新增topic</span><br><span class="line"><span class="meta">#</span> sh mqadmin updateTopic –n 10.96.115.40:9876;10.96.83.21:9876 –c TestCluster –t &lt;TopictName&gt;</span><br><span class="line">删除topic</span><br><span class="line"><span class="meta">#</span> sh mqadmin deleteTopic –n 10.45.47.168:9876 –c DefaultCluster –t ZTEExample</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-短连接生成器/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1620,587 +2191,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-利用向量实现推荐系统/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/数据结构与算法-利用向量实现推荐系统/" class="post-title-link" itemprop="url">数据结构与算法-利用向量实现推荐系统</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-08-07 17:42:06 / Modified: 18:10:14" itemprop="dateCreated datePublished" datetime="2019-08-07T17:42:06+08:00">2019-08-07</time>
-            
-
-            
-              
-
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/" itemprop="url" rel="index"><span itemprop="name">数据结构与算法</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/应用篇/" itemprop="url" rel="index"><span itemprop="name">应用篇</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>实现音乐推荐系统算法模块的思路：</p>
-<ol>
-<li>找到和你口味的相近的人，把他听的歌曲推荐给你</li>
-<li>找到和你听的歌曲个特征相似的跟去，把这些歌曲推荐给你</li>
-</ol>
-<h2 id="实现原理"><a href="#实现原理" class="headerlink" title="实现原理"></a>实现原理</h2><p>向量的欧几里得距离</p>
-<p><img src="/数据结构与算法-利用向量实现推荐系统/img1.jpg" alt="avator"></p>
-<h3 id="基于相似口味的人"><a href="#基于相似口味的人" class="headerlink" title="基于相似口味的人"></a>基于相似口味的人</h3><ul>
-<li>把听过的某首歌看为是一个向量</li>
-<li>把听过的歌进行打标（收藏、听、分享、不喜欢）计算每一首歌的向量值;</li>
-<li>然后遍历所有的用户，计算向量的欧几里得距离，设定一个阈值，小于这个阈值的说明口味相近，我们将用户没听过的歌推荐给用户</li>
-</ul>
-<h3 id="基于喜欢的歌曲进行推荐"><a href="#基于喜欢的歌曲进行推荐" class="headerlink" title="基于喜欢的歌曲进行推荐"></a>基于喜欢的歌曲进行推荐</h3><ul>
-<li>用户对于喜欢听的歌曲的成都进行标记</li>
-<li>遍历所有歌曲，计算向量的欧几里得距离，设定一个阈值，小于这个阈值的说明歌曲受欢迎程度相似可以进行推荐。</li>
-</ul>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-如何过滤垃圾短信-朴素贝叶斯算法/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/数据结构与算法-如何过滤垃圾短信-朴素贝叶斯算法/" class="post-title-link" itemprop="url">数据结构与算法-如何过滤垃圾短信-朴素贝叶斯算法</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-08-04 22:06:18" itemprop="dateCreated datePublished" datetime="2019-08-04T22:06:18+08:00">2019-08-04</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-08-08 11:48:30" itemprop="dateModified" datetime="2019-08-08T11:48:30+08:00">2019-08-08</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/" itemprop="url" rel="index"><span itemprop="name">数据结构与算法</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/应用篇/" itemprop="url" rel="index"><span itemprop="name">应用篇</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>有一下3中过滤方式</p>
-<h2 id="基于黑名单规律"><a href="#基于黑名单规律" class="headerlink" title="基于黑名单规律"></a>基于黑名单规律</h2><p>可以制作手机号码的黑名单：</p>
-<ol>
-<li>利用bloomfiter来过滤手机黑名单，可能会有误判的可能</li>
-<li>将黑名单方法服务器，利用时间换空间</li>
-</ol>
-<h2 id="基于规则过滤"><a href="#基于规则过滤" class="headerlink" title="基于规则过滤"></a>基于规则过滤</h2><p>可以将垃圾短信的样本中出现的词进行整理，计算他们是垃圾短信的概率和不是垃圾短信的概率如果一个单词是垃圾短信的概率远远大于非垃圾短信的概率说明它是垃圾短信的词语。</p>
-<h2 id="基于概率过滤"><a href="#基于概率过滤" class="headerlink" title="基于概率过滤"></a>基于概率过滤</h2><p>利用朴素贝叶斯算法，计算词语和垃圾短信的关系</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-bitMap和bloomFilter/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/数据结构与算法-bitMap和bloomFilter/" class="post-title-link" itemprop="url">数据结构与算法-bitMap和bloomFilter</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-08-04 18:42:41" itemprop="dateCreated datePublished" datetime="2019-08-04T18:42:41+08:00">2019-08-04</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-08-05 10:31:37" itemprop="dateModified" datetime="2019-08-05T10:31:37+08:00">2019-08-05</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/" itemprop="url" rel="index"><span itemprop="name">数据结构与算法</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/算法/" itemprop="url" rel="index"><span itemprop="name">算法</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>考虑如下需求:</p>
-<ul>
-<li>爬虫对于大量的URL进行排重</li>
-<li>统计网站的UV;</li>
-<li>对1到1亿的数据进行排序</li>
-</ul>
-<h2 id="位图的使用场景"><a href="#位图的使用场景" class="headerlink" title="位图的使用场景"></a>位图的使用场景</h2><p>如果我们要存储1到1亿个数字，支持排重该如何做呢，可以采用位图。见下面的代码，用位图会极大的节省查找、插入的效率.一次位运算即可，同时也极大的节省了内存空间，现在只许愿1亿个2进制，即12MB左右。如果用散列表至少需要40MB。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BitMap</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span>[] bytes;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> total;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//int类型的位图下标是4个字节即32bit</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">BitMap</span><span class="params">(<span class="keyword">int</span> total)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.bytes = <span class="keyword">new</span> <span class="keyword">int</span>[total / <span class="number">32</span> + <span class="number">1</span>];</span><br><span class="line">        <span class="keyword">this</span>.total = total;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">set</span><span class="params">(<span class="keyword">int</span> value)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//找到数组下标</span></span><br><span class="line">        <span class="keyword">int</span> index = value / <span class="number">32</span>;</span><br><span class="line">        <span class="comment">//通过摩运算找到偏移量</span></span><br><span class="line">        <span class="keyword">int</span> bit = value % <span class="number">32</span>;</span><br><span class="line">        <span class="comment">//通过位运算|找到值</span></span><br><span class="line">        bytes[index] |= <span class="number">1</span> &lt;&lt; bit;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">exists</span><span class="params">(<span class="keyword">int</span> value)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (value &gt; total) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">int</span> index = value / <span class="number">32</span>;</span><br><span class="line">        <span class="keyword">int</span> bit = value % <span class="number">32</span>;</span><br><span class="line">        <span class="keyword">return</span> (bytes[index] &amp; <span class="number">1</span> &lt;&lt; bit) != <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="bloomfilter"><a href="#bloomfilter" class="headerlink" title="bloomfilter"></a>bloomfilter</h2><p>  接上面的问题，如果数字的值不多，但是范围很大，比如1亿个数字但是范围是1到10亿，这时候我们的存储空间变成了120MB，不降反升，我们该如何存储呢？这时候就要借用bloomfilter了。</p>
-<p>  boolmfilter底层还是bitMap，大小还可以设置为1亿。在介绍hash散列时候我们遇到hash冲突采用链表来解决hash冲突。在这里我们采用多个hash函数。<br>  比如：</p>
-<ul>
-<li>我们对一个值用h1,h2,h3……hn，分别将值写入到v1,v2,v3…..vn中。</li>
-<li>查询时候我们分别判断如果h1~hn都为true，返回true,只要有一个为false，就返回false</li>
-<li><p>缺点：</p>
-<ul>
-<li>存在误判的情况，随着bloomfilter里1的值越来越多，误判率会加大，最好支持扩容;</li>
-<li>删除会很麻烦;</li>
-</ul>
-<p>开头提到的问题：我们可以采用10倍的bloomfilter存储url，同时进行排重</p>
-</li>
-</ul>
-<h2 id="引申问题"><a href="#引申问题" class="headerlink" title="引申问题"></a>引申问题</h2><ol>
-<li>假设我们有1亿个整数，数据范围是从1到10亿，进行排序;</li>
-<li>海量图库的排重;</li>
-</ol>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//排序</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">sort</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; bytes.length; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">32</span>; j++) &#123;</span><br><span class="line">                <span class="keyword">if</span> ((bytes[i] &amp; (<span class="number">1</span> &lt;&lt; j)) != <span class="number">0</span>) &#123;</span><br><span class="line">                    System.out.print((i*<span class="number">32</span>+j) + <span class="string">" "</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        System.out.println();</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
-<h2 id="bitmap在语言中的应用"><a href="#bitmap在语言中的应用" class="headerlink" title="bitmap在语言中的应用"></a>bitmap在语言中的应用</h2><p>java的中bitSet<br>google库guava中的BloomFilter的实现类</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/12/">12</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
+    <a class="extend prev" rel="prev" href="/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/13/">13</a><a class="extend next" rel="next" href="/page/3/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
   </nav>
 
 
@@ -2242,7 +2237,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">118</span>
+                    <span class="site-state-item-count">122</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

@@ -96,18 +96,18 @@
 
 
 
-  <meta name="description" content="看源码的一些准备工作，以下逻辑会出现多次。 RemotingServerrocketMq采用NettyRemotingServer来处理各个组件之间的网络通信。 处理消息的方式NettyRemotingServer的channelRead0()–&amp;gt;NettyServerHandler.processMessageReceived–&amp;gt;NettyServerHandler.processR">
+  <meta name="description" content="励志当好厨子的程序员">
 <meta name="keywords" content="消息队列,java,rocketmq">
 <meta property="og:type" content="article">
-<meta property="og:title" content="RocketMq-源码学习零提前的一些准备">
-<meta property="og:url" content="https://liuhao163.github.io/RocketMq-源码学习零提前的一些准备/index.html">
+<meta property="og:title" content="RoketMq源码学习-六-事务的实现-todo">
+<meta property="og:url" content="https://liuhao163.github.io/RoketMq源码学习-六-事务的实现/index.html">
 <meta property="og:site_name" content="liuhao163.github.io">
-<meta property="og:description" content="看源码的一些准备工作，以下逻辑会出现多次。 RemotingServerrocketMq采用NettyRemotingServer来处理各个组件之间的网络通信。 处理消息的方式NettyRemotingServer的channelRead0()–&amp;gt;NettyServerHandler.processMessageReceived–&amp;gt;NettyServerHandler.processR">
+<meta property="og:description" content="励志当好厨子的程序员">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-09-09T12:59:37.000Z">
+<meta property="og:updated_time" content="2019-09-23T02:25:44.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="RocketMq-源码学习零提前的一些准备">
-<meta name="twitter:description" content="看源码的一些准备工作，以下逻辑会出现多次。 RemotingServerrocketMq采用NettyRemotingServer来处理各个组件之间的网络通信。 处理消息的方式NettyRemotingServer的channelRead0()–&amp;gt;NettyServerHandler.processMessageReceived–&amp;gt;NettyServerHandler.processR">
+<meta name="twitter:title" content="RoketMq源码学习-六-事务的实现-todo">
+<meta name="twitter:description" content="励志当好厨子的程序员">
 
 
 
@@ -116,7 +116,7 @@
 
 
 
-  <link rel="canonical" href="https://liuhao163.github.io/RocketMq-源码学习零提前的一些准备/">
+  <link rel="canonical" href="https://liuhao163.github.io/RoketMq源码学习-六-事务的实现/">
 
 
 
@@ -126,7 +126,7 @@
   };
 </script>
 
-  <title>RocketMq-源码学习零提前的一些准备 | liuhao163.github.io</title>
+  <title>RoketMq源码学习-六-事务的实现-todo | liuhao163.github.io</title>
   
 
 
@@ -329,7 +329,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/RocketMq-源码学习零提前的一些准备/">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/RoketMq源码学习-六-事务的实现/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Liu hao">
@@ -346,7 +346,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">RocketMq-源码学习零提前的一些准备
+          <h1 class="post-title" itemprop="name headline">RoketMq源码学习-六-事务的实现-todo
 
               
             
@@ -372,7 +372,7 @@
                 
               
 
-              <time title="Created: 2019-09-01 21:28:13" itemprop="dateCreated datePublished" datetime="2019-09-01T21:28:13+08:00">2019-09-01</time>
+              <time title="Created: 2019-09-22 22:34:26" itemprop="dateCreated datePublished" datetime="2019-09-22T22:34:26+08:00">2019-09-22</time>
             
 
             
@@ -389,7 +389,7 @@
                 
                   <span class="post-meta-item-text">Edited on</span>
                 
-                <time title="Modified: 2019-09-09 20:59:37" itemprop="dateModified" datetime="2019-09-09T20:59:37+08:00">2019-09-09</time>
+                <time title="Modified: 2019-09-23 10:25:44" itemprop="dateModified" datetime="2019-09-23T10:25:44+08:00">2019-09-23</time>
               
             
           </span>
@@ -455,19 +455,7 @@
       
 
       
-        <p>看源码的一些准备工作，以下逻辑会出现多次。</p>
-<h2 id="RemotingServer"><a href="#RemotingServer" class="headerlink" title="RemotingServer"></a>RemotingServer</h2><p>rocketMq采用NettyRemotingServer来处理各个组件之间的网络通信。</p>
-<h3 id="处理消息的方式"><a href="#处理消息的方式" class="headerlink" title="处理消息的方式"></a>处理消息的方式</h3><p>NettyRemotingServer的channelRead0()–&gt;NettyServerHandler.processMessageReceived–&gt;NettyServerHandler.processRequestCommand的processorTable处理，其中processorTable的方法是通过下面的方式注册进去</p>
-<ul>
-<li>注册消息的：通过registerProcessor方法，每种消息根据requestcode，来制定消息处理方式。<ul>
-<li>维护了processorTable对象，HashMap&lt;Integer/<em> request code </em>/, Pair&lt;NettyRequestProcessor, ExecutorService&gt;&gt;</li>
-<li>每一种request指定一个ExecutorService和一个registerProcessor来处理</li>
-</ul>
-</li>
-<li>处理消息：通过调用processMessageReceived来处理。</li>
-</ul>
-<h2 id="store模块相关"><a href="#store模块相关" class="headerlink" title="store模块相关"></a>store模块相关</h2><p>mmp</p>
-
+        
       
     </div>
 
@@ -507,8 +495,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/cpu的负载以及常用命令/" rel="next" title="cpu的负载以及常用命令">
-                <i class="fa fa-chevron-left"></i> cpu的负载以及常用命令
+              <a href="/RoketMq源码学习-五-消息的消费/" rel="next" title="RoketMq源码学习-五-消息的消费-todo">
+                <i class="fa fa-chevron-left"></i> RoketMq源码学习-五-消息的消费-todo
               </a>
             
           </div>
@@ -516,10 +504,6 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/cpu的负载与线程以及进程之间的切换/" rel="prev" title="cpu的负载与线程以及进程之间的切换">
-                cpu的负载与线程以及进程之间的切换 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -563,17 +547,8 @@
       
 
       
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
-            Table of Contents
-          </li>
-          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
-            Overview
-          </li>
-        </ul>
-      
 
-      <div class="site-overview-wrap sidebar-panel">
+      <div class="site-overview-wrap sidebar-panel sidebar-panel-active">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -588,7 +563,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">118</span>
+                    <span class="site-state-item-count">122</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -826,23 +801,6 @@
         </div>
       </div>
 
-      
-      <!--noindex-->
-        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
-          <div class="post-toc">
-
-            
-            
-            
-            
-
-            
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#RemotingServer"><span class="nav-number">1.</span> <span class="nav-text">RemotingServer</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#处理消息的方式"><span class="nav-number">1.1.</span> <span class="nav-text">处理消息的方式</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#store模块相关"><span class="nav-number">2.</span> <span class="nav-text">store模块相关</span></a></li></ol></div>
-            
-
-          </div>
-        </div>
-      <!--/noindex-->
       
 
       

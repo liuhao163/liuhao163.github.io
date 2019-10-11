@@ -328,6 +328,225 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-散列表/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/数据结构与算法-散列表/" class="post-title-link" itemprop="url">数据结构与算法-散列表</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-06-15 12:31:13" itemprop="dateCreated datePublished" datetime="2019-06-15T12:31:13+08:00">2019-06-15</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-07-09 11:55:41" itemprop="dateModified" datetime="2019-07-09T11:55:41+08:00">2019-07-09</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/" itemprop="url" rel="index"><span itemprop="name">数据结构与算法</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/数据结构/" itemprop="url" rel="index"><span itemprop="name">数据结构</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="散列表的原理"><a href="#散列表的原理" class="headerlink" title="散列表的原理"></a>散列表的原理</h2><p>底层基于数组实现，数据通过hash函数计算出数组下标写入到数组中，查找通过hash函数找到数据。理论上删除、查找的效率O(1)。</p>
+<h2 id="散列表解决hash冲突"><a href="#散列表解决hash冲突" class="headerlink" title="散列表解决hash冲突"></a>散列表解决hash冲突</h2><p>当key1不等于key2，但是hash(key1)==hash(key2)出现散列的冲突，一般有如下的方式解决。散列冲突可以用loadFactor表示：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">locafactor = 元素个数/数组长度</span><br></pre></td></tr></table></figure>
+<h3 id="链表"><a href="#链表" class="headerlink" title="链表"></a>链表</h3><p>将散列的hash方法的结果对应成一个bucket或者slot，每个bucket是一个链表。</p>
+<ul>
+<li>写入：当hash冲突后在链表后面追加一个元素。时间复杂度O(1)</li>
+<li>读取：hash找到bucket，遍历链表，时间复杂度O(1)</li>
+<li>删除：hash找到bucket，遍历链表，删除，时间复杂度O(1)</li>
+</ul>
+<p>比较理想的情况下是元素个数=槽数，如果hash冲突比较大会退化成链表</p>
+<p>  优点：对内存要求低，只有写入数据才会在链表中加1；hash冲突代价小，增删改几本上是O(1)<br>  缺点：不是连续空间无法很好利用cpu缓存；链表包含下一个数据的指针序列化成本高<br>  场景：数据量大，负载因子高，频繁修改的场景。HashMap</p>
+<h3 id="开放寻址"><a href="#开放寻址" class="headerlink" title="开放寻址"></a>开放寻址</h3><ul>
+<li>写入：比如key1和key2冲突，key2写入时候发现这个数组下标对应的元素有key1了这时候继续想后遍历知道有一个为空的字段，写入</li>
+<li>读取：找到下标元素后比对如果不相等向后遍历直到找到相等的元素或者第一个为空的元素为止</li>
+<li><p>删除：由于上面说的查找需要遍历到为空的元素，所以需要用到标记删除法。</p>
+<p>优点：内存是连续地址很好的用到cpu的缓存；不包含指针序列化成本低<br>缺点：内存要求高；hash冲突成本高，查找、删除、修改可能要遍历数组<br>场景：数据量小，负载因子不高的场景。ThreadLocalMap</p>
+</li>
+</ul>
+<h2 id="构建一个hash散列应该注意的问题"><a href="#构建一个hash散列应该注意的问题" class="headerlink" title="构建一个hash散列应该注意的问题"></a>构建一个hash散列应该注意的问题</h2><h3 id="hash算法高效"><a href="#hash算法高效" class="headerlink" title="hash算法高效"></a>hash算法高效</h3><ul>
+<li>自身算法效率要高，否则资源会大量浪费在hashkey的计算上。</li>
+<li>算法要均匀尽量避免hash冲突，防止退化成链表</li>
+</ul>
+<p>具体算法有：直接寻址法、平方取中法、折叠法、随机数法</p>
+<h3 id="如何避免装载因子多大"><a href="#如何避免装载因子多大" class="headerlink" title="如何避免装载因子多大"></a>如何避免装载因子多大</h3><p>由于装载因子都大会导致hash冲突几率变高，链表过长，这时候如果是动态的散列表我们要进行”动态扩容“。</p>
+<ul>
+<li>一般会设定一个负载因子的阈值打到阈值后开始扩容，扩容到原来的两倍，负载因子值会下降一半。动态扩容的事件复杂度是O(n)</li>
+<li>如果系统对于内存的使用不敏感，对于响应敏感，为了防止hash冲突可以把负载因子值调低</li>
+<li>如果系统对于内存的使用敏感，对于响应速度不敏感，可以将这个负载因子阈值调高，甚至可以大于1。</li>
+</ul>
+<h3 id="如何避免低效扩容"><a href="#如何避免低效扩容" class="headerlink" title="如何避免低效扩容"></a>如何避免低效扩容</h3><p>在散列表很大时候扩容有可能阻塞正常的读写操作，比如：1G的数据扩容到2G。这时候我们可以采用如下方案：</p>
+<ul>
+<li>在额外申请一块2G的空间，新的写入操作往新的散列表写，同时将一个老的数据写过来，几次之后老的数据就会完成迁移</li>
+<li>读的时候先从新的里面读取如果没有值在从老的数据里面读取</li>
+</ul>
+<h2 id="hash表和其他数据结构共用的案例"><a href="#hash表和其他数据结构共用的案例" class="headerlink" title="hash表和其他数据结构共用的案例"></a>hash表和其他数据结构共用的案例</h2><h2 id="实现高效的lru算法"><a href="#实现高效的lru算法" class="headerlink" title="实现高效的lru算法"></a>实现高效的lru算法</h2><p>如果实现LRU算法用双向链表，访问、更新一个元素需要遍历链表，时间复杂度是O(n),如果想提高效率需要用到散列表配合</p>
+<p>散列表+双向链表</p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">type</span> LRUNode <span class="keyword">struct</span> &#123;</span><br><span class="line">  Prev *LRUNode <span class="comment">//Lru双向链表</span></span><br><span class="line">  Next *LRUNode <span class="comment">//Lru双向链表</span></span><br><span class="line">  Data <span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">  Hnext *LRUNode  <span class="comment">//散列值</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  访问：其中prev+next是双向链表用来实现LRU功能，每次访问节点先从hashTable中获取数据，然后将数据移到链表尾部。时间复杂度O(1)<br>  写入：插入到散列中Hnext是用来维护散列的拉链，这里用的是链表来解决hash冲突，同时插入链表的尾部。时间复杂度O(1)<br>  删除：找到数据从散列中删除，然后在从链表中删除。时间复杂度O(1)</p>
+<p>java的LinkedHashMap也是用这个思想实现的。</p>
+<h2 id="redis的sortset"><a href="#redis的sortset" class="headerlink" title="redis的sortset"></a>redis的sortset</h2><p>  用跳表来实现，用score查找、排序、按照sorce范围查找。<br>  用散列来实现，用key查找、删除、插入。</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-跳表/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1992,187 +2211,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/ThreadLocal-减少线程之间的共享/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/ThreadLocal-减少线程之间的共享/" class="post-title-link" itemprop="url">ThreadLocal:减少线程之间的共享</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-05-18 20:28:18 / Modified: 20:46:45" itemprop="dateCreated datePublished" datetime="2019-05-18T20:28:18+08:00">2019-05-18</time>
-            
-
-            
-              
-
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>解决并发问题最简单的方案就是减少共享，JAVA提供了一个简单的工具类即ThreadLocal，我们会用他来保存线程之间独立存在的变量，比如springmvc中，我们每个请求特有的一些属性。</p>
-<h2 id="ThreadLocal的设计"><a href="#ThreadLocal的设计" class="headerlink" title="ThreadLocal的设计"></a>ThreadLocal的设计</h2><p>在设计上JAVA的Thread内部类会持有一个ThreadLocalMap的对象threadLocals,Map的结构（ThreadLocal,Value），其中ThreadLocal是弱引用。<br>这么做的设计有俩点：</p>
-<ol>
-<li>因为ThreadLocal对象和线程的声明周期息息相关，从数据的亲原性来讲，由Thread对象管理更为合适</li>
-<li>防止内存泄露，因为ThreadLocal内部持有线程和Value的对应关系，当线程声明结束后，ThreadLocal中的Thread对象不会主动释放。从而造成内存泄露</li>
-</ol>
-<h2 id="ThreadLocal的内存泄露"><a href="#ThreadLocal的内存泄露" class="headerlink" title="ThreadLocal的内存泄露"></a>ThreadLocal的内存泄露</h2><p>  在线程池中，Thread的生命周期往往很长，而因为ThreadLocalMap对于ThreadLocal是软引用，所以当ThreadLocal没有引用时候会被释放掉，但是Value确是强引用，所以会造成ThreadLocal释放掉了，但是Value没法释放导致内存泄露</p>
-<p>  解决方法：手动释放</p>
-<h2 id="InheritableThreadLocal继承性"><a href="#InheritableThreadLocal继承性" class="headerlink" title="InheritableThreadLocal继承性"></a>InheritableThreadLocal继承性</h2><p>因为ThreadLocal是线程不共享的，所以如果线程在创建一个子线程是看不到主线程ThreadLocal对象的值的，为了让子线程能看到父类线程提供InheritableThreadLocal，但是不建议使用，因为往往会导致子线程修改了值引起主线程的逻辑混乱。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/5/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/page/7/">7</a><span class="space">&hellip;</span><a class="page-number" href="/page/13/">13</a><a class="extend next" rel="next" href="/page/7/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
+    <a class="extend prev" rel="prev" href="/page/5/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><span class="page-number current">6</span><a class="page-number" href="/page/7/">7</a><span class="space">&hellip;</span><a class="page-number" href="/page/14/">14</a><a class="extend next" rel="next" href="/page/7/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
   </nav>
 
 
@@ -2214,7 +2257,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">130</span>
+                    <span class="site-state-item-count">131</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

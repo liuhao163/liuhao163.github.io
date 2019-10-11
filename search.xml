@@ -4,11 +4,69 @@
   
     
     <entry>
+      <title>Redis-Key的过期策略</title>
+      <link href="/Redis-Key%E7%9A%84%E8%BF%87%E6%9C%9F%E7%AD%96%E7%95%A5/"/>
+      <url>/Redis-Key%E7%9A%84%E8%BF%87%E6%9C%9F%E7%AD%96%E7%95%A5/</url>
+      
+        <content type="html"><![CDATA[<h2 id="key的过期策略"><a href="#key的过期策略" class="headerlink" title="key的过期策略"></a>key的过期策略</h2><h2 id="主动过期"><a href="#主动过期" class="headerlink" title="主动过期"></a>主动过期</h2><p>  为key设置expire。由于redis是单线程的如果对于过期的key扫描的过多会影响服务的卡顿，所以redis提供了惰性过期和主动扫描过期俩种方案。</p><p>  扫描机制，redis会把设置过期时间的key放在内存中，key的扫描过期机制如下：</p><ol><li>为了防止频繁扫描，redis每秒扫描10次过期的key，明且每次扫描建个是25ms</li><li>每次扫描随机取20个key</li><li>判断20个key是否过期，并且回收过期key</li><li><p>如果过期的key占1/4会重复回收</p><p>如果这段时间有大量的key过期，势必会增加扫描频次，同时由于redis的内存管理对数据页的回收，会导致CPU飙升，服务卡顿。</p><p>注意：salve没有扫描机制，master过期后会生成一条del的命令给slave执行（如果这时候宕机可能造成数据不一致）。</p></li></ol><h2 id="LRU"><a href="#LRU" class="headerlink" title="LRU"></a>LRU</h2><p>  redis本质是内存数据库当内存占用满后，根据maxmemory-policy配置，会有如下几种策略</p><ul><li>noeviction：默认策略，直接拒绝写服务（del后会执行），不会丢失数据</li><li>volatile-lru：对设置expire的key进行淘汰。策略是lru</li><li>volatile-ttl：对设置expire的key进行淘汰。策略是ttl</li><li>volatile-random：对设置expire的key进行淘汰。策略是随机</li><li>allkeys-lru：对所有的key进行淘汰。策略是lru</li><li><p>allkeys-random：对所有的key进行淘汰。策略是随机</p><p>redis为了节省内存采用了近似lru算法的淘汰机制，是一种懒惰淘汰机制，即当写入操作发现内存已经超过了maxmemory时候，根据maxmemory-policy去allkeys和设置了过期时间的keys中随机取5个key淘汰掉最旧的key。</p></li></ul><h2 id="异步线程"><a href="#异步线程" class="headerlink" title="异步线程"></a>异步线程</h2><h3 id="懒惰删除"><a href="#懒惰删除" class="headerlink" title="懒惰删除"></a>懒惰删除</h3><p>redis如果删除一个key正好这个key是大key，会阻碍业务的执行。redis4.0增加了unlink命令可以将key放到异步队列中由异步线程去消费。</p><h3 id="AOF的异步刷盘"><a href="#AOF的异步刷盘" class="headerlink" title="AOF的异步刷盘"></a>AOF的异步刷盘</h3><p>由于AOF需要调用sync，会影响业务。所以AOF的刷盘也会放到一个异步队列和线程中。为了保证效率是独立的一个线程处理</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> redis </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 数据库 </tag>
+            
+            <tag> nosql </tag>
+            
+            <tag> redis </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>redis-查看服务</title>
+      <link href="/Redis-%E6%9F%A5%E7%9C%8B%E6%9C%8D%E5%8A%A1/"/>
+      <url>/Redis-%E6%9F%A5%E7%9C%8B%E6%9C%8D%E5%8A%A1/</url>
+      
+        <content type="html"><![CDATA[<h2 id="Redis的监控命令和几个重点指标"><a href="#Redis的监控命令和几个重点指标" class="headerlink" title="Redis的监控命令和几个重点指标"></a>Redis的监控命令和几个重点指标</h2><p>info &lt; seciton &gt;命令</p><h3 id="查看qps"><a href="#查看qps" class="headerlink" title="查看qps"></a>查看qps</h3><p>  查看redis的qps【info stats】，instantaneous_ops_per_sec 这是qps<br>  查看具体的key redis-cli monitor</p><h3 id="查看客户端"><a href="#查看客户端" class="headerlink" title="查看客户端"></a>查看客户端</h3><p>info clients</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># Clients</span><br><span class="line">connected_clients:<span class="number">1</span></span><br><span class="line">client_longest_output_list:<span class="number">0</span></span><br><span class="line">client_biggest_input_buf:<span class="number">0</span></span><br><span class="line">blocked_clients:<span class="number">0</span></span><br></pre></td></tr></table></figure><p>拒绝连接数如果过多应该开打链接<br>info stats</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rejected_connections:<span class="number">0</span></span><br></pre></td></tr></table></figure><h3 id="查看内存"><a href="#查看内存" class="headerlink" title="查看内存"></a>查看内存</h3><p>info memory</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">used_memory_human:<span class="number">796.36</span>K <span class="comment">//使用</span></span><br><span class="line">used_memory_rss_human:<span class="number">1.26</span>M <span class="comment">//top的数值</span></span><br><span class="line">used_memory_peak_human:<span class="number">877.38</span>K <span class="comment">//峰值</span></span><br><span class="line">total_system_memory_human:<span class="number">251.67</span>G</span><br></pre></td></tr></table></figure><h3 id="复制挤压缓冲器"><a href="#复制挤压缓冲器" class="headerlink" title="复制挤压缓冲器"></a>复制挤压缓冲器</h3><p>info replication</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">role:master</span><br><span class="line">connected_slaves:<span class="number">0</span></span><br><span class="line">master_repl_offset:<span class="number">0</span></span><br><span class="line">repl_backlog_active:<span class="number">0</span></span><br><span class="line">repl_backlog_size:<span class="number">1048576</span> <span class="comment">//挤压缓冲区大小</span></span><br><span class="line">repl_backlog_first_byte_offset:<span class="number">0</span></span><br><span class="line">repl_backlog_histlen:<span class="number">0</span></span><br></pre></td></tr></table></figure><p>info stats</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sync_full:<span class="number">0</span></span><br><span class="line">sync_partial_ok:<span class="number">0</span></span><br><span class="line">sync_partial_err:<span class="number">0</span> <span class="comment">//半同步失败次数如果过多需要增大挤压缓冲区大小</span></span><br></pre></td></tr></table></figure>]]></content>
+      
+      
+      <categories>
+          
+          <category> redis </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 数据库 </tag>
+            
+            <tag> nosql </tag>
+            
+            <tag> redis </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>Redis-集群</title>
       <link href="/Redis-%E9%9B%86%E7%BE%A4/"/>
       <url>/Redis-%E9%9B%86%E7%BE%A4/</url>
       
-        <content type="html"><![CDATA[<p>Redis的集群遵循的是CAP理论中的AP，因为Redis是出现网络分区的时候，主依然提供写服务，从会采用多中方式追赶主</p><h2 id="主从复制和从从复制"><a href="#主从复制和从从复制" class="headerlink" title="主从复制和从从复制"></a>主从复制和从从复制</h2><p>  Redis的主从复制、从从复制是异步复制，从从复制是为了减少主的压力</p><h3 id="增量复制"><a href="#增量复制" class="headerlink" title="增量复制"></a>增量复制</h3><p>Redis主会将涉及到数据修改的命令写入到Buffer中，然后异步传给从库，从库执行命令并且返回偏移量给主，保证俩边的数据一致，buffer采用环状结构，如果buffer满了会覆盖原来的数据。如果出现还没有执行就被覆盖的情况会触发快照复制</p><h3 id="快照复制"><a href="#快照复制" class="headerlink" title="快照复制"></a>快照复制</h3><p>  快照复制很耗时。过程如下</p><ul><li>主先bgsave将快照写入到磁盘。</li><li>同步快照给从</li><li>从在接收完快照后，先持久化，在Load快照</li><li><p>从库开始执行这段时间的增量操作。</p><p>如果这段时间buffer又被覆盖了，则继续快照复制，如此恶性循环，所以要选择一个合适的复制buffer</p><p>快照复制前会持久化，如果这时候正好需要aof的fsync，则会推迟fsync，影响主的业务。</p><p>新加入的从库都需要先执行一遍快照复制。</p><p>Redis3.0针对这种情况采用了无盘复制的思路，遍历内存不持久化，直接传递给从库，从库如上面的过程先持久化在load，避免了主库的磁盘IO操作</p></li></ul><h3 id="wait命令"><a href="#wait命令" class="headerlink" title="wait命令"></a>wait命令</h3><p>可以将异步复制改为同步复制，由AP变为CP</p><h2 id="redis-sentinel-哨兵机制"><a href="#redis-sentinel-哨兵机制" class="headerlink" title="redis-sentinel 哨兵机制"></a>redis-sentinel 哨兵机制</h2><p>  redis在3.0提供sentinel服务，进行节点的healthCheck。</p><p>  客户端通过连接sentinel获取当前的master信息，客户端连接Master。</p><p>  如果发现master挂了，哨兵会选举新的Master,同时集群中其他的slave会和新的master开始主从同步任务。当原来的master恢复会变为slave。</p><p>  注意：实际上senintel的主从切换是客户端做的。</p><h2 id="数据切片"><a href="#数据切片" class="headerlink" title="数据切片"></a>数据切片</h2><h3 id="Codis"><a href="#Codis" class="headerlink" title="Codis"></a>Codis</h3><p>  codis-proxy:做请求代理<br>  codis-server:服务存储</p><p>  将数据分成1024个slot,数据写入时候proxy会对key做crc32求hash，然后根据槽取模。槽的映射关系会交给zookeeper和etcd这种第三方组件来维护。</p><p>  槽的迁移，当发现请求的key正在迁移时候会强制key进行迁移之后在去新的槽去请求。</p><p>  支持自动平衡。</p><p>  缺点：因为不是官方的方案，所以支持新的特性比较困难，且不支持事物等命令。</p><h3 id="Cluster"><a href="#Cluster" class="headerlink" title="Cluster"></a>Cluster</h3><p>  redis官方集群方案。</p><p>  将数据分为16384个slot，每个节点都保留一份slot的配置信息，并且客户端链接时候会获取一份Slot信息，这部分信息持久化到redis-cluster中。</p><p>  slot的跳转：当客户端发现请求的数据已经迁移后客户端会收到MOVED &lt; newSlotNum &gt; &lt; ip:port &gt;可以更新客户端的配置，然后去新的server去获取。</p><p>  slot的迁移：迁移是以slot为单位进行迁移，当访问到迁移的key时候流程如下：</p><ul><li>想srcNodeAddr请求，如果key在srcNodeAddr进行操作</li><li>如果不在srcNodeAddr，返回-ASKING tragetNodeAddr</li><li>向tragetNodeAddr发送不带参数的ASKING节点</li><li><p>返回OK，去tragetNodeAddr getKey （目的是ASKING之后告诉tragetNodeAddr下一条指令不能不处理，因为在迁移中理论上tartNode不负责这个key）</p><p>redis的key如果是大Key，因为迁移指令是阻塞，会影响到服务。</p><p>redis的集群管理是通过Gossip协议的。当一个节点发现另一个节点失联（PFail），它会广播给集群，然后当集群中其他节点收到的该节点失联事件过半数（PFail Count）时候，就标记该节点下线。</p><p>另外，redis-cluster的槽位迁移、节点切换都是在客户端做的。</p></li></ul>]]></content>
+        <content type="html"><![CDATA[<p>Redis的集群遵循的是CAP理论中的AP，因为Redis是出现网络分区的时候，主依然提供写服务，从会采用多中方式追赶主</p><h2 id="主从复制和从从复制"><a href="#主从复制和从从复制" class="headerlink" title="主从复制和从从复制"></a>主从复制和从从复制</h2><p>  Redis的主从复制、从从复制是异步复制，从从复制是为了减少主的压力</p><h3 id="增量复制"><a href="#增量复制" class="headerlink" title="增量复制"></a>增量复制</h3><p>Redis主会将涉及到数据修改的命令写入到Buffer中，然后异步传给从库，从库执行命令并且返回偏移量给主，保证俩边的数据一致，buffer采用环状结构，如果buffer满了会覆盖原来的数据。如果出现还没有执行就被覆盖的情况会触发快照复制</p><h3 id="快照复制"><a href="#快照复制" class="headerlink" title="快照复制"></a>快照复制</h3><p>  快照复制很耗时。过程如下</p><ul><li>主先bgsave将快照写入到磁盘。</li><li>同步快照给从</li><li>从在接收完快照后，先持久化，在Load快照</li><li><p>从库开始执行这段时间的增量操作。</p><p>如果这段时间buffer又被覆盖了，则继续快照复制，如此恶性循环，所以要选择一个合适的复制buffer</p><p>快照复制前会持久化，如果这时候正好需要aof的fsync，则会推迟fsync，影响主的业务。</p><p>新加入的从库都需要先执行一遍快照复制。</p><p>Redis3.0针对这种情况采用了无盘复制的思路，遍历内存不持久化，直接传递给从库，从库如上面的过程先持久化在load，避免了主库的磁盘IO操作</p></li></ul><h3 id="wait命令"><a href="#wait命令" class="headerlink" title="wait命令"></a>wait命令</h3><p>可以将异步复制改为同步复制，由AP变为CP</p><h2 id="redis-sentinel-哨兵机制"><a href="#redis-sentinel-哨兵机制" class="headerlink" title="redis-sentinel 哨兵机制"></a>redis-sentinel 哨兵机制</h2><p>  redis在3.0提供sentinel服务，进行节点的healthCheck。</p><p>  客户端通过连接sentinel获取当前的master信息，客户端连接Master。</p><p>  如果发现master挂了，哨兵会选举新的Master,同时集群中其他的slave会和新的master开始主从同步任务。当原来的master恢复会变为slave。</p><p>  注意：实际上senintel的主从切换是客户端做的。</p><h2 id="数据切片"><a href="#数据切片" class="headerlink" title="数据切片"></a>数据切片</h2><h3 id="Codis"><a href="#Codis" class="headerlink" title="Codis"></a>Codis</h3><p>  codis-proxy:做请求代理<br>  codis-server:服务存储</p><p>  将数据分成1024个slot,数据写入时候proxy会对key做crc32求hash，然后根据槽取模。槽的映射关系会交给zookeeper和etcd这种第三方组件来维护。</p><p>  槽的迁移，当发现请求的key正在迁移时候会强制key进行迁移之后在去新的槽去请求。</p><p>  支持自动平衡。</p><p>  缺点：因为不是官方的方案，所以支持新的特性比较困难，且不支持事物等命令。</p><h3 id="Cluster"><a href="#Cluster" class="headerlink" title="Cluster"></a>Cluster</h3><p>  redis官方集群方案。</p><p>  将数据分为16384个slot，每个节点都保留一份slot的配置信息，并且客户端链接时候会获取一份Slot信息，这部分信息持久化到redis-cluster中。</p><p>  slot的跳转：当客户端发现请求的数据已经迁移后客户端会收到MOVED &lt; newSlotNum &gt; &lt; ip:port &gt;可以更新客户端的配置，然后去新的server去获取。</p><p>  slot的迁移：迁移是以slot为单位进行迁移，当访问到迁移的key时候流程如下：</p><ul><li>想srcNodeAddr请求，如果key在srcNodeAddr进行操作</li><li>如果不在srcNodeAddr，返回-ASKING tragetNodeAddr</li><li>向tragetNodeAddr发送不带参数的ASKING节点</li><li><p>返回OK，去tragetNodeAddr getKey （目的是ASKING之后告诉tragetNodeAddr下一条指令不能不处理，因为在迁移中理论上tartNode不负责这个key）</p><p>redis的key如果是大Key，因为迁移指令是阻塞，会影响到服务。</p><p>redis的集群管理是通过Gossip协议的。当一个节点发现另一个节点失联（PFail），它会广播给集群，然后当集群中其他节点收到的该节点失联事件过半数（PFail Count）时候，就标记该节点下线。</p><p>另外，redis-cluster的槽位迁移、节点切换都是在客户端做的。</p></li></ul><h2 id="分布式锁的不安全性"><a href="#分布式锁的不安全性" class="headerlink" title="分布式锁的不安全性"></a>分布式锁的不安全性</h2><p>由于主节点宕机客户端无感知，所以当客户端从主节点获取锁后，未同步到从节点这时候发生宕机。锁数据未同步成功发生了主从切换，锁是失效的，如果业务不容忍可以采用redlock机制。</p>]]></content>
       
       
       <categories>

@@ -328,6 +328,438 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/RocketMq-源码学习-四-消息的发送/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/RocketMq-源码学习-四-消息的发送/" class="post-title-link" itemprop="url">RocketMq-源码学习-四-消息的发送</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-09-14 20:15:54" itemprop="dateCreated datePublished" datetime="2019-09-14T20:15:54+08:00">2019-09-14</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-09-27 10:59:29" itemprop="dateModified" datetime="2019-09-27T10:59:29+08:00">2019-09-27</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/" itemprop="url" rel="index"><span itemprop="name">消息队列</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/" itemprop="url" rel="index"><span itemprop="name">rocketmq</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/源码学习/" itemprop="url" rel="index"><span itemprop="name">源码学习</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="消息的生产者类的结构"><a href="#消息的生产者类的结构" class="headerlink" title="消息的生产者类的结构"></a>消息的生产者类的结构</h2><p>DefaultMQProducer（TransactionMQProducer后续事务的消费会提到，下面以DefaultMQProducer开始）,继承了ClientConfig，实现了接口：MQProducer。</p>
+<p>DefaultMQProducer持有DefaultMQProducerImpl对象，DefaultMQProducerImpl实现MQProducerInner接口，</p>
+<h2 id="对象初始化"><a href="#对象初始化" class="headerlink" title="对象初始化"></a>对象初始化</h2><p>DefaultMQProducer</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">DefaultMQProducer</span><span class="params">(<span class="keyword">final</span> String producerGroup, RPCHook rpcHook)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.producerGroup = producerGroup;</span><br><span class="line">    defaultMQProducerImpl = <span class="keyword">new</span> DefaultMQProducerImpl(<span class="keyword">this</span>, rpcHook);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>DefaultMQProducerImpl</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">DefaultMQProducerImpl</span><span class="params">(<span class="keyword">final</span> DefaultMQProducer defaultMQProducer, RPCHook rpcHook)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.defaultMQProducer = defaultMQProducer;</span><br><span class="line">    <span class="keyword">this</span>.rpcHook = rpcHook;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="启动"><a href="#启动" class="headerlink" title="启动"></a>启动</h2><p>DefaultMQProducer#start(),具体见下面</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">(<span class="keyword">final</span> <span class="keyword">boolean</span> startFactory)</span> <span class="keyword">throws</span> MQClientException </span>&#123;</span><br><span class="line">    <span class="keyword">switch</span> (<span class="keyword">this</span>.serviceState) &#123;</span><br><span class="line">        <span class="comment">//启动时候默认是是这个状态防止重复启动</span></span><br><span class="line">        <span class="keyword">case</span> CREATE_JUST:</span><br><span class="line">            <span class="keyword">this</span>.serviceState = ServiceState.START_FAILED;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//检查producerGroup名称合法性</span></span><br><span class="line">            <span class="keyword">this</span>.checkConfig();</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 判断是否需要设置 InstanceName （不等于CLIENT_INNER_PRODUCER_GROUP，并且InstanceName是default）</span></span><br><span class="line">            <span class="keyword">if</span> (!<span class="keyword">this</span>.defaultMQProducer.getProducerGroup().equals(MixAll.CLIENT_INNER_PRODUCER_GROUP)) &#123;</span><br><span class="line">                <span class="keyword">this</span>.defaultMQProducer.changeInstanceNameToPID();</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//多例模式创建MQClientInstance</span></span><br><span class="line">            <span class="keyword">this</span>.mQClientFactory = MQClientManager.getInstance().getAndCreateMQClientInstance(<span class="keyword">this</span>.defaultMQProducer, rpcHook);</span><br><span class="line"></span><br><span class="line">            <span class="comment">//注册Producer</span></span><br><span class="line">            <span class="keyword">boolean</span> registerOK = mQClientFactory.registerProducer(<span class="keyword">this</span>.defaultMQProducer.getProducerGroup(), <span class="keyword">this</span>);</span><br><span class="line">            <span class="keyword">if</span> (!registerOK) &#123;</span><br><span class="line">                <span class="keyword">this</span>.serviceState = ServiceState.CREATE_JUST;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> MQClientException(<span class="string">"The producer group["</span> + <span class="keyword">this</span>.defaultMQProducer.getProducerGroup()</span><br><span class="line">                    + <span class="string">"] has been created before, specify another name please."</span> + FAQUrl.suggestTodo(FAQUrl.GROUP_NAME_DUPLICATE_URL),</span><br><span class="line">                    <span class="keyword">null</span>);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//topic:"TBW102"---&gt;new TopicPublishInfo() 存入topicPublishInfoTable</span></span><br><span class="line">            <span class="keyword">this</span>.topicPublishInfoTable.put(<span class="keyword">this</span>.defaultMQProducer.getCreateTopicKey(), <span class="keyword">new</span> TopicPublishInfo());</span><br><span class="line"></span><br><span class="line">            <span class="comment">//启动</span></span><br><span class="line">            <span class="keyword">if</span> (startFactory) &#123;</span><br><span class="line">                mQClientFactory.start();</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            log.info(<span class="string">"the producer [&#123;&#125;] start OK. sendMessageWithVIPChannel=&#123;&#125;"</span>, <span class="keyword">this</span>.defaultMQProducer.getProducerGroup(),</span><br><span class="line">                <span class="keyword">this</span>.defaultMQProducer.isSendMessageWithVIPChannel());</span><br><span class="line">            <span class="keyword">this</span>.serviceState = ServiceState.RUNNING;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> RUNNING:</span><br><span class="line">        <span class="keyword">case</span> START_FAILED:</span><br><span class="line">        <span class="keyword">case</span> SHUTDOWN_ALREADY:</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> MQClientException(<span class="string">"The producer service state not OK, maybe started once, "</span></span><br><span class="line">                + <span class="keyword">this</span>.serviceState</span><br><span class="line">                + FAQUrl.suggestTodo(FAQUrl.CLIENT_SERVICE_NOT_OK),</span><br><span class="line">                <span class="keyword">null</span>);</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">this</span>.mQClientFactory.sendHeartbeatToAllBrokerWithLock();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>调用MQClientInstance#start()，见下面</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> <span class="keyword">throws</span> MQClientException </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123;</span><br><span class="line">        <span class="keyword">switch</span> (<span class="keyword">this</span>.serviceState) &#123;</span><br><span class="line">            <span class="keyword">case</span> CREATE_JUST:</span><br><span class="line">                <span class="keyword">this</span>.serviceState = ServiceState.START_FAILED;</span><br><span class="line">                <span class="comment">// If not specified,looking address from name server</span></span><br><span class="line">                <span class="keyword">if</span> (<span class="keyword">null</span> == <span class="keyword">this</span>.clientConfig.getNamesrvAddr()) &#123;</span><br><span class="line">                    <span class="comment">//感觉是服务发现</span></span><br><span class="line">                    <span class="keyword">this</span>.mQClientAPIImpl.fetchNameServerAddr();</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">// Start request-response channel 处理rocktmq的coumser相关的系统事件和CONSUME_MESSAGE_DIRECTLY等信息</span></span><br><span class="line">                <span class="keyword">this</span>.mQClientAPIImpl.start();</span><br><span class="line">                <span class="comment">// Start various schedule tasks 服务发现的任务保证服务的发现</span></span><br><span class="line">                <span class="keyword">this</span>.startScheduledTask();</span><br><span class="line">                <span class="comment">// Start pull service  启动pullMessageService通过queue拉取线程</span></span><br><span class="line">                <span class="keyword">this</span>.pullMessageService.start();</span><br><span class="line">                <span class="comment">// Start rebalance service 每隔一段时间执行一次doReblance方法</span></span><br><span class="line">                <span class="keyword">this</span>.rebalanceService.start();</span><br><span class="line">                <span class="comment">// Start push service 启动push服务</span></span><br><span class="line">                <span class="keyword">this</span>.defaultMQProducer.getDefaultMQProducerImpl().start(<span class="keyword">false</span>);</span><br><span class="line">                log.info(<span class="string">"the client factory [&#123;&#125;] start OK"</span>, <span class="keyword">this</span>.clientId);</span><br><span class="line">                <span class="keyword">this</span>.serviceState = ServiceState.RUNNING;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> RUNNING:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> SHUTDOWN_ALREADY:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> START_FAILED:</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> MQClientException(<span class="string">"The Factory object["</span> + <span class="keyword">this</span>.getClientId() + <span class="string">"] has been created before, and failed."</span>, <span class="keyword">null</span>);</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>至此Procuer启动完成</p>
+<h2 id="消息发送的过程"><a href="#消息发送的过程" class="headerlink" title="消息发送的过程"></a>消息发送的过程</h2><ol>
+<li>DefaultMQProducer#send–&gt;DefaultMQProducerImpl#send–&gt;DefaultMQProducerImpl#sendOneway、sendDefaultImpl、sendKernelImpl–&gt;MQClientAPIImpl#sendMessage–&gt;nettyRemotingClient#invokeSync、invokeAsync、invokeOneWay</li>
+<li>sendOneway-&gt;sendDefaultImpl-&gt;sendKernelImpl</li>
+</ol>
+<p>重点的类有</p>
+<ul>
+<li>DefaultMQProducerImpl-生产者的实现</li>
+<li>MQClientAPIImpl-MqClientApi的实现，包含生产者和消费者部分</li>
+<li>nettyRemotingClient</li>
+</ul>
+<h3 id="DefaultMQProducerImpl"><a href="#DefaultMQProducerImpl" class="headerlink" title="DefaultMQProducerImpl"></a>DefaultMQProducerImpl</h3><h4 id="重点方法获取topicPublishInfo–tryToFindTopicPublishInfo"><a href="#重点方法获取topicPublishInfo–tryToFindTopicPublishInfo" class="headerlink" title="重点方法获取topicPublishInfo–tryToFindTopicPublishInfo"></a>重点方法获取topicPublishInfo–tryToFindTopicPublishInfo</h4><p>根据message中的topic属性获取本地TopicPublishInfo，如果本地没用去nameServer获取，发送RequestCode为GET_ROUTEINTO_BY_TOPIC的请求获取topicRouteData</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br></pre></td><td class="code"><pre><span class="line">    <span class="function"><span class="keyword">private</span> TopicPublishInfo <span class="title">tryToFindTopicPublishInfo</span><span class="params">(<span class="keyword">final</span> String topic)</span> </span>&#123;</span><br><span class="line">        TopicPublishInfo topicPublishInfo = <span class="keyword">this</span>.topicPublishInfoTable.get(topic);</span><br><span class="line">        <span class="comment">//没有或者messageQueueList为空去nameserv获取</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">null</span> == topicPublishInfo || !topicPublishInfo.ok()) &#123;</span><br><span class="line">            <span class="keyword">this</span>.topicPublishInfoTable.putIfAbsent(topic, <span class="keyword">new</span> TopicPublishInfo());</span><br><span class="line">            <span class="comment">//重点</span></span><br><span class="line">            <span class="keyword">this</span>.mQClientFactory.updateTopicRouteInfoFromNameServer(topic);</span><br><span class="line">            topicPublishInfo = <span class="keyword">this</span>.topicPublishInfoTable.get(topic);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (topicPublishInfo.isHaveTopicRouterInfo() || topicPublishInfo.ok()) &#123;</span><br><span class="line">            <span class="keyword">return</span> topicPublishInfo;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">this</span>.mQClientFactory.updateTopicRouteInfoFromNameServer(topic, <span class="keyword">true</span>, <span class="keyword">this</span>.defaultMQProducer);</span><br><span class="line">            topicPublishInfo = <span class="keyword">this</span>.topicPublishInfoTable.get(topic);</span><br><span class="line">            <span class="keyword">return</span> topicPublishInfo;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//mQClientFactory#updateTopicRouteInfoFromNameServer</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">updateTopicRouteInfoFromNameServer</span><span class="params">(<span class="keyword">final</span> String topic, <span class="keyword">boolean</span> isDefault,</span></span></span><br><span class="line"><span class="function"><span class="params">                                                      DefaultMQProducer defaultMQProducer)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">this</span>.lockNamesrv.tryLock(LOCK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    <span class="comment">//获取路由信息</span></span><br><span class="line">                    TopicRouteData topicRouteData;</span><br><span class="line">                    <span class="keyword">if</span> (isDefault &amp;&amp; defaultMQProducer != <span class="keyword">null</span>) &#123;</span><br><span class="line">                        <span class="comment">//发送RequestCode为GET_ROUTEINTO_BY_TOPIC的请求获取topicRouteData</span></span><br><span class="line">                        topicRouteData = <span class="keyword">this</span>.mQClientAPIImpl.getDefaultTopicRouteInfoFromNameServer(defaultMQProducer.getCreateTopicKey(),</span><br><span class="line">                                <span class="number">1000</span> * <span class="number">3</span>);</span><br><span class="line">                        ......</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        topicRouteData = <span class="keyword">this</span>.mQClientAPIImpl.getTopicRouteInfoFromNameServer(topic, <span class="number">1000</span> * <span class="number">3</span>);</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="keyword">if</span> (topicRouteData != <span class="keyword">null</span>) &#123;</span><br><span class="line">                        TopicRouteData old = <span class="keyword">this</span>.topicRouteTable.get(topic);</span><br><span class="line">                        <span class="keyword">boolean</span> changed = topicRouteDataIsChange(old, topicRouteData);</span><br><span class="line">                        ......</span><br><span class="line">                        <span class="comment">//如果发生改变将TopicRouteData转成TopicPublishInfo 和 subscribeInfo 更新</span></span><br><span class="line">                        <span class="keyword">if</span> (changed) &#123;</span><br><span class="line">                            TopicRouteData cloneTopicRouteData = topicRouteData.cloneTopicRouteData();</span><br><span class="line">                            <span class="comment">// Update Pub info</span></span><br><span class="line">                            &#123;</span><br><span class="line">                                TopicPublishInfo publishInfo = topicRouteData2TopicPublishInfo(topic, topicRouteData);</span><br><span class="line">                                publishInfo.setHaveTopicRouterInfo(<span class="keyword">true</span>);</span><br><span class="line">                                Iterator&lt;Entry&lt;String, MQProducerInner&gt;&gt; it = <span class="keyword">this</span>.producerTable.entrySet().iterator();</span><br><span class="line">                                <span class="keyword">while</span> (it.hasNext()) &#123;</span><br><span class="line">                                    Entry&lt;String, MQProducerInner&gt; entry = it.next();</span><br><span class="line">                                    MQProducerInner impl = entry.getValue();</span><br><span class="line">                                    <span class="keyword">if</span> (impl != <span class="keyword">null</span>) &#123;</span><br><span class="line">                                        impl.updateTopicPublishInfo(topic, publishInfo);</span><br><span class="line">                                    &#125;</span><br><span class="line">                                &#125;</span><br><span class="line">                            &#125;</span><br><span class="line"></span><br><span class="line">                            ......</span><br><span class="line">                            <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        ......</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                    ......</span><br><span class="line">                &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                    <span class="keyword">this</span>.lockNamesrv.unlock();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                ......</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            ......</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<h4 id="sendKernelImpl"><a href="#sendKernelImpl" class="headerlink" title="sendKernelImpl"></a>sendKernelImpl</h4><p>他们的封装关系：<br>sendOneway-&gt;sendDefaultImpl-&gt;sendKernelImpl，这3种方式最终都会调用到sendKernelImpl。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> msg</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> mq                write-message-queue</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> communicationMode async sync oneway</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> sendCallback</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> topicPublishInfo</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> timeout</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> MQClientException</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> RemotingException</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> MQBrokerException</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> InterruptedException</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> SendResult <span class="title">sendKernelImpl</span><span class="params">(<span class="keyword">final</span> Message msg,</span></span></span><br><span class="line"><span class="function"><span class="params">                                  <span class="keyword">final</span> MessageQueue mq,</span></span></span><br><span class="line"><span class="function"><span class="params">                                  <span class="keyword">final</span> CommunicationMode communicationMode,</span></span></span><br><span class="line"><span class="function"><span class="params">                                  <span class="keyword">final</span> SendCallback sendCallback,</span></span></span><br><span class="line"><span class="function"><span class="params">                                  <span class="keyword">final</span> TopicPublishInfo topicPublishInfo,</span></span></span><br><span class="line"><span class="function"><span class="params">                                  <span class="keyword">final</span> <span class="keyword">long</span> timeout)</span> <span class="keyword">throws</span> MQClientException, RemotingException, MQBrokerException, InterruptedException </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> beginStartTime = System.currentTimeMillis();</span><br><span class="line">    <span class="comment">//得到BrokerAddr，没有在更新topic</span></span><br><span class="line">    String brokerAddr = <span class="keyword">this</span>.mQClientFactory.findBrokerAddressInPublish(mq.getBrokerName());</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">null</span> == brokerAddr) &#123;</span><br><span class="line">        tryToFindTopicPublishInfo(mq.getTopic());</span><br><span class="line">        brokerAddr = <span class="keyword">this</span>.mQClientFactory.findBrokerAddressInPublish(mq.getBrokerName());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    SendMessageContext context = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">if</span> (brokerAddr != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">//根据配置返回VipChannel</span></span><br><span class="line">        brokerAddr = MixAll.brokerVIPChannel(<span class="keyword">this</span>.defaultMQProducer.isSendMessageWithVIPChannel(), brokerAddr);</span><br><span class="line">        <span class="keyword">byte</span>[] prevBody = msg.getBody();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">//for MessageBatch,ID has been set in the generating process</span></span><br><span class="line">            <span class="keyword">if</span> (!(msg <span class="keyword">instanceof</span> MessageBatch)) &#123;</span><br><span class="line">                MessageClientIDSetter.setUniqID(msg);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//压缩单体的消息messagebody</span></span><br><span class="line">            <span class="keyword">int</span> sysFlag = <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">boolean</span> msgBodyCompressed = <span class="keyword">false</span>;</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">this</span>.tryToCompressMessage(msg)) &#123;</span><br><span class="line">                sysFlag |= MessageSysFlag.COMPRESSED_FLAG;</span><br><span class="line">                msgBodyCompressed = <span class="keyword">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//是否事务消息</span></span><br><span class="line">            <span class="keyword">final</span> String tranMsg = msg.getProperty(MessageConst.PROPERTY_TRANSACTION_PREPARED);</span><br><span class="line">            <span class="keyword">if</span> (tranMsg != <span class="keyword">null</span> &amp;&amp; Boolean.parseBoolean(tranMsg)) &#123;</span><br><span class="line">                sysFlag |= MessageSysFlag.TRANSACTION_PREPARED_TYPE;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//执行CheckForbiddenHook</span></span><br><span class="line">            <span class="keyword">if</span> (hasCheckForbiddenHook()) &#123;</span><br><span class="line">                CheckForbiddenContext checkForbiddenContext = <span class="keyword">new</span> CheckForbiddenContext();</span><br><span class="line">                ......</span><br><span class="line">                <span class="keyword">this</span>.executeCheckForbiddenHook(checkForbiddenContext);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//执行SendMessageHookBefore</span></span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">this</span>.hasSendMessageHook()) &#123;</span><br><span class="line">                context = <span class="keyword">new</span> SendMessageContext();</span><br><span class="line">               ......</span><br><span class="line">                <span class="keyword">this</span>.executeSendMessageHookBefore(context);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//构建requestHeader</span></span><br><span class="line">            SendMessageRequestHeader requestHeader = <span class="keyword">new</span> SendMessageRequestHeader();</span><br><span class="line">            requestHeader.setProducerGroup(<span class="keyword">this</span>.defaultMQProducer.getProducerGroup());</span><br><span class="line">            requestHeader.setTopic(msg.getTopic());</span><br><span class="line">            requestHeader.setDefaultTopic(<span class="keyword">this</span>.defaultMQProducer.getCreateTopicKey());</span><br><span class="line">            requestHeader.setDefaultTopicQueueNums(<span class="keyword">this</span>.defaultMQProducer.getDefaultTopicQueueNums());</span><br><span class="line">            requestHeader.setQueueId(mq.getQueueId());</span><br><span class="line">            requestHeader.setSysFlag(sysFlag);</span><br><span class="line">            requestHeader.setBornTimestamp(System.currentTimeMillis());</span><br><span class="line">            requestHeader.setFlag(msg.getFlag());</span><br><span class="line">            requestHeader.setProperties(MessageDecoder.messageProperties2String(msg.getProperties()));</span><br><span class="line">            requestHeader.setReconsumeTimes(<span class="number">0</span>);</span><br><span class="line">            requestHeader.setUnitMode(<span class="keyword">this</span>.isUnitMode());</span><br><span class="line">            requestHeader.setBatch(msg <span class="keyword">instanceof</span> MessageBatch);</span><br><span class="line">            <span class="comment">//如果是重复消费的次数</span></span><br><span class="line">            <span class="keyword">if</span> (requestHeader.getTopic().startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) &#123;</span><br><span class="line">                String reconsumeTimes = MessageAccessor.getReconsumeTime(msg);</span><br><span class="line">                <span class="keyword">if</span> (reconsumeTimes != <span class="keyword">null</span>) &#123;</span><br><span class="line">                    requestHeader.setReconsumeTimes(Integer.valueOf(reconsumeTimes));</span><br><span class="line">                    MessageAccessor.clearProperty(msg, MessageConst.PROPERTY_RECONSUME_TIME);</span><br><span class="line">                &#125;</span><br><span class="line">                String maxReconsumeTimes = MessageAccessor.getMaxReconsumeTimes(msg);</span><br><span class="line">                <span class="keyword">if</span> (maxReconsumeTimes != <span class="keyword">null</span>) &#123;</span><br><span class="line">                    requestHeader.setMaxReconsumeTimes(Integer.valueOf(maxReconsumeTimes));</span><br><span class="line">                    MessageAccessor.clearProperty(msg, MessageConst.PROPERTY_MAX_RECONSUME_TIMES);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//发送消息</span></span><br><span class="line">            SendResult sendResult = <span class="keyword">null</span>;</span><br><span class="line">            <span class="keyword">switch</span> (communicationMode) &#123;</span><br><span class="line">                <span class="keyword">case</span> ASYNC:</span><br><span class="line">                    Message tmpMessage = msg;</span><br><span class="line">                    <span class="comment">//如果消息被压缩过，msgbody为原来的消息</span></span><br><span class="line">                    <span class="comment">// 否则如果这个消息是发送失败的，并且消息体依然大于压缩阈值，被压缩了俩次。</span></span><br><span class="line">                    <span class="comment">// 所以tmpMessage从msgclone了新对象，原Message不变，如果失败了可以通过原message进行重发</span></span><br><span class="line">                    <span class="keyword">if</span> (msgBodyCompressed) &#123;</span><br><span class="line">                        <span class="comment">//If msg body was compressed, msgbody should be reset using prevBody.</span></span><br><span class="line">                        <span class="comment">//Clone new message using commpressed message body and recover origin massage.</span></span><br><span class="line">                        <span class="comment">//Fix bug:https://github.com/apache/rocketmq-externals/issues/66</span></span><br><span class="line">                        tmpMessage = MessageAccessor.cloneMessage(msg);</span><br><span class="line">                        <span class="comment">//todo FIXME?? 这一步是否有必要要，因为有finnaly</span></span><br><span class="line">                        msg.setBody(prevBody);</span><br><span class="line">                    &#125;</span><br><span class="line">                    ......</span><br><span class="line">                    sendResult = <span class="keyword">this</span>.mQClientFactory.getMQClientAPIImpl().sendMessage(</span><br><span class="line">                            brokerAddr,</span><br><span class="line">                            mq.getBrokerName(),</span><br><span class="line">                            tmpMessage,</span><br><span class="line">                            requestHeader,</span><br><span class="line">                            timeout - costTimeAsync,</span><br><span class="line">                            communicationMode,</span><br><span class="line">                            sendCallback,</span><br><span class="line">                            topicPublishInfo,</span><br><span class="line">                            <span class="keyword">this</span>.mQClientFactory,</span><br><span class="line">                            <span class="keyword">this</span>.defaultMQProducer.getRetryTimesWhenSendAsyncFailed(),</span><br><span class="line">                            context,</span><br><span class="line">                            <span class="keyword">this</span>);</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                <span class="keyword">case</span> ONEWAY:</span><br><span class="line">                <span class="keyword">case</span> SYNC:</span><br><span class="line">                    <span class="keyword">long</span> costTimeSync = System.currentTimeMillis() - beginStartTime;</span><br><span class="line">                    <span class="keyword">if</span> (timeout &lt; costTimeSync) &#123;</span><br><span class="line">                        <span class="keyword">throw</span> <span class="keyword">new</span> RemotingTooMuchRequestException(<span class="string">"sendKernelImpl call timeout"</span>);</span><br><span class="line">                    &#125;</span><br><span class="line">                    sendResult = <span class="keyword">this</span>.mQClientFactory.getMQClientAPIImpl().sendMessage(</span><br><span class="line">                            brokerAddr,</span><br><span class="line">                            mq.getBrokerName(),</span><br><span class="line">                            msg,</span><br><span class="line">                            requestHeader,</span><br><span class="line">                            timeout - costTimeSync,</span><br><span class="line">                            communicationMode,</span><br><span class="line">                            context,</span><br><span class="line">                            <span class="keyword">this</span>);</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                <span class="keyword">default</span>:</span><br><span class="line">                    <span class="keyword">assert</span> <span class="keyword">false</span>;</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//执行hook</span></span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">this</span>.hasSendMessageHook()) &#123;</span><br><span class="line">                context.setSendResult(sendResult);</span><br><span class="line">                <span class="keyword">this</span>.executeSendMessageHookAfter(context);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> sendResult;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (RemotingException e) &#123;</span><br><span class="line">            ......</span><br><span class="line">        &#125; <span class="keyword">catch</span> (MQBrokerException e) &#123;</span><br><span class="line">           ......</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            ......</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="comment">//因为msg.body已经被压缩过了，所以需要重置body</span></span><br><span class="line">            msg.setBody(prevBody);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> MQClientException(<span class="string">"The broker["</span> + mq.getBrokerName() + <span class="string">"] not exist"</span>, <span class="keyword">null</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="发送消息-MQClientAPIImpl-sendMessage"><a href="#发送消息-MQClientAPIImpl-sendMessage" class="headerlink" title="发送消息-MQClientAPIImpl#sendMessage"></a>发送消息-MQClientAPIImpl#sendMessage</h3><p>MQClientAPIImpl是rocketmq作为client的api实现，这里看发送消息即：sendMessage</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 发送消息给Broker,Broker接收后对消息进行存储 RequestCode是SEND_MESSAGE</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> addr                     broker地址</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> brokerName               broker名称</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> msg                      消息</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> requestHeader            消息Header头</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> timeoutMillis            过期时间</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> communicationMode        发送类型</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> sendCallback             callback记过</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> topicPublishInfo         publishinfo</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> instance                 clientInstance</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> retryTimesWhenSendFailed 失败重试次数</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> context                  上下文</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> producer                 producer</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> RemotingException</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> MQBrokerException</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> InterruptedException</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> SendResult <span class="title">sendMessage</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> String addr,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> String brokerName,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> Message msg,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> SendMessageRequestHeader requestHeader,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> <span class="keyword">long</span> timeoutMillis,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> CommunicationMode communicationMode,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> SendCallback sendCallback,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> TopicPublishInfo topicPublishInfo,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> MQClientInstance instance,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> <span class="keyword">int</span> retryTimesWhenSendFailed,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> SendMessageContext context,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> DefaultMQProducerImpl producer</span></span></span><br><span class="line"><span class="function"><span class="params">)</span> <span class="keyword">throws</span> RemotingException, MQBrokerException, InterruptedException </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> beginStartTime = System.currentTimeMillis();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//1.RequestCommand,RequestCode是SEND_MESSAGE，接收者是</span></span><br><span class="line">    RemotingCommand request = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">if</span> (sendSmartMsg || msg <span class="keyword">instanceof</span> MessageBatch) &#123;</span><br><span class="line">        SendMessageRequestHeaderV2 requestHeaderV2 = SendMessageRequestHeaderV2.createSendMessageRequestHeaderV2(requestHeader);</span><br><span class="line">        request = RemotingCommand.createRequestCommand(msg <span class="keyword">instanceof</span> MessageBatch ? RequestCode.SEND_BATCH_MESSAGE : RequestCode.SEND_MESSAGE_V2, requestHeaderV2);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        request = RemotingCommand.createRequestCommand(RequestCode.SEND_MESSAGE, requestHeader);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// set body</span></span><br><span class="line">    request.setBody(msg.getBody());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">switch</span> (communicationMode) &#123;</span><br><span class="line">        <span class="keyword">case</span> ONEWAY:</span><br><span class="line">            <span class="comment">//单向发送：用nettyRemotingClient的invokeOneway，无返回值</span></span><br><span class="line">            <span class="keyword">this</span>.remotingClient.invokeOneway(addr, request, timeoutMillis);</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">case</span> ASYNC:</span><br><span class="line">            <span class="comment">//异步发送</span></span><br><span class="line">            <span class="keyword">final</span> AtomicInteger times = <span class="keyword">new</span> AtomicInteger();</span><br><span class="line">            <span class="keyword">long</span> costTimeAsync = System.currentTimeMillis() - beginStartTime;</span><br><span class="line">            <span class="keyword">if</span> (timeoutMillis &lt; costTimeAsync) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> RemotingTooMuchRequestException(<span class="string">"sendMessage call timeout"</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">this</span>.sendMessageAsync(addr, brokerName, msg, timeoutMillis - costTimeAsync, request, sendCallback, topicPublishInfo, instance,</span><br><span class="line">                    retryTimesWhenSendFailed, times, context, producer);</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">case</span> SYNC:</span><br><span class="line">            <span class="keyword">long</span> costTimeSync = System.currentTimeMillis() - beginStartTime;</span><br><span class="line">            <span class="keyword">if</span> (timeoutMillis &lt; costTimeSync) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> RemotingTooMuchRequestException(<span class="string">"sendMessage call timeout"</span>);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">this</span>.sendMessageSync(addr, brokerName, msg, timeoutMillis - costTimeSync, request);</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">assert</span> <span class="keyword">false</span>;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">null</span>;</span><br></pre></td></tr></table></figure>
+<h2 id="MessageQueueSelector自定义队列选择器实现消息黏着等功能"><a href="#MessageQueueSelector自定义队列选择器实现消息黏着等功能" class="headerlink" title="MessageQueueSelector自定义队列选择器实现消息黏着等功能"></a>MessageQueueSelector自定义队列选择器实现消息黏着等功能</h2><p>在上述的三种send方式，默认是RoundRobin，但是我们也可以通过传入MessageQueueSelector接口的实现队列的选择器将一定规则的队列发送到同一个队列中</p>
+<p>MessageQueueSelector 接口</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">MessageQueueSelector</span> </span>&#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 队列选择接口，在sendSelectImpl中调用</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> mqs topicPublishInfo中的MessageQueues列表</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> msg message</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> arg 队列选择器的参数，我们可以依据它来选择队列</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">MessageQueue <span class="title">select</span><span class="params">(<span class="keyword">final</span> List&lt;MessageQueue&gt; mqs, <span class="keyword">final</span> Message msg, <span class="keyword">final</span> Object arg)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>DefaultMQProducerImpl#sendSelectImpl</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> SendResult <span class="title">sendSelectImpl</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">            Message msg,</span></span></span><br><span class="line"><span class="function"><span class="params">            MessageQueueSelector selector,</span></span></span><br><span class="line"><span class="function"><span class="params">            Object arg,</span></span></span><br><span class="line"><span class="function"><span class="params">            <span class="keyword">final</span> CommunicationMode communicationMode,</span></span></span><br><span class="line"><span class="function"><span class="params">            <span class="keyword">final</span> SendCallback sendCallback, <span class="keyword">final</span> <span class="keyword">long</span> timeout</span></span></span><br><span class="line"><span class="function"><span class="params">    )</span> <span class="keyword">throws</span> MQClientException, RemotingException, MQBrokerException, InterruptedException </span>&#123;</span><br><span class="line">        <span class="keyword">long</span> beginStartTime = System.currentTimeMillis();</span><br><span class="line">        <span class="keyword">this</span>.makeSureStateOK();</span><br><span class="line">        Validators.checkMessage(msg, <span class="keyword">this</span>.defaultMQProducer);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//获取topicPublishInfo</span></span><br><span class="line">        TopicPublishInfo topicPublishInfo = <span class="keyword">this</span>.tryToFindTopicPublishInfo(msg.getTopic());</span><br><span class="line">        <span class="keyword">if</span> (topicPublishInfo != <span class="keyword">null</span> &amp;&amp; topicPublishInfo.ok()) &#123;</span><br><span class="line">            MessageQueue mq = <span class="keyword">null</span>;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="comment">//用自定义的selector，从getMessageQueueList选择一个队列</span></span><br><span class="line">                mq = selector.select(topicPublishInfo.getMessageQueueList(), msg, arg);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> MQClientException(<span class="string">"select message queue throwed exception."</span>, e);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">long</span> costTime = System.currentTimeMillis() - beginStartTime;</span><br><span class="line">            <span class="keyword">if</span> (timeout &lt; costTime) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> RemotingTooMuchRequestException(<span class="string">"sendSelectImpl call timeout"</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (mq != <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="comment">//发送消息</span></span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">this</span>.sendKernelImpl(msg, mq, communicationMode, sendCallback, <span class="keyword">null</span>, timeout - costTime);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> MQClientException(<span class="string">"select message queue return null."</span>, <span class="keyword">null</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> MQClientException(<span class="string">"No route info for this topic, "</span> + msg.getTopic(), <span class="keyword">null</span>);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>可以参照代码中的几个示例：SelectMessageQueueByRandom，SelectMessageQueueByMachineRoom，SelectMessageQueueByHash</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/RocketMq-源码学习-三-Store模块消息的存储/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/RocketMq-源码学习-三-Store模块消息的存储/" class="post-title-link" itemprop="url">RocketMq-源码学习-三-Store模块消息的存储(**持久化消息队列的重点**)</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-09-13 20:44:00" itemprop="dateCreated datePublished" datetime="2019-09-13T20:44:00+08:00">2019-09-13</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-09-27 10:59:29" itemprop="dateModified" datetime="2019-09-27T10:59:29+08:00">2019-09-27</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/" itemprop="url" rel="index"><span itemprop="name">消息队列</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/" itemprop="url" rel="index"><span itemprop="name">rocketmq</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/源码学习/" itemprop="url" rel="index"><span itemprop="name">源码学习</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <blockquote>
+<p>broker的一个重点就是消息的持久化，它决定这MQ的使用场景、性能、以及可用性</p>
+</blockquote>
+<h2 id="存储消息的调用时序"><a href="#存储消息的调用时序" class="headerlink" title="存储消息的调用时序"></a>存储消息的调用时序</h2><p>  nettyRemotingServer接到请求–&gt;SendMessageProcessor.processRequest–&gt;DefaultMessageStore.putMessage–&gt;CommitLog.putMessage–&gt;MappedFile.appendMessage–&gt;CommitLog.DefaultAppendMessageCallback.doAppend<br>  最终调用MappedFile的–&gt;MappedByteBuffer来写入文件</p>
+<h2 id="SendMessageProcessor"><a href="#SendMessageProcessor" class="headerlink" title="SendMessageProcessor"></a>SendMessageProcessor</h2><p>  上一节提到的broker在启动过程。其中registerProcessor()方法中第一个就初始化了SendMessageProcessor。<br>  SendMessageProcessor采用模板模式，实现了抽象类AbstractSendMessageProcessor，并且实现了NettyRequestProcessor，它是netty的事件的处理类。</p>
+<h2 id="NettyRequestProcessor-processRequest"><a href="#NettyRequestProcessor-processRequest" class="headerlink" title="NettyRequestProcessor-processRequest"></a>NettyRequestProcessor-processRequest</h2><p>实现了NettyRequestProcessor接口的processRequest发方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> RemotingCommand <span class="title">processRequest</span><span class="params">(ChannelHandlerContext ctx,</span></span></span><br><span class="line"><span class="function"><span class="params">                                      RemotingCommand request)</span> <span class="keyword">throws</span> RemotingCommandException </span>&#123;</span><br><span class="line">    SendMessageContext mqtraceContext;</span><br><span class="line">    <span class="keyword">switch</span> (request.getCode()) &#123;</span><br><span class="line">        <span class="keyword">case</span> RequestCode.CONSUMER_SEND_MSG_BACK:</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">this</span>.consumerSendMsgBack(ctx, request);</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            SendMessageRequestHeader requestHeader = parseRequestHeader(request);</span><br><span class="line">            <span class="keyword">if</span> (requestHeader == <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            mqtraceContext = buildMsgContext(ctx, requestHeader);</span><br><span class="line">            <span class="keyword">this</span>.executeSendMessageHookBefore(ctx, request, mqtraceContext);</span><br><span class="line"></span><br><span class="line">            RemotingCommand response;</span><br><span class="line">            <span class="keyword">if</span> (requestHeader.isBatch()) &#123;</span><br><span class="line">                response = <span class="keyword">this</span>.sendBatchMessage(ctx, request, mqtraceContext, requestHeader);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                response = <span class="keyword">this</span>.sendMessage(ctx, request, mqtraceContext, requestHeader);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">this</span>.executeSendMessageHookAfter(response, mqtraceContext);</span><br><span class="line">            <span class="keyword">return</span> response;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="CommitLog"><a href="#CommitLog" class="headerlink" title="CommitLog"></a>CommitLog</h2><ul>
+<li>commitLog的文件管理</li>
+<li>消息的存储</li>
+</ul>
+<h3 id="putMessage"><a href="#putMessage" class="headerlink" title="putMessage"></a>putMessage</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> PutMessageResult <span class="title">putMessage</span><span class="params">(<span class="keyword">final</span> MessageExtBrokerInner msg)</span> </span>&#123;</span><br><span class="line">    ......</span><br><span class="line">    <span class="comment">//获取消息的事物类型</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span> tranType = MessageSysFlag.getTransactionValue(msg.getSysFlag());</span><br><span class="line">    <span class="keyword">if</span> (tranType == MessageSysFlag.TRANSACTION_NOT_TYPE</span><br><span class="line">            || tranType == MessageSysFlag.TRANSACTION_COMMIT_TYPE) &#123;</span><br><span class="line">        <span class="comment">// Delay Delivery</span></span><br><span class="line">        <span class="keyword">if</span> (msg.getDelayTimeLevel() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (msg.getDelayTimeLevel() &gt; <span class="keyword">this</span>.defaultMessageStore.getScheduleMessageService().getMaxDelayLevel()) &#123;</span><br><span class="line">                msg.setDelayTimeLevel(<span class="keyword">this</span>.defaultMessageStore.getScheduleMessageService().getMaxDelayLevel());</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//延时消息</span></span><br><span class="line">            topic = ScheduleMessageService.SCHEDULE_TOPIC;</span><br><span class="line">            queueId = ScheduleMessageService.delayLevel2QueueId(msg.getDelayTimeLevel());</span><br><span class="line">            <span class="comment">// Backup real topic, queueId 将消息设置成topic</span></span><br><span class="line">            MessageAccessor.putProperty(msg, MessageConst.PROPERTY_REAL_TOPIC, msg.getTopic());</span><br><span class="line">            MessageAccessor.putProperty(msg, MessageConst.PROPERTY_REAL_QUEUE_ID, String.valueOf(msg.getQueueId()));</span><br><span class="line">            msg.setPropertiesString(MessageDecoder.messageProperties2String(msg.getProperties()));</span><br><span class="line">            msg.setTopic(topic);</span><br><span class="line">            msg.setQueueId(queueId);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ......</span><br><span class="line">    MappedFile mappedFile = <span class="keyword">this</span>.mappedFileQueue.getLastMappedFile();</span><br><span class="line"></span><br><span class="line">    putMessageLock.lock();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line"></span><br><span class="line">        ......</span><br><span class="line"></span><br><span class="line">        <span class="comment">//获取mappedFile 如果mappedFile或者为空，createAndGet</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">null</span> == mappedFile || mappedFile.isFull()) &#123;</span><br><span class="line">            <span class="comment">//getOrCreate</span></span><br><span class="line">            mappedFile = <span class="keyword">this</span>.mappedFileQueue.getLastMappedFile(<span class="number">0</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        ......</span><br><span class="line"></span><br><span class="line">        result = mappedFile.appendMessage(msg, <span class="keyword">this</span>.appendMessageCallback);</span><br><span class="line">        <span class="keyword">switch</span> (result.getStatus()) &#123;</span><br><span class="line">            <span class="keyword">case</span> PUT_OK:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> END_OF_FILE:</span><br><span class="line">                unlockMappedFile = mappedFile;</span><br><span class="line">                <span class="comment">// Create a new file, re-write the message</span></span><br><span class="line">                mappedFile = <span class="keyword">this</span>.mappedFileQueue.getLastMappedFile(<span class="number">0</span>);</span><br><span class="line">                <span class="keyword">if</span> (<span class="keyword">null</span> == mappedFile) &#123;</span><br><span class="line">                    <span class="comment">// <span class="doctag">XXX:</span> warn and notify me</span></span><br><span class="line">                    log.error(<span class="string">"create mapped file2 error, topic: "</span> + msg.getTopic() + <span class="string">" clientAddr: "</span> + msg.getBornHostString());</span><br><span class="line">                    beginTimeInLock = <span class="number">0</span>;</span><br><span class="line">                    <span class="keyword">return</span> <span class="keyword">new</span> PutMessageResult(PutMessageStatus.CREATE_MAPEDFILE_FAILED, result);</span><br><span class="line">                &#125;</span><br><span class="line">                result = mappedFile.appendMessage(msg, <span class="keyword">this</span>.appendMessageCallback);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> MESSAGE_SIZE_EXCEEDED:</span><br><span class="line">            <span class="keyword">case</span> PROPERTIES_SIZE_EXCEEDED:</span><br><span class="line">                beginTimeInLock = <span class="number">0</span>;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">new</span> PutMessageResult(PutMessageStatus.MESSAGE_ILLEGAL, result);</span><br><span class="line">            <span class="keyword">case</span> UNKNOWN_ERROR:</span><br><span class="line">                beginTimeInLock = <span class="number">0</span>;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">new</span> PutMessageResult(PutMessageStatus.UNKNOWN_ERROR, result);</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                beginTimeInLock = <span class="number">0</span>;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">new</span> PutMessageResult(PutMessageStatus.UNKNOWN_ERROR, result);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        eclipseTimeInLock = <span class="keyword">this</span>.defaultMessageStore.getSystemClock().now() - beginLockTimestamp;</span><br><span class="line">        beginTimeInLock = <span class="number">0</span>;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        putMessageLock.unlock();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (eclipseTimeInLock &gt; <span class="number">500</span>) &#123;</span><br><span class="line">        log.warn(<span class="string">"[NOTIFYME]putMessage in lock cost time(ms)=&#123;&#125;, bodyLength=&#123;&#125; AppendMessageResult=&#123;&#125;"</span>, eclipseTimeInLock, msg.getBody().length, result);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">null</span> != unlockMappedFile &amp;&amp; <span class="keyword">this</span>.defaultMessageStore.getMessageStoreConfig().isWarmMapedFileEnable()) &#123;</span><br><span class="line">        <span class="keyword">this</span>.defaultMessageStore.unlockMappedFile(unlockMappedFile);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    PutMessageResult putMessageResult = <span class="keyword">new</span> PutMessageResult(PutMessageStatus.PUT_OK, result);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Statistics</span></span><br><span class="line">    storeStatsService.getSinglePutMessageTopicTimesTotal(msg.getTopic()).incrementAndGet();</span><br><span class="line">    storeStatsService.getSinglePutMessageTopicSizeTotal(topic).addAndGet(result.getWroteBytes());</span><br><span class="line"></span><br><span class="line">    handleDiskFlush(result, putMessageResult, msg);</span><br><span class="line">    handleHA(result, putMessageResult, msg);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> putMessageResult;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="commitLog文件管理"><a href="#commitLog文件管理" class="headerlink" title="commitLog文件管理"></a>commitLog文件管理</h3><p>获取最后一个mappeedFile，如果没有创建一个</p>
+<h4 id="AllocateMappedFileService–一次创建俩个文件"><a href="#AllocateMappedFileService–一次创建俩个文件" class="headerlink" title="AllocateMappedFileService–一次创建俩个文件"></a>AllocateMappedFileService–一次创建俩个文件</h4><p>由DefaultMessageSotre中初始化，传递个MappedFileQueue，类继承了ServiceThread。创建文件采用生产者消费者模式，一次创建俩个文件，当前文件直接返回。后续文件异步创建，提升了性能</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 生产者消费者模式。同步的放文件到队列中，线程中异步的去创建文件，</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> nextFilePath</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> nextNextFilePath</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> fileSize</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> MappedFile <span class="title">putRequestAndReturnMappedFile</span><span class="params">(String nextFilePath, String nextNextFilePath, <span class="keyword">int</span> fileSize)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    ......</span><br><span class="line">    <span class="comment">//nextFile的异步请求</span></span><br><span class="line">    AllocateRequest nextReq = <span class="keyword">new</span> AllocateRequest(nextFilePath, fileSize);</span><br><span class="line">    <span class="keyword">boolean</span> nextPutOK = <span class="keyword">this</span>.requestTable.putIfAbsent(nextFilePath, nextReq) == <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">if</span> (nextPutOK) &#123;</span><br><span class="line">        ......</span><br><span class="line">        <span class="comment">//丢到队列中</span></span><br><span class="line">        <span class="keyword">boolean</span> offerOK = <span class="keyword">this</span>.requestQueue.offer(nextReq);</span><br><span class="line">        <span class="keyword">if</span> (!offerOK) &#123;</span><br><span class="line">            log.warn(<span class="string">"never expected here, add a request to preallocate queue failed"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//nextNextFile的异步请求</span></span><br><span class="line">    AllocateRequest nextNextReq = <span class="keyword">new</span> AllocateRequest(nextNextFilePath, fileSize);</span><br><span class="line">    <span class="keyword">boolean</span> nextNextPutOK = <span class="keyword">this</span>.requestTable.putIfAbsent(nextNextFilePath, nextNextReq) == <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">if</span> (nextNextPutOK) &#123;</span><br><span class="line">            <span class="keyword">boolean</span> offerOK = <span class="keyword">this</span>.requestQueue.offer(nextNextReq);</span><br><span class="line">            <span class="keyword">if</span> (!offerOK) &#123;</span><br><span class="line">                log.warn(<span class="string">"never expected here, add a request to preallocate queue failed"</span>);</span><br><span class="line">            &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//一次创建俩个文件nextFile和nextNextFile，nextFile异步转同步返回，nextNextFile下一次创建时候可以直接到这里，</span></span><br><span class="line">    AllocateRequest result = <span class="keyword">this</span>.requestTable.get(nextFilePath);</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (result != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">boolean</span> waitOK = result.getCountDownLatch().await(waitTimeOut, TimeUnit.MILLISECONDS);</span><br><span class="line">            <span class="keyword">if</span> (!waitOK) &#123;</span><br><span class="line">                log.warn(<span class="string">"create mmap timeout "</span> + result.getFilePath() + <span class="string">" "</span> + result.getFileSize());</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">this</span>.requestTable.remove(nextFilePath);</span><br><span class="line">                <span class="keyword">return</span> result.getMappedFile();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            log.error(<span class="string">"find preallocate mmap failed, this never happen"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">        log.warn(<span class="keyword">this</span>.getServiceName() + <span class="string">" service has exception. "</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>run方法中的关键</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    log.info(<span class="keyword">this</span>.getServiceName() + <span class="string">" service started"</span>);</span><br><span class="line">    <span class="comment">//关键方法</span></span><br><span class="line">    <span class="keyword">while</span> (!<span class="keyword">this</span>.isStopped() &amp;&amp; <span class="keyword">this</span>.mmapOperation()) &#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    log.info(<span class="keyword">this</span>.getServiceName() + <span class="string">" service end"</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">mmapOperation</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">boolean</span> isSuccess = <span class="keyword">false</span>;</span><br><span class="line">    AllocateRequest req = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">//获取请求</span></span><br><span class="line">        req = <span class="keyword">this</span>.requestQueue.take();</span><br><span class="line">        <span class="comment">//校验请求状态</span></span><br><span class="line">        ......</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (req.getMappedFile() == <span class="keyword">null</span>) &#123;</span><br><span class="line">            ......</span><br><span class="line">            <span class="comment">//俩种方式TransientStorePool和MappedFileByteBuffer</span></span><br><span class="line">            <span class="keyword">if</span> (messageStore.getMessageStoreConfig().isTransientStorePoolEnable()) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    mappedFile = ServiceLoader.load(MappedFile.class).iterator().next();</span><br><span class="line">                    mappedFile.init(req.getFilePath(), req.getFileSize(), messageStore.getTransientStorePool());</span><br><span class="line">                &#125; <span class="keyword">catch</span> (RuntimeException e) &#123;</span><br><span class="line">                    log.warn(<span class="string">"Use default implementation."</span>);</span><br><span class="line">                    mappedFile = <span class="keyword">new</span> MappedFile(req.getFilePath(), req.getFileSize(), messageStore.getTransientStorePool());</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                mappedFile = <span class="keyword">new</span> MappedFile(req.getFilePath(), req.getFileSize());</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// pre write mappedFile</span></span><br><span class="line">            ......</span><br><span class="line">            req.setMappedFile(mappedFile);</span><br><span class="line">            <span class="keyword">this</span>.hasException = <span class="keyword">false</span>;</span><br><span class="line">            isSuccess = <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">        ......</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;<span class="comment">//被中断返回false</span></span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        ......</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (req != <span class="keyword">null</span> &amp;&amp; isSuccess)</span><br><span class="line">            req.getCountDownLatch().countDown();</span><br><span class="line">        <span class="comment">//完成</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="MappedFile"><a href="#MappedFile" class="headerlink" title="MappedFile"></a>MappedFile</h4><p>底层采用javanio的RandomAccessFile和mappedByteBuffer，见init方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">init</span><span class="params">(<span class="keyword">final</span> String fileName, <span class="keyword">final</span> <span class="keyword">int</span> fileSize)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.fileName = fileName;</span><br><span class="line">    <span class="keyword">this</span>.fileSize = fileSize;</span><br><span class="line">    <span class="keyword">this</span>.file = <span class="keyword">new</span> File(fileName);</span><br><span class="line">    <span class="keyword">this</span>.fileFromOffset = Long.parseLong(<span class="keyword">this</span>.file.getName());</span><br><span class="line">    <span class="keyword">boolean</span> ok = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">    ensureDirOK(<span class="keyword">this</span>.file.getParent());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">this</span>.fileChannel = <span class="keyword">new</span> RandomAccessFile(<span class="keyword">this</span>.file, <span class="string">"rw"</span>).getChannel();</span><br><span class="line">        <span class="keyword">this</span>.mappedByteBuffer = <span class="keyword">this</span>.fileChannel.map(MapMode.READ_WRITE, <span class="number">0</span>, fileSize);</span><br><span class="line">        TOTAL_MAPPED_VIRTUAL_MEMORY.addAndGet(fileSize);</span><br><span class="line">        TOTAL_MAPPED_FILES.incrementAndGet();</span><br><span class="line">        ok = <span class="keyword">true</span>;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (FileNotFoundException e) &#123;</span><br><span class="line">        log.error(<span class="string">"create file channel "</span> + <span class="keyword">this</span>.fileName + <span class="string">" Failed. "</span>, e);</span><br><span class="line">        <span class="keyword">throw</span> e;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        log.error(<span class="string">"map file "</span> + <span class="keyword">this</span>.fileName + <span class="string">" Failed. "</span>, e);</span><br><span class="line">        <span class="keyword">throw</span> e;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (!ok &amp;&amp; <span class="keyword">this</span>.fileChannel != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">this</span>.fileChannel.close();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="消息的存储"><a href="#消息的存储" class="headerlink" title="消息的存储"></a>消息的存储</h3><p>CommitLog#putMessage–&gt;mapFile#appendMessagesInner–&gt;CommitLog.DefaultAppendMessageCallback#doAppend</p>
+<h4 id="MappedFileQueue"><a href="#MappedFileQueue" class="headerlink" title="MappedFileQueue"></a>MappedFileQueue</h4><p>putMessage方法存消息</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> PutMessageResult <span class="title">putMessage</span><span class="params">(<span class="keyword">final</span> MessageExtBrokerInner msg)</span> </span>&#123;</span><br><span class="line">    ...校验消息以及设置消息里面的属性...</span><br><span class="line">    <span class="comment">//获取消息的事物类型</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span> tranType = MessageSysFlag.getTransactionValue(msg.getSysFlag());</span><br><span class="line">    <span class="keyword">if</span> (tranType == MessageSysFlag.TRANSACTION_NOT_TYPE</span><br><span class="line">            || tranType == MessageSysFlag.TRANSACTION_COMMIT_TYPE) &#123;</span><br><span class="line">        <span class="comment">// Delay Delivery</span></span><br><span class="line">        <span class="keyword">if</span> (msg.getDelayTimeLevel() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (msg.getDelayTimeLevel() &gt; <span class="keyword">this</span>.defaultMessageStore.getScheduleMessageService().getMaxDelayLevel()) &#123;</span><br><span class="line">                msg.setDelayTimeLevel(<span class="keyword">this</span>.defaultMessageStore.getScheduleMessageService().getMaxDelayLevel());</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//延时消息</span></span><br><span class="line">            topic = ScheduleMessageService.SCHEDULE_TOPIC;</span><br><span class="line">            queueId = ScheduleMessageService.delayLevel2QueueId(msg.getDelayTimeLevel());</span><br><span class="line"></span><br><span class="line">            <span class="comment">// Backup real topic, queueId 将消息设置成topic</span></span><br><span class="line">            MessageAccessor.putProperty(msg, MessageConst.PROPERTY_REAL_TOPIC, msg.getTopic());</span><br><span class="line">            MessageAccessor.putProperty(msg, MessageConst.PROPERTY_REAL_QUEUE_ID, String.valueOf(msg.getQueueId()));</span><br><span class="line">            msg.setPropertiesString(MessageDecoder.messageProperties2String(msg.getProperties()));</span><br><span class="line"></span><br><span class="line">            msg.setTopic(topic);</span><br><span class="line">            msg.setQueueId(queueId);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    putMessageLock.lock(); <span class="comment">//spin or ReentrantLock ,depending on store config</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        ......</span><br><span class="line">        <span class="comment">//获取mappedFile 如果mappedFile或者为空，createAndGet</span></span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">null</span> == mappedFile || mappedFile.isFull()) &#123;</span><br><span class="line">            mappedFile = <span class="keyword">this</span>.mappedFileQueue.getLastMappedFile(<span class="number">0</span>); <span class="comment">// Mark: NewFile may be cause noise</span></span><br><span class="line">        &#125;</span><br><span class="line">        ......</span><br><span class="line">        <span class="comment">//mappedFile的put</span></span><br><span class="line">        result = mappedFile.appendMessage(msg, <span class="keyword">this</span>.appendMessageCallback);</span><br><span class="line">        <span class="keyword">switch</span> (result.getStatus()) &#123;</span><br><span class="line">            <span class="keyword">case</span> PUT_OK:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> END_OF_FILE:</span><br><span class="line">                <span class="comment">//文件不够发送该消息，创建个新文件，并且重发</span></span><br><span class="line">                unlockMappedFile = mappedFile;</span><br><span class="line">                <span class="comment">//因为上一条消息woritePosition改变，已经满了，所以会已新的哦createPosition创建文件</span></span><br><span class="line">                mappedFile = <span class="keyword">this</span>.mappedFileQueue.getLastMappedFile(<span class="number">0</span>);</span><br><span class="line">                <span class="keyword">if</span> (<span class="keyword">null</span> == mappedFile) &#123;</span><br><span class="line">                    <span class="comment">// <span class="doctag">XXX:</span> warn and notify me</span></span><br><span class="line">                    log.error(<span class="string">"create mapped file2 error, topic: "</span> + msg.getTopic() + <span class="string">" clientAddr: "</span> + msg.getBornHostString());</span><br><span class="line">                    beginTimeInLock = <span class="number">0</span>;</span><br><span class="line">                    <span class="keyword">return</span> <span class="keyword">new</span> PutMessageResult(PutMessageStatus.CREATE_MAPEDFILE_FAILED, result);</span><br><span class="line">                &#125;</span><br><span class="line">                result = mappedFile.appendMessage(msg, <span class="keyword">this</span>.appendMessageCallback);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> MESSAGE_SIZE_EXCEEDED:</span><br><span class="line">            <span class="keyword">case</span> PROPERTIES_SIZE_EXCEEDED:</span><br><span class="line">                beginTimeInLock = <span class="number">0</span>;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">new</span> PutMessageResult(PutMessageStatus.MESSAGE_ILLEGAL, result);</span><br><span class="line">            <span class="keyword">case</span> UNKNOWN_ERROR:</span><br><span class="line">                beginTimeInLock = <span class="number">0</span>;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">new</span> PutMessageResult(PutMessageStatus.UNKNOWN_ERROR, result);</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                beginTimeInLock = <span class="number">0</span>;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">new</span> PutMessageResult(PutMessageStatus.UNKNOWN_ERROR, result);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        eclipseTimeInLock = <span class="keyword">this</span>.defaultMessageStore.getSystemClock().now() - beginLockTimestamp;</span><br><span class="line">        beginTimeInLock = <span class="number">0</span>;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        putMessageLock.unlock();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">null</span> != unlockMappedFile &amp;&amp; <span class="keyword">this</span>.defaultMessageStore.getMessageStoreConfig().isWarmMapedFileEnable()) &#123;</span><br><span class="line">        <span class="keyword">this</span>.defaultMessageStore.unlockMappedFile(unlockMappedFile);</span><br><span class="line">    &#125;</span><br><span class="line">    ......</span><br><span class="line">    PutMessageResult putMessageResult = <span class="keyword">new</span> PutMessageResult(PutMessageStatus.PUT_OK, result);</span><br><span class="line">    ......</span><br><span class="line">    <span class="keyword">return</span> putMessageResult;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="mappedFile-appendMessage"><a href="#mappedFile-appendMessage" class="headerlink" title="mappedFile#appendMessage"></a>mappedFile#appendMessage</h4><p>appendMessage–&gt;appendMessagesInner哎方法中调用AppendMessageCallback.doAppend</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> AppendMessageResult <span class="title">appendMessagesInner</span><span class="params">(<span class="keyword">final</span> MessageExt messageExt, <span class="keyword">final</span> AppendMessageCallback cb)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">assert</span> messageExt != <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">assert</span> cb != <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//写的position，如果还有空余</span></span><br><span class="line">    <span class="keyword">int</span> currentPos = <span class="keyword">this</span>.wrotePosition.get();</span><br><span class="line">    <span class="keyword">if</span> (currentPos &lt; <span class="keyword">this</span>.fileSize) &#123;</span><br><span class="line">        <span class="comment">//缓冲区切片，获取子缓冲区，position=0，起始位置是主缓冲区的position，容量是limit-position看，这里是指写缓冲区中，剩下的缓冲区。</span></span><br><span class="line">        ByteBuffer byteBuffer = writeBuffer != <span class="keyword">null</span> ? writeBuffer.slice() : <span class="keyword">this</span>.mappedByteBuffer.slice();</span><br><span class="line">        <span class="comment">//设置当前消息写的position</span></span><br><span class="line">        byteBuffer.position(currentPos);</span><br><span class="line">        AppendMessageResult result = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">if</span> (messageExt <span class="keyword">instanceof</span> MessageExtBrokerInner) &#123;</span><br><span class="line">            <span class="comment">//文件开始位置，写的bytebuffer，剩余位置，消息体</span></span><br><span class="line">            result = cb.doAppend(<span class="keyword">this</span>.getFileFromOffset(), byteBuffer, <span class="keyword">this</span>.fileSize - currentPos, (MessageExtBrokerInner) messageExt);</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (messageExt <span class="keyword">instanceof</span> MessageExtBatch) &#123;</span><br><span class="line">            result = cb.doAppend(<span class="keyword">this</span>.getFileFromOffset(), byteBuffer, <span class="keyword">this</span>.fileSize - currentPos, (MessageExtBatch) messageExt);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> AppendMessageResult(AppendMessageStatus.UNKNOWN_ERROR);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//</span></span><br><span class="line">        <span class="keyword">this</span>.wrotePosition.addAndGet(result.getWroteBytes());</span><br><span class="line">        <span class="keyword">this</span>.storeTimestamp = result.getStoreTimestamp();</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> AppendMessageResult(AppendMessageStatus.UNKNOWN_ERROR);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="cb-doAppend"><a href="#cb-doAppend" class="headerlink" title="cb#doAppend"></a>cb#doAppend</h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> fileFromOffset 文件其实的自己数1G的整数倍</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> byteBuffer mappedByteBuffer的子缓冲区</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> maxBlank 空余byteslength</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> msgInner 消息体</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> AppendMessageResult <span class="title">doAppend</span><span class="params">(<span class="keyword">final</span> <span class="keyword">long</span> fileFromOffset, <span class="keyword">final</span> ByteBuffer byteBuffer, <span class="keyword">final</span> <span class="keyword">int</span> maxBlank,</span></span></span><br><span class="line"><span class="function"><span class="params">                                    <span class="keyword">final</span> MessageExtBrokerInner msgInner)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// PHY OFFSET =文件起始的位置+当前写的位置</span></span><br><span class="line">    <span class="keyword">long</span> wroteOffset = fileFromOffset + byteBuffer.position();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//计算msgId</span></span><br><span class="line">    <span class="comment">//msgIdMemory+16位 MSG_ID_LENGTH=8+8具体见下面</span></span><br><span class="line">    <span class="comment">//msgInner.getStoreHostBytes(hostHolder)总共8位=Addr数组+port</span></span><br><span class="line">    <span class="comment">//wroteOffset long类型占8位</span></span><br><span class="line">    <span class="keyword">this</span>.resetByteBuffer(hostHolder, <span class="number">8</span>);</span><br><span class="line">    String msgId = MessageDecoder.createMessageId(<span class="keyword">this</span>.msgIdMemory, msgInner.getStoreHostBytes(hostHolder), wroteOffset);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Record ConsumeQueue information</span></span><br><span class="line">    keyBuilder.setLength(<span class="number">0</span>);</span><br><span class="line">    keyBuilder.append(msgInner.getTopic());</span><br><span class="line">    keyBuilder.append(<span class="string">'-'</span>);</span><br><span class="line">    keyBuilder.append(msgInner.getQueueId());</span><br><span class="line">    String key = keyBuilder.toString(); <span class="comment">// topic-queueid</span></span><br><span class="line">    <span class="comment">//get queue current offset</span></span><br><span class="line">    Long queueOffset = CommitLog.<span class="keyword">this</span>.topicQueueTable.get(key);</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">null</span> == queueOffset) &#123;</span><br><span class="line">        queueOffset = <span class="number">0L</span>;</span><br><span class="line">        CommitLog.<span class="keyword">this</span>.topicQueueTable.put(key, queueOffset);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Transaction messages that require special handling 处理事物消息待看</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span> tranType = MessageSysFlag.getTransactionValue(msgInner.getSysFlag());</span><br><span class="line">    <span class="keyword">switch</span> (tranType) &#123;</span><br><span class="line">        <span class="comment">// Prepared and Rollback message is not consumed, will not enter the</span></span><br><span class="line">        <span class="comment">// consumer queuec</span></span><br><span class="line">        <span class="keyword">case</span> MessageSysFlag.TRANSACTION_PREPARED_TYPE:</span><br><span class="line">        <span class="keyword">case</span> MessageSysFlag.TRANSACTION_ROLLBACK_TYPE:</span><br><span class="line">            queueOffset = <span class="number">0L</span>;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> MessageSysFlag.TRANSACTION_NOT_TYPE:</span><br><span class="line">        <span class="keyword">case</span> MessageSysFlag.TRANSACTION_COMMIT_TYPE:</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//获取properties</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">byte</span>[] propertiesData =</span><br><span class="line">            msgInner.getPropertiesString() == <span class="keyword">null</span> ? <span class="keyword">null</span> : msgInner.getPropertiesString().getBytes(MessageDecoder.CHARSET_UTF8);</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span> propertiesLength = propertiesData == <span class="keyword">null</span> ? <span class="number">0</span> : propertiesData.length;</span><br><span class="line">    <span class="keyword">if</span> (propertiesLength &gt; Short.MAX_VALUE) &#123;</span><br><span class="line">        log.warn(<span class="string">"putMessage message properties length too long. length=&#123;&#125;"</span>, propertiesData.length);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> AppendMessageResult(AppendMessageStatus.PROPERTIES_SIZE_EXCEEDED);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//获取topic信息</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">byte</span>[] topicData = msgInner.getTopic().getBytes(MessageDecoder.CHARSET_UTF8);</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span> topicLength = topicData.length;</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span> bodyLength = msgInner.getBody() == <span class="keyword">null</span> ? <span class="number">0</span> : msgInner.getBody().length;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//计算消息的长度</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span> msgLen = calMsgLength(bodyLength, topicLength, propertiesLength);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Exceeds the maximum message 默认是512k</span></span><br><span class="line">    <span class="keyword">if</span> (msgLen &gt; <span class="keyword">this</span>.maxMessageSize) &#123;</span><br><span class="line">        CommitLog.log.warn(<span class="string">"message size exceeded, msg total size: "</span> + msgLen + <span class="string">", msg body size: "</span> + bodyLength</span><br><span class="line">                + <span class="string">", maxMessageSize: "</span> + <span class="keyword">this</span>.maxMessageSize);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> AppendMessageResult(AppendMessageStatus.MESSAGE_SIZE_EXCEEDED);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Determines whether there is sufficient free space 文件内容不足以写消息返回END_OF_FILE类型的result</span></span><br><span class="line">    <span class="keyword">if</span> ((msgLen + END_FILE_MIN_BLANK_LENGTH) &gt; maxBlank) &#123;</span><br><span class="line">        <span class="keyword">this</span>.resetByteBuffer(<span class="keyword">this</span>.msgStoreItemMemory, maxBlank);</span><br><span class="line">        <span class="comment">// 1 TOTALSIZE</span></span><br><span class="line">        <span class="keyword">this</span>.msgStoreItemMemory.putInt(maxBlank);</span><br><span class="line">        <span class="comment">// 2 MAGICCODE</span></span><br><span class="line">        <span class="keyword">this</span>.msgStoreItemMemory.putInt(CommitLog.BLANK_MAGIC_CODE);</span><br><span class="line">        <span class="comment">// 3 The remaining space may be any value</span></span><br><span class="line">        <span class="comment">// Here the length of the specially set maxBlank</span></span><br><span class="line">        <span class="keyword">final</span> <span class="keyword">long</span> beginTimeMills = CommitLog.<span class="keyword">this</span>.defaultMessageStore.now();</span><br><span class="line">        byteBuffer.put(<span class="keyword">this</span>.msgStoreItemMemory.array(), <span class="number">0</span>, maxBlank);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> AppendMessageResult(AppendMessageStatus.END_OF_FILE, wroteOffset, maxBlank, msgId, msgInner.getStoreTimestamp(),</span><br><span class="line">                queueOffset, CommitLog.<span class="keyword">this</span>.defaultMessageStore.now() - beginTimeMills);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Initialization of storage space 初始化读取空间先flip在设置limit,写消息</span></span><br><span class="line">    ......</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">long</span> beginTimeMills = CommitLog.<span class="keyword">this</span>.defaultMessageStore.now();</span><br><span class="line">    <span class="comment">// Write messages to the queue buffer</span></span><br><span class="line">    byteBuffer.put(<span class="keyword">this</span>.msgStoreItemMemory.array(), <span class="number">0</span>, msgLen);</span><br><span class="line"></span><br><span class="line">    AppendMessageResult result = <span class="keyword">new</span> AppendMessageResult(AppendMessageStatus.PUT_OK, wroteOffset, msgLen, msgId,</span><br><span class="line">            msgInner.getStoreTimestamp(), queueOffset, CommitLog.<span class="keyword">this</span>.defaultMessageStore.now() - beginTimeMills);</span><br><span class="line">    <span class="comment">//处理事务</span></span><br><span class="line">    <span class="keyword">switch</span> (tranType) &#123;</span><br><span class="line">        <span class="keyword">case</span> MessageSysFlag.TRANSACTION_PREPARED_TYPE:</span><br><span class="line">        <span class="keyword">case</span> MessageSysFlag.TRANSACTION_ROLLBACK_TYPE:</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> MessageSysFlag.TRANSACTION_NOT_TYPE:</span><br><span class="line">        <span class="keyword">case</span> MessageSysFlag.TRANSACTION_COMMIT_TYPE:</span><br><span class="line">            <span class="comment">// The next update ConsumeQueue information</span></span><br><span class="line">            CommitLog.<span class="keyword">this</span>.topicQueueTable.put(key, ++queueOffset);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="消息的存储–ConsumerQueue"><a href="#消息的存储–ConsumerQueue" class="headerlink" title="消息的存储–ConsumerQueue"></a>消息的存储–ConsumerQueue</h2><p>在DefaultMessageStore.load()和findOffset时候会创建ConsumerQueue。</p>
+<h3 id="ConsumerQueue"><a href="#ConsumerQueue" class="headerlink" title="ConsumerQueue"></a>ConsumerQueue</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 创建新的逻辑队列ConsumeQueue和ConsumeQueueExt</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> topic               topic</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> queueId             queueId</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> storePath           storePathRootDir/consumerqueue/topic/queueId</span></span><br><span class="line"><span class="comment"> *                            storePathRootDir/consumerqueu_ext/topic/queueId</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> mappedFileSize      大小是30W消息*每条20字节</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> defaultMessageStore</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">ConsumeQueue</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> String topic,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> <span class="keyword">int</span> queueId,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> String storePath,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> <span class="keyword">int</span> mappedFileSize,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> DefaultMessageStore defaultMessageStore)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.storePath = storePath;</span><br><span class="line">    <span class="keyword">this</span>.mappedFileSize = mappedFileSize;</span><br><span class="line">    <span class="keyword">this</span>.defaultMessageStore = defaultMessageStore;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">this</span>.topic = topic;</span><br><span class="line">    <span class="keyword">this</span>.queueId = queueId;</span><br><span class="line"></span><br><span class="line">    String queueDir = <span class="keyword">this</span>.storePath</span><br><span class="line">            + File.separator + topic</span><br><span class="line">            + File.separator + queueId;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">this</span>.mappedFileQueue = <span class="keyword">new</span> MappedFileQueue(queueDir, mappedFileSize, <span class="keyword">null</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">this</span>.byteBufferIndex = ByteBuffer.allocate(CQ_STORE_UNIT_SIZE);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (defaultMessageStore.getMessageStoreConfig().isEnableConsumeQueueExt()) &#123;</span><br><span class="line">        <span class="keyword">this</span>.consumeQueueExt = <span class="keyword">new</span> ConsumeQueueExt(</span><br><span class="line">                topic,</span><br><span class="line">                queueId,</span><br><span class="line">                StorePathConfigHelper.getStorePathConsumeQueueExt(defaultMessageStore.getMessageStoreConfig().getStorePathRootDir()),</span><br><span class="line">                defaultMessageStore.getMessageStoreConfig().getMappedFileSizeConsumeQueueExt(),</span><br><span class="line">                defaultMessageStore.getMessageStoreConfig().getBitMapLengthConsumeQueueExt()</span><br><span class="line">        );</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/RocketMq-源码学习-二-Nameserv/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1932,378 +2364,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-短连接生成器/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/数据结构与算法-短连接生成器/" class="post-title-link" itemprop="url">数据结构与算法-短连接生成器</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-08-15 21:16:20" itemprop="dateCreated datePublished" datetime="2019-08-15T21:16:20+08:00">2019-08-15</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-08-16 11:57:54" itemprop="dateModified" datetime="2019-08-16T11:57:54+08:00">2019-08-16</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/" itemprop="url" rel="index"><span itemprop="name">数据结构与算法</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/应用篇/" itemprop="url" rel="index"><span itemprop="name">应用篇</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="通过hash算法产生短网址"><a href="#通过hash算法产生短网址" class="headerlink" title="通过hash算法产生短网址"></a>通过hash算法产生短网址</h2><p>要点：</p>
-<ol>
-<li>选择冲撞小、高效的的hash函数，MurmueHash算法。有32bit和128bit，短连接我们可以选择32bits,求原始地址的hashCode</li>
-<li>进一步缩短网址：网址我们一般会采用a-zA-Z0-9等62个字符，我们可以通过除法、并且取模来生成网址，见代码</li>
-<li>解决Hash冲突，将原始地址和短连接地址保存起来（redis or mysql）等，当我们发现短连接已经存在并且和原始地址一致可直接返回，如果存在，且和原始地址不一致我们可以加一些额外字段,比如当前的纳秒数等等作为计算hash的种子</li>
-</ol>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ShortUrlGenerator</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">char</span>[] charArray = <span class="string">"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"</span>.toCharArray();</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> String <span class="title">genaratorCode</span><span class="params">(String input)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">int</span> code = Math.abs(MurmurHash.murmurhash3_x86_32(input, <span class="number">0</span>, input.length(), <span class="number">0</span>));</span><br><span class="line"></span><br><span class="line">        List&lt;Integer&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line"></span><br><span class="line">        StringBuilder sb = <span class="keyword">new</span> StringBuilder();</span><br><span class="line">        <span class="keyword">while</span> (code &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="comment">//取模</span></span><br><span class="line">            sb.append(charArray[code % charArray.length]);</span><br><span class="line">            <span class="comment">//整除</span></span><br><span class="line">            code = code / charArray.length;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> sb.toString();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="通过自增ID"><a href="#通过自增ID" class="headerlink" title="通过自增ID"></a>通过自增ID</h2><ul>
-<li>对比上面的方式，对于相同的网址，我们会产生不同的短连接，但是会减少判重的次数（数据库的交互）</li>
-<li>自增ID是全局的，肯定要加锁，为了增加并发我们可以同时用多个发号器来解决，类似分库分表的思想。</li>
-</ul>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-微服务路由和鉴权/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/数据结构与算法-微服务路由和鉴权/" class="post-title-link" itemprop="url">数据结构与算法-微服务路由鉴权和限流</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-08-15 21:16:09" itemprop="dateCreated datePublished" datetime="2019-08-15T21:16:09+08:00">2019-08-15</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-08-18 20:27:03" itemprop="dateModified" datetime="2019-08-18T20:27:03+08:00">2019-08-18</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/" itemprop="url" rel="index"><span itemprop="name">数据结构与算法</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/应用篇/" itemprop="url" rel="index"><span itemprop="name">应用篇</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="路由匹配"><a href="#路由匹配" class="headerlink" title="路由匹配"></a>路由匹配</h2><h3 id="精确匹配"><a href="#精确匹配" class="headerlink" title="精确匹配"></a>精确匹配</h3><p>按照从大到小的数组排序，用二分法查找时间复杂度大大减少</p>
-<h3 id="前缀匹配"><a href="#前缀匹配" class="headerlink" title="前缀匹配"></a>前缀匹配</h3><p>用字典树的方式解决，不过字典树这次是按照分隔符“/”来进行分割，同一级别按照大小顺序进行分组，用俩分法进行匹配</p>
-<h3 id="包含通配符的模糊匹配"><a href="#包含通配符的模糊匹配" class="headerlink" title="包含通配符的模糊匹配"></a>包含通配符的模糊匹配</h3><p>将url分组，没有通配符的优先匹配复杂度O(logn)<br>有通配符的用回溯算法匹配</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2350,7 +2410,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">128</span>
+                    <span class="site-state-item-count">130</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

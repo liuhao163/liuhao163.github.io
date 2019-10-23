@@ -328,6 +328,208 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Mysql自增ID用完了怎么办/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/Mysql自增ID用完了怎么办/" class="post-title-link" itemprop="url">Mysql自增ID用完了怎么办</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-02 14:07:29 / Modified: 14:32:13" itemprop="dateCreated datePublished" datetime="2019-03-02T14:07:29+08:00">2019-03-02</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="表自增ID"><a href="#表自增ID" class="headerlink" title="表自增ID"></a>表自增ID</h1><ol>
+<li>如果主键是auto_incrment，如果达到了最大值，不会在增长，这时候写入会报主键冲突</li>
+<li>如果没指定，会用dict_sys.row_id的值，作为主键，长度6字节，如果达到最大值会从0开始循环写入</li>
+</ol>
+<p>所以，推荐这只auto_incrment，毕竟报主键冲突比覆盖以前的数据要好的多。</p>
+<h1 id="XID"><a href="#XID" class="headerlink" title="XID"></a>XID</h1><p>mysql对应事物的ID，Mysql的内存中会维护一个golbal_query_id的变量，改变量在内存中重启会清0，每次执行语句会吧当前值赋值给Query_id，并且+1,<br>如果当前语句是事务中的一个语句那么会把这个Xid赋值给事物ID</p>
+<p>Mysql在重启后由于会清零，同时会有一个新的binlog所以一个binlog中xid是不冲突的。但是如果执行时间过长，理论上也可能会冲突吗，因为XID到达最大值后会从0开始分配，只不过这个值太大了2E64-1,所以冲突只存在在理论中。</p>
+<h1 id="Innodb-trxid"><a href="#Innodb-trxid" class="headerlink" title="Innodb trxid"></a>Innodb trxid</h1><p>  区别于XID，XID是Server层的trxId是innodb层的</p>
+<p>  innodb内部维护了个max_trx_id，每次申请时候会获取当前的max_trx_id，然后max_trx_id+1；</p>
+<p>  inndob的事务可见性核心思想是：每次更新都更新了数据的trx_id，当一个事务读到数据的时候判断一致性视图和当前trx_id的关系</p>
+<p>  对于正在执行的事物可以通过：information_schema.innodb_trx表中看到当前事务的trx_id;</p>
+<p>  注意trx_id的分配规则：</p>
+<ol>
+<li>只读事物不分配trx_id，把当前事物的trx_id变量的指针地址转成int+2e48<ol>
+<li>这么做的好处是只读事物中，指针地址不会变，同一个只读事务在innodb_locks和innodb_trx查出来的trx_id是一致的；</li>
+<li>不同的事务由于指针地址会变，查出来的trx_id一定是不同的</li>
+<li>加上2e48也是能区别于读写事物</li>
+</ol>
+</li>
+<li><p>同时trx_id可能看到不只加了1：</p>
+<ol>
+<li>因为update和delete操作也会+1，（标记删除，放到purge队列中）</li>
+<li>innodb的后台操作比如表的索引信息统计等都会+1</li>
+</ol>
+<p>只读事务不分配trx_id的好处</p>
+</li>
+<li><p>减少事务视图中活跃事务数，innodb在创建一致性视图时候值需要copy读写事物的trx_id就好了</p>
+</li>
+<li><p>可以减少trx_id的申请次数</p>
+<p>trx_id是被持久化不会清0的所以当到达最大值后，会从0开始，这时候就可能会出现脏读。因为后续的数据trx_id变小了，变成可见的了，但是因为这个值是2e48-1所以这个错误也只存在于理论上。（50万TPS，要跑17.8年）</p>
+</li>
+</ol>
+<h1 id="thread-id"><a href="#thread-id" class="headerlink" title="thread_id"></a>thread_id</h1><p>mysql有个thread_id_counter每次分配完后+1，如果到达最大值后会从0开始，这时候会看到俩个一样的thread_id</p>
+<p>不过mysql在分配时候有一个逻辑来处理这种情况</p>
+<p>thread_ids是个唯一数组，添加失败后会一直循环（待验证）</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">do</span> &#123;</span><br><span class="line">  new_id= thread_id_counter++;</span><br><span class="line">&#125; <span class="keyword">while</span> (!thread_ids.insert_unique(new_id).second);</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/要不要使用分区表/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2175,229 +2377,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/join的使用/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/join的使用/" class="post-title-link" itemprop="url">join的使用</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-25 23:05:46" itemprop="dateCreated datePublished" datetime="2019-02-25T23:05:46+08:00">2019-02-25</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-01 22:53:26" itemprop="dateModified" datetime="2019-03-01T22:53:26+08:00">2019-03-01</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="MySql的join"><a href="#MySql的join" class="headerlink" title="MySql的join"></a>MySql的join</h1><p>我们在考虑sql语句用join的时候往往基于以下两点来看：</p>
-<ol>
-<li>业务是否能用join</li>
-<li>哪个表是驱动表</li>
-</ol>
-<h1 id="Index-Nested-Loop-Join（NLJ）"><a href="#Index-Nested-Loop-Join（NLJ）" class="headerlink" title="Index Nested-Loop Join（NLJ）"></a>Index Nested-Loop Join（NLJ）</h1><p>见下面的语句</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># a有索引</span></span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> t1 <span class="keyword">straight_join</span> t2 <span class="keyword">on</span> (t1.a=t2.a);</span><br></pre></td></tr></table></figure>
-<p>这条语句的执行顺序如下：</p>
-<ol>
-<li>表T读出一行数据R</li>
-<li>用数据R到t2中找</li>
-<li>取出t2中的一行作为结果集</li>
-<li>重复1-3步骤,t1循环结束</li>
-</ol>
-<p>这里先对是t1的全表扫描,t2查找相关数据，时间复杂度（N+N*2log2N 注意N是驱动表，2log2N是采用2级索引），如果是采用这种nlj算法，显然join会比用程序一行行循环查找要好。因为减少了和数据库的交互次数</p>
-<p>同时因为时间复杂度是N+N*2log2N ，所以N越小越好，也就是驱动表是小表。</p>
-<h1 id="Block-Nested-Loop-Join（BNL）"><a href="#Block-Nested-Loop-Join（BNL）" class="headerlink" title="Block Nested-Loop Join（BNL）"></a>Block Nested-Loop Join（BNL）</h1><p>如果join的字段如果没有所以呢?如:</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> t1 <span class="keyword">straight_join</span> t2 <span class="keyword">on</span> (t1.a=t2.b);</span><br></pre></td></tr></table></figure>
-<p>这时候mysql为了防止多次扫描驱动表，会用到join_buffer，通过参数join_buffer_size，默认是256K</p>
-<p>执行的过程如下：</p>
-<ol>
-<li>扫描表t1，顺序读取t1，数据放到join_buffer中，如果超过join_buffer就放一部分</li>
-<li>扫描表t2，把t2中的每一行取出来，跟join_buffer做对比，满足条件的当结果集返回</li>
-<li>清空join_buffer</li>
-<li>继续扫描表t1,执行步骤2-3直到结束。</li>
-</ol>
-<p>当t1表数据不超过join_buffer_size时候，谁当驱动表都无所谓；否则的话小表当驱动表，减少写join_buffer次数。</p>
-<p>BNL的坏处：</p>
-<ol>
-<li>多次扫描被驱动表，增大磁盘的IO负担</li>
-<li>内存中计算的时间复杂度可能是M*N,增大CPU负担</li>
-<li>影响buffer_pool：对于大的冷数据表的join查询，可能会将这些数据移到buffer_pool的young区，影响业务的buff_pool命中率，而1、2在语句结束后会停止影响，可是3的影响是持续的需要后面业务主键淘汰掉这些数据页的buffer</li>
-</ol>
-<h1 id="优化建议"><a href="#优化建议" class="headerlink" title="优化建议"></a>优化建议</h1><h2 id="对于NLJ"><a href="#对于NLJ" class="headerlink" title="对于NLJ"></a>对于NLJ</h2><p>可以开启mrr（multi-range-read）和bka(batch-key-access)</p>
-<ul>
-<li>原理是 原来是需要从驱动表找到一条数据，然后一条去被驱动表查询。且是随机读，速度很慢；</li>
-<li>开启mrr和bak<ul>
-<li>mrr原理是在查询的索引上做一次排序，然后把随机度改为顺序读。</li>
-<li>bak是基于mrr，将join时候从驱动表中尽量多取出一些行（只保留必要字段），放到join_buffer中如果超过join_buffer_size会分多段，然后去被驱动表中查询。批量的顺序读</li>
-</ul>
-</li>
-</ul>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> optimizer_switch=<span class="string">'mrr=on,mrr_cost_based=off,batched_key_access=on'</span>;</span><br></pre></td></tr></table></figure>
-<h2 id="对于BNL"><a href="#对于BNL" class="headerlink" title="对于BNL"></a>对于BNL</h2><p>通过建立索引的方式转成NLJ的方式<br>对于不适合建立索引的，通过业务拆分优化</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2444,7 +2423,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">132</span>
+                    <span class="site-state-item-count">133</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

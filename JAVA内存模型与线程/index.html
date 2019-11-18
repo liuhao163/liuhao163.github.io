@@ -104,7 +104,7 @@
 <meta property="og:site_name" content="liuhao163.github.io">
 <meta property="og:description" content="是对之前java并发的一个补充。：P   java的操作都是将数据从主内存加载到工作内存去做操作，为了保证线程的安全归定了几个原子性操作。 java的几个原子性操作 read：主内存，将数据从主内存传输到工作内存，以便load使用 load：工作内存，将read的变量副本放入到工作内存中 assign：工作内存，赋值操作。将执行引擎（jvm）中的值赋值给变量。 use：工作内存，把工作内存中的">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-11-18T08:33:44.000Z">
+<meta property="og:updated_time" content="2019-11-18T12:36:52.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="JAVA内存模型与线程">
 <meta name="twitter:description" content="是对之前java并发的一个补充。：P   java的操作都是将数据从主内存加载到工作内存去做操作，为了保证线程的安全归定了几个原子性操作。 java的几个原子性操作 read：主内存，将数据从主内存传输到工作内存，以便load使用 load：工作内存，将read的变量副本放入到工作内存中 assign：工作内存，赋值操作。将执行引擎（jvm）中的值赋值给变量。 use：工作内存，把工作内存中的">
@@ -372,7 +372,7 @@
                 
               
 
-              <time title="Created: 2019-11-18 16:04:54 / Modified: 16:33:44" itemprop="dateCreated datePublished" datetime="2019-11-18T16:04:54+08:00">2019-11-18</time>
+              <time title="Created: 2019-11-18 16:04:54 / Modified: 20:36:52" itemprop="dateCreated datePublished" datetime="2019-11-18T16:04:54+08:00">2019-11-18</time>
             
 
             
@@ -463,6 +463,13 @@
 </ul>
 <h2 id="线程实现"><a href="#线程实现" class="headerlink" title="线程实现"></a>线程实现</h2><p>1:1模型：使用内核线程，实现简单，但是无法支持高并发因为内核态和用户态消耗大，并且由于是1：1无法支持高并发。<br>1:N：使用用户线程，可支持高并发，但是调度等实现难度大。<br>N:M：用户线程用于并发，内核线程用于调度。综合上面俩种优缺点。</p>
 <h2 id="线程状态"><a href="#线程状态" class="headerlink" title="线程状态"></a>线程状态</h2><p>new:new一个线程<br>run:执行start<br>block:synchronized<br>wait:没有参数的wait<br>time_waiting:有参数的wait和sleep</p>
+<h2 id="jvm的锁优化"><a href="#jvm的锁优化" class="headerlink" title="jvm的锁优化"></a>jvm的锁优化</h2><p>由于锁需要从用户态转到内核态作为控制，所以采用如下几种优化方案。</p>
+<ul>
+<li>锁消除：通过逃逸分析发现没有变量逃逸的情况，会去掉锁。</li>
+<li>锁粗化：如果多一个对象反复加锁、解锁会考虑合并</li>
+<li>偏向锁：如果当前线程获取锁，复制markword,markword修改锁标记位，以及获取锁线程的线程ID；</li>
+<li>轻量级锁：如果遇到竞争，复制markword，markword修改锁标记位，以及锁的lockrecord地址。</li>
+</ul>
 
       
     </div>
@@ -837,7 +844,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#java的几个原子性操作"><span class="nav-number">1.</span> <span class="nav-text">java的几个原子性操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#保证线程安全的3个要点"><span class="nav-number">2.</span> <span class="nav-text">保证线程安全的3个要点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#线程实现"><span class="nav-number">3.</span> <span class="nav-text">线程实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#线程状态"><span class="nav-number">4.</span> <span class="nav-text">线程状态</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#java的几个原子性操作"><span class="nav-number">1.</span> <span class="nav-text">java的几个原子性操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#保证线程安全的3个要点"><span class="nav-number">2.</span> <span class="nav-text">保证线程安全的3个要点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#线程实现"><span class="nav-number">3.</span> <span class="nav-text">线程实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#线程状态"><span class="nav-number">4.</span> <span class="nav-text">线程状态</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#jvm的锁优化"><span class="nav-number">5.</span> <span class="nav-text">jvm的锁优化</span></a></li></ol></div>
             
 
           </div>

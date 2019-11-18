@@ -328,6 +328,400 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA中的管程/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/JAVA中的管程/" class="post-title-link" itemprop="url">JAVA中的管程</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-18 20:35:48" itemprop="dateCreated datePublished" datetime="2019-03-18T20:35:48+08:00">2019-03-18</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-23 21:44:13" itemprop="dateModified" datetime="2019-03-23T21:44:13+08:00">2019-03-23</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="什么是管程"><a href="#什么是管程" class="headerlink" title="什么是管程"></a>什么是管程</h1><p>java在1.5之前只提供了synchronized,wait,notfiy,notfiyAll3种实现并发的源语，他们实际上是管程的组成部分。</p>
+<p>对应的英文是Monitor，他表示管理共享变量以及操作共享变量，使其支持并发的过程。</p>
+<h1 id="java的实现–MESA模式"><a href="#java的实现–MESA模式" class="headerlink" title="java的实现–MESA模式"></a>java的实现–MESA模式</h1><p>在管程的发展史上出现过3中管程模型，Hasen、Hoare、MESA。java采用的是MESA模型</p>
+<p>在并发变成领域，有俩大核心问题：互斥–一个共享资源同一时刻只能被一个线程访问；同步–即线程之间的通信、协作；</p>
+<h2 id="java的管程如何解决互斥问题"><a href="#java的管程如何解决互斥问题" class="headerlink" title="java的管程如何解决互斥问题"></a>java的管程如何解决互斥问题</h2><p>如果：</p>
+<p><img src="./管程1.png" alt="avator"></p>
+<p>管程将资源以及方法都封装起来，只允许一个线程通过管程哦方法调用该方法。</p>
+<h2 id="java的管程如何解决同步问题"><a href="#java的管程如何解决同步问题" class="headerlink" title="java的管程如何解决同步问题"></a>java的管程如何解决同步问题</h2><p>利用之前提到的消息-通知机制来让线程之间协作见下面的一个BlockQueue的代码，请忽略业务代码:P</p>
+<ol>
+<li>enq的时候while判断队列是否满了，如果满了，notFull.await()阻塞当前线程;</li>
+<li>enq如果没满，添加对象，并且用notEmpty.single()通知deque停止阻塞；</li>
+<li>deq可以顺利执行出队列的操作；</li>
+<li>deq的时候while判断队列是否为空，如果为空，notEmpty.await()阻塞当前线程;</li>
+<li>deq如果不为空，poll对象，并且用notFull.single()通知enq停止阻塞；</li>
+<li>enq可以顺利执行队列</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BlockQueue</span> </span>&#123;</span><br><span class="line">    ReentrantLock lock = <span class="keyword">new</span> ReentrantLock();</span><br><span class="line"></span><br><span class="line">    Condition notFull = lock.newCondition();</span><br><span class="line">    Condition notEmpty = lock.newCondition();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Queue queue = <span class="keyword">new</span> LinkedList();</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> queSize = <span class="number">10</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">BlockQueue</span><span class="params">(<span class="keyword">int</span> queSize)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.queSize = queSize;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">enq</span><span class="params">(Object o)</span> </span>&#123;</span><br><span class="line">        lock.lock();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">//如果为慢noFull阻塞线程</span></span><br><span class="line">            <span class="keyword">while</span> (queue.size() == queSize) &#123;</span><br><span class="line">                notFull.await();</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            queue.add(o);</span><br><span class="line">            <span class="comment">//添加成功通知deq停止阻塞</span></span><br><span class="line">            notEmpty.signal();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Object <span class="title">deque</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        lock.lock();</span><br><span class="line">        Object ret = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">           <span class="comment">//如果为空notEmpty阻塞线程</span></span><br><span class="line">            <span class="keyword">while</span> (queue.size() == <span class="number">0</span>) &#123;</span><br><span class="line">                notEmpty.await();</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> queue.poll();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="comment">//出队列成功通知队列未满可以入队列</span></span><br><span class="line">            notFull.signal();</span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="notify使用场景"><a href="#notify使用场景" class="headerlink" title="notify使用场景"></a>notify使用场景</h1><p>上面用了notify类似的逻辑，之前提到过能用notifyAll尽量用notifyAll。那么什么时候用notify呢。需要同时满足下面3个条件</p>
+<ol>
+<li>所有线程的等待条件一样</li>
+<li>所有线程满足等待条件后的操作一样</li>
+<li>只需要唤醒一个线程</li>
+</ol>
+<p>结合上面的场景，都是队列queue;notify之后的操作都是queue入队或者出队；只需要唤醒一个线程入/出队</p>
+<h1 id="管程3中模型的区别"><a href="#管程3中模型的区别" class="headerlink" title="管程3中模型的区别"></a>管程3中模型的区别</h1><ol>
+<li>Hasen:T1在wait之后，T2notify,notify必须在T2最后一条语句,执行完后T2终止,以此保证系统只有一个线程在运行。</li>
+<li>Hoare:T1在wait之后，T2notify,notify后T2堵塞,T1开始运行,T1运行完后唤醒T2,新能略差，因为多了一次T2的唤醒。</li>
+<li>MESA:T1在wait之后，T2notify,T1值是获取了可执行的可能，需要竞争获取锁才能执行，JAVA采用此种模型</li>
+</ol>
+<p>所以在MESA中wait的标准写法如下，因为被noyify通知之后线程只是可能执行，有可能在执行时候线程又会不满足条件</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span>( 条件)&#123;</span><br><span class="line">    <span class="keyword">synchronized</span>(objcet)&#123;</span><br><span class="line">        object.wait();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/java并发编程主要面临的几个问题-安全性-活跃性-性能/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/java并发编程主要面临的几个问题-安全性-活跃性-性能/" class="post-title-link" itemprop="url">JAVA并发编程主要面临的几个问题:安全性,活跃性,性能</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-18 18:49:00 / Modified: 22:44:49" itemprop="dateCreated datePublished" datetime="2019-03-18T18:49:00+08:00">2019-03-18</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p>java并发编程的问题主要集中在安全性、活跃性、性能3个问题</p>
+<h2 id="安全性"><a href="#安全性" class="headerlink" title="安全性"></a>安全性</h2><p>主要防止竞态问题（race condition），如下代码,add10k中的set(get()+1)  是不安全的，因为他要依赖get方法的结果在set。虽然set和get加了锁但是+1这步操作不是原子性的操作。(有可能get俩个一样的值+1，在set回去，影响了预期结果)，这种后面的操作依赖前面操作的结果的操作被称为竞态操作。</p>
+<p>解决方法</p>
+<ol>
+<li>加锁synchronized(lock){}解决</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Test</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">long</span> count = <span class="number">0</span>;</span><br><span class="line">  <span class="function"><span class="keyword">synchronized</span> <span class="keyword">long</span> <span class="title">get</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">return</span> count；</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="function"><span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">set</span><span class="params">(<span class="keyword">long</span> v)</span></span>&#123;</span><br><span class="line">    count = v;</span><br><span class="line">  &#125; </span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">add10K</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> idx = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">while</span>(idx++ &lt; <span class="number">10000</span>) &#123;</span><br><span class="line">      set(get()+<span class="number">1</span>)      </span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="活跃性"><a href="#活跃性" class="headerlink" title="活跃性"></a>活跃性</h2><p>要注意活锁和饿死的关系。</p>
+<ul>
+<li>饿死只一个线程被阻塞住或者锁住，但是一直没有得到资源，导致程序一直无法执行下去</li>
+<li>活锁：活锁是指线程一直尝试获取资源但是因为条件没法满足所以一直没法获取资源。和死锁相比，死锁是线程阻塞程序无法运行，活锁的线程的状态一直没有被锁住，一直在尝试获取资源，很快会耗光cpu的资源。</li>
+</ul>
+<p>解决方法：</p>
+<ul>
+<li>饿死可以采用公平锁，用fifo队列来解决锁争抢</li>
+<li>活锁：可以采用不同线程阻塞一个随机时间。减少竞争。</li>
+</ul>
+<h2 id="性能问题"><a href="#性能问题" class="headerlink" title="性能问题"></a>性能问题</h2><p>因为并发变成要对数据加锁，可能会影响系统的并发度，某些操作会变为串行，可以考虑用jdk里的并发包里提供的工具类解决，里面有许多无锁的工具。</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA中用等待、通知机制优化循环等待/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1884,374 +2278,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/查看GC的利器之一GCVIEWER/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/查看GC的利器之一GCVIEWER/" class="post-title-link" itemprop="url">查看GC的利器之一GCVIEWER</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-03-09 23:56:45" itemprop="dateCreated datePublished" datetime="2019-03-09T23:56:45+08:00">2019-03-09</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-12 23:52:35" itemprop="dateModified" datetime="2019-03-12T23:52:35+08:00">2019-03-12</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm优化/" itemprop="url" rel="index"><span itemprop="name">jvm优化</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="Java的GC查看工具-GCVIEWER"><a href="#Java的GC查看工具-GCVIEWER" class="headerlink" title="Java的GC查看工具-GCVIEWER"></a>Java的GC查看工具-GCVIEWER</h1><h2 id="gcviews安装和使用"><a href="#gcviews安装和使用" class="headerlink" title="gcviews安装和使用"></a>gcviews安装和使用</h2><h3 id="源码安装"><a href="#源码安装" class="headerlink" title="源码安装"></a>源码安装</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">git clone https:<span class="comment">//github.com/chewiebug/GCViewer.git</span></span><br><span class="line"></span><br><span class="line">mvn clean pacakge</span><br><span class="line"></span><br><span class="line">cd target</span><br></pre></td></tr></table></figure>
-<h3 id="JVM开启gclog"><a href="#JVM开启gclog" class="headerlink" title="JVM开启gclog"></a>JVM开启gclog</h3><p>java的启动命令增加 -Xloggc:./gc.log参数下面是我的一个实例</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">java -jar -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:./gc.log xxx.jar</span><br></pre></td></tr></table></figure>
-<h3 id="启动"><a href="#启动" class="headerlink" title="启动"></a>启动</h3><p>指定上面的gc.log的目录<br>java -jar gcviewer-1.36-SNAPSHOT.jar  ./gc.log<br>会看到如下的图表</p>
-<h2 id="Chart的说明"><a href="#Chart的说明" class="headerlink" title="Chart的说明"></a>Chart的说明</h2><p>view能看到各GC的情况，右边是一些说明信息，summary查看具体的描述信息<br><img src="./gcviewer-1.png" alt="avatar"><br>EventDetail标识具体的GC的事件信息<br><img src="./gcviewer-2.png" alt="avatar"></p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/2019学习计划/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/2019学习计划/" class="post-title-link" itemprop="url">2019学习计划</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-03-09 23:49:29" itemprop="dateCreated datePublished" datetime="2019-03-09T23:49:29+08:00">2019-03-09</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-17 23:23:01" itemprop="dateModified" datetime="2019-03-17T23:23:01+08:00">2019-03-17</time>
-              
-            
-          </span>
-
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="本年计划"><a href="#本年计划" class="headerlink" title="本年计划"></a>本年计划</h1><h2 id="JAVA"><a href="#JAVA" class="headerlink" title="JAVA"></a>JAVA</h2><ul>
-<li>java并发编程</li>
-<li>spring的源码</li>
-<li>nio的学习<ul>
-<li>netty的源</li>
-<li>netty构建服务发现demo</li>
-<li>netty聊天工具构建</li>
-</ul>
-</li>
-<li>算法的学习</li>
-</ul>
-<h2 id="消息队列"><a href="#消息队列" class="headerlink" title="消息队列"></a>消息队列</h2><ul>
-<li>rocketmq的源码，涉及到netty可以先看netty</li>
-</ul>
-<h2 id="NOSQL"><a href="#NOSQL" class="headerlink" title="NOSQL"></a>NOSQL</h2><ul>
-<li>REDIS的源码学习</li>
-</ul>
-<h1 id="本周计划"><a href="#本周计划" class="headerlink" title="本周计划"></a>本周计划</h1><p>Netty聊天软件服务端demo</p>
-<ul>
-<li><del>协议的自定义（Encoder）</del></li>
-<li><del>客户端和服务端通信</del></li>
-<li><del>客户端注册和服务端注册</del></li>
-<li>阶段性文档的整理（完成了哪些工作，有哪些坑）</li>
-</ul>
-<p>完成并发的学习和梳理</p>
-<ul>
-<li><del>完成HB原则和基础</del></li>
-<li><del>完成synchroized关键字</del></li>
-</ul>
-<p><del>调研下限流和断路器</del></p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2298,7 +2324,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">138</span>
+                    <span class="site-state-item-count">140</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

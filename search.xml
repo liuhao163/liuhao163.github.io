@@ -4,9 +4,69 @@
   
     
     <entry>
-      <title>JVM的编译优化</title>
-      <link href="/JVM%E7%9A%84%E7%BC%96%E8%AF%91%E4%BC%98%E5%8C%96/"/>
-      <url>/JVM%E7%9A%84%E7%BC%96%E8%AF%91%E4%BC%98%E5%8C%96/</url>
+      <title>JAVA内存模型与线程</title>
+      <link href="/JAVA%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E4%B8%8E%E7%BA%BF%E7%A8%8B/"/>
+      <url>/JAVA%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E4%B8%8E%E7%BA%BF%E7%A8%8B/</url>
+      
+        <content type="html"><![CDATA[<p>  是对之前java并发的一个补充。：P</p><p>  java的操作都是将数据从主内存加载到工作内存去做操作，为了保证线程的安全归定了几个原子性操作。</p><h2 id="java的几个原子性操作"><a href="#java的几个原子性操作" class="headerlink" title="java的几个原子性操作"></a>java的几个原子性操作</h2><ul><li>read：主内存，将数据从主内存传输到工作内存，以便load使用</li><li>load：工作内存，将read的变量副本放入到工作内存中</li><li>assign：工作内存，赋值操作。将执行引擎（jvm）中的值赋值给变量。</li><li>use：工作内存，把工作内存中的值传递给执行引擎。</li><li>store：工作内存，将数据传输到主内存中，以便write操作使用</li><li>write：主内存，将数据写入到主内存中。</li><li>lock：主内存，将变量标识为线程独占</li><li>unlock：主内存，释放锁标记，标识变量变为共享状态。</li></ul><p>几个规定</p><ul><li>read和load，store和write成对出现，并且先后顺序不能改变</li><li>assign必须在load之后，且assign之后必须写会主内存，且加载到内存的变量必须assign</li><li>use、store之前必须assign，load</li><li>lock操作后工作内存会被清空</li><li>unlock必须在lock之后，且unlock必须等待变量别写会主内存。</li></ul><h2 id="保证线程安全的3个要点"><a href="#保证线程安全的3个要点" class="headerlink" title="保证线程安全的3个要点"></a>保证线程安全的3个要点</h2><ul><li>原子性：8个原子操作</li><li>可见性：voltile、final、synchrozied可以保证</li><li>顺序性：voltile、synchrozied</li></ul><h2 id="线程实现"><a href="#线程实现" class="headerlink" title="线程实现"></a>线程实现</h2><p>1:1模型：使用内核线程，实现简单，但是无法支持高并发因为内核态和用户态消耗大，并且由于是1：1无法支持高并发。<br>1:N：使用用户线程，可支持高并发，但是调度等实现难度大。<br>N:M：用户线程用于并发，内核线程用于调度。综合上面俩种优缺点。</p><h2 id="线程状态"><a href="#线程状态" class="headerlink" title="线程状态"></a>线程状态</h2><p>new:new一个线程<br>run:执行start<br>block:synchronized<br>wait:没有参数的wait<br>time_waiting:有参数的wait和sleep</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> java </category>
+          
+          <category> jvm </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> java </tag>
+            
+            <tag> 并发 </tag>
+            
+            <tag> jvm </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>JVM的编译优化-后期</title>
+      <link href="/JVM%E7%9A%84%E7%BC%96%E8%AF%91%E4%BC%98%E5%8C%96-%E5%90%8E%E6%9C%9F/"/>
+      <url>/JVM%E7%9A%84%E7%BC%96%E8%AF%91%E4%BC%98%E5%8C%96-%E5%90%8E%E6%9C%9F/</url>
+      
+        <content type="html"><![CDATA[<p>  JIT(java in time complier)，即为了提高热点代码效率将代码编译成本地代码。</p><h2 id="解释器与编译器"><a href="#解释器与编译器" class="headerlink" title="解释器与编译器"></a>解释器与编译器</h2><p>  HotSpot采用的是解释器与编译器共存。</p><p>  解释器可以发挥编译优势，省去编译成本地代码的时间，直接运行；编译器把反复执行的代码编译成本地代码提高执行效率。同时如果编译器的优化比较激进发现编译后的结果不成立可以通过解释器退回到之前状态。</p><p>  解释器和编译器这种搭配方式称为混合模式。可以通过-Xint来控制</p><h2 id="俩个编译器ClientComplier和ServerComplier"><a href="#俩个编译器ClientComplier和ServerComplier" class="headerlink" title="俩个编译器ClientComplier和ServerComplier"></a>俩个编译器ClientComplier和ServerComplier</h2><p>ClientComplier注重编译速度，ServerComplier注重编译的质量。HotSpot在JDK1.7时代默认采用分层编译</p><ul><li>C0：解释执行</li><li>C1：将字节码编译成本地代码，简单的优化。</li><li>C2：会启用一些耗时优化。</li></ul><h2 id="出发条件"><a href="#出发条件" class="headerlink" title="出发条件"></a>出发条件</h2><p>HotSpot采用基于计数器的方式。</p><ul><li>方法的重复调用<ul><li>条件：重复一定次数（方法调用计数器控制）</li><li>方式：调用次数+1.触发阈值后发送编译请求。编译完成后替换方法地址</li><li>半衰周期：当一段时间没到阈值会，方法调用计数器会衰减一半</li><li>默认值：client:1500,server:10000</li></ul></li><li>循环体的调用：OSR(on stack replacement)栈上替换，发生在运行时的方法栈<ul><li>条件：重复一定次数（回边计数器）</li><li>方式：以方法为单位如果，每一次循环回边计数器都+1，如果回边计数器和方法调用计数器超过一定数值后发送编译请求。（这时候重新调整计数器以便继续循环）编译完成后替换方法地址</li></ul></li></ul><h2 id="编译过程"><a href="#编译过程" class="headerlink" title="编译过程"></a>编译过程</h2><p>后台编译</p><p><img src="/JVM的编译优化-后期/clientcomiler.png" alt="client-compile"></p><p>具体的HIR LIR我也没太看明白以后看编译原理在不上:P</p><h2 id="编译优化的技术"><a href="#编译优化的技术" class="headerlink" title="编译优化的技术"></a>编译优化的技术</h2><p>编译代码比解释代码优化，一方面是没有虚拟接解释代码的消耗，一方面是所有的代码优化措施都集中在JIT上。</p><h3 id="优化技术概览"><a href="#优化技术概览" class="headerlink" title="优化技术概览"></a>优化技术概览</h3><p><img src="/JVM的编译优化-后期/jit优化技术.png" alt="jit优化技术"><br><img src="/JVM的编译优化-后期/jit优化技术2.png" alt="jit优化技术"></p><h3 id="公共子表达式优化"><a href="#公共子表达式优化" class="headerlink" title="公共子表达式优化"></a>公共子表达式优化</h3><p>比如程序有俩个b<em>c和c</em>b，javac不会进行优化，java则会优化成E=b*c,然后代码使用E</p><h3 id="异常消除"><a href="#异常消除" class="headerlink" title="异常消除"></a>异常消除</h3><p>NullPointer，ArrayIndexOutOfBounds等异常信息，在运行时如果不优化每次判断都会带来开销，所以jit会对齐进行优化，消除这些隐式的判断。而且会根据Profile收集到的信息进行“智能”优化。比如一个对象经常为空的情况就不回采用try catch的优化。</p><h3 id="方法内联"><a href="#方法内联" class="headerlink" title="方法内联"></a>方法内联</h3><p>由于JAVA是面向对象的，很对方法是虚方法，为了优化就采用CHA，如果是虚方法会去查询有几个版本如果只有一个版本会进行内联，如果继承关系发生改变，比如动态代码，这时候要退回解释执行。如果发现多个版本还会采用Inline Cache来尝试内联</p><h3 id="逃逸分析"><a href="#逃逸分析" class="headerlink" title="逃逸分析"></a>逃逸分析</h3><p>栈上分配、同步消除、标量替换</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> java </category>
+          
+          <category> jvm </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> java </tag>
+            
+            <tag> jvm </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>JVM的编译优化-前期</title>
+      <link href="/JVM%E7%9A%84%E7%BC%96%E8%AF%91%E4%BC%98%E5%8C%96-%E5%89%8D%E6%9C%9F/"/>
+      <url>/JVM%E7%9A%84%E7%BC%96%E8%AF%91%E4%BC%98%E5%8C%96-%E5%89%8D%E6%9C%9F/</url>
       
         <content type="html"><![CDATA[<p>JAVA是将类文件编译后生成操作码交给解释器执行，所以是解释性语言。</p><h2 id="面向栈的指令集和面向寄存器的指令集"><a href="#面向栈的指令集和面向寄存器的指令集" class="headerlink" title="面向栈的指令集和面向寄存器的指令集"></a>面向栈的指令集和面向寄存器的指令集</h2><p>  java是通过操作码将数据压入/弹出到操作栈中进行操作，所以是面向栈的，而还有一种流派是直接生成本地代码调用寄存器的指令，<br>  俩者的区别。</p><ul><li>面向栈：便于移植，代码简单，由于不依赖寄存器，支持寄存器不支持的功能。由于执行指令多所以性能差</li><li>面向寄存器：不便于移植，功能依赖于CPU等硬件。性能好</li></ul><h2 id="javac编译的过程"><a href="#javac编译的过程" class="headerlink" title="javac编译的过程"></a>javac编译的过程</h2><p><img src="/JVM的编译优化/javac编译过程.png" alt="编译过程"></p><p>源码如下</p><p><img src="/JVM的编译优化/javac编译过程的主题代码.png" alt="编译过程"></p><h3 id="解析文件和添加符号表"><a href="#解析文件和添加符号表" class="headerlink" title="解析文件和添加符号表"></a>解析文件和添加符号表</h3><ul><li>词法、语法分析：通过词法分析器和语法分析器生成抽象语法树</li><li>输入到符号表：将语法树种的在javac源码就是enterTree过程，符号表是一个kv的数据结构，用于收集符号以及变量，在语义校验阶段用于校验语法和产生中间代码，目标代码生成阶段是分配符号内存的依据</li></ul><h3 id="注解处理器处理注解"><a href="#注解处理器处理注解" class="headerlink" title="注解处理器处理注解"></a>注解处理器处理注解</h3><p>JDK1.5之后支持了注解，实际上是一个个的语法插件，会对语法树进行读取、修改，如果对语法树进行修改，需要重新解析文件和添加符号表，称为Round。也就是图上的回环</p><h3 id="语义分析与字节码生成"><a href="#语义分析与字节码生成" class="headerlink" title="语义分析与字节码生成"></a>语义分析与字节码生成</h3><ul><li>标注检查：检查变量是否已经声明，类型与赋值类型是否匹配。</li><li>数据及控制流分析：进一步对语法和语义做检查。注意局部变量设置为final的语义检查是在编译器的，因为局部变量没有该final的常量标志位，所以在编译后是否声明称final没有区别。</li><li>解语法糖：泛型、自动装箱、拆箱等都需要在编译阶段还原。</li><li>字节码生成：<ul><li>实例构造器init方法和类构造器clinit方法添加到语法树，将调用父类的实例构造器等方法收敛到这俩个方法中</li><li>优化操作：将String的添加等操作改为StringBuffer.append</li></ul></li></ul><h2 id="JAVA语法糖详解"><a href="#JAVA语法糖详解" class="headerlink" title="JAVA语法糖详解"></a>JAVA语法糖详解</h2><h3 id="泛型和类型擦除"><a href="#泛型和类型擦除" class="headerlink" title="泛型和类型擦除"></a>泛型和类型擦除</h3>]]></content>
       

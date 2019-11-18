@@ -96,21 +96,18 @@
 
 
 
-  <meta name="description" content="JAVA是将类文件编译后生成操作码交给解释器执行，所以是解释性语言。 面向栈的指令集和面向寄存器的指令集  java是通过操作码将数据压入/弹出到操作栈中进行操作，所以是面向栈的，而还有一种流派是直接生成本地代码调用寄存器的指令，  俩者的区别。  面向栈：便于移植，代码简单，由于不依赖寄存器，支持寄存器不支持的功能。由于执行指令多所以性能差 面向寄存器：不便于移植，功能依赖于CPU等硬件。性能好">
-<meta name="keywords" content="java,jvm">
+  <meta name="description" content="是对之前java并发的一个补充。：P   java的操作都是将数据从主内存加载到工作内存去做操作，为了保证线程的安全归定了几个原子性操作。 java的几个原子性操作 read：主内存，将数据从主内存传输到工作内存，以便load使用 load：工作内存，将read的变量副本放入到工作内存中 assign：工作内存，赋值操作。将执行引擎（jvm）中的值赋值给变量。 use：工作内存，把工作内存中的">
+<meta name="keywords" content="java,并发,jvm">
 <meta property="og:type" content="article">
-<meta property="og:title" content="JVM的编译优化">
-<meta property="og:url" content="https://liuhao163.github.io/JVM的编译优化/index.html">
+<meta property="og:title" content="JAVA内存模型与线程">
+<meta property="og:url" content="https://liuhao163.github.io/JAVA内存模型与线程/index.html">
 <meta property="og:site_name" content="liuhao163.github.io">
-<meta property="og:description" content="JAVA是将类文件编译后生成操作码交给解释器执行，所以是解释性语言。 面向栈的指令集和面向寄存器的指令集  java是通过操作码将数据压入/弹出到操作栈中进行操作，所以是面向栈的，而还有一种流派是直接生成本地代码调用寄存器的指令，  俩者的区别。  面向栈：便于移植，代码简单，由于不依赖寄存器，支持寄存器不支持的功能。由于执行指令多所以性能差 面向寄存器：不便于移植，功能依赖于CPU等硬件。性能好">
+<meta property="og:description" content="是对之前java并发的一个补充。：P   java的操作都是将数据从主内存加载到工作内存去做操作，为了保证线程的安全归定了几个原子性操作。 java的几个原子性操作 read：主内存，将数据从主内存传输到工作内存，以便load使用 load：工作内存，将read的变量副本放入到工作内存中 assign：工作内存，赋值操作。将执行引擎（jvm）中的值赋值给变量。 use：工作内存，把工作内存中的">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="https://liuhao163.github.io/JVM的编译优化/javac编译过程.png">
-<meta property="og:image" content="https://liuhao163.github.io/JVM的编译优化/javac编译过程的主题代码.png">
-<meta property="og:updated_time" content="2019-11-15T09:35:18.000Z">
+<meta property="og:updated_time" content="2019-11-18T08:33:44.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="JVM的编译优化">
-<meta name="twitter:description" content="JAVA是将类文件编译后生成操作码交给解释器执行，所以是解释性语言。 面向栈的指令集和面向寄存器的指令集  java是通过操作码将数据压入/弹出到操作栈中进行操作，所以是面向栈的，而还有一种流派是直接生成本地代码调用寄存器的指令，  俩者的区别。  面向栈：便于移植，代码简单，由于不依赖寄存器，支持寄存器不支持的功能。由于执行指令多所以性能差 面向寄存器：不便于移植，功能依赖于CPU等硬件。性能好">
-<meta name="twitter:image" content="https://liuhao163.github.io/JVM的编译优化/javac编译过程.png">
+<meta name="twitter:title" content="JAVA内存模型与线程">
+<meta name="twitter:description" content="是对之前java并发的一个补充。：P   java的操作都是将数据从主内存加载到工作内存去做操作，为了保证线程的安全归定了几个原子性操作。 java的几个原子性操作 read：主内存，将数据从主内存传输到工作内存，以便load使用 load：工作内存，将read的变量副本放入到工作内存中 assign：工作内存，赋值操作。将执行引擎（jvm）中的值赋值给变量。 use：工作内存，把工作内存中的">
 
 
 
@@ -119,7 +116,7 @@
 
 
 
-  <link rel="canonical" href="https://liuhao163.github.io/JVM的编译优化/">
+  <link rel="canonical" href="https://liuhao163.github.io/JAVA内存模型与线程/">
 
 
 
@@ -129,7 +126,7 @@
   };
 </script>
 
-  <title>JVM的编译优化 | liuhao163.github.io</title>
+  <title>JAVA内存模型与线程 | liuhao163.github.io</title>
   
 
 
@@ -332,7 +329,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JVM的编译优化/">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA内存模型与线程/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Liu hao">
@@ -349,7 +346,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">JVM的编译优化
+          <h1 class="post-title" itemprop="name headline">JAVA内存模型与线程
 
               
             
@@ -375,7 +372,7 @@
                 
               
 
-              <time title="Created: 2019-11-15 15:46:02 / Modified: 17:35:18" itemprop="dateCreated datePublished" datetime="2019-11-15T15:46:02+08:00">2019-11-15</time>
+              <time title="Created: 2019-11-18 16:04:54 / Modified: 16:33:44" itemprop="dateCreated datePublished" datetime="2019-11-18T16:04:54+08:00">2019-11-18</time>
             
 
             
@@ -439,31 +436,34 @@
       
 
       
-        <p>JAVA是将类文件编译后生成操作码交给解释器执行，所以是解释性语言。</p>
-<h2 id="面向栈的指令集和面向寄存器的指令集"><a href="#面向栈的指令集和面向寄存器的指令集" class="headerlink" title="面向栈的指令集和面向寄存器的指令集"></a>面向栈的指令集和面向寄存器的指令集</h2><p>  java是通过操作码将数据压入/弹出到操作栈中进行操作，所以是面向栈的，而还有一种流派是直接生成本地代码调用寄存器的指令，<br>  俩者的区别。</p>
+        <p>  是对之前java并发的一个补充。：P</p>
+<p>  java的操作都是将数据从主内存加载到工作内存去做操作，为了保证线程的安全归定了几个原子性操作。</p>
+<h2 id="java的几个原子性操作"><a href="#java的几个原子性操作" class="headerlink" title="java的几个原子性操作"></a>java的几个原子性操作</h2><ul>
+<li>read：主内存，将数据从主内存传输到工作内存，以便load使用</li>
+<li>load：工作内存，将read的变量副本放入到工作内存中</li>
+<li>assign：工作内存，赋值操作。将执行引擎（jvm）中的值赋值给变量。</li>
+<li>use：工作内存，把工作内存中的值传递给执行引擎。</li>
+<li>store：工作内存，将数据传输到主内存中，以便write操作使用</li>
+<li>write：主内存，将数据写入到主内存中。</li>
+<li>lock：主内存，将变量标识为线程独占</li>
+<li>unlock：主内存，释放锁标记，标识变量变为共享状态。</li>
+</ul>
+<p>几个规定</p>
 <ul>
-<li>面向栈：便于移植，代码简单，由于不依赖寄存器，支持寄存器不支持的功能。由于执行指令多所以性能差</li>
-<li>面向寄存器：不便于移植，功能依赖于CPU等硬件。性能好</li>
+<li>read和load，store和write成对出现，并且先后顺序不能改变</li>
+<li>assign必须在load之后，且assign之后必须写会主内存，且加载到内存的变量必须assign</li>
+<li>use、store之前必须assign，load</li>
+<li>lock操作后工作内存会被清空</li>
+<li>unlock必须在lock之后，且unlock必须等待变量别写会主内存。</li>
 </ul>
-<h2 id="javac编译的过程"><a href="#javac编译的过程" class="headerlink" title="javac编译的过程"></a>javac编译的过程</h2><p><img src="/JVM的编译优化/javac编译过程.png" alt="编译过程"></p>
-<p>源码如下</p>
-<p><img src="/JVM的编译优化/javac编译过程的主题代码.png" alt="编译过程"></p>
-<h3 id="解析文件和添加符号表"><a href="#解析文件和添加符号表" class="headerlink" title="解析文件和添加符号表"></a>解析文件和添加符号表</h3><ul>
-<li>词法、语法分析：通过词法分析器和语法分析器生成抽象语法树</li>
-<li>输入到符号表：将语法树种的在javac源码就是enterTree过程，符号表是一个kv的数据结构，用于收集符号以及变量，在语义校验阶段用于校验语法和产生中间代码，目标代码生成阶段是分配符号内存的依据</li>
+<h2 id="保证线程安全的3个要点"><a href="#保证线程安全的3个要点" class="headerlink" title="保证线程安全的3个要点"></a>保证线程安全的3个要点</h2><ul>
+<li>原子性：8个原子操作</li>
+<li>可见性：voltile、final、synchrozied可以保证</li>
+<li>顺序性：voltile、synchrozied</li>
 </ul>
-<h3 id="注解处理器处理注解"><a href="#注解处理器处理注解" class="headerlink" title="注解处理器处理注解"></a>注解处理器处理注解</h3><p>JDK1.5之后支持了注解，实际上是一个个的语法插件，会对语法树进行读取、修改，如果对语法树进行修改，需要重新解析文件和添加符号表，称为Round。也就是图上的回环</p>
-<h3 id="语义分析与字节码生成"><a href="#语义分析与字节码生成" class="headerlink" title="语义分析与字节码生成"></a>语义分析与字节码生成</h3><ul>
-<li>标注检查：检查变量是否已经声明，类型与赋值类型是否匹配。</li>
-<li>数据及控制流分析：进一步对语法和语义做检查。注意局部变量设置为final的语义检查是在编译器的，因为局部变量没有该final的常量标志位，所以在编译后是否声明称final没有区别。</li>
-<li>解语法糖：泛型、自动装箱、拆箱等都需要在编译阶段还原。</li>
-<li>字节码生成：<ul>
-<li>实例构造器init方法和类构造器clinit方法添加到语法树，将调用父类的实例构造器等方法收敛到这俩个方法中</li>
-<li>优化操作：将String的添加等操作改为StringBuffer.append</li>
-</ul>
-</li>
-</ul>
-<h2 id="JAVA语法糖详解"><a href="#JAVA语法糖详解" class="headerlink" title="JAVA语法糖详解"></a>JAVA语法糖详解</h2><h3 id="泛型和类型擦除"><a href="#泛型和类型擦除" class="headerlink" title="泛型和类型擦除"></a>泛型和类型擦除</h3>
+<h2 id="线程实现"><a href="#线程实现" class="headerlink" title="线程实现"></a>线程实现</h2><p>1:1模型：使用内核线程，实现简单，但是无法支持高并发因为内核态和用户态消耗大，并且由于是1：1无法支持高并发。<br>1:N：使用用户线程，可支持高并发，但是调度等实现难度大。<br>N:M：用户线程用于并发，内核线程用于调度。综合上面俩种优缺点。</p>
+<h2 id="线程状态"><a href="#线程状态" class="headerlink" title="线程状态"></a>线程状态</h2><p>new:new一个线程<br>run:执行start<br>block:synchronized<br>wait:没有参数的wait<br>time_waiting:有参数的wait和sleep</p>
+
       
     </div>
 
@@ -488,6 +488,8 @@
           
             <a href="/tags/java/" rel="tag"># java</a>
           
+            <a href="/tags/并发/" rel="tag"># 并发</a>
+          
             <a href="/tags/jvm/" rel="tag"># jvm</a>
           
         </div>
@@ -501,8 +503,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/JVM虚拟机执行引擎/" rel="next" title="JVM虚拟机执行引擎">
-                <i class="fa fa-chevron-left"></i> JVM虚拟机执行引擎
+              <a href="/JVM的编译优化-后期/" rel="next" title="JVM的编译优化-后期">
+                <i class="fa fa-chevron-left"></i> JVM的编译优化-后期
               </a>
             
           </div>
@@ -578,7 +580,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">138</span>
+                    <span class="site-state-item-count">140</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -835,7 +837,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#面向栈的指令集和面向寄存器的指令集"><span class="nav-number">1.</span> <span class="nav-text">面向栈的指令集和面向寄存器的指令集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#javac编译的过程"><span class="nav-number">2.</span> <span class="nav-text">javac编译的过程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#解析文件和添加符号表"><span class="nav-number">2.1.</span> <span class="nav-text">解析文件和添加符号表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#注解处理器处理注解"><span class="nav-number">2.2.</span> <span class="nav-text">注解处理器处理注解</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#语义分析与字节码生成"><span class="nav-number">2.3.</span> <span class="nav-text">语义分析与字节码生成</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JAVA语法糖详解"><span class="nav-number">3.</span> <span class="nav-text">JAVA语法糖详解</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#泛型和类型擦除"><span class="nav-number">3.1.</span> <span class="nav-text">泛型和类型擦除</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#java的几个原子性操作"><span class="nav-number">1.</span> <span class="nav-text">java的几个原子性操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#保证线程安全的3个要点"><span class="nav-number">2.</span> <span class="nav-text">保证线程安全的3个要点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#线程实现"><span class="nav-number">3.</span> <span class="nav-text">线程实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#线程状态"><span class="nav-number">4.</span> <span class="nav-text">线程状态</span></a></li></ol></div>
             
 
           </div>

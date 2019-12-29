@@ -328,6 +328,221 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Redis-基础数据结构/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/Redis-基础数据结构/" class="post-title-link" itemprop="url">Redis-基础数据结构</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-10-08 17:17:59" itemprop="dateCreated datePublished" datetime="2019-10-08T17:17:59+08:00">2019-10-08</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-10-11 14:26:56" itemprop="dateModified" datetime="2019-10-11T14:26:56+08:00">2019-10-11</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/redis/" itemprop="url" rel="index"><span itemprop="name">redis</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="string"><a href="#string" class="headerlink" title="string"></a>string</h2><p>  redis所有数据的基础，采用预分配进行数据的分配当数据小于1MB时候，成倍扩容，大于1MB每次扩容1倍。最大512MB。</p>
+<p>  int类型支持计数</p>
+<h2 id="list"><a href="#list" class="headerlink" title="list"></a>list</h2><p>  quicklist的数据结构（ziplist+双向链表）</p>
+<h2 id="hash"><a href="#hash" class="headerlink" title="hash"></a>hash</h2><p>  类似于Java的hashmap，采用数组+链表方式，数据量小采用ziplist。</p>
+<p>  rehash采用渐进式</p>
+<h2 id="set"><a href="#set" class="headerlink" title="set"></a>set</h2><p>  底层采用一个特殊的字典来维护，字典的值都为NULL</p>
+<h2 id="zset"><a href="#zset" class="headerlink" title="zset"></a>zset</h2><p>  (skiplist or ziplist)+hash</p>
+<h2 id="bitmap"><a href="#bitmap" class="headerlink" title="bitmap"></a>bitmap</h2><ul>
+<li><p>setbit key offset value【0 or 1】 set某一位的bit值</p>
+</li>
+<li><p>getbit key offset 返回当前位的值</p>
+</li>
+<li><p>bitcount key [start end] 返回start-end值为1的bit的数量。start-end必须是8的倍数</p>
+</li>
+<li><p>bitpos key [true false] 返回第一个true or false的值。</p>
+</li>
+</ul>
+<h2 id="hyperHyperLog"><a href="#hyperHyperLog" class="headerlink" title="hyperHyperLog"></a>hyperHyperLog</h2><ul>
+<li>pfadd key value 不同的才会加入到列表中</li>
+<li>pfcount key 查看key的值</li>
+</ul>
+<p>用于统计网站的uv，大小是12kb,缺点是有误差</p>
+<h2 id="bloomfilter"><a href="#bloomfilter" class="headerlink" title="bloomfilter"></a>bloomfilter</h2><p>redis4.0以后提供插件支持</p>
+<ul>
+<li>bf.add</li>
+<li>bf.exists</li>
+</ul>
+<p>重复并且存在误判。</p>
+<h2 id="Reids的限流–redis-cell"><a href="#Reids的限流–redis-cell" class="headerlink" title="Reids的限流–redis-cell"></a>Reids的限流–redis-cell</h2><p>redis4.0后提供的限流模块</p>
+<p>cl.throttle key capacity opsQuota opssec quota-pre-action</p>
+<p>返回值<br>0 or 1 –结果0允许，1不允许<br>capacity–漏斗容量<br>left_quota–剩余容量<br>next_gen_quota_sec–下一次产生多少令牌的事件<br>maxQuotaSec–令牌桶满，下一次capacity=left_quota的时间 单位：秒</p>
+<h2 id="Redis的位置服务-GeoHash"><a href="#Redis的位置服务-GeoHash" class="headerlink" title="Redis的位置服务-GeoHash"></a>Redis的位置服务-GeoHash</h2><p>  原理是，将地球变为一个平面，划分成一系列方格每个方格有一个唯一编号，方格越近编号越近，将坐标的经纬度映射为一维坐标，放在唯一的方格中，只需要查看俩个方格的距离即可。</p>
+<p>  坐标会变成一串整数编码越长越精确，这些整数编码能还原成坐标。getHash会对这个整数做一次base32。</p>
+<p>  redis的坐标编码是52位，且底层采用zset。value是key，score是哪个52位的编码，我们查询附近的坐标只需要按照score查询即可</p>
+<p>  命令</p>
+<ul>
+<li>geoadd key 精度 纬度 value  添加</li>
+<li>geodist key value1 value2 单位 查询value1和value2的距离</li>
+<li>geoops  key value 获取value的坐标</li>
+<li>geohash key value 获取hash值可以计算出经纬度</li>
+<li>georediusbymember key value 20 km [withcoord withdist withhash] count 3 asc 查找value半径20km的其他坐标【包括自己】 按照距离升序排列</li>
+<li>georedius key value x y 20 km  [withcoord withdist withhash] count 3 asc  查找坐标点【x、y】半径20km的其他坐标【包括自己】 按照距离升序排列</li>
+</ul>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/RoketMq源码学习-七-事务的实现/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2312,211 +2527,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/cpu的负载与线程以及进程之间的切换/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/cpu的负载与线程以及进程之间的切换/" class="post-title-link" itemprop="url">cpu的负载与线程以及进程之间的切换</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-09-02 12:52:51 / Modified: 21:26:12" itemprop="dateCreated datePublished" datetime="2019-09-02T12:52:51+08:00">2019-09-02</time>
-            
-
-            
-              
-
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/linux/cpu/" itemprop="url" rel="index"><span itemprop="name">cpu</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>在开发中我们经常会提到线程以及进程的切换代价很高。它们的主要开销在哪里呢？我们的程序运行往往需要程序计数器以及cpu寄存器即CPU的上下文，当程序进程切换时候需要记录下当前的程序计数器以及cpi寄存器的状态。由于这俩个模块是有内核态管理的所以要切换到内核态去执行。在执行完后在切换回用户态。</p>
-<h2 id="程序用户态和内核态之间的切换–特权模式切换"><a href="#程序用户态和内核态之间的切换–特权模式切换" class="headerlink" title="程序用户态和内核态之间的切换–特权模式切换"></a>程序用户态和内核态之间的切换–特权模式切换</h2><p>如上所述，用户态访问的资源受限，无法直接操作硬件，所以一次操作需要在内核态和内存态之间切换，比如一次IO的读操作，我们要先调用open，在read，在write写入到标准输出流程。涉及到3次系统操作，每次系统操作都是用户态–&gt;内核态–&gt;用户态的切换关系</p>
-<h2 id="cpu进程的切换"><a href="#cpu进程的切换" class="headerlink" title="cpu进程的切换"></a>cpu进程的切换</h2><p>进程是持有资源的最小单位，当多个进程竞争CPU资源时候就会发生进程间的cpu上下文切换，具体有以下3种情况</p>
-<ol>
-<li>系统资源不足时候会让出CPU资源，挂起当前进程进行进程的切换</li>
-<li>主动的CPU上下文切换，cpu为所有的资源分配了时间片，当时间片结束后会进行进程的切换</li>
-<li>响应硬件的中断事件，进行上下文切换。</li>
-<li>程序通过sleep等方式</li>
-<li>有更高优先级的程序进入</li>
-</ol>
-<p>进程的管理、切换发生在内核态，但是运行在内核态，所以要保存当前进程的程序计数器以及cpu寄存器、程序的栈和虚拟内存，同时要加载下一个运行的进程的上述的数据，比较消耗性能，往往在微妙级别，如果过多的进程间上下文切换会影响性能</p>
-<h2 id="cpu线程的切换"><a href="#cpu线程的切换" class="headerlink" title="cpu线程的切换"></a>cpu线程的切换</h2><p>线程是最小的调度单位，在进行线程切换时候，除了进程切换的数据外，还要保存线程自己的栈和虚拟内存。</p>
-<p>但是</p>
-<ol>
-<li>线程切换如果俩个线程属于同一个进程，只需要修改内核态的cpu寄存器和程序计数器即可</li>
-<li>如果切换的线程隶属于不同进程，同cpu进程的切换</li>
-</ol>
-<p>所以线程切换的性能要优于进程的切换</p>
-<h2 id="如何查看进程和线程切换"><a href="#如何查看进程和线程切换" class="headerlink" title="如何查看进程和线程切换"></a>如何查看进程和线程切换</h2><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span> 每隔 5 秒输出 1 组数据</span><br><span class="line"><span class="meta">$</span> vmstat 5</span><br><span class="line">procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----</span><br><span class="line"> r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st</span><br><span class="line"> 0  0      0 7005360  91564 818900    0    0     0     0   25   33  0  0 100  0  0</span><br></pre></td></tr></table></figure>
-<ul>
-<li>cs：上下文切换次数</li>
-<li>in：中断次数</li>
-<li>r：就绪或者正在运行的线程数</li>
-<li>b：处于不可中断后睡眠的线程数</li>
-</ul>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span> pidstat 5</span><br><span class="line">Linux 3.10.0-514.16.1.el7.x86_64 (3f8a51a86347)         09/02/2019      _x86_64_        (48 CPU)</span><br><span class="line"></span><br><span class="line">Average:      UID       PID   cswch/s nvcswch/s  Command</span><br><span class="line">Average:        0         1      1.00      0.00  supervisord</span><br><span class="line">Average:        0        31      0.12      0.00  crond</span><br><span class="line">Average:        0     26544      0.82      0.00  sshd</span><br><span class="line">......</span><br></pre></td></tr></table></figure>
-<ul>
-<li>cswch:自愿的上下文切换，进程无法获取资源导致上下文切换</li>
-<li>nvcswch:非自愿上下文切换，进程到了运行时间进性上下文切换</li>
-</ul>
-<h3 id="案例分析"><a href="#案例分析" class="headerlink" title="案例分析"></a>案例分析</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span> 以 10 个线程运行 5 分钟的基准测试，模拟多线程切换的问题</span><br><span class="line"><span class="meta">$</span> sysbench --threads=10 --max-time=300 threads run</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span> 每隔 1 秒输出 1 组数据（需要 Ctrl+C 才结束）</span><br><span class="line"><span class="meta">$</span> vmstat 1</span><br><span class="line">procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----</span><br><span class="line"> r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st</span><br><span class="line"> 6  0      0 6487428 118240 1292772    0    0     0     0 9019 1398830 16 84  0  0  0</span><br><span class="line"> 8  0      0 6487428 118240 1292772    0    0     0     0 10191 1392312 16 84  0  0  0</span><br><span class="line">`</span><br></pre></td></tr></table></figure>
-<p>俩个核分别有6、8个运行的任务，其中中断次数在1W左右，进一步查看</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span> 每隔 1 秒输出 1 组数据（需要 Ctrl+C 才结束）</span><br><span class="line"><span class="meta">#</span> -w 参数表示输出进程切换指标，而 -u 参数则表示输出 CPU 使用指标</span><br><span class="line"><span class="meta">$</span> pidstat -w -u 1</span><br><span class="line">08:06:33      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command</span><br><span class="line">08:06:34        0     10488   30.00  100.00    0.00    0.00  100.00     0  sysbench</span><br><span class="line">08:06:34        0     26326    0.00    1.00    0.00    0.00    1.00     0  kworker/u4:2</span><br><span class="line"></span><br><span class="line">08:06:33      UID       PID   cswch/s nvcswch/s  Command</span><br><span class="line">08:06:34        0         8     11.00      0.00  rcu_sched</span><br><span class="line">08:06:34        0        16      1.00      0.00  ksoftirqd/1</span><br><span class="line">08:06:34        0       471      1.00      0.00  hv_balloon</span><br><span class="line">08:06:34        0      1230      1.00      0.00  iscsid</span><br><span class="line">08:06:34        0      4089      1.00      0.00  kworker/1:5</span><br><span class="line">08:06:34        0      4333      1.00      0.00  kworker/0:3</span><br><span class="line">08:06:34        0     10499      1.00    224.00  pidstat</span><br><span class="line">08:06:34        0     26326    236.00      0.00  kworker/u4:2</span><br><span class="line">08:06:34     1000     26784    223.00      0.00  sshd</span><br></pre></td></tr></table></figure>
-<p>看出性能果然是sysbench导致的但是线程切换次数明显低于vmstat，这是由于忽略了线程，所以要在pidstat加上-t</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span> 每隔 1 秒输出一组数据（需要 Ctrl+C 才结束）</span><br><span class="line"><span class="meta">#</span> -wt 参数表示输出线程的上下文切换指标</span><br><span class="line"><span class="meta">$</span> pidstat -wt 1</span><br><span class="line">08:14:05      UID      TGID       TID   cswch/s nvcswch/s  Command</span><br><span class="line">...</span><br><span class="line">08:14:05        0     10551         -      6.00      0.00  sysbench</span><br><span class="line">08:14:05        0         -     10551      6.00      0.00  |__sysbench</span><br><span class="line">08:14:05        0         -     10552  18911.00 103740.00  |__sysbench</span><br><span class="line">08:14:05        0         -     10553  18915.00 100955.00  |__sysbench</span><br><span class="line">08:14:05        0         -     10554  18827.00 103954.00  |__sysbench</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
-<p>查看cpu中断的原因</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span> -d 参数表示高亮显示变化的区域</span><br><span class="line"><span class="meta">$</span> watch -d cat /proc/interrupts</span><br><span class="line">           CPU0       CPU1</span><br><span class="line">...</span><br><span class="line">RES:    2450431    5279697   Rescheduling interrupts</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
-<p>Res代表重调度中断，将任务分到多个CPU中，取决于cpu的性能，一般低于1W次我们不用太考虑。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2563,7 +2573,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">145</span>
+                    <span class="site-state-item-count">146</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

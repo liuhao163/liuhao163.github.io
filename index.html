@@ -328,6 +328,187 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Spring源码-LifecycleProcessor/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/Spring源码-LifecycleProcessor/" class="post-title-link" itemprop="url">Spring源码-LifecycleProcessor</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-12-30 16:12:25 / Modified: 16:53:52" itemprop="dateCreated datePublished" datetime="2019-12-30T16:12:25+08:00">2019-12-30</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/" itemprop="url" rel="index"><span itemprop="name">spring</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/源码/" itemprop="url" rel="index"><span itemprop="name">源码</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="讲解"><a href="#讲解" class="headerlink" title="讲解"></a>讲解</h2><p>  Lifecycle:容器的生命周期回调，容器启动之后再一些节点时候回低矮用Lifecycle子类的方法。</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">  <span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Lifecycle</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">start</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">stop</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">isRunning</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>LifecycleProcessor：在Lifecycle的基础上实现了onRefresh和onClose接口。参见前面：<img src="/Spring源码-ApplicationContext" alt="Spring源码-ApplicationContext">文章中finishRefresh中的代码片段。onRefresh会调用Lifecycle实现类的start()方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Initialize lifecycle processor for this context.</span></span><br><span class="line"><span class="comment">//初始化LifecycleProcessor</span></span><br><span class="line">initLifecycleProcessor();</span><br><span class="line"></span><br><span class="line"><span class="comment">// Propagate refresh to lifecycle processor first.</span></span><br><span class="line"><span class="comment">//调用上面的LifecycleProcessor.onRefresh()</span></span><br><span class="line">getLifecycleProcessor().onRefresh();</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">LifecycleProcessor</span> <span class="keyword">extends</span> <span class="title">Lifecycle</span> </span>&#123;  </span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">onRefresh</span><span class="params">()</span></span>;  </span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">onClose</span><span class="params">()</span></span>;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Phased</span> </span>&#123;  </span><br><span class="line">  <span class="function"><span class="keyword">int</span> <span class="title">getPhase</span><span class="params">()</span></span>;  </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">SmartLifecycle</span> <span class="keyword">extends</span> <span class="title">Lifecycle</span>, <span class="title">Phased</span> </span>&#123;  </span><br><span class="line">  <span class="function"><span class="keyword">boolean</span> <span class="title">isAutoStartup</span><span class="params">()</span></span>;  </span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">stop</span><span class="params">(Runnable callback)</span></span>;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="调用流程"><a href="#调用流程" class="headerlink" title="调用流程"></a>调用流程</h2><p>tbd</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Spring源码-ApplicationListener容器的订阅者消费者模式/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -373,12 +554,24 @@
                 
               
 
-              <time title="Created: 2019-12-29 17:26:02 / Modified: 17:56:45" itemprop="dateCreated datePublished" datetime="2019-12-29T17:26:02+08:00">2019-12-29</time>
+              <time title="Created: 2019-12-29 17:26:02" itemprop="dateCreated datePublished" datetime="2019-12-29T17:26:02+08:00">2019-12-29</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-12-30 15:16:37" itemprop="dateModified" datetime="2019-12-30T15:16:37+08:00">2019-12-30</time>
               
             
           </span>
@@ -700,8 +893,56 @@
             
 
             
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-12-30 16:13:53" itemprop="dateModified" datetime="2019-12-30T16:13:53+08:00">2019-12-30</time>
+              
+            
           </span>
 
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/" itemprop="url" rel="index"><span itemprop="name">spring</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/源码/" itemprop="url" rel="index"><span itemprop="name">源码</span></a></span>
+
+                
+                
+              
+            </span>
           
 
           
@@ -851,7 +1092,7 @@
                 
                   <span class="post-meta-item-text">Edited on</span>
                 
-                <time title="Modified: 2019-12-29 17:25:19" itemprop="dateModified" datetime="2019-12-29T17:25:19+08:00">2019-12-29</time>
+                <time title="Modified: 2019-12-30 16:13:36" itemprop="dateModified" datetime="2019-12-30T16:13:36+08:00">2019-12-30</time>
               
             
           </span>
@@ -983,7 +1224,12 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">registerBeanPostProcessors</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    ConfigurableListableBeanFactory beanFactory, AbstractApplicationContext applicationContext)</span> </span>&#123;</span><br><span class="line">  <span class="comment">//获取所有的BeanPostProcessor</span></span><br><span class="line">  String[] postProcessorNames = beanFactory.getBeanNamesForType(BeanPostProcessor.class, <span class="keyword">true</span>, <span class="keyword">false</span>);</span><br><span class="line"></span><br><span class="line">  <span class="comment">////bean不是基础BeanPostProcessor &amp;&amp; bean的Role不是ROLE_INFRASTRUCTURE &amp;&amp; beanFactory.getBeanPostProcessorCount()&lt;beanPostProcessorTargetCount</span></span><br><span class="line">  <span class="keyword">int</span> beanProcessorTargetCount = beanFactory.getBeanPostProcessorCount() + <span class="number">1</span> + postProcessorNames.length;</span><br><span class="line">  beanFactory.addBeanPostProcessor(<span class="keyword">new</span> BeanPostProcessorChecker(beanFactory, beanProcessorTargetCount));</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Separate between BeanPostProcessors that implement PriorityOrdered,</span></span><br><span class="line">  <span class="comment">// Ordered, and the rest.</span></span><br><span class="line">  <span class="comment">//将BeanPostProcessor分类</span></span><br><span class="line">  <span class="comment">//对BeanPostProcessors分组，分成:PriorityOrdered，Ordered，nonOrdered，internal(属于MergedBeanDefinitionPostProcessor)</span></span><br><span class="line">  List&lt;BeanPostProcessor&gt; priorityOrderedPostProcessors = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">  List&lt;BeanPostProcessor&gt; internalPostProcessors = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">  List&lt;String&gt; orderedPostProcessorNames = <span class="keyword">new</span> ArrayList&lt;&gt;();<span class="comment">//todo 同理，这里为什么是orderedPostProcessorNames，为什么不和priorityOrderedPostProcessors逻辑</span></span><br><span class="line">  List&lt;String&gt; nonOrderedPostProcessorNames = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">  <span class="keyword">for</span> (String ppName : postProcessorNames) &#123;</span><br><span class="line">    <span class="keyword">if</span> (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) &#123;</span><br><span class="line">      BeanPostProcessor pp = beanFactory.getBean(ppName, BeanPostProcessor.class);</span><br><span class="line">      priorityOrderedPostProcessors.add(pp);</span><br><span class="line">      <span class="keyword">if</span> (pp <span class="keyword">instanceof</span> MergedBeanDefinitionPostProcessor) &#123;</span><br><span class="line">        internalPostProcessors.add(pp);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (beanFactory.isTypeMatch(ppName, Ordered.class)) &#123;</span><br><span class="line">      orderedPostProcessorNames.add(ppName);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">      nonOrderedPostProcessorNames.add(ppName);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//执行顺序是PriorityOrdered-&gt;Ordered-&gt;nonOrdered-&gt;internal--&gt;ApplicationListenerDetector</span></span><br><span class="line"></span><br><span class="line">  <span class="comment">// First, register the BeanPostProcessors that implement PriorityOrdered.</span></span><br><span class="line">  sortPostProcessors(priorityOrderedPostProcessors, beanFactory);</span><br><span class="line">  registerBeanPostProcessors(beanFactory, priorityOrderedPostProcessors);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Next, register the BeanPostProcessors that implement Ordered.</span></span><br><span class="line">  List&lt;BeanPostProcessor&gt; orderedPostProcessors = <span class="keyword">new</span> ArrayList&lt;&gt;(orderedPostProcessorNames.size());</span><br><span class="line">  <span class="keyword">for</span> (String ppName : orderedPostProcessorNames) &#123;</span><br><span class="line">    BeanPostProcessor pp = beanFactory.getBean(ppName, BeanPostProcessor.class);</span><br><span class="line">    orderedPostProcessors.add(pp);</span><br><span class="line">    <span class="keyword">if</span> (pp <span class="keyword">instanceof</span> MergedBeanDefinitionPostProcessor) &#123;</span><br><span class="line">      internalPostProcessors.add(pp);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  sortPostProcessors(orderedPostProcessors, beanFactory);</span><br><span class="line">  registerBeanPostProcessors(beanFactory, orderedPostProcessors);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Now, register all regular BeanPostProcessors.</span></span><br><span class="line">  List&lt;BeanPostProcessor&gt; nonOrderedPostProcessors = <span class="keyword">new</span> ArrayList&lt;&gt;(nonOrderedPostProcessorNames.size());</span><br><span class="line">  <span class="keyword">for</span> (String ppName : nonOrderedPostProcessorNames) &#123;</span><br><span class="line">    BeanPostProcessor pp = beanFactory.getBean(ppName, BeanPostProcessor.class);</span><br><span class="line">    nonOrderedPostProcessors.add(pp);</span><br><span class="line">    <span class="keyword">if</span> (pp <span class="keyword">instanceof</span> MergedBeanDefinitionPostProcessor) &#123;</span><br><span class="line">      internalPostProcessors.add(pp);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  registerBeanPostProcessors(beanFactory, nonOrderedPostProcessors);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Finally, re-register all internal BeanPostProcessors.</span></span><br><span class="line">  sortPostProcessors(internalPostProcessors, beanFactory);</span><br><span class="line">  registerBeanPostProcessors(beanFactory, internalPostProcessors);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Re-register post-processor for detecting inner beans as ApplicationListeners,</span></span><br><span class="line">  <span class="comment">// moving it to the end of the processor chain (for picking up proxies etc).</span></span><br><span class="line">  <span class="comment">//注册一个特殊的BeanPostProcessor，ApplicationListenerDetector是一个修饰器类，他会见ApplicationListener重新注册给application。</span></span><br><span class="line">  <span class="comment">//这就是多一个参数applicationContext的一一，在最后一位</span></span><br><span class="line">  beanFactory.addBeanPostProcessor(<span class="keyword">new</span> ApplicationListenerDetector(applicationContext));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h4 id="initMessageSource"><a href="#initMessageSource" class="headerlink" title="initMessageSource"></a>initMessageSource</h4><p>【todo】暂时忽略</p>
 <h4 id="initApplicationEventMulticaster"><a href="#initApplicationEventMulticaster" class="headerlink" title="initApplicationEventMulticaster"></a>initApplicationEventMulticaster</h4><p> 【注册时间监听器】后续单独拿出一章讲。<br>  这里，注册ApplicationEventMulticaster 默认 SimpleApplicationEventMulticaster</p>
-<p>#### </p>
+<h4 id="registerListeners"><a href="#registerListeners" class="headerlink" title="registerListeners"></a>registerListeners</h4><p>注册定义的ApplicationListener，注册容器的event和自定义的eventListener</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">registerListeners</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="comment">// Register statically specified listeners first.</span></span><br><span class="line">  <span class="keyword">for</span> (ApplicationListener&lt;?&gt; listener : getApplicationListeners()) &#123;</span><br><span class="line">    getApplicationEventMulticaster().addApplicationListener(listener);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Do not initialize FactoryBeans here: We need to leave all regular beans</span></span><br><span class="line">  <span class="comment">// uninitialized to let post-processors apply to them!</span></span><br><span class="line">  <span class="comment">//所有ApplicationListener的实现者</span></span><br><span class="line">  String[] listenerBeanNames = getBeanNamesForType(ApplicationListener.class, <span class="keyword">true</span>, <span class="keyword">false</span>);</span><br><span class="line">  <span class="keyword">for</span> (String listenerBeanName : listenerBeanNames) &#123;</span><br><span class="line">    getApplicationEventMulticaster().addApplicationListenerBean(listenerBeanName);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Publish early application events now that we finally have a multicaster...</span></span><br><span class="line">  Set&lt;ApplicationEvent&gt; earlyEventsToProcess = <span class="keyword">this</span>.earlyApplicationEvents;</span><br><span class="line">  <span class="keyword">this</span>.earlyApplicationEvents = <span class="keyword">null</span>;</span><br><span class="line">  <span class="keyword">if</span> (earlyEventsToProcess != <span class="keyword">null</span>) &#123;</span><br><span class="line">    <span class="keyword">for</span> (ApplicationEvent earlyEvent : earlyEventsToProcess) &#123;</span><br><span class="line">      getApplicationEventMulticaster().multicastEvent(earlyEvent);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="preInstantiateSingletons"><a href="#preInstantiateSingletons" class="headerlink" title="preInstantiateSingletons"></a>preInstantiateSingletons</h4><p>完成单例的非延迟加载的bean的实体化，在DefaultListableBeanFactory实现该方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">preInstantiateSingletons</span><span class="params">()</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (logger.isTraceEnabled()) &#123;</span><br><span class="line">    logger.trace(<span class="string">"Pre-instantiating singletons in "</span> + <span class="keyword">this</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Iterate over a copy to allow for init methods which in turn register new bean definitions.</span></span><br><span class="line">  <span class="comment">// While this may not be part of the regular factory bootstrap, it does otherwise work fine.</span></span><br><span class="line">  List&lt;String&gt; beanNames = <span class="keyword">new</span> ArrayList&lt;&gt;(<span class="keyword">this</span>.beanDefinitionNames);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Trigger initialization of all non-lazy singleton beans...</span></span><br><span class="line">  <span class="keyword">for</span> (String beanName : beanNames) &#123;</span><br><span class="line">    <span class="comment">//在之前的步骤中的getBeanNamesForType方法会调用getMergedLocalBeanDefinition中</span></span><br><span class="line">    <span class="comment">//todo  将BeanDefinition写入到mergedBeanDefinitions中，后续单独讲BeanDefinition时候单独说</span></span><br><span class="line">    RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);</span><br><span class="line">    <span class="comment">//bd非抽象 &amp;&amp; 单利 &amp;&amp; 不延迟加载</span></span><br><span class="line">    <span class="keyword">if</span> (!bd.isAbstract() &amp;&amp; bd.isSingleton() &amp;&amp; !bd.isLazyInit()) &#123;</span><br><span class="line">      <span class="comment">//如果是factoryBean通过"&amp;beanName"得到factoryBean</span></span><br><span class="line">      <span class="keyword">if</span> (isFactoryBean(beanName)) &#123;</span><br><span class="line">        <span class="comment">//这一步很关键，如果是factory先初始化factroyBean</span></span><br><span class="line">        Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);</span><br><span class="line">        <span class="keyword">if</span> (bean <span class="keyword">instanceof</span> FactoryBean) &#123;</span><br><span class="line">          <span class="keyword">final</span> FactoryBean&lt;?&gt; factory = (FactoryBean&lt;?&gt;) bean;</span><br><span class="line">          <span class="keyword">boolean</span> isEagerInit;</span><br><span class="line">          <span class="comment">//如果isEagerInit为true，则通过factoryBean.getObject()获取actoryBean中的对象</span></span><br><span class="line">          <span class="keyword">if</span> (System.getSecurityManager() != <span class="keyword">null</span> &amp;&amp; factory <span class="keyword">instanceof</span> SmartFactoryBean) &#123;</span><br><span class="line">            isEagerInit = AccessController.doPrivileged((PrivilegedAction&lt;Boolean&gt;)</span><br><span class="line">                    ((SmartFactoryBean&lt;?&gt;) factory)::isEagerInit,</span><br><span class="line">                getAccessControlContext());</span><br><span class="line">          &#125;</span><br><span class="line">          <span class="keyword">else</span> &#123;</span><br><span class="line">            isEagerInit = (factory <span class="keyword">instanceof</span> SmartFactoryBean &amp;&amp;</span><br><span class="line">                ((SmartFactoryBean&lt;?&gt;) factory).isEagerInit());</span><br><span class="line">          &#125;</span><br><span class="line">          <span class="keyword">if</span> (isEagerInit) &#123;</span><br><span class="line">            getBean(beanName);</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">//普通的bean初始化bean</span></span><br><span class="line">        getBean(beanName);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Trigger post-initialization callback for all applicable beans...</span></span><br><span class="line">  <span class="keyword">for</span> (String beanName : beanNames) &#123;</span><br><span class="line">    Object singletonInstance = getSingleton(beanName);</span><br><span class="line">    <span class="keyword">if</span> (singletonInstance <span class="keyword">instanceof</span> SmartInitializingSingleton) &#123;</span><br><span class="line">      <span class="keyword">final</span> SmartInitializingSingleton smartSingleton = (SmartInitializingSingleton) singletonInstance;</span><br><span class="line">      <span class="keyword">if</span> (System.getSecurityManager() != <span class="keyword">null</span>) &#123;</span><br><span class="line">        AccessController.doPrivileged((PrivilegedAction&lt;Object&gt;) () -&gt; &#123;</span><br><span class="line">          smartSingleton.afterSingletonsInstantiated();</span><br><span class="line">          <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">        &#125;, getAccessControlContext());</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">else</span> &#123;</span><br><span class="line">        smartSingleton.afterSingletonsInstantiated();</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="finishRefresh"><a href="#finishRefresh" class="headerlink" title="finishRefresh"></a>finishRefresh</h4><p>完成applicationContext的refresh，发送系统事件等</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">finishRefresh</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="comment">// Clear context-level resource caches (such as ASM metadata from scanning).</span></span><br><span class="line">  clearResourceCaches();</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Initialize lifecycle processor for this context.</span></span><br><span class="line">  <span class="comment">//初始化LifecycleProcessor，todo mark 作用还需要单独了解</span></span><br><span class="line">  initLifecycleProcessor();</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Propagate refresh to lifecycle processor first.</span></span><br><span class="line">  <span class="comment">//调用上面的LifecycleProcessor.onRefresh()</span></span><br><span class="line">  getLifecycleProcessor().onRefresh();</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Publish the final event.发送ContextRefreshedEvent事件</span></span><br><span class="line">  publishEvent(<span class="keyword">new</span> ContextRefreshedEvent(<span class="keyword">this</span>));</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Participate in LiveBeansView MBean, if active.</span></span><br><span class="line">  <span class="comment">//todo mark 作用还需要单独了解</span></span><br><span class="line">  LiveBeansView.registerApplicationContext(<span class="keyword">this</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
           
         
@@ -2066,226 +2312,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JVM虚拟机执行引擎/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/JVM虚拟机执行引擎/" class="post-title-link" itemprop="url">JVM虚拟机执行引擎</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-11-12 16:57:31" itemprop="dateCreated datePublished" datetime="2019-11-12T16:57:31+08:00">2019-11-12</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-11-15 17:35:58" itemprop="dateModified" datetime="2019-11-15T17:35:58+08:00">2019-11-15</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/" itemprop="url" rel="index"><span itemprop="name">jvm</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>java的执行引擎是虚拟机自己提供的，所以更加灵活可以支持应将不支持的指令集。（对硬件指令集的封装 :P）</p>
-<h2 id="栈帧"><a href="#栈帧" class="headerlink" title="栈帧"></a>栈帧</h2><p>  jvm执行方法调用的数据结构，一个方法从开始执行到结束执行是一次入栈出栈的过程。<br>  在便宜Class文件时候局部变量表占用内存的大小和栈帧深度都已经决定好了。<br>  一个方法执行调用链会很长，只有当前的线程中调用栈栈顶的栈帧才能被执行，该栈帧被称为当前栈帧（Current Frame）对应的方法是当前方法(Current Method),栈帧结构如图：</p>
-<p><img src="/JVM虚拟机执行引擎/framestack.png" alt="栈帧结构]">  </p>
-<h3 id="局部变量表"><a href="#局部变量表" class="headerlink" title="局部变量表"></a>局部变量表</h3><p>  总共有byte、short、int、short、boolean、float、refrence、returnAddress  8种。</p>
-<p>  在编译期就在方法的Code属性max_locals就决定了大小。局部变量表的大小单位是Slot,虚拟机规定者byte、short、int、boolean、refrence、returnAddress 数据类型可以用32位或者更小的空间存储，即4byte。如果是64位系统采用8byte但是需要用数据补齐等方式让其看起来是32位的。<br>  long、double则采用64位空间存储即8byte，注意这里虽然是用俩个32位空间存储但是因为是局部变量，但是是建立在线程的栈上没有共享问题是线程安全的。<br>  refrence要遵循俩个协议</p>
-<ol>
-<li>能找到堆中对象的数据起始位置</li>
-<li><p>能找到方法去中Class类的位置</p>
-<p>参数值到参数变量列表的转换，如果不是static方法，局部变量表第0位给隐藏变量“this”，参数分别占第1~n位。剩下的会分配给方法内生命的局部变量。局部变量的slot可以重用。</p>
-<p>导致的一个“坑”是假如当前的变量后面不需要了，如果后面没有对变量的声明，修改局部变量，在方法执行期间gc是不会回收该局部变量，所以有一些比较耗内存的变量在用完了后，会“a=null”，加速gc的回收</p>
-<p>局部变量不赋值是不能使的，因为没有向static变量有个准备阶段赋0值</p>
-</li>
-</ol>
-<h3 id="操作栈"><a href="#操作栈" class="headerlink" title="操作栈"></a>操作栈</h3><p>  后入先出，保存栈帧运行时候的数据，比如运算操作，方法调用等，实际上方法的执行就是操作栈不同的入栈/出栈。最大值在方法的属性Code规定的max_stack中在编译时候操作栈的深度就规定好了。栈元素的数据类型必须与自己吗指令序列严格匹配。</p>
-<h3 id="动态链接"><a href="#动态链接" class="headerlink" title="动态链接"></a>动态链接</h3><p>  栈帧都包含一个指向运行时常量池中，该栈帧所对应的方法的引用，用于在运行时将一些符号应用初始化成直接引用的操作。</p>
-<h3 id="接口返回地址"><a href="#接口返回地址" class="headerlink" title="接口返回地址"></a>接口返回地址</h3><ol>
-<li>Nomal Method Invocation Completion。即正常的方法</li>
-<li>Abrupt Method Invocation Completion。即出现异常的返回</li>
-</ol>
-<p>无论何种返回都会退回到上层调用者的位置，正常返回有可能将返回值给调用者，调用者会将返回值压入自己的操作栈中。异常返回无返回值。</p>
-<p>方法的推出等同于当前的栈帧出栈，同时把返回值压入调用者的操纵栈，修改PC指向方法调用的后面一条指令</p>
-<h2 id="方法调用"><a href="#方法调用" class="headerlink" title="方法调用"></a>方法调用</h2><p>方法调用有5个指令</p>
-<p>invokestatic:静态方法<br>invokespecial：构造方法，私有方法，父类方法<br>invokevirtual：调用所有的虚方法<br>invokeinterface：调用接口方法，会在运行时制定一个接口的实现类<br>invokedynmatic：运行时动态解析所应用的方法–这是用户设计的应到方法决定的</p>
-<h3 id="解析调用"><a href="#解析调用" class="headerlink" title="解析调用"></a>解析调用</h3><p>只在编译期就能决定，且不会在运行时修改的方法，这里指invokestatic、invokespecial指令调用的方法，还有final的方法。</p>
-<h3 id="分派"><a href="#分派" class="headerlink" title="分派"></a>分派</h3><p>由于java面向对象特性中的多态，导致编译器无法决定使用哪个版本需在运行期指定方法版本的方法。</p>
-<p>类A a=new B()。B是A的子类或者接口实现类，那么A是静态类型，B是真实类型。即父类、接口是静态类型，实现类、子类是真实类型。</p>
-<h4 id="静态分派"><a href="#静态分派" class="headerlink" title="静态分派"></a>静态分派</h4><p>如果方法的版本取决于类的静态类型，我们称为静态分派。主要场景用于重载见下面的方法。发生在编译阶段，因为在编译时候只能确认静态版本，但是在实际调用中我们只能通过真是的类型去推断选择一个合理版本</p>
-<h4 id="动态分派"><a href="#动态分派" class="headerlink" title="动态分派"></a>动态分派</h4><p>如果确认方法的版本去介于类的动态类型，我们称为动态分派。主要场景用于重写。原理是当我们在方法中声明一个对象时候，会把对象的实际数据（引用）压入操作栈，当需要调用方法时候，取出来的是实际数据调用的就是实际数据的方法版本。发生在运行期。</p>
-<h4 id="单分派和多分派"><a href="#单分派和多分派" class="headerlink" title="单分派和多分派"></a>单分派和多分派</h4><p>当一个方法有俩个宗树的静态、动态分派时候就是多分派。</p>
-<p>jvm实现动态分派的方法</p>
-<p>由于动态分派需要在class元数据中分析查找方法，为了提高性能，jvm在方法区简历了vtable(虚方法表)，当调用指令invokeinterface时候会直接通过vtable的索引查找需要的方法版本</p>
-<h3 id="vtable–virtual-interface"><a href="#vtable–virtual-interface" class="headerlink" title="vtable–virtual interface"></a>vtable–virtual interface</h3><p>虚方法表，由于动态分派非常频繁，jvm为了提高性能，在方法区为类创建了虚方法表，虚方法表保存的是类方法的真实地址，如果遇到没重写父类的方法地址就是父类的地址。一般在类加载的链接阶段，当类初始化0值完成方法表也初始化完成</p>
-<h3 id="动态类型语言支持"><a href="#动态类型语言支持" class="headerlink" title="动态类型语言支持"></a>动态类型语言支持</h3><p>动态类型语言主要是通过java.lang.invoke包支持。他和反射的区别是，发射时模拟类的创建和调用过程，而invoke模拟的是操作码</p>
-<h3 id="基于栈的字节码解释执行引擎"><a href="#基于栈的字节码解释执行引擎" class="headerlink" title="基于栈的字节码解释执行引擎"></a>基于栈的字节码解释执行引擎</h3><p>java的执行引擎是基于操作栈的，解释执行。与其相对的还有编译执行如图：</p>
-<p><img src="/public/JVM虚拟机执行引擎/编译原理.png" alt="编译原理.png"></p>
-<p>java的解释器和解释执行在jvm中，抽象语法树之前的步骤都独立于jvm虚拟机，所以java是半独立解释性语言。</p>
-<h3 id="基于栈或者基于寄存器"><a href="#基于栈或者基于寄存器" class="headerlink" title="基于栈或者基于寄存器"></a>基于栈或者基于寄存器</h3><ul>
-<li>基于寄存器的优缺点：优点：直接操作寄存器，不直接操作内存，CPU执行性能高性能高。缺点：由于直接在寄存器操作依赖硬件移植性差</li>
-<li>基于栈的优缺点：优点：移植性好，通过操作栈不直接操作寄存器，代码更为紧凑，简单。缺点：效率比基于寄存器低</li>
-</ul>
-<h3 id="解释执行过程"><a href="#解释执行过程" class="headerlink" title="解释执行过程"></a>解释执行过程</h3><p>将数据先push到操作栈中在pop到局部变量表，在从局部变量表load数据计算然后push到操作栈中。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2332,7 +2358,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">146</span>
+                    <span class="site-state-item-count">147</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

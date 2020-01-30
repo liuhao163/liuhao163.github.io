@@ -648,7 +648,7 @@
                 
                   <span class="post-meta-item-text">Edited on</span>
                 
-                <time title="Modified: 2020-01-30 21:16:38" itemprop="dateModified" datetime="2020-01-30T21:16:38+08:00">2020-01-30</time>
+                <time title="Modified: 2020-01-30 22:56:07" itemprop="dateModified" datetime="2020-01-30T22:56:07+08:00">2020-01-30</time>
               
             
           </span>
@@ -717,7 +717,7 @@
         
           
             <p>  我们在<a href="/Spring源码-ApplicationContext">Spring源码-ApplicationContext</a>中介绍了ApplicationContext都做了什么，其中会对容器中的BeanDefinition对应的class进行初始化，那么BeanDefinition是怎么产生的呢？其中ClassPathBeanDefinitionScanner是做什么用的呢？</p>
-<p>  ClassPathBeanDefinitionScanner类扫描器，作用通过对制定的basepackage进行扫描，创建、注册BeanDefinition。</p>
+<p>  ClassPathBeanDefinitionScanner类扫描器，作用通过对制定的basepackage进行扫描，创建、注册BeanDefinition。见类图:<br>  <img src="Spring源码-类扫描器-ClassPathBeanDefinitionScanner/ClassPathBeanDefinitionScanner.png" alt="ClassPathBeanDefinitionScanner类图"></p>
 <p>  见下面代码，在无参构造方法中初始化ClassPathBeanDefinitionScanner，之后调用scan(basePackages)将basePackages下的class文件生成BeanDefiniton同时注册</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">AnnotationConfigApplicationContext</span><span class="params">(String... basePackages)</span> </span>&#123;</span><br><span class="line">  <span class="comment">//无参构造函数，初始化reader和scanner，在父类GenericApplicationContext的无参构造方法初始化（beanFactory = new DefaultListableBeanFactory()），</span></span><br><span class="line">  <span class="keyword">this</span>();</span><br><span class="line">  <span class="comment">//扫描basePackages并且加载BeanDefinition</span></span><br><span class="line">  scan(basePackages);</span><br><span class="line">  <span class="comment">//刷新上下文</span></span><br><span class="line">  refresh();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//this()方法的内部</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">AnnotationConfigApplicationContext</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="comment">//IOC容器初始化注解BeanDefinition的读取器</span></span><br><span class="line">  <span class="keyword">this</span>.reader = <span class="keyword">new</span> AnnotatedBeanDefinitionReader(<span class="keyword">this</span>);</span><br><span class="line">  <span class="comment">//IOC容器初始化类扫描器</span></span><br><span class="line">  <span class="keyword">this</span>.scanner = <span class="keyword">new</span> ClassPathBeanDefinitionScanner(<span class="keyword">this</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <h2 id="scan的解析"><a href="#scan的解析" class="headerlink" title="scan的解析"></a>scan的解析</h2><p>   ClassPathBeanDefinitionScanner.scan()–&gt;ClassPathBeanDefinitionScanner.doScan(),doScan方法的逻辑如下</p>

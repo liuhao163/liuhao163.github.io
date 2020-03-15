@@ -4,6 +4,33 @@
   
     
     <entry>
+      <title>稳定性的看法</title>
+      <link href="/%E7%A8%B3%E5%AE%9A%E6%80%A7%E8%AE%A8%E8%AE%BA/"/>
+      <url>/%E7%A8%B3%E5%AE%9A%E6%80%A7%E8%AE%A8%E8%AE%BA/</url>
+      
+        <content type="html"><![CDATA[<h2 id="稳定性的定义"><a href="#稳定性的定义" class="headerlink" title="稳定性的定义"></a>稳定性的定义</h2><p>外界发生变化时（如：功能的发布、服务的故障），系统能稳定的对外提供服务</p><h2 id="稳定性的手段"><a href="#稳定性的手段" class="headerlink" title="稳定性的手段"></a>稳定性的手段</h2><h3 id="管理措施"><a href="#管理措施" class="headerlink" title="管理措施"></a>管理措施</h3><p>研发规范：</p><ul><li>制定代码规范，上线前codereview</li><li>制定版本管理规范，对于代码的merge规则，版本号的管理。</li></ul><p>上线规范：</p><ul><li>避开高峰期</li><li>上线前告知上下游风险</li><li>制定回滚方案</li><li>线上验收机制</li></ul><h3 id="服务隔离"><a href="#服务隔离" class="headerlink" title="服务隔离"></a>服务隔离</h3><p>  将核心服务和非核心服务分离，将经常变更的服务和稳定的服务隔离，将消耗资源的服务和非消耗资源的服务隔离。</p><p>  手段：业务拆分，异步化</p><p>  方式：通过以下3个维度拆分服务</p><ul><li>运行时隔离：适用场景共用资源池的情况。如：服务共用一个httpclient，一个慢请求会很占用ConnectionPool的线程不释放,针对此方案我们需要提前释放资源，保证其他请求正常进行。</li><li>进程隔离：适用场景服务拆分，梳理整个业务，然后根据该功能是否稳定，是否是核心服务，请求量大小来综合考虑，划分成不同的服务。</li><li>机器隔离：使用与流量凸涨的情况，我们可以将部分流量有针对性的切到新的机器上。比如：秒杀系统，甚至是有的VIP客户</li></ul><h3 id="冗余"><a href="#冗余" class="headerlink" title="冗余"></a>冗余</h3><p>  如果遇到机器故障，机房故障这种自身无法避免的情况。以上的隔离手段就会失效，这种情况我们要采用冗余的方式来处理。</p><p>  当和核心服务出现问题后我们可以通过切流等方式将故障转移到没有问题的服务上。</p><p>  冗余级别：</p><ul><li>集群内：采取的方式是N+2，即1个提供服务，2个是冗余</li><li><p>集群间、或者机房间：我们应该采取的服务是N+1，但是要保证1能接住此时的流量。</p><p>服务冗余的要点做到：独立部署、无状态、冗余的副本之间没有依赖。</p></li></ul><h3 id="容灾"><a href="#容灾" class="headerlink" title="容灾"></a>容灾</h3><p>服务隔离和冗余已经大部分影响系统稳定性的因素，但是无法解决突发情况，如：流量暴涨、被共计等，针对此我们要制定容灾容错机制。</p><p>手段：</p><ul><li>限流：自我保护的机制，对于上游调用采用多种降级措施（随机降级-简单易用）。</li><li>降级：功能禁用（功能降级）；采用缓存，不调用下游依赖服务（上游服务降级），个别服务消耗大量资源的停用服务（服务降级），非核心服务消耗大量数据库资源停用服务（服务降级）</li></ul><h3 id="演练"><a href="#演练" class="headerlink" title="演练"></a>演练</h3><p>  放火演练：检测系统稳定性，发现隐患，验证稳定性手段。<br>  演练根据级别分为：服务演练→服务演练→机器演练→集群级别→机房级别 。（建议做机器的放火演练）</p><p>  压测：明确系统瓶颈。</p><h3 id="描述稳定性的指标"><a href="#描述稳定性的指标" class="headerlink" title="描述稳定性的指标"></a>描述稳定性的指标</h3><p>  可用性指标：SLA（2个9到5个9）</p><p>  故障度量：PX（P3→P0）</p><p>  响应时间：time&lt;1s→time&lt;2s→time&lt;3s→time&gt;3s</p><p>  服务内部调用：time&lt;100ms→time&lt;200ms→time&lt;1s→time&gt;1s</p><p>总结，稳定性一般做到99.99%已经是很成熟的系统了。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 项目积累 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> 方法论 </tag>
+            
+            <tag> 稳定性 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>Spring源码-ApplicationContext</title>
       <link href="/Spring%E6%BA%90%E7%A0%81-ApplicationContext/"/>
       <url>/Spring%E6%BA%90%E7%A0%81-ApplicationContext/</url>
@@ -2933,11 +2960,11 @@
     
     
     <entry>
-      <title>JAVA线程-为什么局部变量是线程安全的</title>
-      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/"/>
-      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/</url>
+      <title>JAVA线程-开启多少线程合适</title>
+      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/"/>
+      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/</url>
       
-        <content type="html"><![CDATA[<h1 id="方法是如何被执行"><a href="#方法是如何被执行" class="headerlink" title="方法是如何被执行"></a>方法是如何被执行</h1><p>例如下面的程序</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">7</span>；</span><br><span class="line"><span class="keyword">int</span>[] b = fibonacci(a);</span><br><span class="line"><span class="keyword">int</span>[] c = b;</span><br></pre></td></tr></table></figure><p>当jvm调用fibonacci(a)时，通过cpu的寄存器找到方法的地址。cpu支持一种栈结构，他和方法息息相关，所以一般叫做调用栈。<br>栈这种数据结构的特点是后进先出，所以当一个遇到方法嵌套时候比如a–&gt;b–&gt;c，那么入栈的时候就是c–&gt;b–&gt;a，执行顺序也是c–&gt;b–&gt;a。</p><h1 id="方法中的局部变量"><a href="#方法中的局部变量" class="headerlink" title="方法中的局部变量"></a>方法中的局部变量</h1><p>  方法实际上是以栈帧为单位入栈的，一个方法从入口到返回都在一个栈帧中，栈帧和方法的生命周期是一样的，当方法结束，栈帧也就失效了，而方法中的局部变量都是保存在栈帧中的，他的生命周期也是在方法内部。且为了线程之间不相互干扰，每个线程都有一个独立的栈帧。综上，栈帧是线程安全的。</p><p>  这种方式有个名词叫线程封闭，即仅在单线程内访问数据，不共享就没有线程安全的问题。例如：我们常用的数据库连接池，connection的方法并没有声明线程安全，我们在使用中都是在一个方法内获取conenection，查询数据，关闭connecton，这这种线程封闭方式来解决线程安全的问题。</p>]]></content>
+        <content type="html"><![CDATA[<h1 id="为什么要使用多线程"><a href="#为什么要使用多线程" class="headerlink" title="为什么要使用多线程"></a>为什么要使用多线程</h1><p>  我们评价一个操作系统性能好的系统往往是俩点低延迟、高吞吐。做到这俩点，往往需要一优化算法，二有效利用硬件。对于一不在此讨论的范畴，而硬件利用率大致往往分俩类，即cpu的利用率，和i/o的利用。<br>  单线程时代：我们的程序往往是cpu和io设备相互配合执行，所以一个单线程的程序执行cpu操作时候io就要停下来等待cpu完成，为了提高io和cpu的利用率，操作系统为我们提供了多线程技术。<br>  线程1处理cpu的计算，线程2处理io请求。处理玩io请求后在切换回来，这样利用率就得到了提高</p><h1 id="线程多了就一定快么"><a href="#线程多了就一定快么" class="headerlink" title="线程多了就一定快么"></a>线程多了就一定快么</h1><p>  针对我们程序的特点分为，io密集型和计算密集型俩种。如果io操作执行的比例比较大就是io密集型，如果cpu计算的比例比较大就是计算密集型。<br>  在单核时代，对于计算密集型的业务增加线程反而会拖慢程序执行效率，因为只有一个核，所以同时只能有一个线程在运行，增加线程反而加大了线程切换的损耗。<br>  在多核时代，对于计算密集型的业务是可以通过增加线程提高性能的，但是设置应该是cpu的核数+1，充分利用起cpu。<br>  对于io密集型的业务，由于一般io的耗时比cpu要多的多，那么线程往往是cpu的核数*io耗时/cpu耗时+1。</p>]]></content>
       
       
       <categories>
@@ -2962,11 +2989,11 @@
     
     
     <entry>
-      <title>JAVA线程-开启多少线程合适</title>
-      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/"/>
-      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/</url>
+      <title>JAVA线程-为什么局部变量是线程安全的</title>
+      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/"/>
+      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/</url>
       
-        <content type="html"><![CDATA[<h1 id="为什么要使用多线程"><a href="#为什么要使用多线程" class="headerlink" title="为什么要使用多线程"></a>为什么要使用多线程</h1><p>  我们评价一个操作系统性能好的系统往往是俩点低延迟、高吞吐。做到这俩点，往往需要一优化算法，二有效利用硬件。对于一不在此讨论的范畴，而硬件利用率大致往往分俩类，即cpu的利用率，和i/o的利用。<br>  单线程时代：我们的程序往往是cpu和io设备相互配合执行，所以一个单线程的程序执行cpu操作时候io就要停下来等待cpu完成，为了提高io和cpu的利用率，操作系统为我们提供了多线程技术。<br>  线程1处理cpu的计算，线程2处理io请求。处理玩io请求后在切换回来，这样利用率就得到了提高</p><h1 id="线程多了就一定快么"><a href="#线程多了就一定快么" class="headerlink" title="线程多了就一定快么"></a>线程多了就一定快么</h1><p>  针对我们程序的特点分为，io密集型和计算密集型俩种。如果io操作执行的比例比较大就是io密集型，如果cpu计算的比例比较大就是计算密集型。<br>  在单核时代，对于计算密集型的业务增加线程反而会拖慢程序执行效率，因为只有一个核，所以同时只能有一个线程在运行，增加线程反而加大了线程切换的损耗。<br>  在多核时代，对于计算密集型的业务是可以通过增加线程提高性能的，但是设置应该是cpu的核数+1，充分利用起cpu。<br>  对于io密集型的业务，由于一般io的耗时比cpu要多的多，那么线程往往是cpu的核数*io耗时/cpu耗时+1。</p>]]></content>
+        <content type="html"><![CDATA[<h1 id="方法是如何被执行"><a href="#方法是如何被执行" class="headerlink" title="方法是如何被执行"></a>方法是如何被执行</h1><p>例如下面的程序</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">7</span>；</span><br><span class="line"><span class="keyword">int</span>[] b = fibonacci(a);</span><br><span class="line"><span class="keyword">int</span>[] c = b;</span><br></pre></td></tr></table></figure><p>当jvm调用fibonacci(a)时，通过cpu的寄存器找到方法的地址。cpu支持一种栈结构，他和方法息息相关，所以一般叫做调用栈。<br>栈这种数据结构的特点是后进先出，所以当一个遇到方法嵌套时候比如a–&gt;b–&gt;c，那么入栈的时候就是c–&gt;b–&gt;a，执行顺序也是c–&gt;b–&gt;a。</p><h1 id="方法中的局部变量"><a href="#方法中的局部变量" class="headerlink" title="方法中的局部变量"></a>方法中的局部变量</h1><p>  方法实际上是以栈帧为单位入栈的，一个方法从入口到返回都在一个栈帧中，栈帧和方法的生命周期是一样的，当方法结束，栈帧也就失效了，而方法中的局部变量都是保存在栈帧中的，他的生命周期也是在方法内部。且为了线程之间不相互干扰，每个线程都有一个独立的栈帧。综上，栈帧是线程安全的。</p><p>  这种方式有个名词叫线程封闭，即仅在单线程内访问数据，不共享就没有线程安全的问题。例如：我们常用的数据库连接池，connection的方法并没有声明线程安全，我们在使用中都是在一个方法内获取conenection，查询数据，关闭connecton，这这种线程封闭方式来解决线程安全的问题。</p>]]></content>
       
       
       <categories>

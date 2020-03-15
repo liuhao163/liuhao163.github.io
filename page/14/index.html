@@ -345,6 +345,257 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/误删数据后的处理/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/误删数据后的处理/" class="post-title-link" itemprop="url">误删数据后的处理</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-15 10:28:12" itemprop="dateCreated datePublished" datetime="2019-02-15T10:28:12Z">2019-02-15</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-01 14:53:26" itemprop="dateModified" datetime="2019-03-01T14:53:26Z">2019-03-01</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql高可用架构/" itemprop="url" rel="index"><span itemprop="name">Mysql高可用架构</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="误删数据的几种情况"><a href="#误删数据的几种情况" class="headerlink" title="误删数据的几种情况"></a>误删数据的几种情况</h1><p>对于误删除数据进行了简单的分类：</p>
+<ol>
+<li>使用delete语句误删除数据航；</li>
+<li>使用droptable或者truncate table误删除表数据；</li>
+<li>使用dropdatabase语句误删除数据库；</li>
+<li>使用rm命令删除整个mysql实例；</li>
+</ol>
+<h2 id="误删行–用delete"><a href="#误删行–用delete" class="headerlink" title="误删行–用delete"></a>误删行–用delete</h2><ul>
+<li>方法：可使用工具Flashback来恢复误删除的数据；</li>
+<li>条件：使用FalshBack的条件，binlog_format=row和 binlog_row_image=FULL</li>
+<li>原理：解析binlog，并且把binlog的逆向修改，那会原数据库重放；</li>
+<li>注意：<ul>
+<li>逆向后不要重新那回主库重放，要先从一个林水库开始，然后由临时库在恢复到主库上，防止直接在一个在线的主库上还原，破坏了数据关联，造成数据2次破坏；</li>
+<li>数据库的防范于未然：sql语句的安全模式：set [global] sql_safe_updates = 1，这样当update delete没有where条件时候就会报错；</li>
+</ul>
+</li>
+</ul>
+<h2 id="drop-table或者truncate-table"><a href="#drop-table或者truncate-table" class="headerlink" title="drop table或者truncate table"></a>drop table或者truncate table</h2><p>  delete删除全表往往性能会很差，因为要写undolog redolog binlog等，这时候如果有删除全表的需求就可以考虑用：drop table或者truncate table来删除<br>。<br>  当使用这几个命令时候我们的binlog是statement格式的，所以也没法用上面的方法恢复数据。</p>
+<p>  误删库表恢复的流程是怎样的呢？</p>
+<ol>
+<li>去最后一次全量备份的库，恢复出一个临时库；</li>
+<li>在日志备份里，取当前备份点之后的日志，除了误删除的语句，应用到临时库中；</li>
+</ol>
+<p>如图：<br><img src="误删数据后的处理/误删库恢复流程.png" alt="avator"></p>
+<p>注意：</p>
+<ol>
+<li>如果临时库的实例上有多个数据库，在使用mysqlbinlog命令可以加上–database参数，来指定误删除库；</li>
+<li>恢复数据跳过误删除的binlog的方法上：<ol>
+<li>如果原实例没有GTID模式:我们只能在备份日志中先找到误删除的那个操作用-stop-position参数执行前的日志，在用-start-position从误删除之后的操作执行；</li>
+<li>GTID模式:我们可以在临时库上执行：set gtid_next=gtid1;begin;commit；先把这个gtid加到临时库的gtidset中，之后重放binlog会自动跳过这个操作</li>
+</ol>
+</li>
+</ol>
+<h3 id="恢复表和库的加速"><a href="#恢复表和库的加速" class="headerlink" title="恢复表和库的加速"></a>恢复表和库的加速</h3><p>上面的做法还是不够快，因为：</p>
+<ol>
+<li>如果是误删表：我们期望只恢复这张表的数据，但是mysqlbinlog工具不能只解析一张表的日志；</li>
+<li>用mysqlbinlog恢复出的应用日志，只能是单线程恢复，无法利用并行复制的功能；</li>
+</ol>
+<p>解决方案：</p>
+<p>第一种方法：临时库在被全量恢复（设置了gtid后）后，将这个临时库置为主库的从库，然后这个临时库在执行start salve之前执行；</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#让临时库只同步误删除的表，同时主-&gt;备可以利用并行复制</span></span><br><span class="line"><span class="keyword">change</span> <span class="keyword">replication</span> filter replicate_do_table = (tbl_name)</span><br></pre></td></tr></table></figure>
+<p>如图：<br><img src="误删数据后的处理/误删库加速.png" alt="avator"></p>
+<h3 id="mysql的binlog丢失"><a href="#mysql的binlog丢失" class="headerlink" title="mysql的binlog丢失"></a>mysql的binlog丢失</h3><p>有一种情况，如果要恢复的是个很久远的库，备库上又不能无限制的保存binlog,导致需要的binlog备库没有log的情况该如何操作呢？</p>
+<ol>
+<li>假设临时库上需要的master.000005，而备库上从master.000007开始的，意味这我们要从备份系统上下载master.000005，master.000006放到备库上</li>
+<li>之后打开备库的master.index文件上（根据配置名字可能不同），加上”./master.000005”，”./master.000006”</li>
+<li>重启备库，让备库识别这俩个文件</li>
+<li>建立主备关系开始同步数据</li>
+</ol>
+<p>综上：误删库的恢复是通过定期全量备份+增量备份来恢复数据库，建议DBA把流程做成自动化，同时定期演练减伤损失。</p>
+<h2 id="搭建延迟复制备库"><a href="#搭建延迟复制备库" class="headerlink" title="搭建延迟复制备库"></a>搭建延迟复制备库</h2><p>假设：当一个大库的备份周期是1周一备份，同时在第6天发生了误操作，这时候就要恢复6天的binlog，恢复时间可能是按天计的，对于在线业务是不允许的。这时候我们可以通过搭建一个延迟赋值的备库来解决。</p>
+<ol>
+<li>这个机制是mysql5.6之后引入的有一个机制，我们在备库可以通过命令CHANGE MASTER TO MASTER_DELAY=N（单位：秒），即延迟N秒同步命令。</li>
+<li>比如：CHANGE MASTER TO MASTER_DELAY=3600，那么当一个误操作发生后，这个备库会在一个小时以后收到这条命令，我们可以在这段时间内stop salve;</li>
+<li>然后恢复这一个小时的数据并且跳过这个命令即可；</li>
+</ol>
+<h2 id="预防误删除库-表的方法"><a href="#预防误删除库-表的方法" class="headerlink" title="预防误删除库/表的方法"></a>预防误删除库/表的方法</h2><p>我们应该尽量最大化的目标误删除操作：</p>
+<ol>
+<li><p>账号分离：</p>
+<ol>
+<li>业务账号应该只有MDL权限</li>
+<li>日常的数据查询值用只读账号</li>
+</ol>
+</li>
+<li><p>指定操作规范：</p>
+<ol>
+<li>删除表前线对表改名，观察一段时间</li>
+<li>该表明要有命名规范比如_to_be_deleted</li>
+</ol>
+</li>
+</ol>
+<h2 id="rm删除"><a href="#rm删除" class="headerlink" title="rm删除"></a>rm删除</h2><p>HA会选取一个从库作为主库，我们只需要回复这个机器即可；<br>为防止这个事情发生可以做跨机房或者跨城市备份</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql索引/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2261,264 +2512,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql的主从切换/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/mysql/mysql的主从切换/" class="post-title-link" itemprop="url">mysql数据的完整性</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-04 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-04T00:00:00Z">2019-02-04</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-01 14:53:26" itemprop="dateModified" datetime="2019-03-01T14:53:26Z">2019-03-01</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql高可用架构/" itemprop="url" rel="index"><span itemprop="name">Mysql高可用架构</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="MySql的主从切换"><a href="#MySql的主从切换" class="headerlink" title="MySql的主从切换"></a>MySql的主从切换</h1><p>大部分业务数据库都是读多写少，我们在实际使用情况上往往会遇到读性能，本章主要讲述如何解决读延迟</p>
-<h2 id="一主多从的架构"><a href="#一主多从的架构" class="headerlink" title="一主多从的架构"></a>一主多从的架构</h2><p>我们一般会采取一主多从架构，主库承担所有的写和一部分读的任务，丛库根据承担读的任务。</p>
-<p>如图：<br><img src="/images/mysql/mysql一主多从架构.png" alt="avatar"></p>
-<ol>
-<li>A和A’互为主备</li>
-<li>B、C、D是A的从库</li>
-</ol>
-<p>下面我们来通论下当主库A发生故障后，A’成为主库，BCD的主库也要都指向A’，下面我们来讨论下遇到这种情况，mysql是如何做主从切换的。<br>如图：<br><img src="/images/mysql/mysql一主多从故障.png" alt="avatar"></p>
-<h3 id="基于位点的主备切换"><a href="#基于位点的主备切换" class="headerlink" title="基于位点的主备切换"></a>基于位点的主备切换</h3><p>当把B置为A’的从库时候要执行如下命令</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CHANGE</span> <span class="keyword">MASTER</span> <span class="keyword">TO</span></span><br><span class="line">MASTER_HOST=$host_name</span><br><span class="line">MASTER_PORT=$port</span><br><span class="line">MASTER_USER=$user_name</span><br><span class="line">MASTER_PASSWORD=$<span class="keyword">password</span></span><br><span class="line">MASTER_LOG_FILE=$master_log_name</span><br><span class="line">MASTER_LOG_POS=$master_log_pos</span><br></pre></td></tr></table></figure>
-<ul>
-<li>host_name、port、user_name、password主库的IP、端口、用于主从同步的数据库用户名、密码</li>
-<li>master_log_name，和master_log_pos就是A’库binlog的文件名和位置成为位点；</li>
-</ul>
-<p>原来的B是A的从库，所以B中记录的是A的位点，在change master之后，B要将位点置为A’的位点，由于A和A’记录的位点不一样，所以要大概估算出一个靠前一点的位点，在忽略掉主从不同步的情况。为什么要靠前一点的主要是有下面这种情况，下面语句是分析mysqlbinlog找到位点</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mysqlbinlog File <span class="comment">--stop-datetime=T --start-datetime=T</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#比如这是看到了pos是123，我们B在chenagemaster时候可以往前一点比如110；</span></span><br></pre></td></tr></table></figure>
-<blockquote>
-<p>在A插入了一行R，同时同步给B和A’这时候A出现故障，B和A’都已经有了R行数据，如果这时候changemaster会提示主键冲突，停止同步。</p>
-</blockquote>
-<p>解决的方案：</p>
-<ol>
-<li>主动跳过1个事务,如下的命令，每次遇到这样的错误都跳过知道最后没有错误为止</li>
-<li>通过设置slave_skip_errors参数，直接跳过指定错误，常见的错误如下，可以直接跳过“1062，1032”<ol>
-<li>1062 错误是插入数据时唯一键冲突；</li>
-<li>1032 错误是删除数据时找不到行。</li>
-</ol>
-</li>
-</ol>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">set</span> <span class="keyword">global</span> sql_slave_skip_counter=N;</span><br><span class="line"><span class="keyword">start</span> <span class="keyword">slave</span>;</span><br></pre></td></tr></table></figure>
-<p>注意：前提是这俩种操作是对业务无损的。</p>
-<h3 id="GTID–-since-v5-6"><a href="#GTID–-since-v5-6" class="headerlink" title="GTID– since v5.6"></a>GTID– since v5.6</h3><p>基于位面做主从切换比较复杂且很容易出错，所以mysql在5.6后引入了gtid彻底解决了这个问题。</p>
-<p>GTID全程是Global Transaction Identifier,即全局事物ID，即一个事物提交后生成的全局唯一ID，他有俩个部分组成</p>
-<blockquote>
-<p>GTID=server_uuid:gno（官方定义：GTID=source_id:transaction_id）<br>其中：</p>
-</blockquote>
-<ol>
-<li>server_uuid是mysql的实例ID</li>
-<li>gno是一个递增的整数，</li>
-</ol>
-<p>如何启动gtid呢？</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gtid_mode=on</span><br><span class="line">enforce_gtid_consistency=on</span><br></pre></td></tr></table></figure>
-<p>下图就是我在主库上执行了一条插入看到的binlog,其中SET @@SESSION.GTID_NEXT= ‘b01b34d1-25cf-11e9-8e68-9ec1c2413262:1’就是这条事物的GTID</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show binlog events IN 'mysql-bin.000028';</span><br><span class="line">+<span class="comment">------------------+-----+----------------+-----------+-------------+-------------------------------------------------------------------+</span></span><br><span class="line">| Log_name         | Pos | Event_type     | Server_id | End_log_pos | Info                                                              |</span><br><span class="line">+<span class="comment">------------------+-----+----------------+-----------+-------------+-------------------------------------------------------------------+</span></span><br><span class="line">| mysql-bin.000028 |   4 | Format_desc    |         1 |         123 | Server ver: 5.7.25-log, Binlog ver: 4                             |</span><br><span class="line">| mysql-bin.000028 | 123 | Previous_gtids |         1 |         154 |                                                                   |</span><br><span class="line">| mysql-bin.000028 | 154 | Gtid           |         1 |         219 | <span class="keyword">SET</span> @@SESSION.GTID_NEXT= <span class="string">'b01b34d1-25cf-11e9-8e68-9ec1c2413262:1'</span> |</span><br><span class="line">| mysql-<span class="keyword">bin</span><span class="number">.000028</span> | <span class="number">219</span> | <span class="keyword">Query</span>          |         <span class="number">1</span> |         <span class="number">293</span> | <span class="keyword">BEGIN</span>                                                             |</span><br><span class="line">| mysql-<span class="keyword">bin</span><span class="number">.000028</span> | <span class="number">293</span> | Table_map      |         <span class="number">1</span> |         <span class="number">340</span> | table_id: <span class="number">108</span> (liuhao.t)                                          |</span><br><span class="line">| mysql-<span class="keyword">bin</span><span class="number">.000028</span> | <span class="number">340</span> | Write_rows     |         <span class="number">1</span> |         <span class="number">384</span> | table_id: <span class="number">108</span> flags: STMT_END_F                                   |</span><br><span class="line">| mysql-<span class="keyword">bin</span><span class="number">.000028</span> | <span class="number">384</span> | Xid            |         <span class="number">1</span> |         <span class="number">415</span> | <span class="keyword">COMMIT</span> <span class="comment">/* xid=23 */</span>                                               |</span><br><span class="line">+<span class="comment">------------------+-----+----------------+-----------+-------------+-------------------------------------------------------------------+</span></span><br></pre></td></tr></table></figure>
-<p>gtid的分配方式:</p>
-<ol>
-<li>当gtid_next=automatic时候，代表使用默认值:<ol>
-<li>记录binlog时候先记录一行SET @@SESSION.GTID_NEXT=</li>
-<li>把这个gtid加入到本地实例的gtid集合中（Executed_Gtid_set）</li>
-</ol>
-</li>
-<li>如果gtid_next=是一个指定的gtid值时候，比如通过set gtid_next=’current_gtid’指定为当前的current_gtid时候，<ol>
-<li>如果current_gtid已经存在于gtid集合，接下来执行这个事务会跳过这个事务；</li>
-<li>如果current_gtid不存在于gtid这个集合中，将这个current_gtid分配给新的事务，说明系统不需要分配新的gtid,gno也不需要加1</li>
-</ol>
-</li>
-</ol>
-<p>gtid的使用方法</p>
-<p>加入一个库X是有一条数据（1,1),他的的gtid=aaaaaaaa-cccc-dddd-eeee-0000000000000:1<br>同时X作为了Y的从库，Y写入了一条数据（1,1）,他的gtid=aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10</p>
-<p>我们在X上执行如下的命令</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#将X的gtid_next置为Y库的aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10</span></span><br><span class="line"><span class="keyword">set</span> gtid_next=<span class="string">'aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10'</span>;</span><br><span class="line"><span class="comment">#提交一个空事物，把“aaaaaaaa-cccc-dddd-eeee-ffffffffffff:10”这个gtid置为X的Executed_Gtid_set中，遇到冲突可以跳过</span></span><br><span class="line"><span class="keyword">begin</span>;</span><br><span class="line"><span class="keyword">commit</span>;</span><br><span class="line"><span class="comment">#置gtid_next为automatic,下一个事物就变为了“aaaaaaaa-cccc-dddd-eeee-ffffffffffff:11”</span></span><br><span class="line"><span class="keyword">set</span> gtid_next=<span class="keyword">automatic</span>;</span><br><span class="line"><span class="comment">#开启从库</span></span><br><span class="line"><span class="keyword">start</span> <span class="keyword">slave</span>;</span><br></pre></td></tr></table></figure>
-<h4 id="基于GTID的主备切换"><a href="#基于GTID的主备切换" class="headerlink" title="基于GTID的主备切换"></a>基于GTID的主备切换</h4><p>执行如下命令注意,master_auto_position表示的这个主备关系支持GTID协议，我们之前的MASTER_LOG_FILE和MASTER_LOG_POS已经不需要指定了。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CHANGE</span> <span class="keyword">MASTER</span> <span class="keyword">TO</span></span><br><span class="line">MASTER_HOST=$host_name</span><br><span class="line">MASTER_PORT=$port</span><br><span class="line">MASTER_USER=$user_name</span><br><span class="line">MASTER_PASSWORD=$<span class="keyword">password</span></span><br><span class="line">master_auto_position=<span class="number">1</span></span><br></pre></td></tr></table></figure>
-<p>B通过CHANGE MASTER变为A’的从库，B的gtid_set为set_b，A的gtid_set为set_a，在start slave时候逻辑如下：</p>
-<ol>
-<li>A和B建立主备关系;</li>
-<li>B把set_b发个A’;</li>
-<li>A’计算set_a和set_b的差集，差集说明是B需要执行的binlog,同时判断A是否包含了这些binlog<ol>
-<li>不包含，直接报错，说明A已经把这些BINLOG删除了</li>
-<li>如果全部包含，A’从自己的binlog里找出第一个差集中的binlog开始同步</li>
-</ol>
-</li>
-<li>之后从这个事务开始一直往B同步</li>
-</ol>
-<p>这种方式，由之前通过位点同步的，由从库来决定从哪里同步，到主库通过获取从库的gtid来计算出从哪里开始同步。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/13/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/13/">13</a><span class="page-number current">14</span><a class="page-number" href="/page/15/">15</a><a class="extend next" rel="next" href="/page/15/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
+    <a class="extend prev" rel="prev" href="/page/13/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/13/">13</a><span class="page-number current">14</span><a class="page-number" href="/page/15/">15</a><a class="page-number" href="/page/16/">16</a><a class="extend next" rel="next" href="/page/15/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
   </nav>
 
 
@@ -2560,7 +2558,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">150</span>
+                    <span class="site-state-item-count">151</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2756,7 +2754,11 @@
                     
                       
                     
-                    <span class="site-state-item-count">53</span>
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">55</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>

@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://liuhao163.github.io/"/>
-  <updated>2020-02-02T12:23:57.000Z</updated>
+  <updated>2020-03-15T16:47:15.000Z</updated>
   <id>https://liuhao163.github.io/</id>
   
   <author>
@@ -15,6 +15,34 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>稳定性的看法</title>
+    <link href="https://liuhao163.github.io/%E7%A8%B3%E5%AE%9A%E6%80%A7%E8%AE%A8%E8%AE%BA/"/>
+    <id>https://liuhao163.github.io/稳定性讨论/</id>
+    <published>2020-03-16T00:42:25.000Z</published>
+    <updated>2020-03-15T16:47:15.000Z</updated>
+    
+    <content type="html"><![CDATA[<h2 id="稳定性的定义"><a href="#稳定性的定义" class="headerlink" title="稳定性的定义"></a>稳定性的定义</h2><p>外界发生变化时（如：功能的发布、服务的故障），系统能稳定的对外提供服务</p><h2 id="稳定性的手段"><a href="#稳定性的手段" class="headerlink" title="稳定性的手段"></a>稳定性的手段</h2><h3 id="管理措施"><a href="#管理措施" class="headerlink" title="管理措施"></a>管理措施</h3><p>研发规范：</p><ul><li>制定代码规范，上线前codereview</li><li>制定版本管理规范，对于代码的merge规则，版本号的管理。</li></ul><p>上线规范：</p><ul><li>避开高峰期</li><li>上线前告知上下游风险</li><li>制定回滚方案</li><li>线上验收机制</li></ul><h3 id="服务隔离"><a href="#服务隔离" class="headerlink" title="服务隔离"></a>服务隔离</h3><p>  将核心服务和非核心服务分离，将经常变更的服务和稳定的服务隔离，将消耗资源的服务和非消耗资源的服务隔离。</p><p>  手段：业务拆分，异步化</p><p>  方式：通过以下3个维度拆分服务</p><ul><li>运行时隔离：适用场景共用资源池的情况。如：服务共用一个httpclient，一个慢请求会很占用ConnectionPool的线程不释放,针对此方案我们需要提前释放资源，保证其他请求正常进行。</li><li>进程隔离：适用场景服务拆分，梳理整个业务，然后根据该功能是否稳定，是否是核心服务，请求量大小来综合考虑，划分成不同的服务。</li><li>机器隔离：使用与流量凸涨的情况，我们可以将部分流量有针对性的切到新的机器上。比如：秒杀系统，甚至是有的VIP客户</li></ul><h3 id="冗余"><a href="#冗余" class="headerlink" title="冗余"></a>冗余</h3><p>  如果遇到机器故障，机房故障这种自身无法避免的情况。以上的隔离手段就会失效，这种情况我们要采用冗余的方式来处理。</p><p>  当和核心服务出现问题后我们可以通过切流等方式将故障转移到没有问题的服务上。</p><p>  冗余级别：</p><ul><li>集群内：采取的方式是N+2，即1个提供服务，2个是冗余</li><li><p>集群间、或者机房间：我们应该采取的服务是N+1，但是要保证1能接住此时的流量。</p><p>服务冗余的要点做到：独立部署、无状态、冗余的副本之间没有依赖。</p></li></ul><h3 id="容灾"><a href="#容灾" class="headerlink" title="容灾"></a>容灾</h3><p>服务隔离和冗余已经大部分影响系统稳定性的因素，但是无法解决突发情况，如：流量暴涨、被共计等，针对此我们要制定容灾容错机制。</p><p>手段：</p><ul><li>限流：自我保护的机制，对于上游调用采用多种降级措施（随机降级-简单易用）。</li><li>降级：功能禁用（功能降级）；采用缓存，不调用下游依赖服务（上游服务降级），个别服务消耗大量资源的停用服务（服务降级），非核心服务消耗大量数据库资源停用服务（服务降级）</li></ul><h3 id="演练"><a href="#演练" class="headerlink" title="演练"></a>演练</h3><p>  放火演练：检测系统稳定性，发现隐患，验证稳定性手段。<br>  演练根据级别分为：服务演练→服务演练→机器演练→集群级别→机房级别 。（建议做机器的放火演练）</p><p>  压测：明确系统瓶颈。</p><h3 id="描述稳定性的指标"><a href="#描述稳定性的指标" class="headerlink" title="描述稳定性的指标"></a>描述稳定性的指标</h3><p>  可用性指标：SLA（2个9到5个9）</p><p>  故障度量：PX（P3→P0）</p><p>  响应时间：time&lt;1s→time&lt;2s→time&lt;3s→time&gt;3s</p><p>  服务内部调用：time&lt;100ms→time&lt;200ms→time&lt;1s→time&gt;1s</p><p>总结，稳定性一般做到99.99%已经是很成熟的系统了。</p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;h2 id=&quot;稳定性的定义&quot;&gt;&lt;a href=&quot;#稳定性的定义&quot; class=&quot;headerlink&quot; title=&quot;稳定性的定义&quot;&gt;&lt;/a&gt;稳定性的定义&lt;/h2&gt;&lt;p&gt;外界发生变化时（如：功能的发布、服务的故障），系统能稳定的对外提供服务&lt;/p&gt;
+&lt;h2 id=&quot;稳定性的手段
+      
+    
+    </summary>
+    
+      <category term="项目积累" scheme="https://liuhao163.github.io/categories/%E9%A1%B9%E7%9B%AE%E7%A7%AF%E7%B4%AF/"/>
+    
+    
+      <category term="方法论" scheme="https://liuhao163.github.io/tags/%E6%96%B9%E6%B3%95%E8%AE%BA/"/>
+    
+      <category term="稳定性" scheme="https://liuhao163.github.io/tags/%E7%A8%B3%E5%AE%9A%E6%80%A7/"/>
+    
+  </entry>
   
   <entry>
     <title>Spring源码-ApplicationContext</title>
@@ -615,36 +643,6 @@
     
       <category term="jvm" scheme="https://liuhao163.github.io/categories/java/jvm/"/>
     
-    
-  </entry>
-  
-  <entry>
-    <title>Redis-源码理解</title>
-    <link href="https://liuhao163.github.io/Redis-%E6%BA%90%E7%A0%81%E7%90%86%E8%A7%A3/"/>
-    <id>https://liuhao163.github.io/Redis-源码理解/</id>
-    <published>2019-10-11T14:27:15.000Z</published>
-    <updated>2019-10-15T11:40:42.000Z</updated>
-    
-    <content type="html"><![CDATA[<h2 id="RedisObject"><a href="#RedisObject" class="headerlink" title="RedisObject"></a>RedisObject</h2><p>  所有的Redis对象都有如下的头信息</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ReidsObject</span>&#123;</span></span><br><span class="line">    int4 type; <span class="comment">//类型 4bit</span></span><br><span class="line">    int4 encoding; <span class="comment">//编码方式 4bit</span></span><br><span class="line">    int24 lru; <span class="comment">//lru时间戳 24bit</span></span><br><span class="line">    int32 refcount; <span class="comment">//引用计数如果为0回收 4byte</span></span><br><span class="line">    <span class="keyword">void</span> *ptr; <span class="comment">//指针 8byte</span></span><br><span class="line">&#125;robj</span><br></pre></td></tr></table></figure><p>  每一中RedisObject的数据类型对应一个type,但是根据情况可能对应多个encoding</p><h2 id="字符串的原理"><a href="#字符串的原理" class="headerlink" title="字符串的原理"></a>字符串的原理</h2><p>  Redis的字符串叫SDS格式如下</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">SDS</span>&lt;T&gt;&#123;</span></span><br><span class="line">    T capacity; <span class="comment">//容量 1byte</span></span><br><span class="line">    T len; <span class="comment">//实际长度 1byte</span></span><br><span class="line">    byte flags; <span class="comment">//特殊标志位 1byte</span></span><br><span class="line">    byte[] content; <span class="comment">//数组长度</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>  redis的字符串支持修改，为了减少修改的成本会预先申请capacity个长度的byte数组，当数组写入字符串的时候根据len定位。好处如下：</p><ul><li>当发生追加等操作时候不需要申请新的数组，copy原数组</li><li>获取字符串长度时候只需要访问len变量即可，不需要遍历数组</li><li><p>len和capacity使用泛型T可以针对长度将变量设置为byte short。对对象用到了极致</p><p>redis的字符串在小于44字节的时候encoding是embstr,大于44字节的encoding是raw。如果字符串是embstr，分配内存往往RedisObject和SDS是紧挨着的；如果是raw内存是不连续的；为什么是44个字节，原理如下：</p></li><li>为什么是44个字节<ul><li>SDS除content最少占用ReidsObject占16byte+SDS的3byte(假设这时候content为空)=19byte</li><li>由于redis的内存管理工具分配方式是8/16/32/64，由于头文件占据了19空间，所以至少分配32字节。当content+redisObj需要分配64字节,那么content最多存储45字节，减去最后的空字符NULL，剩余44字节。</li></ul></li><li>超过这个阈值Redis会认为对象是个大字符串适合用raw去存</li></ul><h2 id="dict"><a href="#dict" class="headerlink" title="dict"></a>dict</h2><p>  Redis的hash结构，所有的key-value是一个全局的dict，以及设置了expire的key-value，另外zset的value–score的对应关系也是通过字典结构。</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">RedisDb</span>&#123;</span></span><br><span class="line">dict* dict;</span><br><span class="line">dict* expires;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">zset</span>&#123;</span></span><br><span class="line">    dict *dict   <span class="comment">// value=&gt;score</span></span><br><span class="line">    zskiplist *zsl</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>  dict采用的rehash策略是渐进式的rehash,防止hash过大rehash影响主流程。采用的hash算法是siphash</p><p>  扩容：当元素等于dict数组长度时候会扩容，扩容为原来的2倍，如果遇到bgsave尽量不会去扩容，但是如果当元素打到dict数组的5倍会进行强制扩容<br>  缩容：当元素低于dict数组长度10%会缩容。缩容不会考虑bgsave。</p><h2 id="ziplist"><a href="#ziplist" class="headerlink" title="ziplist"></a>ziplist</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ziplist</span>&lt;T&gt;&#123;</span></span><br><span class="line">int32  zlbytes; <span class="comment">//压缩表占用自己数</span></span><br><span class="line">int32  zltail_offset; <span class="comment">//最后一位偏移量用于到这遍历</span></span><br><span class="line">int16 length; <span class="comment">//长度</span></span><br><span class="line">T[] entries; <span class="comment">//元素列表</span></span><br><span class="line">int8 zlend;  <span class="comment">//压缩列表的结束标记，值：0xFF</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">srtuct entry&#123;</span><br><span class="line">    <span class="keyword">int</span>&lt;var&gt; prevlen; <span class="comment">//前一个长度</span></span><br><span class="line">    <span class="keyword">int</span>&lt;var&gt; encoding; <span class="comment">//元素类型编码 小于254时候一个字节，大于254时候5个字节第一个自己是254（0xFE）</span></span><br><span class="line">    optional byte[] contennt</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><h2 id="intset"><a href="#intset" class="headerlink" title="intset"></a>intset</h2><p>当集合set是整数且个数较小时候会考虑使用intset</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">intset</span>&lt;T&gt;&#123;</span></span><br><span class="line">    int32 encoding;</span><br><span class="line">    int32 length;</span><br><span class="line">    <span class="keyword">int</span>&lt;T&gt; content;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><h2 id="quicklist"><a href="#quicklist" class="headerlink" title="quicklist"></a>quicklist</h2><p>list采用这种数据结构是ziplist和linkedlist的整合，将linkedlist按照ziplist分段，时内存更紧凑，每一段在用链表链接起来。</p><h2 id="skiplist"><a href="#skiplist" class="headerlink" title="skiplist"></a>skiplist</h2><p> zset采用这种方式，优点：快速定位.它的层数是2的64次方。<br> zset的rank的排名是通过zslforward的span对象计算出来的每次插入的时候都会维护这个值，表示当前层到这个节点跳过了多少节点</p>]]></content>
-    
-    <summary type="html">
-    
-      
-      
-        &lt;h2 id=&quot;RedisObject&quot;&gt;&lt;a href=&quot;#RedisObject&quot; class=&quot;headerlink&quot; title=&quot;RedisObject&quot;&gt;&lt;/a&gt;RedisObject&lt;/h2&gt;&lt;p&gt;  所有的Redis对象都有如下的头信息&lt;/p&gt;
-&lt;figure c
-      
-    
-    </summary>
-    
-      <category term="redis" scheme="https://liuhao163.github.io/categories/redis/"/>
-    
-    
-      <category term="数据库" scheme="https://liuhao163.github.io/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/"/>
-    
-      <category term="nosql" scheme="https://liuhao163.github.io/tags/nosql/"/>
-    
-      <category term="redis" scheme="https://liuhao163.github.io/tags/redis/"/>
     
   </entry>
   

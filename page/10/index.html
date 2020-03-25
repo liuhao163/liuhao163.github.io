@@ -345,6 +345,192 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Semaphore-如何构建限流器/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/Semaphore-如何构建限流器/" class="post-title-link" itemprop="url">Semaphore:如何构建限流器</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-04-21 12:53:22" itemprop="dateCreated datePublished" datetime="2019-04-21T12:53:22Z">2019-04-21</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-04-24 11:07:59" itemprop="dateModified" datetime="2019-04-24T11:07:59Z">2019-04-24</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="信号量模型"><a href="#信号量模型" class="headerlink" title="信号量模型"></a>信号量模型</h1><p>如图：</p>
+<p><img src="./信号量模型.png" alt="avatar"></p>
+<p>简单来说就是一个队列，一个计数器，三个方法</p>
+<p> init()–初始化队列和信号量<br> down()–信号量-1如果&lt;0,当前线程阻塞，并且进入队列等待。<br> up()–信号量+1如果&gt;=0,则唤醒一个线程别且把它从当前队列中剔除。</p>
+<h1 id="在java当中的Semaphore的使用"><a href="#在java当中的Semaphore的使用" class="headerlink" title="在java当中的Semaphore的使用"></a>在java当中的Semaphore的使用</h1> <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"> <span class="keyword">static</span> <span class="keyword">int</span> count;</span><br><span class="line"><span class="comment">// 初始化信号量</span></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">final</span> Semaphore s </span><br><span class="line">    = <span class="keyword">new</span> Semaphore(<span class="number">1</span>);</span><br><span class="line"><span class="comment">// 用信号量保证互斥    </span></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">addOne</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  s.acquire();</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    count+=<span class="number">1</span>;</span><br><span class="line">  &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">    s.release();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>信号量是如何保证原子性的呢？<br>俩个线程都执行s.acquire()是原子性的会修改计数器，假设线程1先执行，所以计数器是0，线程2为-1，因为线程2小于0所以线程2阻塞，并且将当前线程加入到队列中线程1大于等于0所以线程1执行count+=1;这时候线程1执行s.release();计数器为0，大于等于0，所以唤醒队列中的一个线程。</p>
+<h1 id="Semaphore的作用"><a href="#Semaphore的作用" class="headerlink" title="Semaphore的作用"></a>Semaphore的作用</h1><p>和Lock相比可以同时允许多个线程同时访问临界区。下面的代码是事先了一个队列</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ObjPool</span>&lt;<span class="title">T</span>, <span class="title">R</span>&gt; </span>&#123;</span><br><span class="line">  <span class="keyword">final</span> List&lt;T&gt; pool;</span><br><span class="line">  <span class="comment">// 用信号量实现限流器</span></span><br><span class="line">  <span class="keyword">final</span> Semaphore sem;</span><br><span class="line">  <span class="comment">// 构造函数</span></span><br><span class="line">  ObjPool(<span class="keyword">int</span> size, T t)&#123;</span><br><span class="line">    pool = <span class="keyword">new</span> Vector&lt;T&gt;()&#123;&#125;;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;size; i++)&#123;</span><br><span class="line">      pool.add(t);</span><br><span class="line">    &#125;</span><br><span class="line">    sem = <span class="keyword">new</span> Semaphore(size);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 利用对象池的对象，调用 func</span></span><br><span class="line">  <span class="function">R <span class="title">exec</span><span class="params">(Function&lt;T,R&gt; func)</span> </span>&#123;</span><br><span class="line">    T t = <span class="keyword">null</span>;</span><br><span class="line">    sem.acquire();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      t = pool.remove(<span class="number">0</span>);</span><br><span class="line">      <span class="keyword">return</span> func.apply(t);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">      pool.add(t);</span><br><span class="line">      sem.release();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 创建对象池</span></span><br><span class="line">ObjPool&lt;Long, String&gt; pool = </span><br><span class="line">  <span class="keyword">new</span> ObjPool&lt;Long, String&gt;(<span class="number">10</span>, <span class="number">2</span>);</span><br><span class="line"><span class="comment">// 通过对象池获取 t，之后执行  </span></span><br><span class="line">pool.exec(t -&gt; &#123;</span><br><span class="line">    System.out.println(t);</span><br><span class="line">    <span class="keyword">return</span> t.toString();</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-二分法查找/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1896,187 +2082,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA线程-开启多少线程合适/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/JAVA线程-开启多少线程合适/" class="post-title-link" itemprop="url">JAVA线程-开启多少线程合适</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-03-22 15:56:22" itemprop="dateCreated datePublished" datetime="2019-03-22T15:56:22Z">2019-03-22</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-25 15:54:24" itemprop="dateModified" datetime="2019-03-25T15:54:24Z">2019-03-25</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="为什么要使用多线程"><a href="#为什么要使用多线程" class="headerlink" title="为什么要使用多线程"></a>为什么要使用多线程</h1><p>  我们评价一个操作系统性能好的系统往往是俩点低延迟、高吞吐。做到这俩点，往往需要一优化算法，二有效利用硬件。对于一不在此讨论的范畴，而硬件利用率大致往往分俩类，即cpu的利用率，和i/o的利用。<br>  单线程时代：我们的程序往往是cpu和io设备相互配合执行，所以一个单线程的程序执行cpu操作时候io就要停下来等待cpu完成，为了提高io和cpu的利用率，操作系统为我们提供了多线程技术。<br>  线程1处理cpu的计算，线程2处理io请求。处理玩io请求后在切换回来，这样利用率就得到了提高</p>
-<h1 id="线程多了就一定快么"><a href="#线程多了就一定快么" class="headerlink" title="线程多了就一定快么"></a>线程多了就一定快么</h1><p>  针对我们程序的特点分为，io密集型和计算密集型俩种。如果io操作执行的比例比较大就是io密集型，如果cpu计算的比例比较大就是计算密集型。<br>  在单核时代，对于计算密集型的业务增加线程反而会拖慢程序执行效率，因为只有一个核，所以同时只能有一个线程在运行，增加线程反而加大了线程切换的损耗。<br>  在多核时代，对于计算密集型的业务是可以通过增加线程提高性能的，但是设置应该是cpu的核数+1，充分利用起cpu。<br>  对于io密集型的业务，由于一般io的耗时比cpu要多的多，那么线程往往是cpu的核数*io耗时/cpu耗时+1。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA线程-方法中的局部变量是线程安全的么/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2292,7 +2297,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">151</span>
+                    <span class="site-state-item-count">152</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2369,7 +2374,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">32</span>
+                      
+                    
+                    <span class="site-state-item-count">33</span>
                     <span class="site-state-item-name">categories</span>
                   </a>
                 </div>
@@ -2492,7 +2499,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">55</span>
+                      
+                    
+                    <span class="site-state-item-count">56</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>

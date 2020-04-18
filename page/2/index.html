@@ -345,6 +345,199 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Spring源码-LifecycleProcessor/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/Spring源码-LifecycleProcessor/" class="post-title-link" itemprop="url">Spring源码-LifecycleProcessor</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-12-24 00:00:00" itemprop="dateCreated datePublished" datetime="2019-12-24T00:00:00Z">2019-12-24</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2020-02-02 12:24:47" itemprop="dateModified" datetime="2020-02-02T12:24:47Z">2020-02-02</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/" itemprop="url" rel="index"><span itemprop="name">spring</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/源码/" itemprop="url" rel="index"><span itemprop="name">源码</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a>使用方法</h2><p>  Lifecycle:容器的生命周期回调，容器启动之后运行到某些节点（容器start/stop时候）可以回调Lifecycle子类的方法。比如在容器启动后初始化资源池，在容器停止时候调用资源池销毁的动作</p>
+<p>  我们实现Lifecycle中接口。注：建议实现SmartLifecycle接口，因为它Lifecycle接口的加强接口，默认实现了stop(Runnable callback)，在调用中通过一个CountdownLatch来异步处理stop,SmartLifecycle非常不建议实现stop(Runnable callback)方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">  <span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Lifecycle</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">start</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">stop</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">isRunning</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Phased</span> </span>&#123;  </span><br><span class="line">  <span class="function"><span class="keyword">int</span> <span class="title">getPhase</span><span class="params">()</span></span>;  </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">SmartLifecycle</span> <span class="keyword">extends</span> <span class="title">Lifecycle</span>, <span class="title">Phased</span> </span>&#123;  </span><br><span class="line">  <span class="function"><span class="keyword">default</span> <span class="keyword">boolean</span> <span class="title">isAutoStartup</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">default</span> <span class="keyword">void</span> <span class="title">stop</span><span class="params">(Runnable callback)</span> </span>&#123;</span><br><span class="line">    stop();</span><br><span class="line">    callback.run();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">default</span> <span class="keyword">int</span> <span class="title">getPhase</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> DEFAULT_PHASE;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  在Lifecycle的基础上实现了onRefresh和onClose接口。参见前面：<a href="/Spring源码-ApplicationContext">Spring源码-ApplicationContext</a>文章中finishRefresh中的代码片段。onRefresh会调用Lifecycle实现类的start()方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Initialize lifecycle processor for this context.</span></span><br><span class="line"><span class="comment">//初始化LifecycleProcessor</span></span><br><span class="line">initLifecycleProcessor();</span><br><span class="line"></span><br><span class="line"><span class="comment">// Propagate refresh to lifecycle processor first.</span></span><br><span class="line"><span class="comment">//调用上面的LifecycleProcessor.onRefresh()</span></span><br><span class="line">getLifecycleProcessor().onRefresh();</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">LifecycleProcessor</span> <span class="keyword">extends</span> <span class="title">Lifecycle</span> </span>&#123;  </span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">onRefresh</span><span class="params">()</span></span>;  </span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">onClose</span><span class="params">()</span></span>;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="调用流程"><a href="#调用流程" class="headerlink" title="调用流程"></a>调用流程</h2><p>tbd</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Spring源码-实现自定义注解/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2231,230 +2424,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JVM的性能分析/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/JVM的性能分析/" class="post-title-link" itemprop="url">JVM的性能分析</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-10-25 16:58:05" itemprop="dateCreated datePublished" datetime="2019-10-25T16:58:05Z">2019-10-25</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-11-13 01:19:27" itemprop="dateModified" datetime="2019-11-13T01:19:27Z">2019-11-13</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/" itemprop="url" rel="index"><span itemprop="name">jvm</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="jvm的常用工具"><a href="#jvm的常用工具" class="headerlink" title="jvm的常用工具"></a>jvm的常用工具</h2><h3 id="jps"><a href="#jps" class="headerlink" title="jps"></a>jps</h3><p>  作用：监视java进程状态的工具</p>
-<p>  命令格式：jps [option][hostid]</p>
-<p>  参数：<br>-m：输出启动时传给main函数的方法<br>-l：输出主类全名如果是jar包，输出路径<br>-v：输出虚拟机启动时Jvm的参数</p>
-<h3 id="jstat"><a href="#jstat" class="headerlink" title="jstat"></a>jstat</h3><p>  作用：监视java进程各种运行状态的信息</p>
-<p>  命令格式：jstat[option] vmid [interval][s|ms][count]]</p>
-<p>  参数：主要分三类、类装在、垃圾收集、运行期编译状况</p>
-<p>-class<br>-gc<br>-gccapacity<br>-gcutil<br>-gccaise<br>-gcnew<br>-gcnewcapacity<br>-gcold<br>-gcoldcapacity<br>-gcpermcapacity<br>-complier<br>-printcompilation</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">S0 S1 E O P YGC YGCT FGC FGCT GCT</span><br><span class="line"><span class="number">0.00</span> <span class="number">0.00</span> <span class="number">6.20</span> <span class="number">41.42</span> <span class="number">47.20</span> <span class="number">16</span> <span class="number">0.105</span> <span class="number">3</span> <span class="number">0.472</span> <span class="number">0.577</span></span><br><span class="line"></span><br><span class="line">  s0、s1:survivor</span><br><span class="line">  E:eden区</span><br><span class="line">  O:old区</span><br><span class="line">  M:metaspace</span><br><span class="line">  YGC:minorGc的次数</span><br><span class="line">  YGCT:minorGc的时间</span><br><span class="line">  FGC:FullGC的次数</span><br><span class="line">  FGCT:FullGc的时间</span><br><span class="line">  GCT:的时间</span><br></pre></td></tr></table></figure>
-<h3 id="jinfo"><a href="#jinfo" class="headerlink" title="jinfo"></a>jinfo</h3><p>  作用：查看、修改虚拟机的配置。</p>
-<p>  命令格式：jinfo [option] pid</p>
-<p>  参数：<br>  -flag &lt;name&gt;         to print the value of the named VM flag<br>  -flag [+|-]&lt;name&gt;    to enable or disable the named VM flag<br>  -flag &lt;name&gt;=&lt;value&gt; to set the named VM flag to the given value<br>  -flags               to print VM flags<br>  -sysprops            to print Java system properties</p>
-<h3 id="jmap"><a href="#jmap" class="headerlink" title="jmap"></a>jmap</h3><p>  作用：java内存映射工具,可以查询finalize执行队列、java堆和永久代的详细信息、如空间使用率、当前采用的收集器等</p>
-<p>  命令格式： jmap [option] &lt;pid&gt;</p>
-<p>  参数：<br>    -heap                打印java堆详细的信息<br>    -histo[:live]        打印堆中对象统计信息，Live只统计存活的信息<br>    -clstats             打印Classloder的信息<br>    -finalizerinfo       显示F-Queue中等待Finalizer线程执行finalizer方法的对象<br>    -dump:&lt;dump-options&gt; 生成java堆快照：live只打印存活的对象，如果不指定打印所有对象，format=b二进制格式的文件，file=&lt;file&gt;打印到某个&lt;file&gt;中。eg: jmap -dump:live,format=b,file=heap.bin &lt;pid&gt;<br>    -F                   force. Use with -dump:&lt;dump-options&gt; &lt;pid&gt; or -histo<br>                         to force a heap dump or histogram when &lt;pid&gt; does not<br>                         respond. The “live” suboption is not supported<br>                         in this mode.<br>    -J&lt;flag&gt;             to pass &lt;flag&gt; directly to the runtime system</p>
-<h3 id="jhat"><a href="#jhat" class="headerlink" title="jhat"></a>jhat</h3><p>  作用：配合jmap分析dump出来的jmap文件，不建议在应用服务器上使用，因为dump文件很大，并且很耗性能，建议在单独的服务器上执行<br>  命令格式：jhat /dumpfile<br>  使用方法：打开浏览器，访问jhat所在服务器的7000端口。查看内存泄漏用OQL工具和Heap Historygram功能</p>
-<h3 id="jstack"><a href="#jstack" class="headerlink" title="jstack"></a>jstack</h3><p>  作用：java堆栈跟踪工具，定位java每一个线程当前时刻的执行快照，可以定位到线程运行的状况是否死锁等。</p>
-<p>  命令格式： jmap [option] &lt;pid&gt;</p>
-<p>  参数：<br>    -F 当正常输出不被响应时候，强制输出程序堆栈<br>    -l 显示关于锁的相关信息<br>    -m 如果调用的是本地方法显示C/C++堆栈</p>
-<h3 id="HSDIS"><a href="#HSDIS" class="headerlink" title="HSDIS"></a>HSDIS</h3><p>  作用：jit生成码反汇编插件，通过jvm设置的参数-XX PrintAssmbly把动态生成的代码还原成汇编代码</p>
-<p>  命令格式： jmap [option] &lt;pid&gt;</p>
-<p>  参数：<br>    -F 当正常输出不被响应时候，强制输出程序堆栈<br>    -l 显示关于锁的相关信息<br>    -m 如果调用的是本地方法显示C/C++堆栈</p>
-<h3 id="可视化工具"><a href="#可视化工具" class="headerlink" title="可视化工具"></a>可视化工具</h3><ul>
-<li><p>JConsole</p>
-</li>
-<li><p>VisualVM</p>
-<p>综上，我们可以用jps jstat jinfo查看jvm的信息。jmap、jhat查看堆信息。jstack查看栈信息。我们可以用可视化工具来方便查看上面的信息推荐VisualVM</p>
-<p>下载地址： <a href="http://visualvm.java.net/download.html" target="_blank" rel="noopener">http://visualvm.java.net/download.html</a><br>idea可以通过pulgins安装通过简单配置即可实现动态的VisualVM功能</p>
-</li>
-</ul>
-<h2 id="具体案例分析"><a href="#具体案例分析" class="headerlink" title="具体案例分析"></a>具体案例分析</h2><h3 id="高性能硬件的场景"><a href="#高性能硬件的场景" class="headerlink" title="高性能硬件的场景"></a>高性能硬件的场景</h3><p>  如果硬件性能较高，我们一般采用俩种方式</p>
-<ol>
-<li>采用64位虚拟机，设置很大的堆内存</li>
-<li><p>采用32位虚拟机，虽然堆内存最大设置4（还受限于平台对进程最大使用内存的限制有可能只有2g，windows平台）我们可以给一台服务器设置多个进程+前端反向代理的方法。</p>
-<p>第一种方案我们要注意64位虚拟机往往比32位虚拟机要慢（指针膨胀、内存补齐等需求），另外由于堆内存很大，我们一定要注意大对象导致频繁GC的问题，因为一次fullGC有可能需要停顿10几秒，对于交互多的服务体验会很差</p>
-</li>
-</ol>
-<h3 id="共享缓存导致oom"><a href="#共享缓存导致oom" class="headerlink" title="共享缓存导致oom"></a>共享缓存导致oom</h3><p>  由于共享缓存频繁的写入导致内存oom。需要检查缓存的使用率。</p>
-<h3 id="对外内存导致的oom"><a href="#对外内存导致的oom" class="headerlink" title="对外内存导致的oom"></a>对外内存导致的oom</h3><p>  有以下几种对外内存</p>
-<p>  DirectMemory:主要用于nio场景，比如内存环境是2G。我们给堆内存分配了1.6G。那么堆外内存最多只能有0.4G不到，如果这时候大量请求过来会导致oom</p>
-<p>  线程堆栈：会出现StackOverflowError或者StackOutOfMemoryError</p>
-<p>  JNI的调用：由于是native方法所以也是堆外内存</p>
-<p>  Socket的读写Buffer：receive和send都有一个buffer分别是37kb和25kb。如果超出了会出现open many file的错误。</p>
-<p>  系统线程和gc线程</p>
-<h3 id="外部命令导致系统变缓慢"><a href="#外部命令导致系统变缓慢" class="headerlink" title="外部命令导致系统变缓慢"></a>外部命令导致系统变缓慢</h3><p>  比如调用Runtime.getRuntime.exec()执行shell。java是fork了个进程，这个指令很重如果调用的频繁系统的负载会很重，建议采用api的方式。</p>
-<h3 id="外部接口超时导致系统崩溃"><a href="#外部接口超时导致系统崩溃" class="headerlink" title="外部接口超时导致系统崩溃"></a>外部接口超时导致系统崩溃</h3><p>  调用远程接口响应较慢导致连接大量被占用，同时对连接没做限制导致了虚拟机崩溃。需要设置超时时间，或者采用生产者消费者异步的方式。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2501,7 +2470,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">153</span>
+                    <span class="site-state-item-count">154</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

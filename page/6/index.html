@@ -345,6 +345,194 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-Mysql的索引B-树/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/数据结构与算法-Mysql的索引B-树/" class="post-title-link" itemprop="url">数据结构与算法-Mysql的索引B+树-以及索引数据结构的选型</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-08-08 11:46:50 / Modified: 06:44:59" itemprop="dateCreated datePublished" datetime="2019-08-08T11:46:50Z">2019-08-08</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/" itemprop="url" rel="index"><span itemprop="name">数据结构与算法</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/应用篇/" itemprop="url" rel="index"><span itemprop="name">应用篇</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>Mysql的索引采用B+tree的结构，因为索引需要自持范围查寻、等值查询，支持快速的添加、删除，且时间复杂度不能太高，同时占用的空间不能太大。</p>
+<h2 id="b-tree做索引的实现原理"><a href="#b-tree做索引的实现原理" class="headerlink" title="b+tree做索引的实现原理"></a>b+tree做索引的实现原理</h2><p>  查询</p>
+<ol>
+<li>保存在文件中，采用时间换空间的思路，支持大的索引;</li>
+<li>由于节点在磁盘中，每次访问节点都需要一次磁盘的IO，所以b+tree是多叉树，有效降低了树的高度，极大减小了磁盘IO的次数提高了性能;</li>
+<li>b+tree每个节点的大小都对应一个内存的PAGE_SIZE,保证每次加载只有一次磁盘IO</li>
+<li><p>b+tree只保存索引所以，叶子节点由链表串联起来，所以支持范围查找，并且修改值不用改动索引，且索引很小。</p>
+<p>添加:添加如果节点超过了Page容纳的范围，就将原有节点分裂成俩个不同的节点，逐层向父级分裂知道满足需求<br>删除：设置一个阈值，如果b+tree节点数量小于阈值就进行合并，如果合并后节点数超过PAGE_SIZE在和添加一样进行分裂</p>
+</li>
+</ol>
+<h2 id="b-tree和b-tree的区别"><a href="#b-tree和b-tree的区别" class="headerlink" title="b+tree和b-tree的区别"></a>b+tree和b-tree的区别</h2><ol>
+<li>b+tree的节点保存索引，btree保存值。</li>
+<li>b+tree的叶子节点由链表串联起来。</li>
+</ol>
+<h2 id="索引的选型"><a href="#索引的选型" class="headerlink" title="索引的选型"></a>索引的选型</h2><p>索引是所有的数据存储系统的关键，直接关乎查询的效率，常用的适合做索引的数据结构有：</p>
+<ul>
+<li>散列表：查询修改复杂度都是O(1),适合nosql的存储，如redis，memcached等，大部分索引都在内存中</li>
+<li>红黑树：适合做文件系统的索引，插入、修改、查询的事件复杂度都是O(LogN)，也适合构建内存索引</li>
+<li>B+tree：适合构建磁盘索引，如mysql等</li>
+<li>还有布隆过滤器、位图等：虽然有误判，但是我们可以选择他做二级索引，因为索引很小，且效率很高，判断下数据是否存在，如果返回存在在调用其他索引查找。</li>
+</ul>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-利用向量实现推荐系统/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2093,197 +2281,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-算法思想-贪心算法/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/数据结构与算法-算法思想-贪心算法/" class="post-title-link" itemprop="url">数据结构与算法-算法思想-贪心算法</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-07-25 17:35:55" itemprop="dateCreated datePublished" datetime="2019-07-25T17:35:55Z">2019-07-25</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-07-29 07:05:49" itemprop="dateModified" datetime="2019-07-29T07:05:49Z">2019-07-29</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/" itemprop="url" rel="index"><span itemprop="name">数据结构与算法</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/算法/" itemprop="url" rel="index"><span itemprop="name">算法</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>贪心算法的使用场景</p>
-<ol>
-<li>给定一组数据，定义了限制值和期望值，在限定的条件下，期望值最大。</li>
-<li>在对限制值同等贡献量条件下，选择对期望值贡献最大的数据</li>
-<li>举几个例子验证弹性算法的正确性</li>
-</ol>
-<h2 id="几个经典的场景"><a href="#几个经典的场景" class="headerlink" title="几个经典的场景"></a>几个经典的场景</h2><h3 id="分糖果"><a href="#分糖果" class="headerlink" title="分糖果"></a>分糖果</h3><p>  有N个大小不同的糖果，分给M个孩子，N&gt;M，每个孩子对于糖果大小的需求不同,并且每个孩子得到一个糖果就能满足，请问如何分：<br>  答：按照贪心算法，限制值是M，每个孩子一颗糖即相同期望值是一颗糖，我们想尽量满足更多的孩子，所以我们要先将最小的糖果分给对糖果的大小需求小的孩子</p>
-<h3 id="钱币找零"><a href="#钱币找零" class="headerlink" title="钱币找零"></a>钱币找零</h3><p>  钱币有10，20，50，100的零钱，我们如何找零<br>  答：由于找零所需的金额一定，即限制值是金额。我们希望相同纸币数的情况下多贡献金额，相同期望值是纸币数。所以我们先将大的找出去，在用零钱填补空缺。</p>
-<h3 id="空间覆盖"><a href="#空间覆盖" class="headerlink" title="空间覆盖"></a>空间覆盖</h3><p>  从N个空间选出尽量多不相交的区间见下图</p>
-<p>  <img src="/数据结构与算法-贪心算法/greedy_1.jpg" alt="avator"></p>
-<p>  答：我们选择尽量靠近左端且不与前面覆盖的端点，然后右边选择离左边尽量近的点给右边尽可能大的空间</p>
-<h3 id="huffman编码"><a href="#huffman编码" class="headerlink" title="huffman编码"></a>huffman编码</h3><p>  用于压缩一段数据往往压缩的量在20~90%之间，原理在：<a href="https://time.geekbang.org/column/article/73188" target="_blank" rel="noopener">https://time.geekbang.org/column/article/73188</a><br>  后期完善</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2330,7 +2327,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">153</span>
+                    <span class="site-state-item-count">154</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

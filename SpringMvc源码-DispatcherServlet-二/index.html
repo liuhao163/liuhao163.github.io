@@ -104,7 +104,7 @@
 <meta property="og:site_name" content="liuhao163.github.io">
 <meta property="og:description" content="上一篇SpringMvc源码-DispatcherServlet讲了DispatcherServlet的初始化过程，本篇着重讲DispatchServlet处理一个请求的流程，即面试SpringMvc的经典面试题，SpringMvc是如何处理reqeuest的。  准备工作  我们的DispatchServlet继承于HttpServlet，HttpServlet处理请求的方法主要是httpSe">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2020-04-15T15:23:46.000Z">
+<meta property="og:updated_time" content="2020-04-16T08:21:59.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="SpringMvc源码-DispatcherServlet(二)">
 <meta name="twitter:description" content="上一篇SpringMvc源码-DispatcherServlet讲了DispatcherServlet的初始化过程，本篇着重讲DispatchServlet处理一个请求的流程，即面试SpringMvc的经典面试题，SpringMvc是如何处理reqeuest的。  准备工作  我们的DispatchServlet继承于HttpServlet，HttpServlet处理请求的方法主要是httpSe">
@@ -406,7 +406,7 @@
                 
                   <span class="post-meta-item-text">Edited on</span>
                 
-                <time title="Modified: 2020-04-15 15:23:46" itemprop="dateModified" datetime="2020-04-15T15:23:46Z">2020-04-15</time>
+                <time title="Modified: 2020-04-16 08:21:59" itemprop="dateModified" datetime="2020-04-16T08:21:59Z">2020-04-16</time>
               
             
           </span>
@@ -475,10 +475,12 @@
         <blockquote>
 <p>上一篇<a href="./SpringMvc源码-DispatcherServlet">SpringMvc源码-DispatcherServlet</a>讲了DispatcherServlet的初始化过程，本篇着重讲DispatchServlet处理一个请求的流程，即面试SpringMvc的经典面试题，SpringMvc是如何处理reqeuest的。</p>
 </blockquote>
-<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>  我们的DispatchServlet继承于HttpServlet，HttpServlet处理请求的方法主要是httpServlet.service，该方法会根据request.method调用doXxx。2而我们的doGet实际上就是自己去实现doXxx。</p>
-<p>  FrameworkServlet重写了service方法，主要是支持HttpMethod.PATCH，FrameworkServlet重写了doXxx,它们和HttpMethod.PATCH一样都调用了processRequest(request, response)</p>
-<p>  下面我们看看FrameworkServlet以及相关的方法，比如：processRequest</p>
-<h2 id="FrameworkServlet"><a href="#FrameworkServlet" class="headerlink" title="FrameworkServlet"></a>FrameworkServlet</h2><h3 id="processRequest"><a href="#processRequest" class="headerlink" title="processRequest"></a>processRequest</h3>
+<h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><p>  我们的DispatchServlet继承于HttpServlet，HttpServlet处理请求的方法主要是httpServlet.service，该方法会根据request.method调用doXxx。FrameworkServlet自己去实现了doXxx。</p>
+<p>  整个的调用链是：接到reqeust请求后-&gt;FrameworkServlet.service()-&gt;FrameworkServlet.processRequest()-&gt;DispatchServlet.doService()（FrameworkServlet提供了抽象方法)<br>  -&gt;DispatchServlet.doDispatch()处理请求</p>
+<p>  下面，我们根据这个调用链进行分析</p>
+<h2 id="FrameworkServlet"><a href="#FrameworkServlet" class="headerlink" title="FrameworkServlet"></a>FrameworkServlet</h2><p>FrameworkServlet还重写了service方法，主要是支持HttpMethod.PATCH，它们和HttpMethod.PATCH一样都调用了processRequest(request, response)</p>
+<p>所有的doXXX都是调用processRequest我们来看下processRequest方法做了什么</p>
+<h3 id="processRequest"><a href="#processRequest" class="headerlink" title="processRequest"></a>processRequest</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">final</span> <span class="keyword">void</span> <span class="title">processRequest</span><span class="params">(HttpServletRequest request, HttpServletResponse response)</span></span></span><br><span class="line"><span class="function">		<span class="keyword">throws</span> ServletException, IOException </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">long</span> startTime = System.currentTimeMillis();</span><br><span class="line">	Throwable failureCause = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//从ThreadLocal中获取上一个请求的LocaleContext</span></span><br><span class="line">	LocaleContext previousLocaleContext = LocaleContextHolder.getLocaleContext();<span class="comment">//</span></span><br><span class="line">	<span class="comment">//new当前请求的LocaleContext</span></span><br><span class="line">	LocaleContext localeContext = buildLocaleContext(request);<span class="comment">//SimpleLocaleContext</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//从ThreadLocal中获取上一个请求的RequestAttributes(ServletRequestAttributes)</span></span><br><span class="line">	RequestAttributes previousAttributes = RequestContextHolder.getRequestAttributes();</span><br><span class="line">	<span class="comment">//new当前请求的ServletRequestAttributes</span></span><br><span class="line">	ServletRequestAttributes requestAttributes = buildRequestAttributes(request, response, previousAttributes);</span><br><span class="line"></span><br><span class="line">	WebAsyncManager asyncManager = WebAsyncUtils.getAsyncManager(request);</span><br><span class="line">	asyncManager.registerCallableInterceptor(FrameworkServlet.class.getName(), <span class="keyword">new</span> RequestBindingInterceptor());</span><br><span class="line"></span><br><span class="line">	<span class="comment">//保存进ThreadLocal中</span></span><br><span class="line">	initContextHolders(request, localeContext, requestAttributes);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">		<span class="comment">//抽象方法具体实现在DeipatchServlet,重点方法</span></span><br><span class="line">		doService(request, response);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">catch</span> (ServletException | IOException ex) &#123;</span><br><span class="line">		failureCause = ex;</span><br><span class="line">		<span class="keyword">throw</span> ex;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">		failureCause = ex;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> NestedServletException(<span class="string">"Request processing failed"</span>, ex);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">finally</span> &#123;</span><br><span class="line">		<span class="comment">//恢复previousLocaleContext，previousAttributes</span></span><br><span class="line">		<span class="comment">//这里是我没太看明白的地方，说下我的猜测：</span></span><br><span class="line">		<span class="comment">// 1、previousLocaleContext,previousAttributes大概率为空这里就重置了ThreadLocal</span></span><br><span class="line">		<span class="comment">// 2、previousLocaleContext,previousAttributes不为空，说明当前线程处理别的请求，所以</span></span><br><span class="line">		<span class="comment">// 		在doservice时候context用的是current的值，请求处理完了将值还原称之前的值。</span></span><br><span class="line">		resetContextHolders(request, previousLocaleContext, previousAttributes);</span><br><span class="line">		<span class="keyword">if</span> (requestAttributes != <span class="keyword">null</span>) &#123;</span><br><span class="line">			requestAttributes.requestCompleted();</span><br><span class="line">		&#125;</span><br><span class="line">		logResult(request, response, failureCause, asyncManager);</span><br><span class="line">		publishRequestHandledEvent(request, response, startTime, failureCause);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
       
     </div>
 
@@ -529,6 +531,10 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
+            
+              <a href="/SpringBoot中的MongoConfig/" rel="prev" title="SpringBoot中的MongoConfig">
+                SpringBoot中的MongoConfig <i class="fa fa-chevron-right"></i>
+              </a>
             
           </div>
         </div>
@@ -597,7 +603,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">153</span>
+                    <span class="site-state-item-count">154</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

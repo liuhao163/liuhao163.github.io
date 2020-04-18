@@ -345,6 +345,191 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA-NIO-ByteBuffer/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/JAVA-NIO-ByteBuffer/" class="post-title-link" itemprop="url">JAVA-NIO-ByteBuffer</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-09-16 12:42:52 / Modified: 09:37:44" itemprop="dateCreated datePublished" datetime="2019-09-16T12:42:52Z">2019-09-16</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/nio/" itemprop="url" rel="index"><span itemprop="name">nio</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="bytebuffer"><a href="#bytebuffer" class="headerlink" title="bytebuffer"></a>bytebuffer</h2><h2 id="属性"><a href="#属性" class="headerlink" title="属性"></a>属性</h2><ul>
+<li>position:下一次读取或写入的位置。</li>
+<li>limit:指定还有多少数据需要取出(在从缓冲区写入通道时)，或者还有多少空间可以放入数据(在从通道读入缓冲区时)。</li>
+<li>capacity:指定了可以存储在缓冲区中的最大数据容量，实际上，它指定了底层数组的大小，或者至少是指定了准许我们使用的底层数组的容量。</li>
+<li>mark:标记位配置mark和reset方法</li>
+</ul>
+<h2 id="初始化方法"><a href="#初始化方法" class="headerlink" title="初始化方法"></a>初始化方法</h2><ul>
+<li>allocateDirect：堆外内存</li>
+<li>allocate：堆内内存</li>
+</ul>
+<h2 id="几个重要的方法介绍"><a href="#几个重要的方法介绍" class="headerlink" title="几个重要的方法介绍"></a>几个重要的方法介绍</h2><h3 id="compact-压缩缓冲区，将未读的数据放在缓冲区头部"><a href="#compact-压缩缓冲区，将未读的数据放在缓冲区头部" class="headerlink" title="compact-压缩缓冲区，将未读的数据放在缓冲区头部"></a>compact-压缩缓冲区，将未读的数据放在缓冲区头部</h3><p> 将position到limit的数据复制到0到limit-postion中，同时position等于limit-postion，limit等于capacity。一般用于继续写。</p>
+<p> 例如：postion=1,limit=10,capacity=10，经过compact后，position=9，limit=10，capacity=10</p>
+<h3 id="clear"><a href="#clear" class="headerlink" title="clear"></a>clear</h3><p>  position为0，limit=capacity，一般在写之前调用，buffer可以从头开始写。</p>
+<h3 id="flip"><a href="#flip" class="headerlink" title="flip"></a>flip</h3><p>  limit变为当前的position，用于读取，一般在读取buffer之前调用，可以返回0-limit之间的数据。</p>
+<h3 id="rewind"><a href="#rewind" class="headerlink" title="rewind"></a>rewind</h3><p>  读写都可以用，只是将position置为0，mark置为-1。表示可以重新读写。</p>
+<h3 id="mark和reset"><a href="#mark和reset" class="headerlink" title="mark和reset"></a>mark和reset</h3><p>  mark：指定一个特定的position一个标记位<br>  reset：在mark指定的标记位开始进行操作</p>
+<h3 id="slice"><a href="#slice" class="headerlink" title="slice"></a>slice</h3><p>  slice() 方法根据现有的缓冲区创建一个子缓冲区,俩者共享数据。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">ByteBuffer orgBuffer = ByteBuffer.allocateDirect(<span class="number">1024</span>);</span><br><span class="line">orgBuffer.put(<span class="string">"liuhao"</span>.getBytes());</span><br><span class="line">orgBuffer.flip();</span><br><span class="line"></span><br><span class="line">ByteBuffer newBuffer = orgBuffer.slice();</span><br><span class="line">System.out.println(<span class="string">"newBuffer init slice ="</span> + newBuffer);</span><br><span class="line"></span><br><span class="line">System.out.println(<span class="string">"============"</span>);</span><br><span class="line"><span class="keyword">byte</span>[] stringNew = <span class="keyword">new</span> <span class="keyword">byte</span>[newBuffer.limit()];</span><br><span class="line">newBuffer.get(stringNew);</span><br><span class="line">System.out.println(<span class="string">"read new buffer "</span> + <span class="keyword">new</span> String(stringNew));<span class="comment">//和orgBuffer读出来的一致</span></span><br><span class="line"></span><br><span class="line"><span class="comment">//对newBuffer做了修改，影响了orgBuffer</span></span><br><span class="line">newBuffer.clear();</span><br><span class="line">newBuffer.put(<span class="string">"lzh"</span>.getBytes());</span><br><span class="line"><span class="keyword">byte</span>[] stringOrg = <span class="keyword">new</span> <span class="keyword">byte</span>[orgBuffer.limit()];</span><br><span class="line">orgBuffer.get(stringOrg);</span><br><span class="line">System.out.println(<span class="string">"read org buffer "</span> + <span class="keyword">new</span> String(stringOrg));</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/RoketMq源码学习-六-Offset的存储/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2304,201 +2489,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/cpu的负载以及常用命令/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/cpu的负载以及常用命令/" class="post-title-link" itemprop="url">cpu的负载以及常用命令</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-08-28 13:29:19" itemprop="dateCreated datePublished" datetime="2019-08-28T13:29:19Z">2019-08-28</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-09-02 04:53:22" itemprop="dateModified" datetime="2019-09-02T04:53:22Z">2019-09-02</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/linux/cpu/" itemprop="url" rel="index"><span itemprop="name">cpu</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="查看cpu负载的常用命令"><a href="#查看cpu负载的常用命令" class="headerlink" title="查看cpu负载的常用命令"></a>查看cpu负载的常用命令</h2><p>  常用命令有：uptime|top|w，我们1以uptime为例</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span> uptime</span><br><span class="line">02:34:03 up 2 days, 20:14,  1 user,  load average: 0.63, 0.83, 0.88</span><br></pre></td></tr></table></figure>
-<h2 id="load-average的含义"><a href="#load-average的含义" class="headerlink" title="load average的含义"></a>load average的含义</h2><p>load average: 0.63, 0.83, 0.88 分别代表了最近1分钟、5分钟、15分钟的cpu平均负载，什么是laod avarage呢</p>
-<blockquote>
-<p>单位时间内系统可运行（Runnable）以及不可中断(Uninterruptible Sleep)的平均进程数。其中不可中断是指系统对进程和设备的一种保护，比如读磁盘的文件为了保证系统的一致性这个进程不可中断 ps命令中是D</p>
-</blockquote>
-<p>反映了这段时间操作系统的CPU负载的趋势，一般来讲，一个健康的系统的平均负载不应该超过0.7。</p>
-<h2 id="load-average和CPU的使用率"><a href="#load-average和CPU的使用率" class="headerlink" title="load average和CPU的使用率"></a>load average和CPU的使用率</h2><p>准备：</p>
-<ul>
-<li>stress 压测工具</li>
-<li>sysstat linux性能分析工具，常用mpstat和pidstat</li>
-</ul>
-<h3 id="模拟计算密集型"><a href="#模拟计算密集型" class="headerlink" title="模拟计算密集型"></a>模拟计算密集型</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">stress --cpu 1 --timeout 600 #一个核打满</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span>查看系统性能</span><br><span class="line"><span class="meta">#</span> -P ALL 表示监控所有 CPU，后面数字 5 表示间隔 5 秒后输出一组数据</span><br><span class="line"><span class="meta">$</span> mpstat -P ALL 5</span><br><span class="line">Linux 4.15.0 (ubuntu) 09/22/18 _x86_64_ (2 CPU)</span><br><span class="line">13:30:06     CPU    %usr   %nice    %sys %iowait    %irq   %soft  %steal  %guest  %gnice   %idle</span><br><span class="line">13:30:11     all   50.05    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00   49.95</span><br><span class="line">13:30:11       0    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00  100.00</span><br><span class="line">13:30:11       1  100.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span>分析由于iowait为0，user很高说明是CPU计算导致的,于是我们</span><br><span class="line"><span class="meta">#</span> 间隔 5 秒后输出一组数据</span><br><span class="line"><span class="meta">$</span> pidstat -u 5 1</span><br><span class="line">13:37:07      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command</span><br><span class="line">13:37:12        0      2962  100.00    0.00    0.00    0.00  100.00     1  stress</span><br></pre></td></tr></table></figure>
-<h3 id="模拟IO密集型"><a href="#模拟IO密集型" class="headerlink" title="模拟IO密集型"></a>模拟IO密集型</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span>发送sync</span><br><span class="line"><span class="meta">$</span> stress -i 1 --timeout 600</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span>查看系统性能</span><br><span class="line"><span class="meta">#</span> 显示所有 CPU 的指标，并在间隔 5 秒输出一组数据</span><br><span class="line"><span class="meta">$</span> mpstat -P ALL 5 1</span><br><span class="line">Linux 4.15.0 (ubuntu)     09/22/18     _x86_64_    (2 CPU)</span><br><span class="line">13:41:28     CPU    %usr   %nice    %sys %iowait    %irq   %soft  %steal  %guest  %gnice   %idle</span><br><span class="line">13:41:33     all    0.21    0.00   12.07   32.67    0.00    0.21    0.00    0.00    0.00   54.84</span><br><span class="line">13:41:33       0    0.43    0.00   23.87   67.53    0.00    0.43    0.00    0.00    0.00    7.74</span><br><span class="line">13:41:33       1    0.00    0.00    0.81    0.20    0.00    0.00    0.00    0.00    0.00   98.99</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span>分析使用率不高但是iowait很高</span><br><span class="line"><span class="meta">#</span> 间隔 5 秒后输出一组数据，-u 表示 CPU 指标</span><br><span class="line"><span class="meta">$</span> pidstat -u 5 1</span><br><span class="line">Linux 4.15.0 (ubuntu)     09/22/18     _x86_64_    (2 CPU)</span><br><span class="line">13:42:08      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command</span><br><span class="line">13:42:13        0       104    0.00    3.39    0.00    0.00    3.39     1  kworker/1:1H</span><br><span class="line">13:42:13        0       109    0.00    0.40    0.00    0.00    0.40     0  kworker/0:1H</span><br><span class="line">13:42:13        0      2997    2.00   35.53    0.00    3.99   37.52     1  stress</span><br><span class="line">13:42:13        0      3057    0.00    0.40    0.00    0.00    0.40     0  pidstat</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span>发现stress导致的</span><br></pre></td></tr></table></figure>
-<h3 id="大量CPU导致"><a href="#大量CPU导致" class="headerlink" title="大量CPU导致"></a>大量CPU导致</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span>发送sync</span><br><span class="line"><span class="meta">$</span> stress -c 8 --timeout 600</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span>查看系统性能</span><br><span class="line"><span class="meta">#</span> 间隔 5 秒后输出一组数据</span><br><span class="line"><span class="meta">$</span> pidstat -u 5 1</span><br><span class="line">14:23:25      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command</span><br><span class="line">14:23:30        0      3190   25.00    0.00    0.00   74.80   25.00     0  stress</span><br><span class="line">14:23:30        0      3191   25.00    0.00    0.00   75.20   25.00     0  stress</span><br><span class="line">14:23:30        0      3192   25.00    0.00    0.00   74.80   25.00     1  stress</span><br><span class="line">14:23:30        0      3193   25.00    0.00    0.00   75.00   25.00     1  stress</span><br><span class="line">14:23:30        0      3194   24.80    0.00    0.00   74.60   24.80     0  stress</span><br><span class="line">14:23:30        0      3195   24.80    0.00    0.00   75.00   24.80     0  stress</span><br><span class="line">14:23:30        0      3196   24.80    0.00    0.00   74.60   24.80     1  stress</span><br><span class="line">14:23:30        0      3197   24.80    0.00    0.00   74.80   24.80     1  stress</span><br><span class="line">14:23:30        0      3200    0.00    0.20    0.00    0.20    0.20     0  pidstat</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span>发现stress导致的</span><br></pre></td></tr></table></figure>
-<p>排查思路：mpstate打印当前cpu的情况，然后用pidstate找到有问题的进程</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2545,7 +2535,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">153</span>
+                    <span class="site-state-item-count">154</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

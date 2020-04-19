@@ -345,6 +345,196 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/定时器的并发处理/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/定时器的并发处理/" class="post-title-link" itemprop="url">支持并发的定时器+数据归档解决查询效率</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-06 00:03:46" itemprop="dateCreated datePublished" datetime="2019-03-06T00:03:46Z">2019-03-06</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-09 15:53:05" itemprop="dateModified" datetime="2019-03-09T15:53:05Z">2019-03-09</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/项目积累/" itemprop="url" rel="index"><span itemprop="name">项目积累</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="项目背景"><a href="#项目背景" class="headerlink" title="项目背景"></a>项目背景</h1><p>客户的数据量徒增，每天1QWPV，1个月1张表的话大约这一个客户有30亿数据，页面上一些接口的响应变慢。</p>
+<p>原因是：后端数据存在了ES中，ES特点是模糊查询很开，但是但是如果用到了一些叫复杂的聚合函数需要进行索引扫描，所以效率了堪忧。</p>
+<h1 id="优化方案"><a href="#优化方案" class="headerlink" title="优化方案"></a>优化方案</h1><ul>
+<li>每天，用定时器将客户网站数据归档，目前是采用mysql保存。</li>
+<li>前端查询采用缓存数据+当天数据的方式呈现给客户，当日的数据很小所以可以满足性能上的要求。</li>
+<li>考虑到将来会有很多客户，可能一个定时器执行效率慢，所以定时器要支持水平扩展。</li>
+</ul>
+<h1 id="具体执行"><a href="#具体执行" class="headerlink" title="具体执行"></a>具体执行</h1><ol>
+<li>将数据库中所有的网站ID放到redis的zset中，为什么用zset？有序-支持分页，排重；</li>
+<li>利用setNx做锁， 从zset取出一条数据锁住：setNx的key是：prefix:statslock:id:yyyyMMdd, ttl：1天；<ul>
+<li>因为采用的是RedisTemplate不支持setNx和expire排异常轻快无法解锁，所以锁是按天锁住数据</li>
+</ul>
+</li>
+<li>ES查询昨天的数据，归档</li>
+<li>前端查询ES当钱数据+归档数据返回，测试从10sec请求变为了600ms </li>
+</ol>
+<p>示例代码如下：<br><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doWafDataArchiveByDate</span><span class="params">(LocalDateTime localDateTime)</span> </span>&#123;</span><br><span class="line">    String dateFormater = localDateTime.format(YYYYMMDD);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//分页</span></span><br><span class="line">    Long total = statsRedis.domainSize();</span><br><span class="line">    Long pageNo = (total - <span class="number">1L</span>) / ZSET_PAGE_SIZE + <span class="number">1</span>;</span><br><span class="line">    Long curPage = <span class="number">1L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        <span class="comment">//从redis获取数据</span></span><br><span class="line">        Long startIdx = (curPage - <span class="number">1L</span>) * ZSET_PAGE_SIZE;</span><br><span class="line">        Long endIdx = startIdx + ZSET_PAGE_SIZE - <span class="number">1L</span>;</span><br><span class="line">        Set&lt;String&gt; set = statsRedis.queryRange(startIdx, endIdx);</span><br><span class="line">        </span><br><span class="line">        curPage++;</span><br><span class="line">        <span class="keyword">for</span> (String domainUuid : set) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="comment">//锁1天</span></span><br><span class="line">                <span class="keyword">if</span> (taskLock.lock(domainUuid, dateFormater)) &#123;</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        <span class="comment">//do logic</span></span><br><span class="line">                    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                        e.printStackTrace();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                taskLock.unlock(domainUuid,dateFormater);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">while</span> (curPage &lt;= pageNo);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h1 id="遗留的坑以及方案"><a href="#遗留的坑以及方案" class="headerlink" title="遗留的坑以及方案"></a>遗留的坑以及方案</h1><p>待补充</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/网络协议-TCP/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2132,246 +2322,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Mysq何时会用到内部临时表/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/Mysq何时会用到内部临时表/" class="post-title-link" itemprop="url">Mysq何时会用到内部临时表</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-27 13:13:03" itemprop="dateCreated datePublished" datetime="2019-02-27T13:13:03Z">2019-02-27</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-02 06:08:51" itemprop="dateModified" datetime="2019-03-02T06:08:51Z">2019-03-02</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="Mysql何时会使用内部临时表"><a href="#Mysql何时会使用内部临时表" class="headerlink" title="Mysql何时会使用内部临时表"></a>Mysql何时会使用内部临时表</h1><p>Mysql除了我们显式的创建临时表外，在某些情况下会用到内部临时表，在开始之前可以先用下面脚本创建一个测试库</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> t1(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>, a <span class="built_in">int</span>, b <span class="built_in">int</span>, <span class="keyword">index</span>(a));</span><br><span class="line">delimiter ;;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">procedure</span> idata()</span><br><span class="line"><span class="keyword">begin</span></span><br><span class="line">  <span class="keyword">declare</span> i <span class="built_in">int</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">set</span> i=<span class="number">1</span>;</span><br><span class="line">  while(i&lt;=1000)do</span><br><span class="line">    <span class="keyword">insert</span> <span class="keyword">into</span> t1 <span class="keyword">values</span>(i, i, i);</span><br><span class="line">    <span class="keyword">set</span> i=i+<span class="number">1</span>;</span><br><span class="line">  <span class="keyword">end</span> <span class="keyword">while</span>;</span><br><span class="line"><span class="keyword">end</span>;;</span><br><span class="line">delimiter ;</span><br><span class="line"><span class="keyword">call</span> idata();</span><br></pre></td></tr></table></figure>
-<h2 id="Union"><a href="#Union" class="headerlink" title="Union"></a>Union</h2><p>如下面的语句，取俩条语句结果的并集</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(<span class="keyword">select</span> <span class="number">1000</span> <span class="keyword">as</span> f) <span class="keyword">union</span> (<span class="keyword">select</span> <span class="keyword">id</span> <span class="keyword">from</span> t1 <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">id</span> <span class="keyword">desc</span> <span class="keyword">limit</span> <span class="number">2</span>);</span><br></pre></td></tr></table></figure>
-<p>执行计划如下：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----+--------------+------------+------------+-------+---------------+---------+---------+------+------+----------+-----------------+</span></span><br><span class="line">| id | select_type  | table      | partitions | type  | possible_keys | key     | key_len | ref  | rows | filtered | Extra           |</span><br><span class="line">+<span class="comment">----+--------------+------------+------------+-------+---------------+---------+---------+------+------+----------+-----------------+</span></span><br><span class="line">|  1 | PRIMARY      | NULL       | NULL       | NULL  | NULL          | NULL    | NULL    | NULL | NULL |     NULL | No tables used  |</span><br><span class="line">|  2 | UNION        | t1         | NULL       | index | NULL          | PRIMARY | 4       | NULL |    2 |   100.00 | Using index     |</span><br><span class="line">| NULL | UNION RESULT | &lt;union1,2&gt; | NULL       | ALL   | NULL          | NULL    | NULL    | NULL | NULL |     NULL | Using temporary |</span><br><span class="line">+<span class="comment">----+--------------+------------+------------+-------+---------------+---------+---------+------+------+----------+-----------------+</span></span><br></pre></td></tr></table></figure>
-<p>最后的Extra字段Using temporary表示使用了临时表</p>
-<p>该语句流程如下：</p>
-<ol>
-<li>创建一个内存临时表，只有一个字段是f，f是主键;</li>
-<li>将第一条查询语句结果插入到临时表中</li>
-<li>执行第2个子查询<ol>
-<li>将符合条件的插入到临时表中，如果是union取并集，违反唯一约束写入失败；</li>
-<li>继续插入直到不符合规则</li>
-</ol>
-</li>
-<li>返回结果，删除临时表</li>
-<li>注:如果是union all因为没有计算并集的需求也就没有唯一约束就不用临时表了</li>
-</ol>
-<h2 id="GROUP-BY"><a href="#GROUP-BY" class="headerlink" title="GROUP BY"></a>GROUP BY</h2><p>例如下面的语句</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">id</span>%<span class="number">10</span> <span class="keyword">as</span> m, <span class="keyword">count</span>(*) <span class="keyword">as</span> c <span class="keyword">from</span> t1 <span class="keyword">group</span> <span class="keyword">by</span> m;</span><br></pre></td></tr></table></figure>
-<p>执行计划如下：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+----------------------------------------------+</span></span><br><span class="line">| id | select_type | table | partitions | type  | possible_keys | key  | key_len | ref  | rows | filtered | Extra                                        |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+----------------------------------------------+</span></span><br><span class="line">|  1 | SIMPLE      | t1    | NULL       | index | PRIMARY,a     | a    | 5       | NULL | 1000 |   100.00 | Using index; Using temporary; Using filesort |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+----------------------------------------------+</span></span><br></pre></td></tr></table></figure>
-<p>通过Extra字段可以看到3个信息</p>
-<ul>
-<li>Using index 因为需要遍历索引树，这里没选PRIMARY原因是因为a索引够用（只取count），并且相对PK更小</li>
-<li>Using temporary 用了临时表</li>
-<li>Using filesort 排序</li>
-</ul>
-<p>流程如下：</p>
-<ol>
-<li>创建内存临时表，创建俩个字段（m,c），且m为主键</li>
-<li>将id%10，然后得到m，写入到临时表<ol>
-<li>如果m不存在，insert m,1</li>
-<li>如果m存在，update c字段+1；</li>
-</ol>
-</li>
-<li>然后临时表通过filesort排序，内存临时表rowid排序，见前面的文章</li>
-<li>返回结果，移除临时表。</li>
-</ol>
-<p>上面提到里都是创建一个内存临时表，这是由参数tmp_table_size值控制的默认是16M，如果超过这个值就采用磁盘临时表了</p>
-<h3 id="group-by优化方案"><a href="#group-by优化方案" class="headerlink" title="group by优化方案"></a>group by优化方案</h3><p>临时表会消耗内存，甚至是磁盘。所以在生产环境上我们哟啊尽量避免这种内部临时表的产生，针对上面说的group by有如下几点优化建议</p>
-<h4 id="通过索引"><a href="#通过索引" class="headerlink" title="通过索引"></a>通过索引</h4><p>上面的例子，我们可以创建一个id%10的字段,然后根据这个字段group by</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> t1 <span class="keyword">add</span> <span class="keyword">column</span> z <span class="built_in">int</span> <span class="keyword">generated</span> <span class="keyword">always</span> <span class="keyword">as</span>(<span class="keyword">id</span> % <span class="number">100</span>), <span class="keyword">add</span> <span class="keyword">index</span>(z);</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> z, <span class="keyword">count</span>(*) <span class="keyword">as</span> c <span class="keyword">from</span> t1 <span class="keyword">group</span> <span class="keyword">by</span> z;</span><br><span class="line"></span><br><span class="line">执行计划会告诉这你这条语句走的是索引z</span><br></pre></td></tr></table></figure>
-<h4 id="直接排序"><a href="#直接排序" class="headerlink" title="直接排序"></a>直接排序</h4><p>原理是，因为mysql会默认走临时表，但是我们可以通过SQL_BIG_RESULT来提示mysql这个结果集很大，让mysql直接选择磁盘临时表，mysql发现这个临时表是b+tree结构，不如数组方式排序效率高，就不会采用临时表而是至用filesortset了</p>
-<p>sql语句如下</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">SQL_BIG_RESULT</span> <span class="keyword">id</span>%<span class="number">100</span> <span class="keyword">as</span> m, <span class="keyword">count</span>(*) <span class="keyword">as</span> c <span class="keyword">from</span> t1 <span class="keyword">group</span> <span class="keyword">by</span> m;</span><br></pre></td></tr></table></figure>
-<p>执行计划如下</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+-----------------------------+</span></span><br><span class="line">| id | select_type | table | partitions | type  | possible_keys | key  | key_len | ref  | rows | filtered | Extra                       |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+-----------------------------+</span></span><br><span class="line">|  1 | SIMPLE      | t1    | NULL       | index | PRIMARY,a     | a    | 5       | NULL | 1000 |   100.00 | Using index; Using filesort |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+-----------------------------+</span></span><br></pre></td></tr></table></figure>
-<p>语句执行流程是：</p>
-<ol>
-<li>初始化sort_buffer，去顶放入整形字段m</li>
-<li>扫秒表t1索引树a,将id%100值放入sort_buffer中</li>
-<li>在sort_buffer对m排序</li>
-<li>返回数组</li>
-</ol>
-<h1 id="总结mysql何时会用临时表呢"><a href="#总结mysql何时会用临时表呢" class="headerlink" title="总结mysql何时会用临时表呢"></a>总结mysql何时会用临时表呢</h1><ol>
-<li>如果mysql一边读数据，一边直接获取结果不需要额外的内存保存结果，否则会需要额外内存；</li>
-<li>join_buffer是无序数据，sort_buffer是有序数组，临时表是二维表结构</li>
-<li>如果执行逻辑需要二维表特性，就优先使用临时表，比如:Union需要唯一约束，groupby需要额外保存计数</li>
-</ol>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2418,7 +2368,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">154</span>
+                    <span class="site-state-item-count">155</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

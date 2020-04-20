@@ -407,7 +407,7 @@
                 
                   <span class="post-meta-item-text">Edited on</span>
                 
-                <time title="Modified: 2020-04-20 12:35:45" itemprop="dateModified" datetime="2020-04-20T12:35:45Z">2020-04-20</time>
+                <time title="Modified: 2020-04-20 12:47:57" itemprop="dateModified" datetime="2020-04-20T12:47:57Z">2020-04-20</time>
               
             
           </span>
@@ -506,6 +506,12 @@
 <p>  查看中断原因watch -d cat /proc/interrupts</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> watch -d cat /proc/interrupts</span></span><br><span class="line">           CPU0       CPU1</span><br><span class="line">...</span><br><span class="line">RES:    2450431    5279697   Rescheduling interrupts</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">res是指cpu调度中断，中断原因是cpu在频繁的切换线程</span><br></pre></td></tr></table></figure>
 <h3 id="分析问题路径"><a href="#分析问题路径" class="headerlink" title="分析问题路径"></a>分析问题路径</h3><ol>
+<li>自愿上下文切换变多了，说明进程都在等待资源，有可能发生了 I/O 等其他问题；</li>
+<li>非自愿上下文切换变多了，说明进程都在被强制调度，也就是都在争抢 CPU，说明 CPU 的确成了瓶颈；</li>
+<li>中断次数变多了，说明 CPU 被中断处理程序占用，还需要通过查看 /proc/interrupts 文件来分析具体的中断类型。</li>
+</ol>
+<p>具体排查路径如下：</p>
+<ol>
 <li>我们先运行vmstat，一般cs在1w左右都是正常的如果超过1w，我们就要去调用pidstat查看；</li>
 <li>pidstat -w -u查看cpu的占用和cswch,如果是Java或者golang等多线程的程序要加-t看线程之间的cswch/s值</li>
 <li>之后通过watch -d cat /proc/interrupts查看cpu的中断原因【watch -d ‘cat /proc/interrupts | sort -nr -k 2 ‘】</li>

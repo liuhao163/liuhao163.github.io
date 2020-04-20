@@ -407,7 +407,7 @@
                 
                   <span class="post-meta-item-text">Edited on</span>
                 
-                <time title="Modified: 2020-04-20 12:16:18" itemprop="dateModified" datetime="2020-04-20T12:16:18Z">2020-04-20</time>
+                <time title="Modified: 2020-04-20 12:35:45" itemprop="dateModified" datetime="2020-04-20T12:35:45Z">2020-04-20</time>
               
             
           </span>
@@ -489,8 +489,27 @@
 <p>响应系统中断：为了响应硬件事件，往往回中断当前正在运行的进程。响应中断往往比进程优先级高。</p>
 </li>
 </ol>
-<h2 id="如何定位CPU切换的场景"><a href="#如何定位CPU切换的场景" class="headerlink" title="如何定位CPU切换的场景"></a>如何定位CPU切换的场景</h2><p>  工具：vmstat,sysstat(mpstat pidstat)</p>
-<p>vm</p>
+<h2 id="如何定位CPU切换的场景"><a href="#如何定位CPU切换的场景" class="headerlink" title="如何定位CPU切换的场景"></a>如何定位CPU切换的场景</h2><h3 id="工具介绍"><a href="#工具介绍" class="headerlink" title="工具介绍"></a>工具介绍</h3><p>  vmstat使我们常用的分析io的工具他也能分析cpu的上下文切换，使用方法如下：其中</p>
+<ul>
+<li>r 是runable或者runnaing的进程数</li>
+<li>b 是block的进程数</li>
+<li>system的in是中断数</li>
+<li>cs是切换数</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">vmstat</span><br><span class="line"></span><br><span class="line">procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----</span><br><span class="line"> r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st</span><br><span class="line"> 0  0      0 78018360 299560 30894864    0    0     0     7    0    0  1  0 99  0  0</span><br></pre></td></tr></table></figure>
+<p>  pidstat，和上期不一样的是如果我们想看cpu上下文切换数需要加上-w，-t是查看线程</p>
+<ul>
+<li>cswch/s是每秒自愿切换上下文的次数，比如：无法获取资源被挂起。</li>
+<li>nvcswch/s是每秒非自愿切换上下文的次数，运行时间片到了被挂起。</li>
+</ul>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">pidstat -w -t  -p &lt;pid&gt;</span><br><span class="line"></span><br><span class="line">08:30:23 PM   UID       PID   cswch/s nvcswch/s  Command</span><br><span class="line">08:30:28 PM   669     27440      0.00      0.00  java</span><br></pre></td></tr></table></figure>
+<p>  查看中断原因watch -d cat /proc/interrupts</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> watch -d cat /proc/interrupts</span></span><br><span class="line">           CPU0       CPU1</span><br><span class="line">...</span><br><span class="line">RES:    2450431    5279697   Rescheduling interrupts</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">res是指cpu调度中断，中断原因是cpu在频繁的切换线程</span><br></pre></td></tr></table></figure>
+<h3 id="分析问题路径"><a href="#分析问题路径" class="headerlink" title="分析问题路径"></a>分析问题路径</h3><ol>
+<li>我们先运行vmstat，一般cs在1w左右都是正常的如果超过1w，我们就要去调用pidstat查看；</li>
+<li>pidstat -w -u查看cpu的占用和cswch,如果是Java或者golang等多线程的程序要加-t看线程之间的cswch/s值</li>
+<li>之后通过watch -d cat /proc/interrupts查看cpu的中断原因【watch -d ‘cat /proc/interrupts | sort -nr -k 2 ‘】</li>
+</ol>
 
           
         

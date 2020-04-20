@@ -8,7 +8,7 @@
       <link href="/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-CPU-%E7%90%86%E8%A7%A3CPU%E7%9A%84%E4%B8%8A%E4%B8%8B%E6%96%87%E5%88%87%E6%8D%A2/"/>
       <url>/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-CPU-%E7%90%86%E8%A7%A3CPU%E7%9A%84%E4%B8%8A%E4%B8%8B%E6%96%87%E5%88%87%E6%8D%A2/</url>
       
-        <content type="html"><![CDATA[<p>什么是CPU的上下文切换，程序又是如何运行的？</p><blockquote><p>程序在运行的时候，CPU会将一部分数据加载到CPU的寄存器，它是属于CPU专属的高速缓存，并且将程序运行的地址加载到程序计数器中，而CPU寄存器+程序计数器统称为CPU的上下文？<br>我们的系统一般可以并行运行多个程序，儿多个进程并不是真正的并行运行的，CPU会同时在多个程序中进行切换，造成这种并行运行的“错觉”，而切换之前就要现将CPU的上下文保存起来从而下次执行是偶继续执行，这个叫做CPU的上下文切换。</p></blockquote><h2 id="CPU上下文切换的几个场景"><a href="#CPU上下文切换的几个场景" class="headerlink" title="CPU上下文切换的几个场景"></a>CPU上下文切换的几个场景</h2><ol><li>进程之间的上下文切换</li><li>线程之间的上下文切换</li><li><p>响应系统中断的上下文切换</p><p>注： 还有一种场景就是系统调用的CPU上下文切换，我们的程序是运行在用户态的，而系统的资源是系统的内核态。一次操作往往需要多次系统调用，会发生多次CPU上下文切换比如：读取一个文件是以下3步。先open()打开一个文件，再read()读取磁盘数据，再write()写到标准数据流中。每一次系统调用会先保存用户态的数据，然后加载内核态数据，然后切换到内核态，操作完成后，在加载用户态数据，切换回用户态继续之前的操作。（俩次切换过程）不过我们一般称呼他们是特权切换，他们是不会发生进程切换的。</p><p>如图：<br><img src="./系统优化-CPU-理解CPU的上下文切换/img1.png" alt="avator"></p><p>进程间切换：需要刷新系统的虚拟内存、栈等用户态信息，再保存CPU上下文。<br>进程切换的主要原因有：分配的运行时间片已到；系统资源不够【比如内存不够】等待资源时候会被挂起；调用Sleep函数；有更高优先级的进程进来等</p><p>线程间切换：线程是CPU调度的最小单位，进程是CPU的最小的资源单位，所谓的CPU上下文切换实际是线程的CPU上下文切换分一下俩种情况：</p><blockquote><ol><li>如果俩个线程属于同一个进程：不需要切换用户态信息，再切换CPU上下文</li><li>如果俩个线程不属于同一个进程：需要切换用户态信息，再切换CPU上下文。<br>所以，现在程序大都用多线程取代多进程。</li></ol></blockquote><p>响应系统中断：为了响应硬件事件，往往回中断当前正在运行的进程。响应中断往往比进程优先级高。</p></li></ol><h2 id="如何定位CPU切换的场景"><a href="#如何定位CPU切换的场景" class="headerlink" title="如何定位CPU切换的场景"></a>如何定位CPU切换的场景</h2><p>  工具：vmstat,sysstat(mpstat pidstat)</p><p>vm</p>]]></content>
+        <content type="html"><![CDATA[<p>什么是CPU的上下文切换，程序又是如何运行的？</p><blockquote><p>程序在运行的时候，CPU会将一部分数据加载到CPU的寄存器，它是属于CPU专属的高速缓存，并且将程序运行的地址加载到程序计数器中，而CPU寄存器+程序计数器统称为CPU的上下文？<br>我们的系统一般可以并行运行多个程序，儿多个进程并不是真正的并行运行的，CPU会同时在多个程序中进行切换，造成这种并行运行的“错觉”，而切换之前就要现将CPU的上下文保存起来从而下次执行是偶继续执行，这个叫做CPU的上下文切换。</p></blockquote><h2 id="CPU上下文切换的几个场景"><a href="#CPU上下文切换的几个场景" class="headerlink" title="CPU上下文切换的几个场景"></a>CPU上下文切换的几个场景</h2><ol><li>进程之间的上下文切换</li><li>线程之间的上下文切换</li><li><p>响应系统中断的上下文切换</p><p>注： 还有一种场景就是系统调用的CPU上下文切换，我们的程序是运行在用户态的，而系统的资源是系统的内核态。一次操作往往需要多次系统调用，会发生多次CPU上下文切换比如：读取一个文件是以下3步。先open()打开一个文件，再read()读取磁盘数据，再write()写到标准数据流中。每一次系统调用会先保存用户态的数据，然后加载内核态数据，然后切换到内核态，操作完成后，在加载用户态数据，切换回用户态继续之前的操作。（俩次切换过程）不过我们一般称呼他们是特权切换，他们是不会发生进程切换的。</p><p>如图：<br><img src="./系统优化-CPU-理解CPU的上下文切换/img1.png" alt="avator"></p><p>进程间切换：需要刷新系统的虚拟内存、栈等用户态信息，再保存CPU上下文。<br>进程切换的主要原因有：分配的运行时间片已到；系统资源不够【比如内存不够】等待资源时候会被挂起；调用Sleep函数；有更高优先级的进程进来等</p><p>线程间切换：线程是CPU调度的最小单位，进程是CPU的最小的资源单位，所谓的CPU上下文切换实际是线程的CPU上下文切换分一下俩种情况：</p><blockquote><ol><li>如果俩个线程属于同一个进程：不需要切换用户态信息，再切换CPU上下文</li><li>如果俩个线程不属于同一个进程：需要切换用户态信息，再切换CPU上下文。<br>所以，现在程序大都用多线程取代多进程。</li></ol></blockquote><p>响应系统中断：为了响应硬件事件，往往回中断当前正在运行的进程。响应中断往往比进程优先级高。</p></li></ol><h2 id="如何定位CPU切换的场景"><a href="#如何定位CPU切换的场景" class="headerlink" title="如何定位CPU切换的场景"></a>如何定位CPU切换的场景</h2><h3 id="工具介绍"><a href="#工具介绍" class="headerlink" title="工具介绍"></a>工具介绍</h3><p>  vmstat使我们常用的分析io的工具他也能分析cpu的上下文切换，使用方法如下：其中</p><ul><li>r 是runable或者runnaing的进程数</li><li>b 是block的进程数</li><li>system的in是中断数</li><li>cs是切换数</li></ul><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">vmstat</span><br><span class="line"></span><br><span class="line">procs -----------memory---------- ---swap-- -----io---- -system-- ------cpu-----</span><br><span class="line"> r  b   swpd   free   buff  cache   si   so    bi    bo   in   cs us sy id wa st</span><br><span class="line"> 0  0      0 78018360 299560 30894864    0    0     0     7    0    0  1  0 99  0  0</span><br></pre></td></tr></table></figure><p>  pidstat，和上期不一样的是如果我们想看cpu上下文切换数需要加上-w，-t是查看线程</p><ul><li>cswch/s是每秒自愿切换上下文的次数，比如：无法获取资源被挂起。</li><li>nvcswch/s是每秒非自愿切换上下文的次数，运行时间片到了被挂起。</li></ul><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">pidstat -w -t  -p &lt;pid&gt;</span><br><span class="line"></span><br><span class="line">08:30:23 PM   UID       PID   cswch/s nvcswch/s  Command</span><br><span class="line">08:30:28 PM   669     27440      0.00      0.00  java</span><br></pre></td></tr></table></figure><p>  查看中断原因watch -d cat /proc/interrupts</p><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> watch -d cat /proc/interrupts</span></span><br><span class="line">           CPU0       CPU1</span><br><span class="line">...</span><br><span class="line">RES:    2450431    5279697   Rescheduling interrupts</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">res是指cpu调度中断，中断原因是cpu在频繁的切换线程</span><br></pre></td></tr></table></figure><h3 id="分析问题路径"><a href="#分析问题路径" class="headerlink" title="分析问题路径"></a>分析问题路径</h3><ol><li>我们先运行vmstat，一般cs在1w左右都是正常的如果超过1w，我们就要去调用pidstat查看；</li><li>pidstat -w -u查看cpu的占用和cswch,如果是Java或者golang等多线程的程序要加-t看线程之间的cswch/s值</li><li>之后通过watch -d cat /proc/interrupts查看cpu的中断原因【watch -d ‘cat /proc/interrupts | sort -nr -k 2 ‘】</li></ol>]]></content>
       
       
       <categories>
@@ -476,9 +476,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -938,9 +938,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -971,9 +971,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 技术 </tag>
+            
+            <tag> java </tag>
             
             <tag> io </tag>
             
@@ -1004,9 +1004,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1037,9 +1037,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1070,9 +1070,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1103,9 +1103,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1136,9 +1136,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1169,9 +1169,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1202,9 +1202,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1266,9 +1266,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1328,9 +1328,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1357,9 +1357,9 @@
       
         <tags>
             
-            <tag> 技术 </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> 技术 </tag>
             
         </tags>
       
@@ -1386,9 +1386,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1752,9 +1752,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1814,9 +1814,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -3088,11 +3088,11 @@
     
     
     <entry>
-      <title>JAVA线程-开启多少线程合适</title>
-      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/"/>
-      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/</url>
+      <title>JAVA线程-为什么局部变量是线程安全的</title>
+      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/"/>
+      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/</url>
       
-        <content type="html"><![CDATA[<h1 id="为什么要使用多线程"><a href="#为什么要使用多线程" class="headerlink" title="为什么要使用多线程"></a>为什么要使用多线程</h1><p>  我们评价一个操作系统性能好的系统往往是俩点低延迟、高吞吐。做到这俩点，往往需要一优化算法，二有效利用硬件。对于一不在此讨论的范畴，而硬件利用率大致往往分俩类，即cpu的利用率，和i/o的利用。<br>  单线程时代：我们的程序往往是cpu和io设备相互配合执行，所以一个单线程的程序执行cpu操作时候io就要停下来等待cpu完成，为了提高io和cpu的利用率，操作系统为我们提供了多线程技术。<br>  线程1处理cpu的计算，线程2处理io请求。处理玩io请求后在切换回来，这样利用率就得到了提高</p><h1 id="线程多了就一定快么"><a href="#线程多了就一定快么" class="headerlink" title="线程多了就一定快么"></a>线程多了就一定快么</h1><p>  针对我们程序的特点分为，io密集型和计算密集型俩种。如果io操作执行的比例比较大就是io密集型，如果cpu计算的比例比较大就是计算密集型。<br>  在单核时代，对于计算密集型的业务增加线程反而会拖慢程序执行效率，因为只有一个核，所以同时只能有一个线程在运行，增加线程反而加大了线程切换的损耗。<br>  在多核时代，对于计算密集型的业务是可以通过增加线程提高性能的，但是设置应该是cpu的核数+1，充分利用起cpu。<br>  对于io密集型的业务，由于一般io的耗时比cpu要多的多，那么线程往往是cpu的核数*io耗时/cpu耗时+1。</p>]]></content>
+        <content type="html"><![CDATA[<h1 id="方法是如何被执行"><a href="#方法是如何被执行" class="headerlink" title="方法是如何被执行"></a>方法是如何被执行</h1><p>例如下面的程序</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">7</span>；</span><br><span class="line"><span class="keyword">int</span>[] b = fibonacci(a);</span><br><span class="line"><span class="keyword">int</span>[] c = b;</span><br></pre></td></tr></table></figure><p>当jvm调用fibonacci(a)时，通过cpu的寄存器找到方法的地址。cpu支持一种栈结构，他和方法息息相关，所以一般叫做调用栈。<br>栈这种数据结构的特点是后进先出，所以当一个遇到方法嵌套时候比如a–&gt;b–&gt;c，那么入栈的时候就是c–&gt;b–&gt;a，执行顺序也是c–&gt;b–&gt;a。</p><h1 id="方法中的局部变量"><a href="#方法中的局部变量" class="headerlink" title="方法中的局部变量"></a>方法中的局部变量</h1><p>  方法实际上是以栈帧为单位入栈的，一个方法从入口到返回都在一个栈帧中，栈帧和方法的生命周期是一样的，当方法结束，栈帧也就失效了，而方法中的局部变量都是保存在栈帧中的，他的生命周期也是在方法内部。且为了线程之间不相互干扰，每个线程都有一个独立的栈帧。综上，栈帧是线程安全的。</p><p>  这种方式有个名词叫线程封闭，即仅在单线程内访问数据，不共享就没有线程安全的问题。例如：我们常用的数据库连接池，connection的方法并没有声明线程安全，我们在使用中都是在一个方法内获取conenection，查询数据，关闭connecton，这这种线程封闭方式来解决线程安全的问题。</p>]]></content>
       
       
       <categories>
@@ -3117,11 +3117,11 @@
     
     
     <entry>
-      <title>JAVA线程-为什么局部变量是线程安全的</title>
-      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/"/>
-      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/</url>
+      <title>JAVA线程-开启多少线程合适</title>
+      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/"/>
+      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/</url>
       
-        <content type="html"><![CDATA[<h1 id="方法是如何被执行"><a href="#方法是如何被执行" class="headerlink" title="方法是如何被执行"></a>方法是如何被执行</h1><p>例如下面的程序</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">7</span>；</span><br><span class="line"><span class="keyword">int</span>[] b = fibonacci(a);</span><br><span class="line"><span class="keyword">int</span>[] c = b;</span><br></pre></td></tr></table></figure><p>当jvm调用fibonacci(a)时，通过cpu的寄存器找到方法的地址。cpu支持一种栈结构，他和方法息息相关，所以一般叫做调用栈。<br>栈这种数据结构的特点是后进先出，所以当一个遇到方法嵌套时候比如a–&gt;b–&gt;c，那么入栈的时候就是c–&gt;b–&gt;a，执行顺序也是c–&gt;b–&gt;a。</p><h1 id="方法中的局部变量"><a href="#方法中的局部变量" class="headerlink" title="方法中的局部变量"></a>方法中的局部变量</h1><p>  方法实际上是以栈帧为单位入栈的，一个方法从入口到返回都在一个栈帧中，栈帧和方法的生命周期是一样的，当方法结束，栈帧也就失效了，而方法中的局部变量都是保存在栈帧中的，他的生命周期也是在方法内部。且为了线程之间不相互干扰，每个线程都有一个独立的栈帧。综上，栈帧是线程安全的。</p><p>  这种方式有个名词叫线程封闭，即仅在单线程内访问数据，不共享就没有线程安全的问题。例如：我们常用的数据库连接池，connection的方法并没有声明线程安全，我们在使用中都是在一个方法内获取conenection，查询数据，关闭connecton，这这种线程封闭方式来解决线程安全的问题。</p>]]></content>
+        <content type="html"><![CDATA[<h1 id="为什么要使用多线程"><a href="#为什么要使用多线程" class="headerlink" title="为什么要使用多线程"></a>为什么要使用多线程</h1><p>  我们评价一个操作系统性能好的系统往往是俩点低延迟、高吞吐。做到这俩点，往往需要一优化算法，二有效利用硬件。对于一不在此讨论的范畴，而硬件利用率大致往往分俩类，即cpu的利用率，和i/o的利用。<br>  单线程时代：我们的程序往往是cpu和io设备相互配合执行，所以一个单线程的程序执行cpu操作时候io就要停下来等待cpu完成，为了提高io和cpu的利用率，操作系统为我们提供了多线程技术。<br>  线程1处理cpu的计算，线程2处理io请求。处理玩io请求后在切换回来，这样利用率就得到了提高</p><h1 id="线程多了就一定快么"><a href="#线程多了就一定快么" class="headerlink" title="线程多了就一定快么"></a>线程多了就一定快么</h1><p>  针对我们程序的特点分为，io密集型和计算密集型俩种。如果io操作执行的比例比较大就是io密集型，如果cpu计算的比例比较大就是计算密集型。<br>  在单核时代，对于计算密集型的业务增加线程反而会拖慢程序执行效率，因为只有一个核，所以同时只能有一个线程在运行，增加线程反而加大了线程切换的损耗。<br>  在多核时代，对于计算密集型的业务是可以通过增加线程提高性能的，但是设置应该是cpu的核数+1，充分利用起cpu。<br>  对于io密集型的业务，由于一般io的耗时比cpu要多的多，那么线程往往是cpu的核数*io耗时/cpu耗时+1。</p>]]></content>
       
       
       <categories>
@@ -3309,9 +3309,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 技术 </tag>
+            
+            <tag> java </tag>
             
             <tag> cas </tag>
             
@@ -3340,9 +3340,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 技术 </tag>
+            
+            <tag> java </tag>
             
             <tag> cas </tag>
             
@@ -3371,9 +3371,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 技术 </tag>
+            
+            <tag> java </tag>
             
             <tag> io </tag>
             
@@ -4106,27 +4106,6 @@
     
     
     <entry>
-      <title>mysql的排序</title>
-      <link href="/mysql/mysql%E7%9A%84%E6%8E%92%E5%BA%8F/"/>
-      <url>/mysql/mysql%E7%9A%84%E6%8E%92%E5%BA%8F/</url>
-      
-        <content type="html"><![CDATA[<h1 id="mysql排序-order-by的原理"><a href="#mysql排序-order-by的原理" class="headerlink" title="mysql排序 order by的原理"></a>mysql排序 order by的原理</h1><h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>下面的语句用按照姓名排序，我们看下执行计划，Extra有一段‘Using filesort’，说明Mysql用的用到了排序</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">explain</span> <span class="keyword">select</span> city,<span class="keyword">name</span>,age <span class="keyword">from</span> t <span class="keyword">where</span> city=<span class="string">'杭州'</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">name</span> <span class="keyword">limit</span> <span class="number">1000</span>  ;</span><br><span class="line"></span><br><span class="line"><span class="comment">#执行计划</span></span><br><span class="line">1 SIMPLE t NULL ref city city 66 const 1 100.00 Using index condition; Using filesort</span><br></pre></td></tr></table></figure><h2 id="排序的过程"><a href="#排序的过程" class="headerlink" title="排序的过程"></a>排序的过程</h2><p>mysql在排序操作中会用到sort_buffer和临时文件，sort_buffer的大小由sort_buffer_size参数决定</p><ul><li>sort_buffer:是Mysql为排序操作开辟的一块内存空间，会将需要查询的字段以及排序字段放在内存空间中，进行排序操作。</li><li>临时文件：如果字段太多sort_buffer容量不够了会借用到临时文件进行存储，会将需要排序的文件分成N份，同时排序排序完成后在进行合并。</li></ul><h3 id="全字段排序"><a href="#全字段排序" class="headerlink" title="全字段排序"></a>全字段排序</h3><p>全字段排序需要的流程</p><ol><li>初始化sort_buffer,确定要放进去的字段</li><li>根据索引等条件取出满足条件的主键ID</li><li>回表查询出需要显示的字段，将需要的字段放到sort_buffer中，如果用到临时文件，加载到临时文件中</li><li>内存中排序</li><li>返回结果</li></ol><h3 id="rowid排序"><a href="#rowid排序" class="headerlink" title="rowid排序"></a>rowid排序</h3><p>如果Mysql判断单行占用的空间很大，会采用rowid方式进行排序,可以用如下方式进行设置。受max_length_for_sort_data指标来控制</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> max_length_for_sort_data = <span class="number">16</span>;</span><br></pre></td></tr></table></figure><ol><li>初始化sort_buffer,确定排序字段和主键ID</li><li>根据索引等条件取出满足条件的主键ID</li><li>将需要排序和主键ID放到sort_buffer中，如果用到临时文件，加载到临时文件中</li><li>内存中排序，得到排好序的排序字段值–主键ID</li><li>回表查询数据</li><li>返回结果</li></ol><h3 id="全字段排序-vs-rowid-排序"><a href="#全字段排序-vs-rowid-排序" class="headerlink" title="全字段排序 vs rowid 排序"></a>全字段排序 vs rowid 排序</h3><p>rowid比全字段排序多了一次回表操作，理论上来说mysql能用内存尽量用内存，减少磁盘操作，所以理论上来说rowid排序性能会低于全字段排序</p><h3 id="如何优化排序"><a href="#如何优化排序" class="headerlink" title="如何优化排序"></a>如何优化排序</h3><p>使用索引：因为索引本身是有序的，合理利用索引，这样排序就可以用索引避免使用临时文件和sort_buffer进行排序。如例子中的语句可以创建（city,name）的索引，可以用执行计划看出来。</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#创建索引（city,name）注意顺序</span></span><br><span class="line"><span class="keyword">explain</span> <span class="keyword">select</span> city,<span class="keyword">name</span>,age <span class="keyword">from</span> t <span class="keyword">where</span> city=<span class="string">'杭州'</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">name</span> <span class="keyword">limit</span> <span class="number">1000</span>  ;</span><br><span class="line"></span><br><span class="line"><span class="comment">#执行计划</span></span><br><span class="line">1 SIMPLE t NULL ref idx idx 66 const 1 100.00 Using index condition</span><br></pre></td></tr></table></figure><h3 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h3><p>判断排序语句是否用了临时文件，是那种排序方式的语句</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 打开 optimizer_trace，只对本线程有效 */</span></span><br><span class="line"><span class="keyword">SET</span> optimizer_trace=<span class="string">'enabled=on'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* @a 保存 Innodb_rows_read 的初始值 */</span></span><br><span class="line"><span class="keyword">select</span> VARIABLE_VALUE <span class="keyword">into</span> @a <span class="keyword">from</span>  performance_schema.session_status <span class="keyword">where</span> variable_name = <span class="string">'Innodb_rows_read'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 执行语句 */</span></span><br><span class="line"><span class="keyword">select</span> city, <span class="keyword">name</span>,age <span class="keyword">from</span> t <span class="keyword">where</span> city=<span class="string">'杭州'</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">name</span> <span class="keyword">limit</span> <span class="number">1000</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 查看 OPTIMIZER_TRACE 输出 */</span></span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="string">`information_schema`</span>.<span class="string">`OPTIMIZER_TRACE`</span>\G</span><br><span class="line"></span><br><span class="line"><span class="comment">/* @b 保存 Innodb_rows_read 的当前值 */</span></span><br><span class="line"><span class="keyword">select</span> VARIABLE_VALUE <span class="keyword">into</span> @b <span class="keyword">from</span> performance_schema.session_status <span class="keyword">where</span> variable_name = <span class="string">'Innodb_rows_read'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 计算 Innodb_rows_read 差值 */</span></span><br><span class="line"><span class="keyword">select</span> @b-@a;</span><br></pre></td></tr></table></figure><p>如何判断排序类型</p><ol><li>SELECT * FROM <code>information_schema</code>.<code>OPTIMIZER_TRACE</code>\G，之后的json对象看filesort_summary段<ol><li>sort_mode是sort_key, rowid是全字段排序</li><li>sort_mode是sort_key, packed_additional_fields采用全字段排序</li></ol></li></ol><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">            "filesort_summary": &#123;</span><br><span class="line">              "rows": 1001, <span class="comment">#取的字段</span></span><br><span class="line">              "examined_rows": 110501, <span class="comment">#扫描行数</span></span><br><span class="line">              "number_of_tmp_files": 0, <span class="comment">#历史文件个数</span></span><br><span class="line">              "sort_buffer_size": 17024,</span><br><span class="line">              "sort_mode": "&lt;sort_key, rowid&gt;"</span><br><span class="line">            &#125;</span><br><span class="line"><span class="comment">#如果是rowid排序实际扫描行数是examined_rows+rows（因为回了一次表）</span></span><br></pre></td></tr></table></figure>]]></content>
-      
-      
-      <categories>
-          
-          <category> Mysql </category>
-          
-          <category> Mysql基础 </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
       <title>mysql读写分离的坑</title>
       <link href="/mysql/mysql%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB%E7%9A%84%E9%82%A3%E4%BA%9B%E5%9D%91/"/>
       <url>/mysql/mysql%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB%E7%9A%84%E9%82%A3%E4%BA%9B%E5%9D%91/</url>
@@ -4139,6 +4118,27 @@
           <category> Mysql </category>
           
           <category> Mysql高可用架构 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>mysql的排序</title>
+      <link href="/mysql/mysql%E7%9A%84%E6%8E%92%E5%BA%8F/"/>
+      <url>/mysql/mysql%E7%9A%84%E6%8E%92%E5%BA%8F/</url>
+      
+        <content type="html"><![CDATA[<h1 id="mysql排序-order-by的原理"><a href="#mysql排序-order-by的原理" class="headerlink" title="mysql排序 order by的原理"></a>mysql排序 order by的原理</h1><h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>下面的语句用按照姓名排序，我们看下执行计划，Extra有一段‘Using filesort’，说明Mysql用的用到了排序</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">explain</span> <span class="keyword">select</span> city,<span class="keyword">name</span>,age <span class="keyword">from</span> t <span class="keyword">where</span> city=<span class="string">'杭州'</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">name</span> <span class="keyword">limit</span> <span class="number">1000</span>  ;</span><br><span class="line"></span><br><span class="line"><span class="comment">#执行计划</span></span><br><span class="line">1 SIMPLE t NULL ref city city 66 const 1 100.00 Using index condition; Using filesort</span><br></pre></td></tr></table></figure><h2 id="排序的过程"><a href="#排序的过程" class="headerlink" title="排序的过程"></a>排序的过程</h2><p>mysql在排序操作中会用到sort_buffer和临时文件，sort_buffer的大小由sort_buffer_size参数决定</p><ul><li>sort_buffer:是Mysql为排序操作开辟的一块内存空间，会将需要查询的字段以及排序字段放在内存空间中，进行排序操作。</li><li>临时文件：如果字段太多sort_buffer容量不够了会借用到临时文件进行存储，会将需要排序的文件分成N份，同时排序排序完成后在进行合并。</li></ul><h3 id="全字段排序"><a href="#全字段排序" class="headerlink" title="全字段排序"></a>全字段排序</h3><p>全字段排序需要的流程</p><ol><li>初始化sort_buffer,确定要放进去的字段</li><li>根据索引等条件取出满足条件的主键ID</li><li>回表查询出需要显示的字段，将需要的字段放到sort_buffer中，如果用到临时文件，加载到临时文件中</li><li>内存中排序</li><li>返回结果</li></ol><h3 id="rowid排序"><a href="#rowid排序" class="headerlink" title="rowid排序"></a>rowid排序</h3><p>如果Mysql判断单行占用的空间很大，会采用rowid方式进行排序,可以用如下方式进行设置。受max_length_for_sort_data指标来控制</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> max_length_for_sort_data = <span class="number">16</span>;</span><br></pre></td></tr></table></figure><ol><li>初始化sort_buffer,确定排序字段和主键ID</li><li>根据索引等条件取出满足条件的主键ID</li><li>将需要排序和主键ID放到sort_buffer中，如果用到临时文件，加载到临时文件中</li><li>内存中排序，得到排好序的排序字段值–主键ID</li><li>回表查询数据</li><li>返回结果</li></ol><h3 id="全字段排序-vs-rowid-排序"><a href="#全字段排序-vs-rowid-排序" class="headerlink" title="全字段排序 vs rowid 排序"></a>全字段排序 vs rowid 排序</h3><p>rowid比全字段排序多了一次回表操作，理论上来说mysql能用内存尽量用内存，减少磁盘操作，所以理论上来说rowid排序性能会低于全字段排序</p><h3 id="如何优化排序"><a href="#如何优化排序" class="headerlink" title="如何优化排序"></a>如何优化排序</h3><p>使用索引：因为索引本身是有序的，合理利用索引，这样排序就可以用索引避免使用临时文件和sort_buffer进行排序。如例子中的语句可以创建（city,name）的索引，可以用执行计划看出来。</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#创建索引（city,name）注意顺序</span></span><br><span class="line"><span class="keyword">explain</span> <span class="keyword">select</span> city,<span class="keyword">name</span>,age <span class="keyword">from</span> t <span class="keyword">where</span> city=<span class="string">'杭州'</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">name</span> <span class="keyword">limit</span> <span class="number">1000</span>  ;</span><br><span class="line"></span><br><span class="line"><span class="comment">#执行计划</span></span><br><span class="line">1 SIMPLE t NULL ref idx idx 66 const 1 100.00 Using index condition</span><br></pre></td></tr></table></figure><h3 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h3><p>判断排序语句是否用了临时文件，是那种排序方式的语句</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 打开 optimizer_trace，只对本线程有效 */</span></span><br><span class="line"><span class="keyword">SET</span> optimizer_trace=<span class="string">'enabled=on'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* @a 保存 Innodb_rows_read 的初始值 */</span></span><br><span class="line"><span class="keyword">select</span> VARIABLE_VALUE <span class="keyword">into</span> @a <span class="keyword">from</span>  performance_schema.session_status <span class="keyword">where</span> variable_name = <span class="string">'Innodb_rows_read'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 执行语句 */</span></span><br><span class="line"><span class="keyword">select</span> city, <span class="keyword">name</span>,age <span class="keyword">from</span> t <span class="keyword">where</span> city=<span class="string">'杭州'</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">name</span> <span class="keyword">limit</span> <span class="number">1000</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 查看 OPTIMIZER_TRACE 输出 */</span></span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="string">`information_schema`</span>.<span class="string">`OPTIMIZER_TRACE`</span>\G</span><br><span class="line"></span><br><span class="line"><span class="comment">/* @b 保存 Innodb_rows_read 的当前值 */</span></span><br><span class="line"><span class="keyword">select</span> VARIABLE_VALUE <span class="keyword">into</span> @b <span class="keyword">from</span> performance_schema.session_status <span class="keyword">where</span> variable_name = <span class="string">'Innodb_rows_read'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 计算 Innodb_rows_read 差值 */</span></span><br><span class="line"><span class="keyword">select</span> @b-@a;</span><br></pre></td></tr></table></figure><p>如何判断排序类型</p><ol><li>SELECT * FROM <code>information_schema</code>.<code>OPTIMIZER_TRACE</code>\G，之后的json对象看filesort_summary段<ol><li>sort_mode是sort_key, rowid是全字段排序</li><li>sort_mode是sort_key, packed_additional_fields采用全字段排序</li></ol></li></ol><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">            "filesort_summary": &#123;</span><br><span class="line">              "rows": 1001, <span class="comment">#取的字段</span></span><br><span class="line">              "examined_rows": 110501, <span class="comment">#扫描行数</span></span><br><span class="line">              "number_of_tmp_files": 0, <span class="comment">#历史文件个数</span></span><br><span class="line">              "sort_buffer_size": 17024,</span><br><span class="line">              "sort_mode": "&lt;sort_key, rowid&gt;"</span><br><span class="line">            &#125;</span><br><span class="line"><span class="comment">#如果是rowid排序实际扫描行数是examined_rows+rows（因为回了一次表）</span></span><br></pre></td></tr></table></figure>]]></content>
+      
+      
+      <categories>
+          
+          <category> Mysql </category>
+          
+          <category> Mysql基础 </category>
           
       </categories>
       
@@ -4314,6 +4314,25 @@
     
     
     <entry>
+      <title>Promise 和 Future</title>
+      <link href="/netty/Promise%E5%92%8CFuture/"/>
+      <url>/netty/Promise%E5%92%8CFuture/</url>
+      
+        <content type="html"><![CDATA[<h1 id="Promise-和-Future"><a href="#Promise-和-Future" class="headerlink" title="Promise 和 Future"></a>Promise 和 Future</h1><p>netty中的I/O操作大部分为异步，netty在Java的Future的基础上封装了Future和Promise</p><h2 id="Future"><a href="#Future" class="headerlink" title="Future"></a>Future</h2><p>继承java.util.concurrent.Future接口，并且在Future基础上做了如下的强化。<br>future是read-only的。我们没有办法在Future中改变状态，只能获取状态。进行后续操作</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Future</span>&lt;<span class="title">V</span>&gt; <span class="keyword">extends</span> <span class="title">java</span>.<span class="title">util</span>.<span class="title">concurrent</span>.<span class="title">Future</span>&lt;<span class="title">V</span>&gt;</span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 判断I/O是否成功,和Future的isDone()相比,能得到是否真正完成的结果（有可能成功、失败、取消）</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">isSuccess</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 是否已经中断</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">cancel</span><span class="params">(<span class="keyword">boolean</span> mayInterruptIfRunning)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 方法表示如果I/O操作失败，返回异常信息</span></span><br><span class="line"><span class="comment">     * Returns the cause of the failed I/O operation if the I/O operation has</span></span><br><span class="line"><span class="comment">     * failed.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> the cause of the failure.</span></span><br><span class="line"><span class="comment">     *         &#123;<span class="doctag">@code</span> null&#125; if succeeded or this future is not</span></span><br><span class="line"><span class="comment">     *         completed yet.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">Throwable <span class="title">cause</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 用观察者模式对future操作进行更精准的管理调用，如果get(),需要在代码中显示的调用在完成后续操作，如果用Listerner可以通过noify完成后续操作。</span></span><br><span class="line"><span class="comment">     * Adds the specified listener to this future.  The</span></span><br><span class="line"><span class="comment">     * specified listener is notified when this future is</span></span><br><span class="line"><span class="comment">     * &#123;<span class="doctag">@linkplain</span> #isDone() done&#125;.  If this future is already</span></span><br><span class="line"><span class="comment">     * completed, the specified listener is notified immediately.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">Future&lt;V&gt; <span class="title">addListener</span><span class="params">(GenericFutureListener&lt;? extends Future&lt;? <span class="keyword">super</span> V&gt;&gt; listener)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><h3 id="ChannelFuture"><a href="#ChannelFuture" class="headerlink" title="ChannelFuture"></a>ChannelFuture</h3><p>ChannelFuture可以通过添加ChannelFutureListener监听器，当I/O操作完成的时候来通知调用。相比于wait()方式也更推荐这种方式来获取结果状态或者执行后续操作。<br>此外，不建议在ChannelHandler中调用await（），因为ChannelHandler中事件驱动的方法被一个I/O线程调用，可能一直不回完成，那么await（）也可能被I/O线程调用，同样会一直block，因此会产生死锁。<br>另外在，在Future的基础上增加了获取channle的方法</p><h2 id="Promise"><a href="#Promise" class="headerlink" title="Promise"></a>Promise</h2><p>对比Future，Promise是writeable的，可以修改状态，调用noify执行Future(Promis)的listerner方法</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Promise</span>&lt;<span class="title">V</span>&gt; <span class="keyword">extends</span> <span class="title">Future</span>&lt;<span class="title">V</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//一下是定义了标记了Future状态的方法，有且只能标记一次，</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">setSuccess</span><span class="params">(V result)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">trySuccess</span><span class="params">(V result)</span></span>;</span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">setFailure</span><span class="params">(Throwable cause)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">tryFailure</span><span class="params">(Throwable cause)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">setUncancellable</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">addListener</span><span class="params">(GenericFutureListener&lt;? extends Future&lt;? <span class="keyword">super</span> V&gt;&gt; listener)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">removeListeners</span><span class="params">(GenericFutureListener&lt;? extends Future&lt;? <span class="keyword">super</span> V&gt;&gt;... listeners)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">await</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">awaitUninterruptibly</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">sync</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">syncUninterruptibly</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><h2 id="DefaultPromise"><a href="#DefaultPromise" class="headerlink" title="DefaultPromise"></a>DefaultPromise</h2><p>在DefaultChannelPromise中会，改变状态会通知listerner</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Promise&lt;V&gt; <span class="title">setSuccess</span><span class="params">(V result)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (setSuccess0(result)) &#123;</span><br><span class="line">        <span class="comment">//todo notify</span></span><br><span class="line">        notifyListeners();</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"complete already: "</span> + <span class="keyword">this</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">notifyListeners</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    EventExecutor executor = executor();</span><br><span class="line">    <span class="keyword">if</span> (executor.inEventLoop()) &#123;</span><br><span class="line">       ...</span><br><span class="line">                notifyListenersNow();</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">       ...</span><br><span class="line">    &#125;</span><br><span class="line">    safeExecute(executor, <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            notifyListenersNow();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">notifyListenersNow</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        <span class="keyword">if</span> (listeners <span class="keyword">instanceof</span> DefaultFutureListeners) &#123;</span><br><span class="line">            notifyListeners0((DefaultFutureListeners) listeners);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            notifyListener0(<span class="keyword">this</span>, (GenericFutureListener&lt;?&gt;) listeners);</span><br><span class="line">        &#125;</span><br><span class="line">    ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>eg:在register过程中<br>AbstactServerBootstrap.initAndRegister<br>    –&gt;register()<br>        –&gt;SingleThreadEventLoop.register(channel)<br>            –&gt;SingleThreadEventLoop.register(new DefaultChannelPromise(channel, this))<br>                –&gt;AbstractUnsafe.register(promise,evenlop)–&gt;AbstractUnsafe.resiter0(promise)–&gt;safeSetSuccess(promise)</p><p>在safeSetSuccess调用promise.traSuccess()。notifyPromise中的listerner</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> netty </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>MySql是如何降低主备延迟的</title>
       <link href="/mysql/mysql%E6%98%AF%E5%A6%82%E4%BD%95%E9%99%8D%E4%BD%8E%E4%B8%BB%E5%A4%87%E5%BB%B6%E8%BF%9F%E7%9A%84/"/>
       <url>/mysql/mysql%E6%98%AF%E5%A6%82%E4%BD%95%E9%99%8D%E4%BD%8E%E4%B8%BB%E5%A4%87%E5%BB%B6%E8%BF%9F%E7%9A%84/</url>
@@ -4326,25 +4345,6 @@
           <category> Mysql </category>
           
           <category> Mysql高可用架构 </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
-      <title>Promise 和 Future</title>
-      <link href="/netty/Promise%E5%92%8CFuture/"/>
-      <url>/netty/Promise%E5%92%8CFuture/</url>
-      
-        <content type="html"><![CDATA[<h1 id="Promise-和-Future"><a href="#Promise-和-Future" class="headerlink" title="Promise 和 Future"></a>Promise 和 Future</h1><p>netty中的I/O操作大部分为异步，netty在Java的Future的基础上封装了Future和Promise</p><h2 id="Future"><a href="#Future" class="headerlink" title="Future"></a>Future</h2><p>继承java.util.concurrent.Future接口，并且在Future基础上做了如下的强化。<br>future是read-only的。我们没有办法在Future中改变状态，只能获取状态。进行后续操作</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Future</span>&lt;<span class="title">V</span>&gt; <span class="keyword">extends</span> <span class="title">java</span>.<span class="title">util</span>.<span class="title">concurrent</span>.<span class="title">Future</span>&lt;<span class="title">V</span>&gt;</span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 判断I/O是否成功,和Future的isDone()相比,能得到是否真正完成的结果（有可能成功、失败、取消）</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">isSuccess</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 是否已经中断</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">cancel</span><span class="params">(<span class="keyword">boolean</span> mayInterruptIfRunning)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 方法表示如果I/O操作失败，返回异常信息</span></span><br><span class="line"><span class="comment">     * Returns the cause of the failed I/O operation if the I/O operation has</span></span><br><span class="line"><span class="comment">     * failed.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> the cause of the failure.</span></span><br><span class="line"><span class="comment">     *         &#123;<span class="doctag">@code</span> null&#125; if succeeded or this future is not</span></span><br><span class="line"><span class="comment">     *         completed yet.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">Throwable <span class="title">cause</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 用观察者模式对future操作进行更精准的管理调用，如果get(),需要在代码中显示的调用在完成后续操作，如果用Listerner可以通过noify完成后续操作。</span></span><br><span class="line"><span class="comment">     * Adds the specified listener to this future.  The</span></span><br><span class="line"><span class="comment">     * specified listener is notified when this future is</span></span><br><span class="line"><span class="comment">     * &#123;<span class="doctag">@linkplain</span> #isDone() done&#125;.  If this future is already</span></span><br><span class="line"><span class="comment">     * completed, the specified listener is notified immediately.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function">Future&lt;V&gt; <span class="title">addListener</span><span class="params">(GenericFutureListener&lt;? extends Future&lt;? <span class="keyword">super</span> V&gt;&gt; listener)</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><h3 id="ChannelFuture"><a href="#ChannelFuture" class="headerlink" title="ChannelFuture"></a>ChannelFuture</h3><p>ChannelFuture可以通过添加ChannelFutureListener监听器，当I/O操作完成的时候来通知调用。相比于wait()方式也更推荐这种方式来获取结果状态或者执行后续操作。<br>此外，不建议在ChannelHandler中调用await（），因为ChannelHandler中事件驱动的方法被一个I/O线程调用，可能一直不回完成，那么await（）也可能被I/O线程调用，同样会一直block，因此会产生死锁。<br>另外在，在Future的基础上增加了获取channle的方法</p><h2 id="Promise"><a href="#Promise" class="headerlink" title="Promise"></a>Promise</h2><p>对比Future，Promise是writeable的，可以修改状态，调用noify执行Future(Promis)的listerner方法</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Promise</span>&lt;<span class="title">V</span>&gt; <span class="keyword">extends</span> <span class="title">Future</span>&lt;<span class="title">V</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//一下是定义了标记了Future状态的方法，有且只能标记一次，</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">setSuccess</span><span class="params">(V result)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">trySuccess</span><span class="params">(V result)</span></span>;</span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">setFailure</span><span class="params">(Throwable cause)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">tryFailure</span><span class="params">(Throwable cause)</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">setUncancellable</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">addListener</span><span class="params">(GenericFutureListener&lt;? extends Future&lt;? <span class="keyword">super</span> V&gt;&gt; listener)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">removeListeners</span><span class="params">(GenericFutureListener&lt;? extends Future&lt;? <span class="keyword">super</span> V&gt;&gt;... listeners)</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">await</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">awaitUninterruptibly</span><span class="params">()</span></span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">sync</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException</span>;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function">Promise&lt;V&gt; <span class="title">syncUninterruptibly</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><h2 id="DefaultPromise"><a href="#DefaultPromise" class="headerlink" title="DefaultPromise"></a>DefaultPromise</h2><p>在DefaultChannelPromise中会，改变状态会通知listerner</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Promise&lt;V&gt; <span class="title">setSuccess</span><span class="params">(V result)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (setSuccess0(result)) &#123;</span><br><span class="line">        <span class="comment">//todo notify</span></span><br><span class="line">        notifyListeners();</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"complete already: "</span> + <span class="keyword">this</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">notifyListeners</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    EventExecutor executor = executor();</span><br><span class="line">    <span class="keyword">if</span> (executor.inEventLoop()) &#123;</span><br><span class="line">       ...</span><br><span class="line">                notifyListenersNow();</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">       ...</span><br><span class="line">    &#125;</span><br><span class="line">    safeExecute(executor, <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            notifyListenersNow();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">notifyListenersNow</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    ...</span><br><span class="line">    <span class="keyword">for</span> (;;) &#123;</span><br><span class="line">        <span class="keyword">if</span> (listeners <span class="keyword">instanceof</span> DefaultFutureListeners) &#123;</span><br><span class="line">            notifyListeners0((DefaultFutureListeners) listeners);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            notifyListener0(<span class="keyword">this</span>, (GenericFutureListener&lt;?&gt;) listeners);</span><br><span class="line">        &#125;</span><br><span class="line">    ...</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>eg:在register过程中<br>AbstactServerBootstrap.initAndRegister<br>    –&gt;register()<br>        –&gt;SingleThreadEventLoop.register(channel)<br>            –&gt;SingleThreadEventLoop.register(new DefaultChannelPromise(channel, this))<br>                –&gt;AbstractUnsafe.register(promise,evenlop)–&gt;AbstractUnsafe.resiter0(promise)–&gt;safeSetSuccess(promise)</p><p>在safeSetSuccess调用promise.traSuccess()。notifyPromise中的listerner</p>]]></content>
-      
-      
-      <categories>
-          
-          <category> netty </category>
           
       </categories>
       

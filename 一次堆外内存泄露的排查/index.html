@@ -104,15 +104,15 @@
 <meta property="og:site_name" content="liuhao163.github.io">
 <meta property="og:description" content="背景我们的一个后端java服务，采用的jetty+spring，但是一运行很快内存会站到4个g，启动参数以及top见下图。 1nohup java -Djava.awt.headless=true -Djava.net.preferIPv4Stack=true -DappName=uapi -server -Xms1g -Xmx1g -XX:SurvivorRatio=8 -Xss256k -XX">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:image" content="https://liuhao163.github.io/一次堆外内存泄露的排查/一次堆外内存泄露的排查/img1.png">
-<meta property="og:image" content="https://liuhao163.github.io/一次堆外内存泄露的排查/一次堆外内存泄露的排查/img2.png">
-<meta property="og:image" content="https://liuhao163.github.io/一次堆外内存泄露的排查/一次堆外内存泄露的排查/img3.png">
-<meta property="og:image" content="https://liuhao163.github.io/一次堆外内存泄露的排查/一次堆外内存泄露的排查/img4.png">
-<meta property="og:updated_time" content="2020-04-22T09:50:30.000Z">
+<meta property="og:image" content="https://liuhao163.github.io/一次堆外内存泄露的排查/img1.png">
+<meta property="og:image" content="https://liuhao163.github.io/一次堆外内存泄露的排查/img2.png">
+<meta property="og:image" content="https://liuhao163.github.io/一次堆外内存泄露的排查/img3.png">
+<meta property="og:image" content="https://liuhao163.github.io/一次堆外内存泄露的排查/img4.png">
+<meta property="og:updated_time" content="2020-04-22T10:07:47.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="一次堆外内存泄露的排查">
 <meta name="twitter:description" content="背景我们的一个后端java服务，采用的jetty+spring，但是一运行很快内存会站到4个g，启动参数以及top见下图。 1nohup java -Djava.awt.headless=true -Djava.net.preferIPv4Stack=true -DappName=uapi -server -Xms1g -Xmx1g -XX:SurvivorRatio=8 -Xss256k -XX">
-<meta name="twitter:image" content="https://liuhao163.github.io/一次堆外内存泄露的排查/一次堆外内存泄露的排查/img1.png">
+<meta name="twitter:image" content="https://liuhao163.github.io/一次堆外内存泄露的排查/img1.png">
 
 
 
@@ -394,7 +394,7 @@
                 
               
 
-              <time title="Created: 2020-04-22 16:49:52 / Modified: 09:50:30" itemprop="dateCreated datePublished" datetime="2020-04-22T16:49:52Z">2020-04-22</time>
+              <time title="Created: 2020-04-22 16:49:52 / Modified: 10:07:47" itemprop="dateCreated datePublished" datetime="2020-04-22T16:49:52Z">2020-04-22</time>
             
 
             
@@ -453,10 +453,10 @@
       
         <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>我们的一个后端java服务，采用的jetty+spring，但是一运行很快内存会站到4个g，启动参数以及top见下图。</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup java -Djava.awt.headless=true -Djava.net.preferIPv4Stack=true -DappName=uapi -server -Xms1g -Xmx1g -XX:SurvivorRatio=8 -Xss256k -XX:ReservedCodeCacheSize=64m -XX:+CMSParallelRemarkEnabled -XX:+UseCMSCompactAtFullCollection -XX:+CMSScavengeBeforeRemark -XX:+UseFastAccessorMethods -XX:+DisableExplicitGC -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintHeapAtGC -XX:+PrintTenuringDistribution -Xloggc:./gc.logs -jar xxx.jar &gt; nohup.txt 2&gt;&amp;1 &amp;</span><br></pre></td></tr></table></figure>
-<p><img src="./一次堆外内存泄露的排查/img1.png" alt="avator"></p>
+<p><img src="/一次堆外内存泄露的排查/img1.png" alt="avator"></p>
 <h2 id="分析思路"><a href="#分析思路" class="headerlink" title="分析思路"></a>分析思路</h2><p>jmap分析结果如下，堆和新生代没有异常，排除法判断是堆外内存导致。</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -heap $pid</span><br></pre></td></tr></table></figure>
-<p><img src="./一次堆外内存泄露的排查/img2.png" alt="avator"></p>
+<p><img src="/一次堆外内存泄露的排查/img2.png" alt="avator"></p>
 <p>又继续观察一段时间经过top发现RES没有继续升高整体稳定在4G左右，猜测不是内存泄露而是某些程序通过堆外内存生成了一些buffer。所以想看下内存都在干嘛。</p>
 <h3 id="dump内存"><a href="#dump内存" class="headerlink" title="dump内存"></a>dump内存</h3><p>  查看/proc/$pid/smaps 查看进程内存的使用情况发现进程大量申请了64MB的空间。【怀疑是glibc在2.10引入的arena引起的，需要后续深入研究】</p>
 <p>  通过gdb dump出内存来查看；【具体命令见下方】</p>
@@ -468,12 +468,12 @@
 <h4 id="4-使配置生效"><a href="#4-使配置生效" class="headerlink" title="4.使配置生效"></a>4.使配置生效</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/ld.so.conf.d/usr_local_lib.conf</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span>新增以下内容</span><br><span class="line">/usr/local/google-perftools/libunwind/lib</span><br><span class="line"><span class="meta">#</span> 按esc再:wq! #保存退出</span><br><span class="line"></span><br><span class="line">/sbin/ldconfig  #执行此命令，使libunwind生效。 需要sudo权限</span><br></pre></td></tr></table></figure>
 <h4 id="5-加入环境变量"><a href="#5-加入环境变量" class="headerlink" title="5.加入环境变量"></a>5.加入环境变量</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">export LD_PRELOAD=/usr/local/gperftools-2.5/lib/libtcmalloc.so</span><br><span class="line">export HEAPPROFILE=/usr/local/gperftools/tmp/gzip</span><br><span class="line"><span class="meta">#</span>#注意 mkdir -p /usr/local/gperftools/tmp</span><br></pre></td></tr></table></figure>
 <h3 id="问题解决"><a href="#问题解决" class="headerlink" title="问题解决"></a>问题解决</h3><p>通过top查看进程</p>
-<p><img src="./一次堆外内存泄露的排查/img3.png" alt="avator"></p>
+<p><img src="/一次堆外内存泄露的排查/img3.png" alt="avator"></p>
 <h3 id="用pperf查看内存"><a href="#用pperf查看内存" class="headerlink" title="用pperf查看内存"></a>用pperf查看内存</h3><p>上面的环境变量生效后运行java就会生成heap的快照地址在见上面<strong>HEAPPROFILE</strong>的设置</p>
 <p>用下面的命令处理heap的快照</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">cd /usr/local/gperftools/tmp/</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span>查看heap信息</span><br><span class="line">/usr/local/gperftools-2.5/bin/pprof --text $JAVA_HOME/bin/java /usr/local/gperftools/tmp/gzip_618.0057.heap</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span>导出pdf</span><br><span class="line">/usr/local/gperftools-2.5/bin/pprof --pdf $JAVA_HOME/bin/java /usr/local/gperftools/tmp/gzip_618.0057.heap &gt;gzip_618.0057.pdf</span><br></pre></td></tr></table></figure>
 <p>pdf的文件如下</p>
-<p><img src="./一次堆外内存泄露的排查/img4.png" alt="avator"></p>
+<p><img src="/一次堆外内存泄露的排查/img4.png" alt="avator"></p>
 <h2 id="后续还需要关注的点"><a href="#后续还需要关注的点" class="headerlink" title="后续还需要关注的点"></a>后续还需要关注的点</h2><ol>
 <li>64MB的空间是否是glibc引起的。</li>
 <li>生产环境上如何关掉heap的dump功能。</li>

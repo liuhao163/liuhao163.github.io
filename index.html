@@ -345,6 +345,373 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/一次堆外内存泄露的排查/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/一次堆外内存泄露的排查/" class="post-title-link" itemprop="url">一次堆外内存泄露的排查</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-04-22 16:49:52 / Modified: 09:50:30" itemprop="dateCreated datePublished" datetime="2020-04-22T16:49:52Z">2020-04-22</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/项目积累/" itemprop="url" rel="index"><span itemprop="name">项目积累</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>我们的一个后端java服务，采用的jetty+spring，但是一运行很快内存会站到4个g，启动参数以及top见下图。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup java -Djava.awt.headless=true -Djava.net.preferIPv4Stack=true -DappName=uapi -server -Xms1g -Xmx1g -XX:SurvivorRatio=8 -Xss256k -XX:ReservedCodeCacheSize=64m -XX:+CMSParallelRemarkEnabled -XX:+UseCMSCompactAtFullCollection -XX:+CMSScavengeBeforeRemark -XX:+UseFastAccessorMethods -XX:+DisableExplicitGC -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintHeapAtGC -XX:+PrintTenuringDistribution -Xloggc:./gc.logs -jar xxx.jar &gt; nohup.txt 2&gt;&amp;1 &amp;</span><br></pre></td></tr></table></figure>
+<p><img src="./一次堆外内存泄露的排查/img1.png" alt="avator"></p>
+<h2 id="分析思路"><a href="#分析思路" class="headerlink" title="分析思路"></a>分析思路</h2><p>jmap分析结果如下，堆和新生代没有异常，排除法判断是堆外内存导致。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -heap $pid</span><br></pre></td></tr></table></figure>
+<p><img src="./一次堆外内存泄露的排查/img2.png" alt="avator"></p>
+<p>又继续观察一段时间经过top发现RES没有继续升高整体稳定在4G左右，猜测不是内存泄露而是某些程序通过堆外内存生成了一些buffer。所以想看下内存都在干嘛。</p>
+<h3 id="dump内存"><a href="#dump内存" class="headerlink" title="dump内存"></a>dump内存</h3><p>  查看/proc/$pid/smaps 查看进程内存的使用情况发现进程大量申请了64MB的空间。【怀疑是glibc在2.10引入的arena引起的，需要后续深入研究】</p>
+<p>  通过gdb dump出内存来查看；【具体命令见下方】</p>
+  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"> 	gdb attach &lt;pid&gt;</span><br><span class="line">dump memory outfile.txt startAddreess endAddress</span><br><span class="line"><span class="meta">#</span>  其中startAddreess endAddress在上面的smaps中都有</span><br></pre></td></tr></table></figure>
+<p>  注意：生产环境慎用，会阻塞进程。<br>  发现很多内存是空的，这样的内存差不多有2.5个G，算上我们分配的堆内存空间差不多正好4个G，大概原因找到了：由于频繁的调用系统malloc:os申请内存没有回收。查阅文章，可以试着用tcmalloc来解决遂开始安装tcmalloc，并且用gperf分析具体的调用</p>
+<h3 id="安装tcmalloct和gperf"><a href="#安装tcmalloct和gperf" class="headerlink" title="安装tcmalloct和gperf"></a>安装tcmalloct和gperf</h3><h4 id="1-安装环境"><a href="#1-安装环境" class="headerlink" title="1.安装环境"></a>1.安装环境</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum -y install gcc gcc-c++</span><br></pre></td></tr></table></figure>
+<h4 id="2-安装libunwind"><a href="#2-安装libunwind" class="headerlink" title="2.安装libunwind"></a>2.安装libunwind</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">cd /usr/local/src</span><br><span class="line">wget  http://download.savannah.gnu.org/releases/libunwind/libunwind-0.99.tar.gz</span><br><span class="line">tar -xzvf libunwind-0.99.tar.gz</span><br><span class="line">cd libunwind-0.99</span><br><span class="line">./configure  --prefix=/usr/local/google-perftools/libunwind</span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
+<h4 id="3-安装gperftools"><a href="#3-安装gperftools" class="headerlink" title="3.安装gperftools"></a>3.安装gperftools</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">wget https://github.com/gperftools/gperftools/releases/download/gperftools-2.5/gperftools-2.5.tar.gz</span><br><span class="line">tar -xzvf gperftools-2.5.tar.gz</span><br><span class="line">cd gperftools-2.5</span><br><span class="line">./configure --prefix=/usr/local/google-perftools/gperftools-2.5/</span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
+<h4 id="4-使配置生效"><a href="#4-使配置生效" class="headerlink" title="4.使配置生效"></a>4.使配置生效</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/ld.so.conf.d/usr_local_lib.conf</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span>新增以下内容</span><br><span class="line">/usr/local/google-perftools/libunwind/lib</span><br><span class="line"><span class="meta">#</span> 按esc再:wq! #保存退出</span><br><span class="line"></span><br><span class="line">/sbin/ldconfig  #执行此命令，使libunwind生效。 需要sudo权限</span><br></pre></td></tr></table></figure>
+<h4 id="5-加入环境变量"><a href="#5-加入环境变量" class="headerlink" title="5.加入环境变量"></a>5.加入环境变量</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">export LD_PRELOAD=/usr/local/gperftools-2.5/lib/libtcmalloc.so</span><br><span class="line">export HEAPPROFILE=/usr/local/gperftools/tmp/gzip</span><br><span class="line"><span class="meta">#</span>#注意 mkdir -p /usr/local/gperftools/tmp</span><br></pre></td></tr></table></figure>
+<h3 id="问题解决"><a href="#问题解决" class="headerlink" title="问题解决"></a>问题解决</h3><p>通过top查看进程</p>
+<p><img src="./一次堆外内存泄露的排查/img3.png" alt="avator"></p>
+<h3 id="用pperf查看内存"><a href="#用pperf查看内存" class="headerlink" title="用pperf查看内存"></a>用pperf查看内存</h3><p>上面的环境变量生效后运行java就会生成heap的快照地址在见上面<strong>HEAPPROFILE</strong>的设置</p>
+<p>用下面的命令处理heap的快照</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">cd /usr/local/gperftools/tmp/</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span>查看heap信息</span><br><span class="line">/usr/local/gperftools-2.5/bin/pprof --text $JAVA_HOME/bin/java /usr/local/gperftools/tmp/gzip_618.0057.heap</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span>导出pdf</span><br><span class="line">/usr/local/gperftools-2.5/bin/pprof --pdf $JAVA_HOME/bin/java /usr/local/gperftools/tmp/gzip_618.0057.heap &gt;gzip_618.0057.pdf</span><br></pre></td></tr></table></figure>
+<p>pdf的文件如下</p>
+<p><img src="./一次堆外内存泄露的排查/img4.png" alt="avator"></p>
+<h2 id="后续还需要关注的点"><a href="#后续还需要关注的点" class="headerlink" title="后续还需要关注的点"></a>后续还需要关注的点</h2><ol>
+<li>64MB的空间是否是glibc引起的。</li>
+<li>生产环境上如何关掉heap的dump功能。</li>
+<li>为了减少tcmalloc的影响面，export这些环境变量要封装成脚本尽量只影响启动的java进程。</li>
+</ol>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/系统优化-CPU-如何排查CPU使用率到100/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/系统优化-CPU-如何排查CPU使用率到100/" class="post-title-link" itemprop="url">系统优化-CPU-如何排查CPU使用率到100%</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-04-22 13:50:04 / Modified: 05:57:16" itemprop="dateCreated datePublished" datetime="2020-04-22T13:50:04Z">2020-04-22</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/性能优化/" itemprop="url" rel="index"><span itemprop="name">性能优化</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/性能优化/CPU/" itemprop="url" rel="index"><span itemprop="name">CPU</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>cpu几个重要指标，单位是什么，</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/proc/cpu/stat|grep ^cpu</span><br></pre></td></tr></table></figure>
+<p>几个重要指标<br>user nice sys hi si guest steel。</p>
+<p>如何看空闲时间</p>
+<p>top 看第三行，按1查看每个cpu</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Cpu(s): 10.2%us,  5.8%sy,  0.0%ni, 83.2%id,  0.0%wa,  0.0%hi,  0.8%si,  0.0%st</span><br></pre></td></tr></table></figure>
+<p>pidstat</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Linux 3.10.0-514.16.1.es01.x86_64 (xxxxx.xxx)   04/22/2020      _x86_64_        (40 CPU)</span><br><span class="line"></span><br><span class="line">01:58:07 PM       PID    %usr %system  %guest    %CPU   CPU  Command</span><br><span class="line">01:58:12 PM       354    0.00    1.20    0.00    1.20    10  xxxxx</span><br><span class="line">01:58:12 PM       946    0.20    0.40    0.00    0.60    14  java</span><br></pre></td></tr></table></figure>
+<p>如何看具体的进程或者调用</p>
+<p>perf top </p>
+<p>perf record &amp;&amp; perf report</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>user+nice过高说明程序的进程可优化<br>sys过高可能是内核调度服务出问题<br>iowait过高可能是磁盘io出问题<br>si+hi过高可能是内核中断出问题</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/系统优化-CPU-理解CPU的上下文切换/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -365,7 +732,7 @@
           <h1 class="post-title" itemprop="name headline">
                 
                 
-                <a href="/系统优化-CPU-理解CPU的上下文切换/" class="post-title-link" itemprop="url">系统优化-CPU-理理解CPU的上下文切换</a>
+                <a href="/系统优化-CPU-理解CPU的上下文切换/" class="post-title-link" itemprop="url">系统优化-CPU-理解CPU的上下文切换</a>
               
             
           </h1>
@@ -407,7 +774,7 @@
                 
                   <span class="post-meta-item-text">Edited on</span>
                 
-                <time title="Modified: 2020-04-20 12:47:57" itemprop="dateModified" datetime="2020-04-20T12:47:57Z">2020-04-20</time>
+                <time title="Modified: 2020-04-22 05:49:29" itemprop="dateModified" datetime="2020-04-22T05:49:29Z">2020-04-22</time>
               
             
           </span>
@@ -2069,412 +2436,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Spring源码-BeanDefinition/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/Spring源码-BeanDefinition/" class="post-title-link" itemprop="url">Spring源码-BeanDefinition</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-12-27 00:00:00" itemprop="dateCreated datePublished" datetime="2019-12-27T00:00:00Z">2019-12-27</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2020-02-02 12:24:17" itemprop="dateModified" datetime="2020-02-02T12:24:17Z">2020-02-02</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/" itemprop="url" rel="index"><span itemprop="name">spring</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/源码/" itemprop="url" rel="index"><span itemprop="name">源码</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>  我们在xml中配置的bean标签、我们平时用的Component等注解标注的类，在容器中都会转化成BeanDefinition缓存在BeanDefinitionRegistry中。</p>
-<p>  在上一章<a href="/Spring源码-类扫描器-ClassPathBeanDefinitionScanner">Spring源码-类扫描器-ClassPathBeanDefinitionScanner</a>中介绍了通过scan(basePackages)来从指定basePakcages下的class文件到ScannedGenericBeanDefinition的过程，我们本章就以ScannedGenericBeanDefinition来描述BeanDefinition。</p>
-<p>  类图：</p>
-<p>  <img src="/Spring源码-BeanDefinition/ScannedGenericBeanDefinition.png" alt="avator"></p>
-<p>  ScannedGenericBeanDefinition继承自GenericBeanDefinition，GenericBeanDefinition继承自AbstractBeanDefinition，AbstractBeanDefinition实现了BeanDefinition接口。</p>
-<p>  同时实现了AnnotatedBeanDefinition接口用于访问注解的信息。</p>
-<h2 id="BeanDefinition"><a href="#BeanDefinition" class="headerlink" title="BeanDefinition"></a>BeanDefinition</h2><p>方法</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">String: getBeanClassName: 返回当前bean definition定义的类名</span><br><span class="line">ConstructorArgumentValues: getConstructorArgumentValues:返回bean的构造函数参数</span><br><span class="line">String[]: getDependsOn:返回当前bean所依赖的其他bean的名称</span><br><span class="line">String: getFactoryBeanName: 返回factory bean的名称</span><br><span class="line">String: getFactoryMethodName: 返回工厂方法的名称</span><br><span class="line">BeanDefinition: getOriginatingBeanDefinition: 返回原始的BeanDefinition,如果不存在返回<span class="keyword">null</span></span><br><span class="line">String: getParentName: 返回当前bean definition的父definition的名字</span><br><span class="line">MutablePropertyValues: getPropertyValues: 返回一个用于新的bean实例上的属性值</span><br><span class="line">String: getScope: 返回当前bean的目标范围</span><br><span class="line"><span class="keyword">boolean</span>: isAbstract: 当前bean是否是<span class="keyword">abstract</span>,意味着不能被实例化</span><br><span class="line"><span class="keyword">boolean</span>: isLazyInit: bean是否是延迟初始化</span><br><span class="line"><span class="keyword">boolean</span>: isPrimary: bean是否为自动装配的主要候选bean</span><br><span class="line"><span class="keyword">boolean</span>: isPrototype: bean是否是多实例</span><br><span class="line"><span class="keyword">boolean</span>: isSingleton: bean是否是单例</span><br><span class="line"><span class="keyword">void</span>: setAutowiredCandidate(<span class="keyword">boolean</span>): 设置bean是否对其他bean是自动装配的候选bean</span><br><span class="line"><span class="keyword">void</span>: setBeanClassName(String): 指定bean definition的类名</span><br><span class="line"><span class="keyword">void</span>: setDependsOn(String ...): 设置当前bean初始化所依赖的beans的名称</span><br><span class="line"><span class="keyword">void</span>: setFactoryBeanName(String): 如果factory bean的名称</span><br><span class="line"><span class="keyword">void</span>: setFactoryMethodName(String): 设置工厂的方法名</span><br><span class="line"><span class="keyword">void</span>: setLazyInit(<span class="keyword">boolean</span> lazyInit): 设置是否延迟初始化</span><br><span class="line"><span class="keyword">void</span>: setParentName(String): 设置父definition的名称</span><br><span class="line"><span class="keyword">void</span>: setPrimary(<span class="keyword">boolean</span>): 设置是否主要的候选bean</span><br><span class="line"><span class="keyword">void</span>: setScope(String): 设置bean的范围,如:单例,多实例</span><br></pre></td></tr></table></figure>
-<h2 id="AnnotatedBeanDefinition"><a href="#AnnotatedBeanDefinition" class="headerlink" title="AnnotatedBeanDefinition"></a>AnnotatedBeanDefinition</h2><p>  功能<br>  继承了BeanDefinition接口,并添加了对注解元数据访问的方法</p>
-<p>  方法</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">AnnotationMetadata <span class="title">getMetadata</span><span class="params">()</span>: 获得当前bean definition 的bean 类<span class="params">(class)</span>的注解元数据</span></span><br><span class="line"><span class="function">MethodMetadata <span class="title">getFactoryMethodMetadata</span><span class="params">()</span>: 获得当前bean definition 的工厂方法上的元数据</span></span><br></pre></td></tr></table></figure>
-<h2 id="AbstractBeanDefinition、GenericBeanDefinition"><a href="#AbstractBeanDefinition、GenericBeanDefinition" class="headerlink" title="AbstractBeanDefinition、GenericBeanDefinition"></a>AbstractBeanDefinition、GenericBeanDefinition</h2><p>  功能<br>  BeanDefinition的实现抽象类，GenericBeanDefinition继承自AbstractBeanDefinition</p>
-<h2 id="RootBeanDefinition"><a href="#RootBeanDefinition" class="headerlink" title="RootBeanDefinition"></a>RootBeanDefinition</h2><p>  功能<br>  spring的BeanDefinition有可能会包含parentName属性对应parentBeanDefinition，RootBeanDefinition会和parent的BeanDefinition进行Merge，容器根据RootBeanDefinition实例化对象。</p>
-<p>  应用</p>
-<ul>
-<li>在refresh方法的preInstantiateSingletons()中，将所有的non-lazy-init的单例的BeanDefinition实例化，</li>
-<li><p>getType、getBean</p>
-<p>关键代码：getMergedBeanDefinition 将parentBeanDefinition和childBeanDefinition合并。</p>
-</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> RootBeanDefinition <span class="title">getMergedBeanDefinition</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    String beanName, BeanDefinition bd, @Nullable BeanDefinition containingBd)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> BeanDefinitionStoreException </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">synchronized</span> (<span class="keyword">this</span>.mergedBeanDefinitions) &#123;</span><br><span class="line">    RootBeanDefinition mbd = <span class="keyword">null</span>;</span><br><span class="line">    RootBeanDefinition previous = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Check with full lock now in order to enforce the same merged instance.</span></span><br><span class="line">    <span class="keyword">if</span> (containingBd == <span class="keyword">null</span>) &#123;</span><br><span class="line">      mbd = <span class="keyword">this</span>.mergedBeanDefinitions.get(beanName);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (mbd == <span class="keyword">null</span> || mbd.stale) &#123;</span><br><span class="line">      previous = mbd;</span><br><span class="line">      <span class="comment">//没有parentBean,直接clone或者create</span></span><br><span class="line">      <span class="keyword">if</span> (bd.getParentName() == <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">// Use copy of given root bean definition.</span></span><br><span class="line">        <span class="keyword">if</span> (bd <span class="keyword">instanceof</span> RootBeanDefinition) &#123;</span><br><span class="line">          mbd = ((RootBeanDefinition) bd).cloneBeanDefinition();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">          mbd = <span class="keyword">new</span> RootBeanDefinition(bd);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// Child bean definition: needs to be merged with parent.</span></span><br><span class="line">        <span class="comment">//获取parentBean</span></span><br><span class="line">        BeanDefinition pbd;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">          String parentBeanName = transformedBeanName(bd.getParentName());</span><br><span class="line">          <span class="keyword">if</span> (!beanName.equals(parentBeanName)) &#123;</span><br><span class="line">            <span class="comment">//beanName和parentBeanName不相等，后去parentBean</span></span><br><span class="line">            pbd = getMergedBeanDefinition(parentBeanName);</span><br><span class="line">          &#125;</span><br><span class="line">          <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">//如果相等，parentFactory是ConfigurableBeanFactory，merge(这里本质上是递归的方式，知道所有的parent都merge)</span></span><br><span class="line">            BeanFactory parent = getParentBeanFactory();</span><br><span class="line">            <span class="keyword">if</span> (parent <span class="keyword">instanceof</span> ConfigurableBeanFactory) &#123;</span><br><span class="line">              pbd = ((ConfigurableBeanFactory) parent).getMergedBeanDefinition(parentBeanName);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> &#123;</span><br><span class="line">              <span class="keyword">throw</span> <span class="keyword">new</span> NoSuchBeanDefinitionException(parentBeanName,</span><br><span class="line">                  <span class="string">"Parent name '"</span> + parentBeanName + <span class="string">"' is equal to bean name '"</span> + beanName +</span><br><span class="line">                  <span class="string">"': cannot be resolved without an AbstractBeanFactory parent"</span>);</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">catch</span> (NoSuchBeanDefinitionException ex) &#123;</span><br><span class="line">          <span class="keyword">throw</span> <span class="keyword">new</span> BeanDefinitionStoreException(bd.getResourceDescription(), beanName,</span><br><span class="line">              <span class="string">"Could not resolve parent bean definition '"</span> + bd.getParentName() + <span class="string">"'"</span>, ex);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// Deep copy with overridden values.</span></span><br><span class="line">        mbd = <span class="keyword">new</span> RootBeanDefinition(pbd);<span class="comment">//创建parent的Root</span></span><br><span class="line">        mbd.overrideFrom(bd);<span class="comment">//merage</span></span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// Set default singleton scope, if not configured before.</span></span><br><span class="line">      <span class="keyword">if</span> (!StringUtils.hasLength(mbd.getScope())) &#123;</span><br><span class="line">        mbd.setScope(SCOPE_SINGLETON);</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// A bean contained in a non-singleton bean cannot be a singleton itself.</span></span><br><span class="line">      <span class="comment">// Let's correct this on the fly here, since this might be the result of</span></span><br><span class="line">      <span class="comment">// parent-child merging for the outer bean, in which case the original inner bean</span></span><br><span class="line">      <span class="comment">// definition will not have inherited the merged outer bean's singleton status.</span></span><br><span class="line">      <span class="keyword">if</span> (containingBd != <span class="keyword">null</span> &amp;&amp; !containingBd.isSingleton() &amp;&amp; mbd.isSingleton()) &#123;</span><br><span class="line">        mbd.setScope(containingBd.getScope());</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// Cache the merged bean definition for the time being</span></span><br><span class="line">      <span class="comment">// (it might still get re-merged later on in order to pick up metadata changes)</span></span><br><span class="line">      <span class="keyword">if</span> (containingBd == <span class="keyword">null</span> &amp;&amp; isCacheBeanMetadata()) &#123;</span><br><span class="line">        <span class="keyword">this</span>.mergedBeanDefinitions.put(beanName, mbd);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (previous != <span class="keyword">null</span>) &#123;</span><br><span class="line">      copyRelevantMergedBeanDefinitionCaches(previous, mbd);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> mbd;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Spring源码-Bean的生命周期/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/Spring源码-Bean的生命周期/" class="post-title-link" itemprop="url">Spring源码-Bean的生命周期</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-12-26 00:00:00" itemprop="dateCreated datePublished" datetime="2019-12-26T00:00:00Z">2019-12-26</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2020-02-03 16:19:51" itemprop="dateModified" datetime="2020-02-03T16:19:51Z">2020-02-03</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/" itemprop="url" rel="index"><span itemprop="name">spring</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/源码/" itemprop="url" rel="index"><span itemprop="name">源码</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>Spring容器中一个bean的生命周期如下：</p>
-<h2 id="Bean初始化前"><a href="#Bean初始化前" class="headerlink" title="Bean初始化前"></a>Bean初始化前</h2><p>  BeanFactoryPostProcessor–&gt;postProcessBeanFactory方法：针对的是BeanFactroy，在BeanFactroy的refresh方法中的invokeBeanFactoryPostProcessors中这一步。</p>
-<p>  作用：可以获取BeanDefiniton并且赋予一些属性初始值。</p>
-<h2 id="Bean初始化过程"><a href="#Bean初始化过程" class="headerlink" title="Bean初始化过程"></a>Bean初始化过程</h2><p>  构造方法</p>
-<p>  BeanNameAware–&gt;setBeanName方法:实现BeanNameAware接口，将BeanName传给Bean，在initializeBean过程中调用<br>  作用：Bean可以获取BeanName</p>
-<p>  ApplicationContextAware–&gt;setApplicationContext方法:实现ApplicationContextAware接口，将ApplicationContext传给Bean，在prepareBeanFactory过程中将ApplicationContextAwareProcessor加到beanFactory，在initializeBean方法中调用postProcessBeforeInitialization<br>  作用：Bean可以获取ApplicationContext</p>
-<p>  BeanPostProcessor–&gt;postProcessBeforeInitialization方法：不同于BeanFactoryPostProcessor的是，这里针对的是Bean对象本身，在initializeBean方法中的applyBeanPostProcessorsBeforeInitialization方法调用<br>  作用：针对特定的bean可以修改bean的属性等</p>
-<p>  @PostConstruct方法：通过注解@PostConstruct执行的方法，在构造函数后面执行。</p>
-<p>  InitializingBean–&gt;afterPropertiesSet方法：实现InitializingBean接口，在initializeBean方法中调用</p>
-<p> BeanPostProcessor–&gt;postProcessAfterInitialization方法：初始化Bean之后执行</p>
-<p> DisposableBean–&gt;destroy方法：bean的销毁方法，在容器被销毁时候回被调用<br> 作用：执行bean的清理工作等。</p>
-<p> 演示代码如下，请分别创建如下的文件。自行修改basePackages</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//测试类</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestObjImpl</span> <span class="keyword">implements</span> <span class="title">InitializingBean</span>, <span class="title">DisposableBean</span>, <span class="title">BeanNameAware</span>, <span class="title">ApplicationContextAware</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> String beanName=<span class="string">""</span>;</span><br><span class="line">  <span class="keyword">private</span> ApplicationContext applicationContext;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Autowired</span></span><br><span class="line">  <span class="keyword">private</span> TestObjImplWithOutAnnoation testObjImplWithOutAnnoation;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">TestObjImpl</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">"构造方法"</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@PostConstruct</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">init</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">"@PostConstruct方法"</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setBeanName</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">"BeanNameAware--&gt;setBeanName 方法"</span>);</span><br><span class="line">    <span class="keyword">this</span>.beanName = name;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">afterPropertiesSet</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">"InitializingBean--&gt;afterPropertiesSet 方法"</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setApplicationContext</span><span class="params">(ApplicationContext applicationContext)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">"ApplicationContextAware--&gt;setApplicationContext  方法"</span>);</span><br><span class="line">    <span class="keyword">this</span>.applicationContext=applicationContext;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">destroy</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">"DisposableBean--&gt;destroy 方法"</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">hello</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    System.out.println(beanName+<span class="string">" say hello"</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//BeanPostProcessor</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyBeanPostProcessor</span> <span class="keyword">implements</span> <span class="title">BeanPostProcessor</span> </span>&#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Object <span class="title">postProcessBeforeInitialization</span><span class="params">(Object bean, String beanName)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (bean <span class="keyword">instanceof</span> TestObjImpl) &#123;</span><br><span class="line">      System.out.println(<span class="string">"BeanPostProcessor--&gt;postProcessBeforeInitialization==="</span>+beanName);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> bean;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Object <span class="title">postProcessAfterInitialization</span><span class="params">(Object bean, String beanName)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (bean <span class="keyword">instanceof</span> TestObjImpl) &#123;</span><br><span class="line">      System.out.println(<span class="string">"BeanPostProcessor--&gt;postProcessAfterInitialization ==="</span>+beanName);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> bean;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//BeanFactoryPostProcessor</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestBeanFactoryPostProcessor</span> <span class="keyword">implements</span> <span class="title">BeanFactoryPostProcessor</span> </span>&#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">postProcessBeanFactory</span><span class="params">(ConfigurableListableBeanFactory beanFactory)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">"BeanFactoryPostProcessor--&gt;postProcessBeanFactory 方法"</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">//main</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Starter</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">    AnnotationConfigApplicationContext applicationContext= <span class="keyword">new</span> AnnotationConfigApplicationContext(<span class="string">"basePackages 需要自行修改"</span>);</span><br><span class="line">    TestObj obj=applicationContext.getBean(TestObj.class);</span><br><span class="line">    obj.hello();</span><br><span class="line">    applicationContext.close();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2521,7 +2482,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">155</span>
+                    <span class="site-state-item-count">157</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2733,7 +2694,11 @@
                     
                       
                     
-                    <span class="site-state-item-count">58</span>
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">60</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>

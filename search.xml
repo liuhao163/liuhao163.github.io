@@ -8,7 +8,7 @@
       <link href="/%E4%B8%80%E6%AC%A1%E5%A0%86%E5%A4%96%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E7%9A%84%E6%8E%92%E6%9F%A5/"/>
       <url>/%E4%B8%80%E6%AC%A1%E5%A0%86%E5%A4%96%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E7%9A%84%E6%8E%92%E6%9F%A5/</url>
       
-        <content type="html"><![CDATA[<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>我们的一个后端java服务，采用的jetty+spring，但是一运行很快内存会站到4个g，启动参数以及top见下图。</p><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup java -Djava.awt.headless=true -Djava.net.preferIPv4Stack=true -DappName=uapi -server -Xms1g -Xmx1g -XX:SurvivorRatio=8 -Xss256k -XX:ReservedCodeCacheSize=64m -XX:+CMSParallelRemarkEnabled -XX:+UseCMSCompactAtFullCollection -XX:+CMSScavengeBeforeRemark -XX:+UseFastAccessorMethods -XX:+DisableExplicitGC -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintHeapAtGC -XX:+PrintTenuringDistribution -Xloggc:./gc.logs -jar xxx.jar &gt; nohup.txt 2&gt;&amp;1 &amp;</span><br></pre></td></tr></table></figure><p><img src="/一次堆外内存泄露的排查/img1.png" alt="avator"></p><h2 id="分析思路"><a href="#分析思路" class="headerlink" title="分析思路"></a>分析思路</h2><p>jmap分析结果如下，堆和新生代没有异常，排除法判断是堆外内存导致。</p><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -heap $pid</span><br></pre></td></tr></table></figure><p><img src="/一次堆外内存泄露的排查/img2.png" alt="avator"></p><p>又继续观察一段时间经过top发现RES没有继续升高整体稳定在4G左右，猜测不是内存泄露而是某些程序通过堆外内存生成了一些buffer。所以想看下内存都在干嘛。</p><h3 id="dump内存"><a href="#dump内存" class="headerlink" title="dump内存"></a>dump内存</h3><p>  查看/proc/$pid/smaps 查看进程内存的使用情况发现进程大量申请了64MB的空间。【怀疑是glibc在2.10引入的arena引起的，需要后续深入研究】</p><p>  通过gdb dump出内存来查看；【具体命令见下方】</p>  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"> gdb attach &lt;pid&gt;</span><br><span class="line">dump memory outfile.txt startAddreess endAddress</span><br><span class="line"><span class="meta">#</span>  其中startAddreess endAddress在上面的smaps中都有</span><br></pre></td></tr></table></figure><p>  注意：生产环境慎用，会阻塞进程。<br>  发现很多内存是空的，这样的内存差不多有2.5个G，算上我们分配的堆内存空间差不多正好4个G，大概原因找到了：由于频繁的调用系统malloc:os申请内存没有回收。查阅文章，可以试着用tcmalloc来解决遂开始安装tcmalloc，并且用gperf分析具体的调用</p><h3 id="安装tcmalloct和gperf"><a href="#安装tcmalloct和gperf" class="headerlink" title="安装tcmalloct和gperf"></a>安装tcmalloct和gperf</h3><h4 id="1-安装环境"><a href="#1-安装环境" class="headerlink" title="1.安装环境"></a>1.安装环境</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum -y install gcc gcc-c++</span><br></pre></td></tr></table></figure><h4 id="2-安装libunwind"><a href="#2-安装libunwind" class="headerlink" title="2.安装libunwind"></a>2.安装libunwind</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">cd /usr/local/src</span><br><span class="line">wget  http://download.savannah.gnu.org/releases/libunwind/libunwind-0.99.tar.gz</span><br><span class="line">tar -xzvf libunwind-0.99.tar.gz</span><br><span class="line">cd libunwind-0.99</span><br><span class="line">./configure  --prefix=/usr/local/google-perftools/libunwind</span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure><h4 id="3-安装gperftools"><a href="#3-安装gperftools" class="headerlink" title="3.安装gperftools"></a>3.安装gperftools</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">wget https://github.com/gperftools/gperftools/releases/download/gperftools-2.5/gperftools-2.5.tar.gz</span><br><span class="line">tar -xzvf gperftools-2.5.tar.gz</span><br><span class="line">cd gperftools-2.5</span><br><span class="line">./configure --prefix=/usr/local/google-perftools/gperftools-2.5/</span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure><h4 id="4-使配置生效"><a href="#4-使配置生效" class="headerlink" title="4.使配置生效"></a>4.使配置生效</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/ld.so.conf.d/usr_local_lib.conf</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span>新增以下内容</span><br><span class="line">/usr/local/google-perftools/libunwind/lib</span><br><span class="line"><span class="meta">#</span> 按esc再:wq! #保存退出</span><br><span class="line"></span><br><span class="line">/sbin/ldconfig  #执行此命令，使libunwind生效。 需要sudo权限</span><br></pre></td></tr></table></figure><h4 id="5-加入环境变量"><a href="#5-加入环境变量" class="headerlink" title="5.加入环境变量"></a>5.加入环境变量</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">export LD_PRELOAD=/usr/local/gperftools-2.5/lib/libtcmalloc.so</span><br><span class="line">export HEAPPROFILE=/usr/local/gperftools/tmp/gzip</span><br><span class="line"><span class="meta">#</span>#注意 mkdir -p /usr/local/gperftools/tmp</span><br></pre></td></tr></table></figure><h3 id="问题解决"><a href="#问题解决" class="headerlink" title="问题解决"></a>问题解决</h3><p>通过top查看进程</p><p><img src="/一次堆外内存泄露的排查/img3.png" alt="avator"></p><h3 id="用pperf查看内存"><a href="#用pperf查看内存" class="headerlink" title="用pperf查看内存"></a>用pperf查看内存</h3><p>上面的环境变量生效后运行java就会生成heap的快照地址在见上面<strong>HEAPPROFILE</strong>的设置</p><p>用下面的命令处理heap的快照</p><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">cd /usr/local/gperftools/tmp/</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span>查看heap信息</span><br><span class="line">/usr/local/gperftools-2.5/bin/pprof --text $JAVA_HOME/bin/java /usr/local/gperftools/tmp/gzip_618.0057.heap</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span>导出pdf</span><br><span class="line">/usr/local/gperftools-2.5/bin/pprof --pdf $JAVA_HOME/bin/java /usr/local/gperftools/tmp/gzip_618.0057.heap &gt;gzip_618.0057.pdf</span><br></pre></td></tr></table></figure><p>pdf的文件如下</p><p><img src="/一次堆外内存泄露的排查/img4.png" alt="avator"></p><h2 id="后续还需要关注的点"><a href="#后续还需要关注的点" class="headerlink" title="后续还需要关注的点"></a>后续还需要关注的点</h2><ol><li>64MB的空间是否是glibc引起的。</li><li>生产环境上如何关掉heap的dump功能。</li><li>为了减少tcmalloc的影响面，export这些环境变量要封装成脚本尽量只影响启动的java进程。</li></ol>]]></content>
+        <content type="html"><![CDATA[<h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>我们的一个后端java服务，采用的jetty+spring，堆内存1个g,但是一运行很快内存会占到4个g，启动参数以及top见下图：</p><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup java -Djava.awt.headless=true -Djava.net.preferIPv4Stack=true -DappName=uapi -server -Xms1g -Xmx1g -XX:SurvivorRatio=8 -Xss256k -XX:ReservedCodeCacheSize=64m -XX:+CMSParallelRemarkEnabled -XX:+UseCMSCompactAtFullCollection -XX:+CMSScavengeBeforeRemark -XX:+UseFastAccessorMethods -XX:+DisableExplicitGC -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintHeapAtGC -XX:+PrintTenuringDistribution -Xloggc:./gc.logs -jar xxx.jar &gt; nohup.txt 2&gt;&amp;1 &amp;</span><br></pre></td></tr></table></figure><p><img src="/一次堆外内存泄露的排查/img1.png" alt="avator"></p><h2 id="分析思路"><a href="#分析思路" class="headerlink" title="分析思路"></a>分析思路</h2><p>jmap分析结果如下，堆和新生代没有异常，排除法判断是堆外内存导致。</p><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -heap $pid</span><br></pre></td></tr></table></figure><p><img src="/一次堆外内存泄露的排查/img2.png" alt="avator"></p><p>持续观察一段时间后,通过top发现RES没有继续升高整体稳定在4g左右，猜测不是内存泄露而是某些程序通过堆外内存生成了一些buffer。所以想看下内存都在干嘛。</p><h3 id="dump内存"><a href="#dump内存" class="headerlink" title="dump内存"></a>dump内存</h3><p>  查看/proc/$pid/smaps 查看进程内存的使用情况发现进程大量申请了64MB的空间。【怀疑是glibc在2.10引入的arena引起的，需要后续深入研究】</p><p>  通过gdb dump出内存来查看；【具体命令见下方】</p>  <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"> gdb attach &lt;pid&gt;</span><br><span class="line">dump memory outfile.txt startAddreess endAddress</span><br><span class="line"><span class="meta">#</span>  其中startAddreess endAddress在上面的smaps中都有</span><br><span class="line"></span><br><span class="line">strings outfile.txt</span><br></pre></td></tr></table></figure><p>  注意：生产环境慎用，gdb会阻塞进程。<br>  这些64MB的很多内存是空的，总共加起来差不多有2.5g，算上我们分配的堆内存空间差不多正好4个G，大概原因找到了：由于频繁的调用系统malloc:os申请内存没有回收。查阅文章，可以试着用tcmalloc来解决遂开始安装tcmalloc，并且用gperf分析具体的调用</p><h3 id="安装tcmalloct和gperf"><a href="#安装tcmalloct和gperf" class="headerlink" title="安装tcmalloct和gperf"></a>安装tcmalloct和gperf</h3><h4 id="1-安装环境"><a href="#1-安装环境" class="headerlink" title="1.安装环境"></a>1.安装环境</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum -y install gcc gcc-c++</span><br></pre></td></tr></table></figure><h4 id="2-安装libunwind"><a href="#2-安装libunwind" class="headerlink" title="2.安装libunwind"></a>2.安装libunwind</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">cd /usr/local/src</span><br><span class="line">wget  http://download.savannah.gnu.org/releases/libunwind/libunwind-0.99.tar.gz</span><br><span class="line">tar -xzvf libunwind-0.99.tar.gz</span><br><span class="line">cd libunwind-0.99</span><br><span class="line">./configure  --prefix=/usr/local/google-perftools/libunwind</span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure><h4 id="3-安装gperftools"><a href="#3-安装gperftools" class="headerlink" title="3.安装gperftools"></a>3.安装gperftools</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">wget https://github.com/gperftools/gperftools/releases/download/gperftools-2.5/gperftools-2.5.tar.gz</span><br><span class="line">tar -xzvf gperftools-2.5.tar.gz</span><br><span class="line">cd gperftools-2.5</span><br><span class="line">./configure --prefix=/usr/local/google-perftools/gperftools-2.5/</span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure><h4 id="4-使配置生效"><a href="#4-使配置生效" class="headerlink" title="4.使配置生效"></a>4.使配置生效</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/ld.so.conf.d/usr_local_lib.conf</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span>新增以下内容</span><br><span class="line">/usr/local/google-perftools/libunwind/lib</span><br><span class="line"><span class="meta">#</span> 按esc再:wq! #保存退出</span><br><span class="line"></span><br><span class="line">/sbin/ldconfig  #执行此命令，使libunwind生效。 需要sudo权限</span><br></pre></td></tr></table></figure><h4 id="5-加入环境变量"><a href="#5-加入环境变量" class="headerlink" title="5.加入环境变量"></a>5.加入环境变量</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">export LD_PRELOAD=/usr/local/gperftools-2.5/lib/libtcmalloc.so</span><br><span class="line">export HEAPPROFILE=/usr/local/gperftools/tmp/gzip</span><br><span class="line"><span class="meta">#</span>#注意 mkdir -p /usr/local/gperftools/tmp</span><br></pre></td></tr></table></figure><h3 id="问题解决"><a href="#问题解决" class="headerlink" title="问题解决"></a>问题解决</h3><p>通过top查看进程</p><p><img src="/一次堆外内存泄露的排查/img3.png" alt="avator"></p><h3 id="用pperf查看内存"><a href="#用pperf查看内存" class="headerlink" title="用pperf查看内存"></a>用pperf查看内存</h3><p>上面的环境变量生效后运行java就会生成heap的快照地址在见上面<strong>HEAPPROFILE</strong>的设置</p><p>用下面的命令处理heap的快照</p><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">cd /usr/local/gperftools/tmp/</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span>查看heap信息</span><br><span class="line">/usr/local/gperftools-2.5/bin/pprof --text $JAVA_HOME/bin/java /usr/local/gperftools/tmp/gzip_618.0057.heap</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span>导出pdf</span><br><span class="line">/usr/local/gperftools-2.5/bin/pprof --pdf $JAVA_HOME/bin/java /usr/local/gperftools/tmp/gzip_618.0057.heap &gt;gzip_618.0057.pdf</span><br></pre></td></tr></table></figure><p>pdf的文件如下</p><p><img src="/一次堆外内存泄露的排查/img4.png" alt="avator"></p><h2 id="后续还需要关注的点"><a href="#后续还需要关注的点" class="headerlink" title="后续还需要关注的点"></a>后续还需要关注的点</h2><ol><li>64MB的空间是否是glibc引起的。</li><li>生产环境上如何关掉heap的dump功能。</li><li>为了减少tcmalloc的影响面，export这些环境变量要封装成脚本尽量只影响启动的java进程。</li></ol>]]></content>
       
       
       <categories>
@@ -818,9 +818,9 @@
       
         <tags>
             
-            <tag> 数据库 </tag>
-            
             <tag> nosql </tag>
+            
+            <tag> 数据库 </tag>
             
             <tag> redis </tag>
             
@@ -847,9 +847,9 @@
       
         <tags>
             
-            <tag> 数据库 </tag>
-            
             <tag> nosql </tag>
+            
+            <tag> 数据库 </tag>
             
             <tag> redis </tag>
             
@@ -876,9 +876,9 @@
       
         <tags>
             
-            <tag> 数据库 </tag>
-            
             <tag> nosql </tag>
+            
+            <tag> 数据库 </tag>
             
             <tag> redis </tag>
             
@@ -905,9 +905,9 @@
       
         <tags>
             
-            <tag> 数据库 </tag>
-            
             <tag> nosql </tag>
+            
+            <tag> 数据库 </tag>
             
             <tag> redis </tag>
             
@@ -934,9 +934,9 @@
       
         <tags>
             
-            <tag> 数据库 </tag>
-            
             <tag> nosql </tag>
+            
+            <tag> 数据库 </tag>
             
             <tag> redis </tag>
             
@@ -963,9 +963,9 @@
       
         <tags>
             
-            <tag> 数据库 </tag>
-            
             <tag> nosql </tag>
+            
+            <tag> 数据库 </tag>
             
             <tag> redis </tag>
             
@@ -4351,27 +4351,6 @@
     
     
     <entry>
-      <title>Mysql是如何保证数据不丢失的</title>
-      <link href="/mysql/mysql%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%A2%E5%A4%B1/"/>
-      <url>/mysql/mysql%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%A2%E5%A4%B1/</url>
-      
-        <content type="html"><![CDATA[<h1 id="Mysql是如何保证数据不丢失的"><a href="#Mysql是如何保证数据不丢失的" class="headerlink" title="Mysql是如何保证数据不丢失的"></a>Mysql是如何保证数据不丢失的</h1><h2 id="binlog"><a href="#binlog" class="headerlink" title="binlog"></a>binlog</h2><ol><li>事务执行过程中binlog写入到binlog cache,事务提交时写入到binlog文件中。</li><li>事务的原子性决定这无论事务有多大，binlogcahe都要一次性完整的写入到binlog文件中，写入方式如下：<ol><li>系统为每个binlog_cache开辟了一片内存（每个线程都有一个），参数是blong_cache_size,超过这个阈值的会保存在临时文件中</li><li>事务提交时候，出于性能的考虑回将bionlog_cache都write到文件系统的page_cache中，在通过fsync刷新到磁盘文件中。如下图所示是binlog的同步机制。</li></ol></li></ol><p>如图：<br><img src="/images/mysql/binglog_写入.png" alt="avatar"></p><ul><li>只有fsnyc刷盘这不操作才会占用IOPS。</li><li>write和fsync的时机是用binglog_sync参数来控制的<ul><li>=0 每次事务提交时候都只write不sync</li><li>=1 每次事务提交都sync</li><li>=N（N&gt;1） 每次事务提交都write，积攒到N时候才会fsync</li></ul></li></ul><p>在IO出现瓶颈时候我们可以设置一个较大的值来提升性能（个人不是很推荐做，如果出现这种情况建议从业务考虑优化数据库）</p><h2 id="redolog的写入机制"><a href="#redolog的写入机制" class="headerlink" title="redolog的写入机制"></a>redolog的写入机制</h2><p>redolog从写入到最终写入到磁盘中会经历如下的阶段：写入redolog-buffer中–&gt;在事务提交、或者一定时机（见下面）下：redolog-buffer写入到文件系统的pagecache(write)–&gt;文件系统pagecache写入到磁盘中(fsnyc)，这样的操作的意义是为了提高mysql的吞吐的，具体的机制见下面：</p><p><img src="/images/mysql/redolog_3种状态.png" alt="avatar"></p><ol><li>一个事务会产生很多条redolog如果每次直接持久化磁盘会消耗大量的磁盘IO，所以redolog会先写入redolog-buffer中，之后在write文件系统的到pagecache中，这俩步是内存操作很快。</li><li>是否会影响数据的持久化，比如mysql在事务进行中crash了，这时候redolog-buffer中的数据丢失怎么办？答案是由于事物没有提交，所以事物会进行回滚。</li><li>redolog-buffer持久化的条件和机制：<ol><li>受参数innodb_flush_log_at_tx_commit的控制：<ol><li>=0：每次提交都只停留在redolog-buffer中；</li><li>=1：每次提交都会持久化到磁盘中；</li><li>=2：每次提交都只会写入到文件的pagecache中；</li></ol></li><li>innodb后台会有一个线程每秒一次，会把redolog-buffer中的日志，调用write写到pagecahe中，在fsync到磁盘中；</li><li>其他场景触发redolog的持久化<ol><li>当redolog-buffer占到了innodb_log_buffer_size的一半时候，会调用write将buffer中的log写入到文件系统的pagecache中</li><li>另一种是并行事物提交时候，如果innodb_flush_log_at_tx_commit设置为1时候会，即时当前事物没有commit，也会将redolog写入到文件系统中。</li></ol></li></ol></li></ol><h3 id="双1设置"><a href="#双1设置" class="headerlink" title="双1设置"></a>双1设置</h3><p>即：binlogsnyc=1，innodb_flush_log_at_tx_commit也设置为1。<br>  由于innodb的事物提交redolog和binlog是2PC。<br>     所以当redolog在prepare时候，为了故障恢复一定会持久化一次，所以这时候需要fsync到磁盘中。<br>     binlog在进行fsync到磁盘中<br>     这时候事物在redolog在commit时候，mysql由于有奔溃恢复机制和后台线程每秒轮训一次刷盘会认为redolog没有必要在fsync一次到磁盘了，只会写入到文件的pagecache中。</p><h3 id="gourp-commit机制"><a href="#gourp-commit机制" class="headerlink" title="gourp commit机制"></a>gourp commit机制</h3><p>一个事物的提交由于redolog和binglog都要持久化，磁盘IO还是很大Mysql是如何优化这部分呢。这里mysql采用了组提交（group commit）的方式。<br>如图所示：<br><img src="/images/mysql/group_commit机制.png" alt="avatar"></p><ul><li>首先介绍下LSN(log sequence number)，一个单调递增的序号，用来对应redolog的一个个写入点。当然也会写入到数据页中，用于flush脏盘时候避免重复执行（不在讨论范围内）</li><li>如图，当3个事务同时都写完redolog-buffer 并且处于prepare阶段时候，这时候就构成了一个gourp<ol><li>第一个先到达的trx1，成为组里的leader，LSN=50;</li><li>等trx1开始写盘时候，组里已经有其他俩个事物，这时候LSN=160;</li><li>trx1开始写盘，所有lsn&lt;160的日志都会被写入到磁盘中；</li><li>trx3,trx4就可以直接返回了；</li></ol></li></ul><p>所以在并发事物中，当写完redolog，越晚调用fsync，带的log越多性能也就越好；mysql在这方法采用的是拖时间的策略，即:在双1配置下<br>  redolog-prepare(write)–&gt;binglog(write)–&gt;redolog-prepare(fsync)–&gt;binlog(fsnyc)–&gt;redolog commit(write)</p><p>如图：<br><img src="/images/mysql/redolog_binlog_groupcommit.png" alt="avatar"></p><ul><li>如上图所示，由于redolog在write和fsnyc中有一个binlog-write的过程，所以在持久化磁盘时候你可以带上更多的log；</li><li>另外：binlog也可以采用组提交，只不过由于这俩个阶段间隔短可能没有redolog那么明显<ul><li>binlog的gruop commit的参数如下：<ul><li>binlog_group_commit_sync_delay:表示延迟多少微妙后就会调用fsnyc</li><li>binlog_gourp_commit_sync_no_delay_count:表示累计多少次后才调用fsync</li><li>俩个参数是or的关系，不过如果binlog_group_commit_sync_delay设置为0，binlog_gourp_commit_sync_no_delay_count就无效了</li></ul></li></ul></li></ul><p>综上所述：</p><ul><li>mysql的WAL机制是由于redolog和binlog都是顺序写，保证了高吞吐；</li><li>同时采用了组提交的方式，来减少了IOPS;</li></ul>]]></content>
-      
-      
-      <categories>
-          
-          <category> Mysql </category>
-          
-          <category> Mysql基础 </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
       <title>MySql是如何降低主备延迟的</title>
       <link href="/mysql/mysql%E6%98%AF%E5%A6%82%E4%BD%95%E9%99%8D%E4%BD%8E%E4%B8%BB%E5%A4%87%E5%BB%B6%E8%BF%9F%E7%9A%84/"/>
       <url>/mysql/mysql%E6%98%AF%E5%A6%82%E4%BD%95%E9%99%8D%E4%BD%8E%E4%B8%BB%E5%A4%87%E5%BB%B6%E8%BF%9F%E7%9A%84/</url>
@@ -4384,6 +4363,27 @@
           <category> Mysql </category>
           
           <category> Mysql高可用架构 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>Mysql是如何保证数据不丢失的</title>
+      <link href="/mysql/mysql%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%A2%E5%A4%B1/"/>
+      <url>/mysql/mysql%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%A2%E5%A4%B1/</url>
+      
+        <content type="html"><![CDATA[<h1 id="Mysql是如何保证数据不丢失的"><a href="#Mysql是如何保证数据不丢失的" class="headerlink" title="Mysql是如何保证数据不丢失的"></a>Mysql是如何保证数据不丢失的</h1><h2 id="binlog"><a href="#binlog" class="headerlink" title="binlog"></a>binlog</h2><ol><li>事务执行过程中binlog写入到binlog cache,事务提交时写入到binlog文件中。</li><li>事务的原子性决定这无论事务有多大，binlogcahe都要一次性完整的写入到binlog文件中，写入方式如下：<ol><li>系统为每个binlog_cache开辟了一片内存（每个线程都有一个），参数是blong_cache_size,超过这个阈值的会保存在临时文件中</li><li>事务提交时候，出于性能的考虑回将bionlog_cache都write到文件系统的page_cache中，在通过fsync刷新到磁盘文件中。如下图所示是binlog的同步机制。</li></ol></li></ol><p>如图：<br><img src="/images/mysql/binglog_写入.png" alt="avatar"></p><ul><li>只有fsnyc刷盘这不操作才会占用IOPS。</li><li>write和fsync的时机是用binglog_sync参数来控制的<ul><li>=0 每次事务提交时候都只write不sync</li><li>=1 每次事务提交都sync</li><li>=N（N&gt;1） 每次事务提交都write，积攒到N时候才会fsync</li></ul></li></ul><p>在IO出现瓶颈时候我们可以设置一个较大的值来提升性能（个人不是很推荐做，如果出现这种情况建议从业务考虑优化数据库）</p><h2 id="redolog的写入机制"><a href="#redolog的写入机制" class="headerlink" title="redolog的写入机制"></a>redolog的写入机制</h2><p>redolog从写入到最终写入到磁盘中会经历如下的阶段：写入redolog-buffer中–&gt;在事务提交、或者一定时机（见下面）下：redolog-buffer写入到文件系统的pagecache(write)–&gt;文件系统pagecache写入到磁盘中(fsnyc)，这样的操作的意义是为了提高mysql的吞吐的，具体的机制见下面：</p><p><img src="/images/mysql/redolog_3种状态.png" alt="avatar"></p><ol><li>一个事务会产生很多条redolog如果每次直接持久化磁盘会消耗大量的磁盘IO，所以redolog会先写入redolog-buffer中，之后在write文件系统的到pagecache中，这俩步是内存操作很快。</li><li>是否会影响数据的持久化，比如mysql在事务进行中crash了，这时候redolog-buffer中的数据丢失怎么办？答案是由于事物没有提交，所以事物会进行回滚。</li><li>redolog-buffer持久化的条件和机制：<ol><li>受参数innodb_flush_log_at_tx_commit的控制：<ol><li>=0：每次提交都只停留在redolog-buffer中；</li><li>=1：每次提交都会持久化到磁盘中；</li><li>=2：每次提交都只会写入到文件的pagecache中；</li></ol></li><li>innodb后台会有一个线程每秒一次，会把redolog-buffer中的日志，调用write写到pagecahe中，在fsync到磁盘中；</li><li>其他场景触发redolog的持久化<ol><li>当redolog-buffer占到了innodb_log_buffer_size的一半时候，会调用write将buffer中的log写入到文件系统的pagecache中</li><li>另一种是并行事物提交时候，如果innodb_flush_log_at_tx_commit设置为1时候会，即时当前事物没有commit，也会将redolog写入到文件系统中。</li></ol></li></ol></li></ol><h3 id="双1设置"><a href="#双1设置" class="headerlink" title="双1设置"></a>双1设置</h3><p>即：binlogsnyc=1，innodb_flush_log_at_tx_commit也设置为1。<br>  由于innodb的事物提交redolog和binlog是2PC。<br>     所以当redolog在prepare时候，为了故障恢复一定会持久化一次，所以这时候需要fsync到磁盘中。<br>     binlog在进行fsync到磁盘中<br>     这时候事物在redolog在commit时候，mysql由于有奔溃恢复机制和后台线程每秒轮训一次刷盘会认为redolog没有必要在fsync一次到磁盘了，只会写入到文件的pagecache中。</p><h3 id="gourp-commit机制"><a href="#gourp-commit机制" class="headerlink" title="gourp commit机制"></a>gourp commit机制</h3><p>一个事物的提交由于redolog和binglog都要持久化，磁盘IO还是很大Mysql是如何优化这部分呢。这里mysql采用了组提交（group commit）的方式。<br>如图所示：<br><img src="/images/mysql/group_commit机制.png" alt="avatar"></p><ul><li>首先介绍下LSN(log sequence number)，一个单调递增的序号，用来对应redolog的一个个写入点。当然也会写入到数据页中，用于flush脏盘时候避免重复执行（不在讨论范围内）</li><li>如图，当3个事务同时都写完redolog-buffer 并且处于prepare阶段时候，这时候就构成了一个gourp<ol><li>第一个先到达的trx1，成为组里的leader，LSN=50;</li><li>等trx1开始写盘时候，组里已经有其他俩个事物，这时候LSN=160;</li><li>trx1开始写盘，所有lsn&lt;160的日志都会被写入到磁盘中；</li><li>trx3,trx4就可以直接返回了；</li></ol></li></ul><p>所以在并发事物中，当写完redolog，越晚调用fsync，带的log越多性能也就越好；mysql在这方法采用的是拖时间的策略，即:在双1配置下<br>  redolog-prepare(write)–&gt;binglog(write)–&gt;redolog-prepare(fsync)–&gt;binlog(fsnyc)–&gt;redolog commit(write)</p><p>如图：<br><img src="/images/mysql/redolog_binlog_groupcommit.png" alt="avatar"></p><ul><li>如上图所示，由于redolog在write和fsnyc中有一个binlog-write的过程，所以在持久化磁盘时候你可以带上更多的log；</li><li>另外：binlog也可以采用组提交，只不过由于这俩个阶段间隔短可能没有redolog那么明显<ul><li>binlog的gruop commit的参数如下：<ul><li>binlog_group_commit_sync_delay:表示延迟多少微妙后就会调用fsnyc</li><li>binlog_gourp_commit_sync_no_delay_count:表示累计多少次后才调用fsync</li><li>俩个参数是or的关系，不过如果binlog_group_commit_sync_delay设置为0，binlog_gourp_commit_sync_no_delay_count就无效了</li></ul></li></ul></li></ul><p>综上所述：</p><ul><li>mysql的WAL机制是由于redolog和binlog都是顺序写，保证了高吞吐；</li><li>同时采用了组提交的方式，来减少了IOPS;</li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> Mysql </category>
+          
+          <category> Mysql基础 </category>
           
       </categories>
       

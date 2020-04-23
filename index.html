@@ -407,7 +407,7 @@
                 
                   <span class="post-meta-item-text">Edited on</span>
                 
-                <time title="Modified: 2020-04-23 09:15:31" itemprop="dateModified" datetime="2020-04-23T09:15:31Z">2020-04-23</time>
+                <time title="Modified: 2020-04-23 09:20:55" itemprop="dateModified" datetime="2020-04-23T09:20:55Z">2020-04-23</time>
               
             
           </span>
@@ -502,8 +502,14 @@
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">cd /usr/local/gperftools/tmp/</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">查看heap信息</span></span><br><span class="line">/usr/local/gperftools-2.5/bin/pprof --text $JAVA_HOME/bin/java /usr/local/gperftools/tmp/gzip_618.0057.heap</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">导出pdf</span></span><br><span class="line">/usr/local/gperftools-2.5/bin/pprof --pdf $JAVA_HOME/bin/java /usr/local/gperftools/tmp/gzip_618.0057.heap &gt;gzip_618.0057.pdf</span><br></pre></td></tr></table></figure>
 <p>pdf的文件如下</p>
 <p><img src="/一次堆外内存泄露的排查/img4.png" alt="avator"></p>
-<h2 id="柳暗花明又一村，简单的解决方案修改jvm的参数"><a href="#柳暗花明又一村，简单的解决方案修改jvm的参数" class="headerlink" title="柳暗花明又一村，简单的解决方案修改jvm的参数"></a>柳暗花明又一村，简单的解决方案修改jvm的参数</h2><p>  调整jvm的参数：-XX:+UseG1GC <strong>-XX:MaxMetaspaceSize=256m -XX:CompressedClassSpaceSize=128m</strong> -Xmx1g</p>
-<p>  CompressedClassSpaceSize【默认是1G】，UseCompressedClassPointers采用32位的offset来保存class pointer应用，CompressedClassSpace分配在MaxMetaspaceSize里头。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li>原因：glibc的ptmalloc的arana机制会在并发情况下额外申请很多64MB内存空间，这部分空间不会回收的会重复利用。因为服务的线程数一定所以一般来讲不会出现泄漏，而是内存空洞问题。系统资源不足进程就会被kill</li>
+<li>解决方案：<ul>
+<li>ptmalloc取代tcmalloc。</li>
+<li>减少堆大小。</li>
+</ul>
+</li>
+</ul>
 
           
         

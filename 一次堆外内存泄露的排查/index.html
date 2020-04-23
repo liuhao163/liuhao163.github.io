@@ -111,7 +111,7 @@
 <meta property="og:image" content="https://liuhao163.github.io/一次堆外内存泄露的排查/img3-1.png">
 <meta property="og:image" content="https://liuhao163.github.io/一次堆外内存泄露的排查/img3-2.png">
 <meta property="og:image" content="https://liuhao163.github.io/一次堆外内存泄露的排查/img4.png">
-<meta property="og:updated_time" content="2020-04-23T09:15:31.000Z">
+<meta property="og:updated_time" content="2020-04-23T09:20:55.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="一次堆外内存泄露的排查">
 <meta name="twitter:description" content="背景我们的一个后端java服务，采用的jetty+spring，堆内存1个g,但是一运行很快内存会占到4个g，启动参数以及top见下图： 1nohup java -Djava.awt.headless=true -Djava.net.preferIPv4Stack=true -DappName=uapi -server -Xms1g -Xmx1g -XX:SurvivorRatio=8 -Xss2">
@@ -414,7 +414,7 @@
                 
                   <span class="post-meta-item-text">Edited on</span>
                 
-                <time title="Modified: 2020-04-23 09:15:31" itemprop="dateModified" datetime="2020-04-23T09:15:31Z">2020-04-23</time>
+                <time title="Modified: 2020-04-23 09:20:55" itemprop="dateModified" datetime="2020-04-23T09:20:55Z">2020-04-23</time>
               
             
           </span>
@@ -507,8 +507,14 @@
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">cd /usr/local/gperftools/tmp/</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">查看heap信息</span></span><br><span class="line">/usr/local/gperftools-2.5/bin/pprof --text $JAVA_HOME/bin/java /usr/local/gperftools/tmp/gzip_618.0057.heap</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">导出pdf</span></span><br><span class="line">/usr/local/gperftools-2.5/bin/pprof --pdf $JAVA_HOME/bin/java /usr/local/gperftools/tmp/gzip_618.0057.heap &gt;gzip_618.0057.pdf</span><br></pre></td></tr></table></figure>
 <p>pdf的文件如下</p>
 <p><img src="/一次堆外内存泄露的排查/img4.png" alt="avator"></p>
-<h2 id="柳暗花明又一村，简单的解决方案修改jvm的参数"><a href="#柳暗花明又一村，简单的解决方案修改jvm的参数" class="headerlink" title="柳暗花明又一村，简单的解决方案修改jvm的参数"></a>柳暗花明又一村，简单的解决方案修改jvm的参数</h2><p>  调整jvm的参数：-XX:+UseG1GC <strong>-XX:MaxMetaspaceSize=256m -XX:CompressedClassSpaceSize=128m</strong> -Xmx1g</p>
-<p>  CompressedClassSpaceSize【默认是1G】，UseCompressedClassPointers采用32位的offset来保存class pointer应用，CompressedClassSpace分配在MaxMetaspaceSize里头。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li>原因：glibc的ptmalloc的arana机制会在并发情况下额外申请很多64MB内存空间，这部分空间不会回收的会重复利用。因为服务的线程数一定所以一般来讲不会出现泄漏，而是内存空洞问题。系统资源不足进程就会被kill</li>
+<li>解决方案：<ul>
+<li>ptmalloc取代tcmalloc。</li>
+<li>减少堆大小。</li>
+</ul>
+</li>
+</ul>
 
       
     </div>
@@ -909,7 +915,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分析思路"><span class="nav-number">2.</span> <span class="nav-text">分析思路</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#排查问题步骤：观察内存"><span class="nav-number">2.1.</span> <span class="nav-text">排查问题步骤：观察内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#排查问题步骤：dump内存"><span class="nav-number">2.2.</span> <span class="nav-text">排查问题步骤：dump内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#排查问题步骤：安装tcmalloct和gperf"><span class="nav-number">2.3.</span> <span class="nav-text">排查问题步骤：安装tcmalloct和gperf</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-安装环境"><span class="nav-number">2.3.1.</span> <span class="nav-text">1.安装环境</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-安装libunwind"><span class="nav-number">2.3.2.</span> <span class="nav-text">2.安装libunwind</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-安装gperftools"><span class="nav-number">2.3.3.</span> <span class="nav-text">3.安装gperftools</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-使配置生效"><span class="nav-number">2.3.4.</span> <span class="nav-text">4.使配置生效</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-加入环境变量"><span class="nav-number">2.3.5.</span> <span class="nav-text">5.加入环境变量</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#问题解决"><span class="nav-number">2.4.</span> <span class="nav-text">问题解决</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#用pperf查看内存"><span class="nav-number">2.5.</span> <span class="nav-text">用pperf查看内存</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#柳暗花明又一村，简单的解决方案修改jvm的参数"><span class="nav-number">3.</span> <span class="nav-text">柳暗花明又一村，简单的解决方案修改jvm的参数</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#分析思路"><span class="nav-number">2.</span> <span class="nav-text">分析思路</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#排查问题步骤：观察内存"><span class="nav-number">2.1.</span> <span class="nav-text">排查问题步骤：观察内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#排查问题步骤：dump内存"><span class="nav-number">2.2.</span> <span class="nav-text">排查问题步骤：dump内存</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#排查问题步骤：安装tcmalloct和gperf"><span class="nav-number">2.3.</span> <span class="nav-text">排查问题步骤：安装tcmalloct和gperf</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#1-安装环境"><span class="nav-number">2.3.1.</span> <span class="nav-text">1.安装环境</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#2-安装libunwind"><span class="nav-number">2.3.2.</span> <span class="nav-text">2.安装libunwind</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#3-安装gperftools"><span class="nav-number">2.3.3.</span> <span class="nav-text">3.安装gperftools</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#4-使配置生效"><span class="nav-number">2.3.4.</span> <span class="nav-text">4.使配置生效</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#5-加入环境变量"><span class="nav-number">2.3.5.</span> <span class="nav-text">5.加入环境变量</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#问题解决"><span class="nav-number">2.4.</span> <span class="nav-text">问题解决</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#用pperf查看内存"><span class="nav-number">2.5.</span> <span class="nav-text">用pperf查看内存</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#总结"><span class="nav-number">3.</span> <span class="nav-text">总结</span></a></li></ol></div>
             
 
           </div>

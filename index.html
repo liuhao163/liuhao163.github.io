@@ -407,7 +407,7 @@
                 
                   <span class="post-meta-item-text">Edited on</span>
                 
-                <time title="Modified: 2020-04-23 07:35:44" itemprop="dateModified" datetime="2020-04-23T07:35:44Z">2020-04-23</time>
+                <time title="Modified: 2020-04-23 08:43:53" itemprop="dateModified" datetime="2020-04-23T08:43:53Z">2020-04-23</time>
               
             
           </span>
@@ -473,7 +473,13 @@
 <p><img src="/一次堆外内存泄露的排查/img2-1.png" alt="avator"></p>
 <p>  问题预估：进过查看资料以及和同事沟通，怀疑是glibc组件的ptmalloc的arena机制导致的：</p>
 <blockquote>
-<p>当一个线程调用malloc申请内存时候,会先查看自己是否有一个分配去，如果有加锁，加锁失败，去环形链表找一个未加锁的分配区，如果没找到，malloc会开辟一个新的分配区加入环形链表并加锁，用它来分配内存。<br>这种机制在多线程竞争锁激烈的场景下会带来一个问题：非主分配区开辟越来越多，因为它一旦开辟了就不会释放，一个分配区就是64MB。这样也会导致进程占用的内存越来越多（可能实际使用的并不多）。如果系统配置的ulimit进程最大虚拟内存值不是unlimited，那么当进程占用的内存达到ulimit值，就会core掉。这个情况也可以在pmap -p pid中看到里面有大量的64MB大小的anon内存块。这个问题可以通过设置MALLOC_ARENA_MAX环境变量来限制Arena的最大数量规避。<br>经过后面的gperf排查发现我们的代码中有GZipInputStream在创建对象时候底层的Java_java_util_zip_Inflater_init方法确实是调用了mallloc。</p>
+<p>当一个线程调用malloc申请内存时候,会先查看自己是否有一个分配去，如果有加锁，加锁失败，去环形链表找一个未加锁的分配区，如果没找到，malloc会开辟一个新的分配区加入环形链表并加锁，用它来分配内存。</p>
+</blockquote>
+<blockquote>
+<p>这种机制在多线程竞争锁激烈的场景下会带来一个问题：非主分配区开辟越来越多，因为它一旦开辟了就不会释放，一个分配区就是64MB。这样也会导致进程占用的内存越来越多（可能实际使用的并不多）。如果系统配置的ulimit进程最大虚拟内存值不是unlimited，那么当进程占用的内存达到ulimit值，就会core掉。这个情况也可以在pmap -p pid中看到里面有大量的64MB大小的anon内存块。这个问题可以通过设置MALLOC_ARENA_MAX环境变量来限制Arena的最大数量规避。</p>
+</blockquote>
+<blockquote>
+<p>经过后面的gperf排查发现我们的代码中有GZipInputStream在创建对象时候底层的Java_java_util_zip_Inflater_init方法确实是调用了mallloc。</p>
 </blockquote>
 <p>  所以，这其实不是内存泄露而是内存空洞的现象，在我们的系统资源捉襟见肘时候就比较致命。</p>
 <h3 id="排查问题步骤：dump内存"><a href="#排查问题步骤：dump内存" class="headerlink" title="排查问题步骤：dump内存"></a>排查问题步骤：dump内存</h3><p>  查看/proc/$pid/smaps 查看进程内存的使用情况发现进程大量申请了64MB的空间。【怀疑是glibc在2.10引入的arena引起的，需要后续深入研究】</p>

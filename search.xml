@@ -4,6 +4,68 @@
   
     
     <entry>
+      <title>系统优化-CPU-排查僵尸进程和io问题</title>
+      <link href="/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-CPU-%E6%8E%92%E6%9F%A5%E5%83%B5%E5%B0%B8%E8%BF%9B%E7%A8%8B%E5%92%8Cio/"/>
+      <url>/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-CPU-%E6%8E%92%E6%9F%A5%E5%83%B5%E5%B0%B8%E8%BF%9B%E7%A8%8B%E5%92%8Cio/</url>
+      
+        <content type="html"><![CDATA[<p>我们的系统如果遇到io问题和过多僵尸进程的排查思路</p><h2 id="io问题"><a href="#io问题" class="headerlink" title="io问题"></a>io问题</h2><p> 老规矩用top查看系统的进程，如果发现cpu很高但是user,sys,nic等指标不高，但是wa很高，说明可能存在了io问题<br> 我们可以采用新的工具dstat,他可以同时查看cpu和io问题</p> <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment"># 间隔1秒输出10组数据</span></span><br><span class="line">$ dstat 1 10</span><br><span class="line">You did not select any stats, using -cdngy by default.</span><br><span class="line">--total-cpu-usage-- -dsk/total- -net/total- ---paging-- ---system--</span><br><span class="line">usr sys idl wai stl| <span class="built_in">read</span>  writ| recv  send|  <span class="keyword">in</span>   out | int   csw</span><br><span class="line">  0   0  96   4   0|1219k  408k|   0     0 |   0     0 |  42   885</span><br><span class="line">  0   0   2  98   0|  34M    0 | 198B  790B|   0     0 |  42   138</span><br><span class="line">  0   0   0 100   0|  34M    0 |  66B  342B|   0     0 |  42   135</span><br><span class="line">  0   0  84  16   0|5633k    0 |  66B  342B|   0     0 |  52   177</span><br><span class="line">  0   3  39  58   0|  22M    0 |  66B  342B|   0     0 |  43   144</span><br><span class="line">  0   0   0 100   0|  34M    0 | 200B  450B|   0     0 |  46   147</span><br><span class="line">  0   0   2  98   0|  34M    0 |  66B  342B|   0     0 |  45   134</span><br><span class="line">  0   0   0 100   0|  34M    0 |  66B  342B|   0     0 |  39   131</span><br><span class="line">  0   0  83  17   0|5633k    0 |  66B  342B|   0     0 |  46   168</span><br><span class="line">  0   3  39  59   0|  22M    0 |  66B  342B|   0     0 |  37   134</span><br></pre></td></tr></table></figure><p>图中所示，idl掉的时候都是read升高。于此我们判断io出现问题，通过perf和pidstat工具进一步排查</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 间隔 1 秒输出多组数据 (这里是 20 组)</span></span><br><span class="line">$ pidstat -d 1 20</span><br><span class="line">...</span><br><span class="line">06:48:46      UID       PID   kB_rd/s   kB_wr/s kB_ccwr/s iodelay  Command</span><br><span class="line">06:48:47        0      4615      0.00      0.00      0.00       1  kworker/u4:1</span><br><span class="line">06:48:47        0      6080  32768.00      0.00      0.00     170  app</span><br><span class="line">06:48:47        0      6081  32768.00      0.00      0.00     184  app</span><br><span class="line"></span><br><span class="line">06:48:47      UID       PID   kB_rd/s   kB_wr/s kB_ccwr/s iodelay  Command</span><br><span class="line">06:48:48        0      6080      0.00      0.00      0.00     110  app</span><br><span class="line"></span><br><span class="line">06:48:48      UID       PID   kB_rd/s   kB_wr/s kB_ccwr/s iodelay  Command</span><br><span class="line">06:48:49        0      6081      0.00      0.00      0.00     191  app</span><br><span class="line"></span><br><span class="line">06:48:49      UID       PID   kB_rd/s   kB_wr/s kB_ccwr/s iodelay  Command</span><br><span class="line"></span><br><span class="line">06:48:50      UID       PID   kB_rd/s   kB_wr/s kB_ccwr/s iodelay  Command</span><br><span class="line">06:48:51        0      6082  32768.00      0.00      0.00       0  app</span><br><span class="line">06:48:51        0      6083  32768.00      0.00      0.00       0  app</span><br><span class="line"></span><br><span class="line">06:48:51      UID       PID   kB_rd/s   kB_wr/s kB_ccwr/s iodelay  Command</span><br><span class="line">06:48:52        0      6082  32768.00      0.00      0.00     184  app</span><br><span class="line">06:48:52        0      6083  32768.00      0.00      0.00     175  app</span><br><span class="line"></span><br><span class="line">06:48:52      UID       PID   kB_rd/s   kB_wr/s kB_ccwr/s iodelay  Command</span><br><span class="line">06:48:53        0      6083      0.00      0.00      0.00     105  app</span><br><span class="line">...</span><br></pre></td></tr></table></figure><p>  看到app没次有32MB的数据的读取</p><p>  然后同过perf top去查看代码</p><h2 id="僵尸进程"><a href="#僵尸进程" class="headerlink" title="僵尸进程"></a>僵尸进程</h2><p>首先通过top看进程状态我们常见的几种状态</p><ul><li>R:Running 或 Runnable 的缩写，表示进程在 CPU 的就绪队列中，正在运行或者正在等待运行。</li><li>D:Disk Sleep 的缩写，也就是不可中断状态睡眠（Uninterruptible Sleep），一般表示进程正在跟硬件交互，并且交互过程不允许被其他进程或中断打断。</li><li>Z:是Zombie 的缩写，表示进程已经结束但是父进程还没有回收它</li><li>S:是Interruptible Sleep 的缩写，也就是可中断状态睡眠，表示进程因为等待某个事件而被系统挂起。当进程等待的事件发生时，它会被唤醒并进入 R 状态。</li><li>I:是 Idle 的缩写，也就是空闲状态，用在不可中断睡眠的内核线程上，不会引起某些负载的升高。</li><li>T:也就是 Stopped 或 Traced 的缩写，表示进程处于暂停或者跟踪状态。</li><li><p>X:进程消亡，top不会出现。</p><p>我们系统应该尽量避免Z出现，Zombie是如何产生的？如果系统出现了大量的Zombie我们该如何排查？</p></li></ul><h3 id="产生原因"><a href="#产生原因" class="headerlink" title="产生原因"></a>产生原因</h3><p>正常情况下，当一个进程创建了子进程后，它应该通过系统调用 <strong>wait() 或者 waitpid()</strong> 等待子进程结束，回收子进程的资源；而子进程在结束时，会向它的父进程发送 SIGCHLD 信号，所以，父进程还可以注册 <strong>SIGCHLD</strong> 信号的处理函数，异步回收资源。如果一个子进程被销毁父进程还没来得及对子进程进行回收就会出现Zombie。短暂的Zombie是没问题的，但是大量的Zombie进程我们就需要关注了。</p><h3 id="排查思路"><a href="#排查思路" class="headerlink" title="排查思路"></a>排查思路</h3><p>通过pstree查看僵尸进程的父进程,比如下面的4009进程，然后去查看4009的程序代码</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"># -a 表示输出命令行选项</span><br><span class="line"># p表PID</span><br><span class="line"># s表示指定进程的父进程</span><br><span class="line">$ pstree -aps <span class="number">3084</span></span><br><span class="line">systemd,<span class="number">1</span></span><br><span class="line">  └─dockerd,<span class="number">15006</span> -H fd:<span class="comment">//</span></span><br><span class="line">      └─docker-containe,<span class="number">15024</span> --config /<span class="keyword">var</span>/run/docker/containerd/containerd.toml</span><br><span class="line">          └─docker-containe,<span class="number">3991</span> -namespace moby -workdir...</span><br><span class="line">              └─app,<span class="number">4009</span></span><br><span class="line">                  └─(app,<span class="number">3084</span>)</span><br></pre></td></tr></table></figure>]]></content>
+      
+      
+      <categories>
+          
+          <category> 性能优化 </category>
+          
+          <category> CPU </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> linux </tag>
+            
+            <tag> 性能优化 </tag>
+            
+            <tag> CPU </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>系统优化-CPU-排查短时进程的工具</title>
+      <link href="/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-CPU-%E6%8E%92%E6%9F%A5%E7%9F%AD%E6%97%B6%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%B7%A5%E5%85%B7/"/>
+      <url>/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-CPU-%E6%8E%92%E6%9F%A5%E7%9F%AD%E6%97%B6%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%B7%A5%E5%85%B7/</url>
+      
+        <content type="html"><![CDATA[<h2 id="场景"><a href="#场景" class="headerlink" title="场景"></a>场景</h2><p>  我们在排查问题时候并不一定能找到引起CPU升高的“罪魁祸首”，他们可能隐藏在一些进程的子进程中。这时候的排查思路就是</p><p>  top看哪些是进场活跃的进程，然后看这些进程的pid是否一直存在，如果他是不停的在变化的说明可能又以下俩种情况</p><ol><li>短时进程：频繁的创建、销毁</li><li>创建的过程中出现错误会被销毁，</li></ol><h2 id="查看问题"><a href="#查看问题" class="headerlink" title="查看问题"></a>查看问题</h2><p>  对于短时进程可以通过pstree</p><p>  我们通过perf top分析找到问题所在，在通过grep ‘xxx’ -r ./app 查看源代码找到结果取修改。</p><h2 id="execsnoop工具"><a href="#execsnoop工具" class="headerlink" title="execsnoop工具"></a>execsnoop工具</h2><ol><li>cd /usr/bin</li><li>wget <a href="https://raw.githubusercontent.com/brendangregg/perf-tools/master/execsnoop" target="_blank" rel="noopener">https://raw.githubusercontent.com/brendangregg/perf-tools/master/execsnoop</a></li><li>chmod 755 execsnoop</li></ol><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment"># 按 Ctrl+C 结束</span></span><br><span class="line">$ execsnoop</span><br><span class="line">PCOMM            PID    PPID   RET ARGS</span><br><span class="line">sh               30394  30393    0</span><br><span class="line">stress           30396  30394    0 /usr/<span class="built_in">local</span>/bin/stress -t 1 -d 1</span><br><span class="line">sh               30398  30393    0</span><br><span class="line">stress           30399  30398    0 /usr/<span class="built_in">local</span>/bin/stress -t 1 -d 1</span><br><span class="line">sh               30402  30400    0</span><br><span class="line">stress           30403  30402    0 /usr/<span class="built_in">local</span>/bin/stress -t 1 -d 1</span><br><span class="line">sh               30405  30393    0</span><br><span class="line">stress           30407  30405    0 /usr/<span class="built_in">local</span>/bin/stress -t 1 -d 1</span><br><span class="line">...</span><br></pre></td></tr></table></figure>]]></content>
+      
+      
+      <categories>
+          
+          <category> 性能优化 </category>
+          
+          <category> CPU </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> linux </tag>
+            
+            <tag> 性能优化 </tag>
+            
+            <tag> CPU </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>一次堆外内存泄露的排查</title>
       <link href="/%E4%B8%80%E6%AC%A1%E5%A0%86%E5%A4%96%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E7%9A%84%E6%8E%92%E6%9F%A5/"/>
       <url>/%E4%B8%80%E6%AC%A1%E5%A0%86%E5%A4%96%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E7%9A%84%E6%8E%92%E6%9F%A5/</url>

@@ -96,18 +96,18 @@
 
 
 
-  <meta name="description" content="string  redis所有数据的基础，采用预分配进行数据的分配当数据小于1MB时候，成倍扩容，大于1MB每次扩容1倍。最大512MB。   int类型支持计数 list  quicklist的数据结构（ziplist+双向链表） hash  类似于Java的hashmap，采用数组+链表方式，数据量小采用ziplist。   rehash采用渐进式 set  底层采用一个特殊的字典来维护，字典">
-<meta name="keywords" content="数据库,nosql,redis">
+  <meta name="description" content="什么是软中断？  因为响应硬件的事件优先级高于我们正在运行的进程，所以CPU为了响应硬件，需要中断正在运行的进程。这个中断就是我们今天要讨论的中断。   当cpu响应中断的时候回临时关闭中断，也就是说其他的中断都需要响应完现有的中断才行，这时候就会出现中断丢失或者中断延迟比较大的现象，那linux是如何解决的呢？   linux将中断变为上下俩部分   -上部分：主要处理响应和硬件相关的事件，它会">
+<meta name="keywords" content="linux,性能优化,CPU">
 <meta property="og:type" content="article">
-<meta property="og:title" content="Redis-基础数据结构">
-<meta property="og:url" content="https://liuhao163.github.io/Redis-基础数据结构/index.html">
+<meta property="og:title" content="系统优化-CPU-软中断以及软中断过多带来的危害">
+<meta property="og:url" content="https://liuhao163.github.io/系统优化-CPU-软中断以及软中断过多带来的危害/index.html">
 <meta property="og:site_name" content="liuhao163.github.io">
-<meta property="og:description" content="string  redis所有数据的基础，采用预分配进行数据的分配当数据小于1MB时候，成倍扩容，大于1MB每次扩容1倍。最大512MB。   int类型支持计数 list  quicklist的数据结构（ziplist+双向链表） hash  类似于Java的hashmap，采用数组+链表方式，数据量小采用ziplist。   rehash采用渐进式 set  底层采用一个特殊的字典来维护，字典">
+<meta property="og:description" content="什么是软中断？  因为响应硬件的事件优先级高于我们正在运行的进程，所以CPU为了响应硬件，需要中断正在运行的进程。这个中断就是我们今天要讨论的中断。   当cpu响应中断的时候回临时关闭中断，也就是说其他的中断都需要响应完现有的中断才行，这时候就会出现中断丢失或者中断延迟比较大的现象，那linux是如何解决的呢？   linux将中断变为上下俩部分   -上部分：主要处理响应和硬件相关的事件，它会">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-10-11T06:26:56.000Z">
+<meta property="og:updated_time" content="2020-04-25T03:33:07.000Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Redis-基础数据结构">
-<meta name="twitter:description" content="string  redis所有数据的基础，采用预分配进行数据的分配当数据小于1MB时候，成倍扩容，大于1MB每次扩容1倍。最大512MB。   int类型支持计数 list  quicklist的数据结构（ziplist+双向链表） hash  类似于Java的hashmap，采用数组+链表方式，数据量小采用ziplist。   rehash采用渐进式 set  底层采用一个特殊的字典来维护，字典">
+<meta name="twitter:title" content="系统优化-CPU-软中断以及软中断过多带来的危害">
+<meta name="twitter:description" content="什么是软中断？  因为响应硬件的事件优先级高于我们正在运行的进程，所以CPU为了响应硬件，需要中断正在运行的进程。这个中断就是我们今天要讨论的中断。   当cpu响应中断的时候回临时关闭中断，也就是说其他的中断都需要响应完现有的中断才行，这时候就会出现中断丢失或者中断延迟比较大的现象，那linux是如何解决的呢？   linux将中断变为上下俩部分   -上部分：主要处理响应和硬件相关的事件，它会">
 
 
 
@@ -116,7 +116,7 @@
 
 
 
-  <link rel="canonical" href="https://liuhao163.github.io/Redis-基础数据结构/">
+  <link rel="canonical" href="https://liuhao163.github.io/系统优化-CPU-软中断以及软中断过多带来的危害/">
 
 
 
@@ -126,7 +126,7 @@
   };
 </script>
 
-  <title>Redis-基础数据结构 | liuhao163.github.io</title>
+  <title>系统优化-CPU-软中断以及软中断过多带来的危害 | liuhao163.github.io</title>
   
 
 
@@ -346,7 +346,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Redis-基础数据结构/">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/系统优化-CPU-软中断以及软中断过多带来的危害/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Liu hao">
@@ -363,7 +363,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">Redis-基础数据结构
+          <h1 class="post-title" itemprop="name headline">系统优化-CPU-软中断以及软中断过多带来的危害
 
               
             
@@ -389,24 +389,12 @@
                 
               
 
-              <time title="Created: 2019-10-08 17:17:59" itemprop="dateCreated datePublished" datetime="2019-10-08T17:17:59Z">2019-10-08</time>
+              <time title="Created: 2020-04-25 10:12:40 / Modified: 03:33:07" itemprop="dateCreated datePublished" datetime="2020-04-25T10:12:40Z">2020-04-25</time>
             
 
             
               
 
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-10-11 06:26:56" itemprop="dateModified" datetime="2019-10-11T06:26:56Z">2019-10-11</time>
               
             
           </span>
@@ -423,7 +411,14 @@
                 <span class="post-meta-item-text">In</span>
               
               
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/redis/" itemprop="url" rel="index"><span itemprop="name">redis</span></a></span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/性能优化/" itemprop="url" rel="index"><span itemprop="name">性能优化</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/性能优化/CPU/" itemprop="url" rel="index"><span itemprop="name">CPU</span></a></span>
 
                 
                 
@@ -458,48 +453,41 @@
       
 
       
-        <h2 id="string"><a href="#string" class="headerlink" title="string"></a>string</h2><p>  redis所有数据的基础，采用预分配进行数据的分配当数据小于1MB时候，成倍扩容，大于1MB每次扩容1倍。最大512MB。</p>
-<p>  int类型支持计数</p>
-<h2 id="list"><a href="#list" class="headerlink" title="list"></a>list</h2><p>  quicklist的数据结构（ziplist+双向链表）</p>
-<h2 id="hash"><a href="#hash" class="headerlink" title="hash"></a>hash</h2><p>  类似于Java的hashmap，采用数组+链表方式，数据量小采用ziplist。</p>
-<p>  rehash采用渐进式</p>
-<h2 id="set"><a href="#set" class="headerlink" title="set"></a>set</h2><p>  底层采用一个特殊的字典来维护，字典的值都为NULL</p>
-<h2 id="zset"><a href="#zset" class="headerlink" title="zset"></a>zset</h2><p>  (skiplist or ziplist)+hash</p>
-<h2 id="bitmap"><a href="#bitmap" class="headerlink" title="bitmap"></a>bitmap</h2><ul>
-<li><p>setbit key offset value【0 or 1】 set某一位的bit值</p>
-</li>
-<li><p>getbit key offset 返回当前位的值</p>
-</li>
-<li><p>bitcount key [start end] 返回start-end值为1的bit的数量。start-end必须是8的倍数</p>
-</li>
-<li><p>bitpos key [true false] 返回第一个true or false的值。</p>
+        <h2 id="什么是软中断？"><a href="#什么是软中断？" class="headerlink" title="什么是软中断？"></a>什么是软中断？</h2><p>  因为响应硬件的事件优先级高于我们正在运行的进程，所以CPU为了响应硬件，需要中断正在运行的进程。这个中断就是我们今天要讨论的中断。</p>
+<p>  当cpu响应中断的时候回临时关闭中断，也就是说其他的中断都需要响应完现有的中断才行，这时候就会出现中断丢失或者中断延迟比较大的现象，那linux是如何解决的呢？</p>
+<p>  linux将中断变为上下俩部分</p>
+<p>  -上部分：主要处理响应和硬件相关的事件，它会关闭中断响应，特点是速度很快，处理完毕后会发送软中断信号，我们称他为硬中断；<br>  -下部分：根据中断的类型处理具体的事件逻辑，它由内核线程负责，在Linux中，每个CPU都对应一个软中断内核线程，名字是ksoftirqd/【CPU编号】，处理硬中断中的数据然后发送给需要的用户线程，我们称他为软中断，特点是延迟执行。</p>
+<h2 id="软中断的类型"><a href="#软中断的类型" class="headerlink" title="软中断的类型"></a>软中断的类型</h2><p>我们可以通过查看/proc/softirqs来看各cpu的中断情况，由于软中断是内核线程所以在top中我们看到的软中断进程是[ksoftirqd/0]这样的</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">$ cat /proc/softirqs</span><br><span class="line">                    CPU0       CPU1</span><br><span class="line">          HI:          0          0</span><br><span class="line">       TIMER:     811613    1972736</span><br><span class="line">      NET_TX:         49          7</span><br><span class="line">      NET_RX:    1136736    1506885</span><br><span class="line">       BLOCK:          0          0</span><br><span class="line">    IRQ_POLL:          0          0</span><br><span class="line">     TASKLET:     304787       3691</span><br><span class="line">       SCHED:     689718    1897539</span><br><span class="line">     HRTIMER:          0          0</span><br><span class="line">         RCU:    1330771    1354737</span><br></pre></td></tr></table></figure>
+<p>一般来讲每种软中断应该在各cpu上运行的次数差不多，但是TASKLET例外，它是最常用的软中断实现机制，每次运行一次就会推出，且只在调用它的cpu上运行。</p>
+<h2 id="软中断带来的CPU使用率够高的性能问题"><a href="#软中断带来的CPU使用率够高的性能问题" class="headerlink" title="软中断带来的CPU使用率够高的性能问题"></a>软中断带来的CPU使用率够高的性能问题</h2><h3 id="工具准备"><a href="#工具准备" class="headerlink" title="工具准备"></a>工具准备</h3><ul>
+<li>sar 是一个系统活动报告工具，既可以实时查看系统的当前活动，又可以配置保存和报告历史统计数据。</li>
+<li>hping3 是一个可以构造 TCP/IP 协议数据包的工具，可以对系统进行安全审计、防火墙测试等。</li>
+<li><p>tcpdump 是一个常用的网络抓包工具，常用来分析各种网络问题。</p>
+<p>测试的方案</p>
 </li>
 </ul>
-<h2 id="hyperHyperLog"><a href="#hyperHyperLog" class="headerlink" title="hyperHyperLog"></a>hyperHyperLog</h2><ul>
-<li>pfadd key value 不同的才会加入到列表中</li>
-<li>pfcount key 查看key的值</li>
-</ul>
-<p>用于统计网站的uv，大小是12kb,缺点是有误差</p>
-<h2 id="bloomfilter"><a href="#bloomfilter" class="headerlink" title="bloomfilter"></a>bloomfilter</h2><p>redis4.0以后提供插件支持</p>
+<ol>
+<li>我们准备一个nginx的容器</li>
+<li><p>我们通过hping3来模拟对nginx的SYNC_FLOOD攻击。</p>
+<p>现象：系统的吞吐会降低，响应变慢，用top查看结果发现cpu占用不高，但是都用在软中断上，我们可以去查看软中断。</p>
+</li>
+</ol>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#watch可以查看变化并且-d可以看到变化的数据</span></span><br><span class="line">$ watch -d cat /proc/softirqs</span><br><span class="line">                    CPU0       CPU1</span><br><span class="line">          HI:          0          0</span><br><span class="line">       TIMER:    1083906    2368646</span><br><span class="line">      NET_TX:         53          9</span><br><span class="line">      NET_RX:    1550643    1916776</span><br><span class="line">       BLOCK:          0          0</span><br><span class="line">    IRQ_POLL:          0          0</span><br><span class="line">     TASKLET:     333637       3930</span><br><span class="line">       SCHED:     963675    2293171</span><br><span class="line">     HRTIMER:          0          0</span><br><span class="line">         RCU:    1542111    1590625</span><br></pre></td></tr></table></figure>
+<p> 发现NET_RX变化很快，初步判断是网络引发用sar来看下玩过的情况</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment"># -n DEV 表示显示网络收发的报告，间隔1秒输出一组数据</span></span><br><span class="line">$ sar -n DEV 1</span><br><span class="line">15:03:46        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s   %ifutil</span><br><span class="line">15:03:47         eth0  12607.00   6304.00    664.86    358.11      0.00      0.00      0.00      0.01</span><br><span class="line">15:03:47      docker0   6302.00  12604.00    270.79    664.66      0.00      0.00      0.00      0.00</span><br><span class="line">15:03:47           lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">15:03:47    veth9f6bbcd   6302.00  12604.00    356.95    664.66      0.00      0.00      0.00      0.05</span><br></pre></td></tr></table></figure>
 <ul>
-<li>bf.add</li>
-<li>bf.exists</li>
+<li>第一列：表示报告的时间。</li>
+<li>第二列：IFACE 表示网卡。</li>
+<li>第三、四列：rxpck/s 和 txpck/s 分别表示每秒接收、发送的网络帧数，也就是 PPS。</li>
+<li>第五、六列：rxkB/s 和 txkB/s 分别表示每秒接收、发送的千字节数，也就是 BPS。后面的其他参数基本接近 0，显然跟今天的问题没有直接关系，你可以先忽略掉。</li>
 </ul>
-<p>重复并且存在误判。</p>
-<h2 id="Reids的限流–redis-cell"><a href="#Reids的限流–redis-cell" class="headerlink" title="Reids的限流–redis-cell"></a>Reids的限流–redis-cell</h2><p>redis4.0后提供的限流模块</p>
-<p>cl.throttle key capacity opsQuota opssec quota-pre-action</p>
-<p>返回值<br>0 or 1 –结果0允许，1不允许<br>capacity–漏斗容量<br>left_quota–剩余容量<br>next_gen_quota_sec–下一次产生多少令牌的事件<br>maxQuotaSec–令牌桶满，下一次capacity=left_quota的时间 单位：秒</p>
-<h2 id="Redis的位置服务-GeoHash"><a href="#Redis的位置服务-GeoHash" class="headerlink" title="Redis的位置服务-GeoHash"></a>Redis的位置服务-GeoHash</h2><p>  原理是，将地球变为一个平面，划分成一系列方格每个方格有一个唯一编号，方格越近编号越近，将坐标的经纬度映射为一维坐标，放在唯一的方格中，只需要查看俩个方格的距离即可。</p>
-<p>  坐标会变成一串整数编码越长越精确，这些整数编码能还原成坐标。getHash会对这个整数做一次base32。</p>
-<p>  redis的坐标编码是52位，且底层采用zset。value是key，score是哪个52位的编码，我们查询附近的坐标只需要按照score查询即可</p>
-<p>  命令</p>
+<p>eth0这个网卡接收远大于发送，查看报文的大小，664*1024/12607=54字节，这是一个小包。</p>
+<p>我们用tcpdump抓包</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># -i eth0 只抓取eth0网卡，-n不解析协议名和主机名</span></span><br><span class="line"><span class="comment"># tcp port 80表示只抓取tcp协议并且端口号为80的网络帧</span></span><br><span class="line">$ tcpdump -i eth0 -n tcp port 80</span><br><span class="line">15:11:32.678966 IP 192.168.0.2.18238 &gt; 192.168.0.30.80: Flags [S], seq 458303614, win 512, length 0</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
 <ul>
-<li>geoadd key 精度 纬度 value  添加</li>
-<li>geodist key value1 value2 单位 查询value1和value2的距离</li>
-<li>geoops  key value 获取value的坐标</li>
-<li>geohash key value 获取hash值可以计算出经纬度</li>
-<li>georediusbymember key value 20 km [withcoord withdist withhash] count 3 asc 查找value半径20km的其他坐标【包括自己】 按照距离升序排列</li>
-<li>georedius key value x y 20 km  [withcoord withdist withhash] count 3 asc  查找坐标点【x、y】半径20km的其他坐标【包括自己】 按照距离升序排列</li>
+<li>从 tcpdump 的输出中，你可以发现192.168.0.2.18238 &gt; 192.168.0.30.80 ，表示网络帧从 192.168.0.2 的 18238 端口发送到 192.168.0.30 的 80 端口，也就是从运行 hping3 机器的 18238 端口发送网络帧，目的为 Nginx 所在机器的 80 端口。</li>
+<li>Flags [S] 则表示这是一个 SYN 包。再加上前面用 sar 发现的， PPS 超过 12000 的现象，现在我们可以确认，这就是从 192.168.0.2 这个地址发送过来的 SYN FLOOD 攻击。</li>
 </ul>
 
       
@@ -524,11 +512,11 @@
       
         <div class="post-tags">
           
-            <a href="/tags/数据库/" rel="tag"># 数据库</a>
+            <a href="/tags/linux/" rel="tag"># linux</a>
           
-            <a href="/tags/nosql/" rel="tag"># nosql</a>
+            <a href="/tags/性能优化/" rel="tag"># 性能优化</a>
           
-            <a href="/tags/redis/" rel="tag"># redis</a>
+            <a href="/tags/CPU/" rel="tag"># CPU</a>
           
         </div>
       
@@ -541,8 +529,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/RoketMq源码学习-七-事务的实现/" rel="next" title="RoketMq源码学习-七-事务的实现">
-                <i class="fa fa-chevron-left"></i> RoketMq源码学习-七-事务的实现
+              <a href="/系统优化-CPU-排查僵尸进程和io/" rel="next" title="系统优化-CPU-排查僵尸进程和io问题">
+                <i class="fa fa-chevron-left"></i> 系统优化-CPU-排查僵尸进程和io问题
               </a>
             
           </div>
@@ -550,10 +538,6 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/Redis-基本原理/" rel="prev" title="Redis-基本原理">
-                Redis-基本原理 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -907,7 +891,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#string"><span class="nav-number">1.</span> <span class="nav-text">string</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#list"><span class="nav-number">2.</span> <span class="nav-text">list</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#hash"><span class="nav-number">3.</span> <span class="nav-text">hash</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#set"><span class="nav-number">4.</span> <span class="nav-text">set</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#zset"><span class="nav-number">5.</span> <span class="nav-text">zset</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#bitmap"><span class="nav-number">6.</span> <span class="nav-text">bitmap</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#hyperHyperLog"><span class="nav-number">7.</span> <span class="nav-text">hyperHyperLog</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#bloomfilter"><span class="nav-number">8.</span> <span class="nav-text">bloomfilter</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Reids的限流–redis-cell"><span class="nav-number">9.</span> <span class="nav-text">Reids的限流–redis-cell</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Redis的位置服务-GeoHash"><span class="nav-number">10.</span> <span class="nav-text">Redis的位置服务-GeoHash</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#什么是软中断？"><span class="nav-number">1.</span> <span class="nav-text">什么是软中断？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#软中断的类型"><span class="nav-number">2.</span> <span class="nav-text">软中断的类型</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#软中断带来的CPU使用率够高的性能问题"><span class="nav-number">3.</span> <span class="nav-text">软中断带来的CPU使用率够高的性能问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#工具准备"><span class="nav-number">3.1.</span> <span class="nav-text">工具准备</span></a></li></ol></li></ol></div>
             
 
           </div>

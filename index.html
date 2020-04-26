@@ -992,7 +992,7 @@
                 
                   <span class="post-meta-item-text">Edited on</span>
                 
-                <time title="Modified: 2020-04-23 11:16:42" itemprop="dateModified" datetime="2020-04-23T11:16:42Z">2020-04-23</time>
+                <time title="Modified: 2020-04-26 06:44:02" itemprop="dateModified" datetime="2020-04-26T06:44:02Z">2020-04-26</time>
               
             
           </span>
@@ -1057,16 +1057,13 @@
 <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pmap -x <span class="variable">$pid</span></span><br></pre></td></tr></table></figure>
 <p><img src="/一次堆外内存泄露的排查/img2-1.png" alt="avator"></p>
 <p>  问题预估：进过查看资料以及和同事沟通，怀疑是glibc组件的ptmalloc的arena机制导致的：</p>
-<blockquote>
-<p>当一个线程调用malloc申请内存时候,会先查看自己是否有一个分配去，如果有加锁，加锁失败，去环形链表找一个未加锁的分配区，如果没找到，malloc会开辟一个新的分配区加入环形链表并加锁，用它来分配内存。</p>
-</blockquote>
-<blockquote>
-<p>这种机制在多线程竞争锁激烈的场景下会带来一个问题：非主分配区开辟越来越多，因为它一旦开辟了就不会释放，一个分配区就是64MB。这样也会导致进程占用的内存越来越多（可能实际使用的并不多）。如果系统配置的ulimit进程最大虚拟内存值不是unlimited，那么当进程占用的内存达到ulimit值，就会core掉。这个情况也可以在pmap -p pid中看到里面有大量的64MB大小的anon内存块。这个问题可以通过设置MALLOC_ARENA_MAX环境变量来限制Arena的最大数量规避。</p>
-</blockquote>
-<blockquote>
-<p>经过后面的gperf排查发现我们的代码中有GZipInputStream在创建对象时候底层的Java_java_util_zip_Inflater_init方法确实是调用了mallloc。</p>
-</blockquote>
-<p>  所以，这其实不是内存泄露而是内存空洞的现象，在我们的系统资源捉襟见肘时候就比较致命。</p>
+<ul>
+<li>当一个线程调用malloc申请内存时候,会先查看自己是否有一个分配去，如果有加锁，加锁失败，去环形链表找一个未加锁的分配区，如果没找到，malloc会开辟一个新的分配区加入环形链表并加锁，用它来分配内存。</li>
+<li>这种机制在多线程竞争锁激烈的场景下会带来一个问题：非主分配区开辟越来越多，因为它一旦开辟了就不会释放，一个分配区就是64MB。这样也会导致进程占用的内存越来越多（可能实际使用的并不多）。如果系统配置的ulimit进程最大虚拟内存值不是unlimited，那么当进程占用的内存达到ulimit值，就会core掉。这个情况也可以在pmap -p pid中看到里面有大量的64MB大小的anon内存块。这个问题可以通过设置MALLOC_ARENA_MAX环境变量来限制Arena的最大数量规避。</li>
+<li><p>经过后面的gperf排查发现我们的代码中有GZipInputStream在创建对象时候底层的Java_java_util_zip_Inflater_init方法确实是调用了mallloc。</p>
+<p>所以，这其实不是内存泄露而是内存空洞的现象，在我们的系统资源捉襟见肘时候就比较致命。</p>
+</li>
+</ul>
 <h3 id="排查问题步骤：dump内存"><a href="#排查问题步骤：dump内存" class="headerlink" title="排查问题步骤：dump内存"></a>排查问题步骤：dump内存</h3><p>  查看/proc/$pid/smaps 查看进程内存的使用情况发现进程大量申请了64MB的空间。【怀疑是glibc在2.10引入的arena引起的，需要后续深入研究】</p>
 <p>  通过gdb dump出内存来查看；【具体命令见下方】</p>
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">gdb attach &lt;pid&gt;</span><br><span class="line">dump memory outfile.txt startAddreess endAddress</span><br><span class="line"><span class="meta">#</span><span class="bash">  其中startAddreess endAddress在上面的smaps中都有</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">查看内存</span></span><br><span class="line">strings outfile.txt</span><br></pre></td></tr></table></figure>
@@ -1095,6 +1092,20 @@
 </ul>
 </li>
 </ul>
+<h2 id="附录：压测记录"><a href="#附录：压测记录" class="headerlink" title="附录：压测记录"></a>附录：压测记录</h2><h3 id="方案"><a href="#方案" class="headerlink" title="方案"></a>方案</h3><p>  对服务进行压测，压倒系统出现瓶颈无法在继续给出压力为止，这时候观测系统的参数。*本次压测主要模拟在系统不通负载的运行中内存的使用情况，cpu的占用以及系统瓶颈仅作为参考</p>
+<h3 id="结果"><a href="#结果" class="headerlink" title="结果"></a>结果</h3><p>  下图是在aapi测试时候的监控图：</p>
+<p>  <img src="/一次堆外内存泄露的排查/yc-1.png" alt="avator"></p>
+<ul>
+<li>在100QPS下aapi系统出现瓶颈，已经无法继续增加压力，这时候，可以看出100QPS的场景下cpu的波动很大，但是内存增长在合理范围内。</li>
+<li>系统空转后java进程内存逐渐落回1.6G</li>
+</ul>
+<h4 id="docker内部"><a href="#docker内部" class="headerlink" title="docker内部"></a>docker内部</h4><p>top图</p>
+<p>  <img src="/一次堆外内存泄露的排查/yc-2.png" alt="avator"></p>
+<p>pidstat -w -p &lt;$pid&gt; 1，上下文切换始终正常</p>
+<p>  <img src="/一次堆外内存泄露的排查/yc-3.png" alt="avator"></p>
+<p>pidstat -u -p &lt;$pid&gt; 1 cpu的使用率</p>
+<p>  <img src="/一次堆外内存泄露的排查/yc-4.png" alt="avator"></p>
+<p>压力主要在user%和system%，代表程序和内核态的调度。</p>
 
           
         

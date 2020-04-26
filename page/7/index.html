@@ -345,6 +345,212 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-bitMap和bloomFilter/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/数据结构与算法-bitMap和bloomFilter/" class="post-title-link" itemprop="url">数据结构与算法-bitMap和bloomFilter</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-08-04 18:42:41" itemprop="dateCreated datePublished" datetime="2019-08-04T18:42:41Z">2019-08-04</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-08-05 02:31:37" itemprop="dateModified" datetime="2019-08-05T02:31:37Z">2019-08-05</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/" itemprop="url" rel="index"><span itemprop="name">数据结构与算法</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/算法/" itemprop="url" rel="index"><span itemprop="name">算法</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>考虑如下需求:</p>
+<ul>
+<li>爬虫对于大量的URL进行排重</li>
+<li>统计网站的UV;</li>
+<li>对1到1亿的数据进行排序</li>
+</ul>
+<h2 id="位图的使用场景"><a href="#位图的使用场景" class="headerlink" title="位图的使用场景"></a>位图的使用场景</h2><p>如果我们要存储1到1亿个数字，支持排重该如何做呢，可以采用位图。见下面的代码，用位图会极大的节省查找、插入的效率.一次位运算即可，同时也极大的节省了内存空间，现在只许愿1亿个2进制，即12MB左右。如果用散列表至少需要40MB。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BitMap</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span>[] bytes;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> total;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//int类型的位图下标是4个字节即32bit</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">BitMap</span><span class="params">(<span class="keyword">int</span> total)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.bytes = <span class="keyword">new</span> <span class="keyword">int</span>[total / <span class="number">32</span> + <span class="number">1</span>];</span><br><span class="line">        <span class="keyword">this</span>.total = total;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">set</span><span class="params">(<span class="keyword">int</span> value)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//找到数组下标</span></span><br><span class="line">        <span class="keyword">int</span> index = value / <span class="number">32</span>;</span><br><span class="line">        <span class="comment">//通过摩运算找到偏移量</span></span><br><span class="line">        <span class="keyword">int</span> bit = value % <span class="number">32</span>;</span><br><span class="line">        <span class="comment">//通过位运算|找到值</span></span><br><span class="line">        bytes[index] |= <span class="number">1</span> &lt;&lt; bit;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">exists</span><span class="params">(<span class="keyword">int</span> value)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (value &gt; total) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">int</span> index = value / <span class="number">32</span>;</span><br><span class="line">        <span class="keyword">int</span> bit = value % <span class="number">32</span>;</span><br><span class="line">        <span class="keyword">return</span> (bytes[index] &amp; <span class="number">1</span> &lt;&lt; bit) != <span class="number">0</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="bloomfilter"><a href="#bloomfilter" class="headerlink" title="bloomfilter"></a>bloomfilter</h2><p>  接上面的问题，如果数字的值不多，但是范围很大，比如1亿个数字但是范围是1到10亿，这时候我们的存储空间变成了120MB，不降反升，我们该如何存储呢？这时候就要借用bloomfilter了。</p>
+<p>  boolmfilter底层还是bitMap，大小还可以设置为1亿。在介绍hash散列时候我们遇到hash冲突采用链表来解决hash冲突。在这里我们采用多个hash函数。<br>  比如：</p>
+<ul>
+<li>我们对一个值用h1,h2,h3……hn，分别将值写入到v1,v2,v3…..vn中。</li>
+<li>查询时候我们分别判断如果h1~hn都为true，返回true,只要有一个为false，就返回false</li>
+<li><p>缺点：</p>
+<ul>
+<li>存在误判的情况，随着bloomfilter里1的值越来越多，误判率会加大，最好支持扩容;</li>
+<li>删除会很麻烦;</li>
+</ul>
+<p>开头提到的问题：我们可以采用10倍的bloomfilter存储url，同时进行排重</p>
+</li>
+</ul>
+<h2 id="引申问题"><a href="#引申问题" class="headerlink" title="引申问题"></a>引申问题</h2><ol>
+<li>假设我们有1亿个整数，数据范围是从1到10亿，进行排序;</li>
+<li>海量图库的排重;</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//排序</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">sort</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; bytes.length; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; <span class="number">32</span>; j++) &#123;</span><br><span class="line">                <span class="keyword">if</span> ((bytes[i] &amp; (<span class="number">1</span> &lt;&lt; j)) != <span class="number">0</span>) &#123;</span><br><span class="line">                    System.out.print((i*<span class="number">32</span>+j) + <span class="string">" "</span>);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        System.out.println();</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<h2 id="bitmap在语言中的应用"><a href="#bitmap在语言中的应用" class="headerlink" title="bitmap在语言中的应用"></a>bitmap在语言中的应用</h2><p>java的中bitSet<br>google库guava中的BloomFilter的实现类</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-todo/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2084,185 +2290,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-字符串的匹配/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/数据结构与算法-字符串的匹配/" class="post-title-link" itemprop="url">数据结构与算法-字符串的匹配</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-07-09 16:21:45 / Modified: 10:14:04" itemprop="dateCreated datePublished" datetime="2019-07-09T16:21:45Z">2019-07-09</time>
-            
-
-            
-              
-
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/" itemprop="url" rel="index"><span itemprop="name">数据结构与算法</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/算法/" itemprop="url" rel="index"><span itemprop="name">算法</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="BF算法（buter-force）"><a href="#BF算法（buter-force）" class="headerlink" title="BF算法（buter force）"></a>BF算法（buter force）</h2><p>  原理：分为主串和模串，在主串m中匹配模串n，所以主串有从0,1,2,3….到m-n个m-n+1个子字符串</p>
-<p>  时间复杂度：理论上是O(m*n),m是主串长度，n是子串长度。但是因为匹配到模串第一个不符合的就会返回进行下一次匹配所以实际效果会好不上。加上比较简单、易于排错所以一般工业会采用这种方法</p>
-<p>  代码示例：</p>
-  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BruteForce</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">char</span>[] main;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">char</span>[] pattern;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">BruteForce</span><span class="params">(String main, String pattern)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.main = main.toCharArray();</span><br><span class="line">        <span class="keyword">this</span>.pattern = pattern.toCharArray();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//暴力搜索的方法，总共有起始位置0，1，2，...n,m-n+1个子串，每个子串和摩串匹配时间复杂度是O(m-n)</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">indexOf</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (main.length &lt; pattern.length) &#123;</span><br><span class="line">            <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">boolean</span> eq = <span class="keyword">true</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt;= main.length - pattern.length + <span class="number">1</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; pattern.length; j++) &#123;</span><br><span class="line">                <span class="keyword">if</span> (main[i + j] != pattern[j]) &#123;</span><br><span class="line">                    eq = <span class="keyword">false</span>;</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                &#125;</span><br><span class="line">                eq = <span class="keyword">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (eq) &#123;</span><br><span class="line">                <span class="keyword">return</span> i;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="RK算法-RobinKrap"><a href="#RK算法-RobinKrap" class="headerlink" title="RK算法-RobinKrap"></a>RK算法-RobinKrap</h2><p> BF算法的优化，由于BF算法需要一个个比较子串，复杂度是O(m*n),所以KR对BF算法做了优化，预先将所有的子串的hash值计算出来然后吧子串的位置记录下来，计算模串的hash，然后在hash中查找，这样复杂度就是计算模串的O(n)+hash获取的O(1)。</p>
-<p> 代码</p>
- <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"> <span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RobinKrap</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">char</span>[] main;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">char</span>[] pattern;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Integer patternHash;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Map&lt;Integer, Integer&gt; hashMap = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//本质和bf的方法一样，只是预先将0~m-n个n-m+1个子串的hash和位置预先计算出来保存起来，然后在查询时候用模的hash去匹配看是否存在</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">RobinKrap</span><span class="params">(String main, String pattern)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.main = main.toCharArray();</span><br><span class="line">        <span class="keyword">this</span>.pattern = pattern.toCharArray();</span><br><span class="line"></span><br><span class="line">        patternHash = <span class="keyword">this</span>.pattern.hashCode();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; main.length() - pattern.length() + <span class="number">1</span>; i++) &#123;</span><br><span class="line">            hashMap.put(Arrays.copyOfRange(<span class="keyword">this</span>.main, i, pattern.length()).hashCode(), i);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">indexOf</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> hashMap.containsKey(patternHash)?hashMap.get(patternHash):-<span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        String s = <span class="string">"abcdefghijklmnklmn"</span>;</span><br><span class="line">        String p = <span class="string">"klmn"</span>;</span><br><span class="line">        BruteForce bf = <span class="keyword">new</span> BruteForce(s, p);</span><br><span class="line">        <span class="keyword">int</span> i = bf.indexOf();</span><br><span class="line">        System.out.println(i);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> idx = i; idx &lt; i + p.length(); idx++) &#123;</span><br><span class="line">            System.out.print(s.charAt(idx));</span><br><span class="line">        &#125;</span><br><span class="line">        System.out.println();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/6/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><span class="page-number current">7</span><a class="page-number" href="/page/8/">8</a><span class="space">&hellip;</span><a class="page-number" href="/page/16/">16</a><a class="extend next" rel="next" href="/page/8/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
+    <a class="extend prev" rel="prev" href="/page/6/"><i class="fa fa-angle-left" aria-label="Previous page"></i></a><a class="page-number" href="/">1</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/">6</a><span class="page-number current">7</span><a class="page-number" href="/page/8/">8</a><span class="space">&hellip;</span><a class="page-number" href="/page/17/">17</a><a class="extend next" rel="next" href="/page/8/"><i class="fa fa-angle-right" aria-label="Next page"></i></a>
   </nav>
 
 
@@ -2304,7 +2336,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">160</span>
+                    <span class="site-state-item-count">161</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

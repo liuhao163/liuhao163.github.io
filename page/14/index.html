@@ -345,201 +345,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/要不要使用分区表/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/要不要使用分区表/" class="post-title-link" itemprop="url">要不要使用分区表</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-03-01 23:47:43" itemprop="dateCreated datePublished" datetime="2019-03-01T23:47:43Z">2019-03-01</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-02 06:01:10" itemprop="dateModified" datetime="2019-03-02T06:01:10Z">2019-03-02</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql架构/" itemprop="url" rel="index"><span itemprop="name">Mysql架构</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="mysql的分区表"><a href="#mysql的分区表" class="headerlink" title="mysql的分区表"></a>mysql的分区表</h1><p>分区表是什么？他有什么好处？有什么坏处？为什么不建议生产环境上使用分区表？</p>
-<p>测试的脚本如下</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> <span class="string">`t`</span> (</span><br><span class="line">  <span class="string">`ftime`</span> datetime <span class="keyword">NOT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`c`</span> <span class="built_in">int</span>(<span class="number">11</span>) <span class="keyword">DEFAULT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="keyword">KEY</span> (<span class="string">`ftime`</span>)</span><br><span class="line">) <span class="keyword">ENGINE</span>=<span class="keyword">InnoDB</span> <span class="keyword">DEFAULT</span> <span class="keyword">CHARSET</span>=latin1</span><br><span class="line"><span class="keyword">PARTITION</span> <span class="keyword">BY</span> <span class="keyword">RANGE</span> (<span class="keyword">YEAR</span>(ftime))</span><br><span class="line">(<span class="keyword">PARTITION</span> p_2017 <span class="keyword">VALUES</span> <span class="keyword">LESS</span> <span class="keyword">THAN</span> (<span class="number">2017</span>) <span class="keyword">ENGINE</span> = <span class="keyword">InnoDB</span>,</span><br><span class="line"> <span class="keyword">PARTITION</span> p_2018 <span class="keyword">VALUES</span> <span class="keyword">LESS</span> <span class="keyword">THAN</span> (<span class="number">2018</span>) <span class="keyword">ENGINE</span> = <span class="keyword">InnoDB</span>,</span><br><span class="line"> <span class="keyword">PARTITION</span> p_2019 <span class="keyword">VALUES</span> <span class="keyword">LESS</span> <span class="keyword">THAN</span> (<span class="number">2019</span>) <span class="keyword">ENGINE</span> = <span class="keyword">InnoDB</span>,</span><br><span class="line"><span class="keyword">PARTITION</span> p_others <span class="keyword">VALUES</span> <span class="keyword">LESS</span> <span class="keyword">THAN</span> MAXVALUE <span class="keyword">ENGINE</span> = <span class="keyword">InnoDB</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t <span class="keyword">values</span>(<span class="string">'2017-4-1'</span>,<span class="number">1</span>),(<span class="string">'2018-4-1'</span>,<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
-<p>可以看到表空间下，有一个frm文件和4个ibd文件说明</p>
-<ul>
-<li>server层这是一个表</li>
-<li>innodb的引擎层这是4个表</li>
-</ul>
-<h2 id="分区表引擎层行为"><a href="#分区表引擎层行为" class="headerlink" title="分区表引擎层行为"></a>分区表引擎层行为</h2><h3 id="对于innodb来说"><a href="#对于innodb来说" class="headerlink" title="对于innodb来说"></a>对于innodb来说</h3><p>因为mysql的间隙锁和行锁是在引擎层做的，所以同一张表，分区表和普通的表的加锁规则可能会有所不同。还是用咱们例子对于分区表加锁的流程如下<br><img src="./分区表1.png" alt="avator"></p>
-<p>而如果一个普通表他的加锁规则如下<br><img src="./分区表1.jpg" alt="avator"></p>
-<p>原因是2018-02-1这条数据是在另一个分区，所以SessionA的间隙锁范围没设计到，儿2017-12-1这条数据和SessionA在同一分区所以被block住</p>
-<h3 id="对于myisam来说"><a href="#对于myisam来说" class="headerlink" title="对于myisam来说"></a>对于myisam来说</h3><p>由于myisam是表锁，但是这个由于引擎上分区表被分成了四张表所以，会造成下面的情况，破坏了引擎原生锁的规则<br><img src="./分区表1.png" alt="avator"></p>
-<h3 id="其他的坑"><a href="#其他的坑" class="headerlink" title="其他的坑"></a>其他的坑</h3><p>对于mysisam表采用的是通用分区策略，第一次访问分区表，会把表分区都走一遍，所以如果一个分区很大比如超过1024个，而我们的句柄数只有1024，这时候很可能会报错<br>对于innodb没有这个问题，因为采用的是本地分区策略，在后续版本Myisam已经不支持分区表了（5.7 deprecated,8.0正式弃用）</p>
-<h2 id="分区表对于Server层来说"><a href="#分区表对于Server层来说" class="headerlink" title="分区表对于Server层来说"></a>分区表对于Server层来说</h2><p>因为server层对于分区表看成是一张表，所以在MDL的时候不同分区的DDL会被block主。如图：<br><img src="./分区表3.png" alt="avator"></p>
-<h2 id="分区表应用场景"><a href="#分区表应用场景" class="headerlink" title="分区表应用场景"></a>分区表应用场景</h2><p>对于业务来说只看到一张表，所以很简洁，并且可以随时添加新的分区，以及按照历史分区清理表数据</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>由于分区表的特性会破坏引擎层的锁的定义，所以不建议在生产环境使用，建议采用手工分区的方式</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/grant后一定要flush-privileges/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2403,6 +2208,215 @@
 
 
     
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/我查这么多数据，会不会把数据库内存打爆/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/我查这么多数据，会不会把数据库内存打爆/" class="post-title-link" itemprop="url">我查这么多数据，会不会把数据库内存打爆?</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-24 22:00:00" itemprop="dateCreated datePublished" datetime="2019-02-24T22:00:00Z">2019-02-24</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-01 14:53:26" itemprop="dateModified" datetime="2019-03-01T14:53:26Z">2019-03-01</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="全表扫描对server的影响"><a href="#全表扫描对server的影响" class="headerlink" title="全表扫描对server的影响"></a>全表扫描对server的影响</h1><h2 id="一条返回值聚到的sql语句是怎么处理的"><a href="#一条返回值聚到的sql语句是怎么处理的" class="headerlink" title="一条返回值聚到的sql语句是怎么处理的"></a>一条返回值聚到的sql语句是怎么处理的</h2><p>假设我们执行下面的语句执行全表扫描，这条sql语句从server到客户端的流程如下</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql -h$host -P$port -u$user -p$pwd -e "<span class="keyword">select</span> * <span class="keyword">from</span> db1.t<span class="string">" &gt; $target_file</span></span><br></pre></td></tr></table></figure>
+<ol>
+<li>结果先写入到net_buffer中，由参数net_buffer_lenght决定（def:16m）</li>
+<li>net_buffer写满后，通过网络接口发送出去</li>
+<li>接续写入新的数据到net_buffer</li>
+<li>如果发送函数遇到返回值EAGAIN状态，或者WSAEWOULDBLOCK，说明本地网络栈被写满了，进入等待状态，知道网络栈可用继续写入。</li>
+</ol>
+<p>可见mysql对于查询结果的发送是边读取边写的这样防止了大的sql语句一次性读写导致oom</p>
+<p>如图所示：</p>
+<p><img src="./查询数据流程.jpg" alt="avator"></p>
+<h2 id="send-data-to-client和sending-data的区别"><a href="#send-data-to-client和sending-data的区别" class="headerlink" title="send data to client和sending data的区别"></a>send data to client和sending data的区别</h2><p>上面发送数据给client过程中sql语句状态会被置为send data to client状态，要和sending data区分开</p>
+<p>sending data是当一条sql语句执行时候就被设置为该状态，知道这条语句结束，所以sending data并不能表示这条语句正在往客户端发送数据</p>
+<p>当数据继续开始往客户端发送时候数据处于send data to client阶段。<br>当执行器开始执行sql语句时候，这条sql语句处于sending data阶段</p>
+<h2 id="mysql-store-result"><a href="#mysql-store-result" class="headerlink" title="mysql_store_result"></a>mysql_store_result</h2><p>一般我们都会采用参数：mysql_store_result直接把查询结果保存到本地，而不是mysql_use_result,读一行处理一行，因为如果一个事务逻辑很复杂很可能要处理很久才会去读下一行</p>
+<h1 id="全表扫描对innodb的影响"><a href="#全表扫描对innodb的影响" class="headerlink" title="全表扫描对innodb的影响"></a>全表扫描对innodb的影响</h1><p>还记得Mysql更新采用了BUFF_POOL+WAL的顺序写机制替代了，随机写，加速了写的性能么？其实BUFF_POOL的这个机制还加速了查询的性能。比如一个sql语句查询数据的时候，如果数据页在内存中，那么就不用扫描磁盘了，一般一个稳定的线上业务buff_pool的磁盘命中率都会很高我们可以用命令show engine innodb status来查看命中率。</p>
+<p>那么如果全表扫描一个很大的表，触发了buff_pool的Lru算法是否很极大的降低buff_pool的命中率，增大磁盘的开销呢？mysql是采用什么策略优化这种情况的呢？</p>
+<p>Mysql的lru算法如图：</p>
+<ol>
+<li>mysql吧buff_pool分了young和old代，占比是5:3</li>
+<li>如果命中的数据页在young代会被移动到链表的head处</li>
+<li>如果新插入了一个数据页，Px,会淘汰最靠近tail的pm,这时候px会插入到old代的头部；</li>
+<li>处于old区域的数据页被访问时候，Mysql会有一个策略<ol>
+<li>发现数据页已经在old区存在了1秒以上了，会移动到young</li>
+<li>反之，不移动，慢慢被淘汰</li>
+</ol>
+</li>
+</ol>
+<p>mysql用这种策略来优化全表扫描，因为全表扫描时候这些数据页会顺序读，所以肯定不会超过1秒，所以不会移动到young，只会在old代慢慢被淘汰，而且淘汰只会限制在old代，对young完全无影响（正常业务的查询）</p>
+<p><img src="./lru_mysql.png" alt="avator"></p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
   </section>
 
   
@@ -2449,7 +2463,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">162</span>
+                    <span class="site-state-item-count">161</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2532,9 +2546,7 @@
                     
                       
                     
-                      
-                    
-                    <span class="site-state-item-count">36</span>
+                    <span class="site-state-item-count">35</span>
                     <span class="site-state-item-name">categories</span>
                   </a>
                 </div>
@@ -2665,11 +2677,7 @@
                     
                       
                     
-                      
-                    
-                      
-                    
-                    <span class="site-state-item-count">61</span>
+                    <span class="site-state-item-count">59</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>

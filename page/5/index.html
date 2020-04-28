@@ -345,6 +345,204 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/RoketMq源码学习-六-Offset的存储/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/RoketMq源码学习-六-Offset的存储/" class="post-title-link" itemprop="url">RoketMq源码学习-六-Offset的存储</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-09-16 01:00:00" itemprop="dateCreated datePublished" datetime="2019-09-16T01:00:00Z">2019-09-16</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-09-27 03:00:45" itemprop="dateModified" datetime="2019-09-27T03:00:45Z">2019-09-27</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/" itemprop="url" rel="index"><span itemprop="name">消息队列</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/" itemprop="url" rel="index"><span itemprop="name">rocketmq</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/源码学习/" itemprop="url" rel="index"><span itemprop="name">源码学习</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>Consumer维护OffSet的接口是：OffsetStore，有俩个实现类</p>
+<ul>
+<li>RemoteBrokerOffsetStore：消息模式是Cluster会用到它</li>
+<li>LocalFileOffsetStore：消息模式是BoardCast会用到它</li>
+</ul>
+<p>我们以RemoteBrokerOffsetStore为例来看读取offset的顺序</p>
+<h2 id="RemoteBrokerOffsetStore读取offset的顺序"><a href="#RemoteBrokerOffsetStore读取offset的顺序" class="headerlink" title="RemoteBrokerOffsetStore读取offset的顺序"></a>RemoteBrokerOffsetStore读取offset的顺序</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">long</span> <span class="title">readOffset</span><span class="params">(<span class="keyword">final</span> MessageQueue mq, <span class="keyword">final</span> ReadOffsetType type)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (mq != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">switch</span> (type) &#123;</span><br><span class="line">            <span class="keyword">case</span> MEMORY_FIRST_THEN_STORE:</span><br><span class="line">            <span class="keyword">case</span> READ_FROM_MEMORY: &#123;</span><br><span class="line">                AtomicLong offset = <span class="keyword">this</span>.offsetTable.get(mq);</span><br><span class="line">                <span class="keyword">if</span> (offset != <span class="keyword">null</span>) &#123;</span><br><span class="line">                    <span class="keyword">return</span> offset.get();</span><br><span class="line">                &#125; <span class="keyword">else</span> <span class="keyword">if</span> (ReadOffsetType.READ_FROM_MEMORY == type) &#123;</span><br><span class="line">                    <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">case</span> READ_FROM_STORE: &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    <span class="keyword">long</span> brokerOffset = <span class="keyword">this</span>.fetchConsumeOffsetFromBroker(mq);</span><br><span class="line">                    AtomicLong offset = <span class="keyword">new</span> AtomicLong(brokerOffset);</span><br><span class="line">                    <span class="keyword">this</span>.updateOffset(mq, offset.get(), <span class="keyword">false</span>);</span><br><span class="line">                    <span class="keyword">return</span> brokerOffset;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">// No offset in broker</span></span><br><span class="line">                <span class="keyword">catch</span> (MQBrokerException e) &#123;</span><br><span class="line">                    <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">//Other exceptions</span></span><br><span class="line">                <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                    log.warn(<span class="string">"fetchConsumeOffsetFromBroker exception, "</span> + mq, e);</span><br><span class="line">                    <span class="keyword">return</span> -<span class="number">2</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>当需要从broker读取的时候调用fetchConsumeOffsetFromBroker</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">long</span> <span class="title">fetchConsumeOffsetFromBroker</span><span class="params">(MessageQueue mq)</span> <span class="keyword">throws</span> RemotingException, MQBrokerException,</span></span><br><span class="line"><span class="function">        InterruptedException, MQClientException </span>&#123;</span><br><span class="line">    <span class="comment">//获取broker from memory</span></span><br><span class="line">    FindBrokerResult findBrokerResult = <span class="keyword">this</span>.mQClientFactory.findBrokerAddressInAdmin(mq.getBrokerName());</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">null</span> == findBrokerResult) &#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">this</span>.mQClientFactory.updateTopicRouteInfoFromNameServer(mq.getTopic());</span><br><span class="line">        findBrokerResult = <span class="keyword">this</span>.mQClientFactory.findBrokerAddressInAdmin(mq.getBrokerName());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//sendBroker get Offset</span></span><br><span class="line">    <span class="keyword">if</span> (findBrokerResult != <span class="keyword">null</span>) &#123;</span><br><span class="line">        QueryConsumerOffsetRequestHeader requestHeader = <span class="keyword">new</span> QueryConsumerOffsetRequestHeader();</span><br><span class="line">        requestHeader.setTopic(mq.getTopic());</span><br><span class="line">        requestHeader.setConsumerGroup(<span class="keyword">this</span>.groupName);</span><br><span class="line">        requestHeader.setQueueId(mq.getQueueId());</span><br><span class="line"></span><br><span class="line">        <span class="comment">//从broker取consumerOffSet</span></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>.mQClientFactory.getMQClientAPIImpl().queryConsumerOffset(</span><br><span class="line">                findBrokerResult.getBrokerAddr(), requestHeader, <span class="number">1000</span> * <span class="number">5</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> MQClientException(<span class="string">"The broker["</span> + mq.getBrokerName() + <span class="string">"] not exist"</span>, <span class="keyword">null</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">long</span> <span class="title">queryConsumerOffset</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> String addr,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> QueryConsumerOffsetRequestHeader requestHeader,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> <span class="keyword">long</span> timeoutMillis</span></span></span><br><span class="line"><span class="function"><span class="params">)</span> <span class="keyword">throws</span> RemotingException, MQBrokerException, InterruptedException </span>&#123;</span><br><span class="line">    RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.QUERY_CONSUMER_OFFSET, requestHeader);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//发送同步请求,这时候当前线程会阻塞</span></span><br><span class="line">    RemotingCommand response = <span class="keyword">this</span>.remotingClient.invokeSync(MixAll.brokerVIPChannel(<span class="keyword">this</span>.clientConfig.isVipChannelEnabled(), addr),</span><br><span class="line">            request, timeoutMillis);</span><br><span class="line">    <span class="keyword">assert</span> response != <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">switch</span> (response.getCode()) &#123;</span><br><span class="line">        <span class="keyword">case</span> ResponseCode.SUCCESS: &#123;</span><br><span class="line">            QueryConsumerOffsetResponseHeader responseHeader =</span><br><span class="line">                    (QueryConsumerOffsetResponseHeader) response.decodeCommandCustomHeader(QueryConsumerOffsetResponseHeader.class);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> responseHeader.getOffset();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> MQBrokerException(response.getCode(), response.getRemark());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>broker处理QUERY_CONSUMER_OFFSET请求的逻辑</p>
+<p>从ConsumerQueue中获取offset</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> RemotingCommand <span class="title">queryConsumerOffset</span><span class="params">(ChannelHandlerContext ctx, RemotingCommand request)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> RemotingCommandException </span>&#123;</span><br><span class="line">    <span class="comment">//创建响应</span></span><br><span class="line">    <span class="keyword">final</span> RemotingCommand response =</span><br><span class="line">        RemotingCommand.createResponseCommand(QueryConsumerOffsetResponseHeader.class);</span><br><span class="line">    <span class="comment">//响应头</span></span><br><span class="line">    <span class="keyword">final</span> QueryConsumerOffsetResponseHeader responseHeader =</span><br><span class="line">        (QueryConsumerOffsetResponseHeader) response.readCustomHeader();</span><br><span class="line">    <span class="comment">//请求头</span></span><br><span class="line">    <span class="keyword">final</span> QueryConsumerOffsetRequestHeader requestHeader =</span><br><span class="line">        (QueryConsumerOffsetRequestHeader) request</span><br><span class="line">            .decodeCommandCustomHeader(QueryConsumerOffsetRequestHeader.class);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">long</span> offset =</span><br><span class="line">        <span class="keyword">this</span>.brokerController.getConsumerOffsetManager().queryOffset(</span><br><span class="line">            requestHeader.getConsumerGroup(), requestHeader.getTopic(), requestHeader.getQueueId());</span><br><span class="line"></span><br><span class="line">    <span class="comment">//如果&gt;=0</span></span><br><span class="line">    <span class="keyword">if</span> (offset &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">        responseHeader.setOffset(offset);</span><br><span class="line">        response.setCode(ResponseCode.SUCCESS);</span><br><span class="line">        response.setRemark(<span class="keyword">null</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">long</span> minOffset =</span><br><span class="line">            <span class="keyword">this</span>.brokerController.getMessageStore().getMinOffsetInQueue(requestHeader.getTopic(),</span><br><span class="line">                requestHeader.getQueueId());</span><br><span class="line">        <span class="comment">//如果小于等于0，并且创建ConsumerQueue成功</span></span><br><span class="line">        <span class="keyword">if</span> (minOffset &lt;= <span class="number">0</span></span><br><span class="line">            &amp;&amp; !<span class="keyword">this</span>.brokerController.getMessageStore().checkInDiskByConsumeOffset(</span><br><span class="line">            requestHeader.getTopic(), requestHeader.getQueueId(), <span class="number">0</span>)) &#123;</span><br><span class="line">            responseHeader.setOffset(<span class="number">0L</span>);</span><br><span class="line">            response.setCode(ResponseCode.SUCCESS);</span><br><span class="line">            response.setRemark(<span class="keyword">null</span>);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">//错误</span></span><br><span class="line">            response.setCode(ResponseCode.QUERY_NOT_FOUND);</span><br><span class="line">            response.setRemark(<span class="string">"Not found, V3_0_6_SNAPSHOT maybe this group consumer boot first"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> response;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">long</span> <span class="title">getMinOffsetInQueue</span><span class="params">(String topic, <span class="keyword">int</span> queueId)</span> </span>&#123;</span><br><span class="line">    <span class="comment">//getAndCreateQueue</span></span><br><span class="line">    ConsumeQueue logic = <span class="keyword">this</span>.findConsumeQueue(topic, queueId);</span><br><span class="line">    <span class="keyword">if</span> (logic != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">//找到队列里最小的offsetminLogicOffset / CQ_STORE_UNIT_SIZE</span></span><br><span class="line">        <span class="keyword">return</span> logic.getMinOffsetInQueue();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> ConsumeQueue <span class="title">findConsumeQueue</span><span class="params">(String topic, <span class="keyword">int</span> queueId)</span> </span>&#123;</span><br><span class="line">    ConcurrentMap&lt;Integer, ConsumeQueue&gt; map = consumeQueueTable.get(topic);</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">null</span> == map) &#123;</span><br><span class="line">        <span class="comment">//防止并发</span></span><br><span class="line">        ConcurrentMap&lt;Integer, ConsumeQueue&gt; newMap = <span class="keyword">new</span> ConcurrentHashMap&lt;Integer, ConsumeQueue&gt;(<span class="number">128</span>);</span><br><span class="line">        ConcurrentMap&lt;Integer, ConsumeQueue&gt; oldMap = consumeQueueTable.putIfAbsent(topic, newMap);</span><br><span class="line">        <span class="keyword">if</span> (oldMap != <span class="keyword">null</span>) &#123;</span><br><span class="line">            map = oldMap;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            map = newMap;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    ConsumeQueue logic = map.get(queueId);</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">null</span> == logic) &#123;</span><br><span class="line"></span><br><span class="line">        ConsumeQueue newLogic = <span class="keyword">new</span> ConsumeQueue(</span><br><span class="line">                topic,</span><br><span class="line">                queueId,</span><br><span class="line">                StorePathConfigHelper.getStorePathConsumeQueue(<span class="keyword">this</span>.messageStoreConfig.getStorePathRootDir()),</span><br><span class="line">                <span class="keyword">this</span>.getMessageStoreConfig().getMapedFileSizeConsumeQueue(),</span><br><span class="line">                <span class="keyword">this</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//防止并发</span></span><br><span class="line">        ConsumeQueue oldLogic = map.putIfAbsent(queueId, newLogic);</span><br><span class="line">        <span class="keyword">if</span> (oldLogic != <span class="keyword">null</span>) &#123;</span><br><span class="line">            logic = oldLogic;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            logic = newLogic;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> logic;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/RoketMq源码学习-五-消息的消费-下/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2323,169 +2521,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/消息队列/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/消息队列/" class="post-title-link" itemprop="url">消息队列基础</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-08-19 21:01:30 / Modified: 13:01:30" itemprop="dateCreated datePublished" datetime="2019-08-19T21:01:30Z">2019-08-19</time>
-            
-
-            
-              
-
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/" itemprop="url" rel="index"><span itemprop="name">消息队列</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>at-least-once：如果producer收到来自Kafka broker的确认（ack）或者acks = all，则表示该消息已经写入到Kafka。但如果producer ack超时或收到错误，则可能会重试发送消息，客户端会认为该消息未写入Kafka。如果broker在发送Ack之前失败，但在消息成功写入Kafka之后，此重试将导致该消息被写入两次，因此消息会被不止一次地传递给最终consumer，这种策略可能导致重复的工作和不正确的结果。</p>
-<p>at-most-once：如果在ack超时或返回错误时producer不重试，则该消息可能最终不会写入Kafka，因此不会传递给consumer。在大多数情况下，这样做是为了避免重复的可能性，业务上必须接收数据传递可能的丢失。</p>
-<p>exactly-once：即使producer重试发送消息，消息也会保证最多一次地传递给最终consumer。该语义是最理想的，但也难以实现，这是因为它需要消息系统本身与生产和消费消息的应用程序进行协作。例如如果在消费消息成功后，将Kafka consumer的偏移量rollback，我们将会再次从该偏移量开始接收消息。这表明消息传递系统和客户端应用程序必须配合调整才能实现excactly-once。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2532,7 +2567,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">161</span>
+                    <span class="site-state-item-count">162</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

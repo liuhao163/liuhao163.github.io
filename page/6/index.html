@@ -345,6 +345,428 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/系统优化-CPU-理解CPU的平均负载/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/系统优化-CPU-理解CPU的平均负载/" class="post-title-link" itemprop="url">系统优化-CPU-理解CPU的平均负载</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-08-28 13:29:19" itemprop="dateCreated datePublished" datetime="2019-08-28T13:29:19Z">2019-08-28</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2020-04-19 13:38:31" itemprop="dateModified" datetime="2020-04-19T13:38:31Z">2020-04-19</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/性能优化/" itemprop="url" rel="index"><span itemprop="name">性能优化</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/性能优化/CPU/" itemprop="url" rel="index"><span itemprop="name">CPU</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>本章主要讲解如何理解CPU的平均负载、以及常见的引起CPU平均负载升高的几种场景。</p>
+<h2 id="什么是CPU的平均负载"><a href="#什么是CPU的平均负载" class="headerlink" title="什么是CPU的平均负载"></a>什么是CPU的平均负载</h2><p>  指单位时间内系统可运行（Runnable）以及不可中断(Uninterruptible Sleep)的平均进程数。其中不可中断是指系统对进程和设备的一种保护，比如读磁盘的文件为了保证系统的一致性这个进程不可中断 ps命令中是D</p>
+<p>  如何查看平均负载呢：</p>
+<blockquote>
+<p>常用命令有：uptime|top|w，我们1以uptime为例，如：</p>
+</blockquote>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> uptime</span></span><br><span class="line">02:34:03 up 2 days, 20:14,  1 user,  load average: 0.63, 0.83, 0.88</span><br></pre></td></tr></table></figure>
+<p>  其中：load average: 0.63, 0.83, 0.88 分别代表了最近1分钟、5分钟、15分钟的cpu平均负载，什么是laod avarage呢</p>
+<p>  平均负载反映了这段时间操作系统的CPU负载的趋势，一般来讲，一个健康的系统的平均负载不应该超过<strong>0.7</strong>。</p>
+<h2 id="引起平均负载升高的常见的三种场景"><a href="#引起平均负载升高的常见的三种场景" class="headerlink" title="引起平均负载升高的常见的三种场景"></a>引起平均负载升高的常见的三种场景</h2><p>  和平均负载相关的另一项数据是CPU的使用率，他们俩的关系根据场景有如下的联系</p>
+<ol>
+<li>计算密集型：cpu使用率和cpu负载会同时升高</li>
+<li>I/O密集型：大量的线程处于i/o-wait，这时候cpu负载高但是cpu使用率并不高</li>
+<li><p>当需要调度的进程数量大于cpu的时候，cpu负载和使用率会同时升高。</p>
+<p>我们怎么确定上述的3中场景呢？这时候我们可以用到如下的工具:</p>
+</li>
+</ol>
+<ul>
+<li>stress 压测工具</li>
+<li>sysstat linux性能分析工具，常用mpstat和pidstat</li>
+</ul>
+<h3 id="模拟计算密集型"><a href="#模拟计算密集型" class="headerlink" title="模拟计算密集型"></a>模拟计算密集型</h3><p>见下图：</p>
+<p>  mpstat的结果显示这时候看%iowait不高，但是%user已经100%了<br>  pidstat的结果显示是stress引起的</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">stress --cpu 1 --timeout 600 #一个核打满</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">查看系统性能</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> -P ALL 表示监控所有 CPU，后面数字 5 表示间隔 5 秒后输出一组数据</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> mpstat -P ALL 5</span></span><br><span class="line">Linux 4.15.0 (ubuntu) 09/22/18 _x86_64_ (2 CPU)</span><br><span class="line">13:30:06     CPU    %usr   %nice    %sys %iowait    %irq   %soft  %steal  %guest  %gnice   %idle</span><br><span class="line">13:30:11     all   50.05    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00   49.95</span><br><span class="line">13:30:11       0    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00  100.00</span><br><span class="line">13:30:11       1  100.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00    0.00</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">分析由于iowait为0，user很高说明是CPU计算导致的,于是我们</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 间隔 5 秒后输出一组数据</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> pidstat -u 5 1</span></span><br><span class="line">13:37:07      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command</span><br><span class="line">13:37:12        0      2962  100.00    0.00    0.00    0.00  100.00     1  stress</span><br></pre></td></tr></table></figure>
+<h3 id="模拟IO密集型"><a href="#模拟IO密集型" class="headerlink" title="模拟IO密集型"></a>模拟IO密集型</h3><p>见下图：</p>
+<p>  mpstat的结果显示这时候看%iowait很高67.53，但是%user才0.43<br>  pidstat的结果显示是stress引起的</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">发送sync</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> stress -i 1 --timeout 600</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">查看系统性能</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 显示所有 CPU 的指标，并在间隔 5 秒输出一组数据</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> mpstat -P ALL 5 1</span></span><br><span class="line">Linux 4.15.0 (ubuntu)     09/22/18     _x86_64_    (2 CPU)</span><br><span class="line">13:41:28     CPU    %usr   %nice    %sys %iowait    %irq   %soft  %steal  %guest  %gnice   %idle</span><br><span class="line">13:41:33     all    0.21    0.00   12.07   32.67    0.00    0.21    0.00    0.00    0.00   54.84</span><br><span class="line">13:41:33       0    0.43    0.00   23.87   67.53    0.00    0.43    0.00    0.00    0.00    7.74</span><br><span class="line">13:41:33       1    0.00    0.00    0.81    0.20    0.00    0.00    0.00    0.00    0.00   98.99</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">分析使用率不高但是iowait很高</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 间隔 5 秒后输出一组数据，-u 表示 CPU 指标</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> pidstat -u 5 1</span></span><br><span class="line">Linux 4.15.0 (ubuntu)     09/22/18     _x86_64_    (2 CPU)</span><br><span class="line">13:42:08      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command</span><br><span class="line">13:42:13        0       104    0.00    3.39    0.00    0.00    3.39     1  kworker/1:1H</span><br><span class="line">13:42:13        0       109    0.00    0.40    0.00    0.00    0.40     0  kworker/0:1H</span><br><span class="line">13:42:13        0      2997    2.00   35.53    0.00    3.99   37.52     1  stress</span><br><span class="line">13:42:13        0      3057    0.00    0.40    0.00    0.00    0.40     0  pidstat</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">发现stress导致的</span></span><br></pre></td></tr></table></figure>
+<h3 id="大量CPU调度"><a href="#大量CPU调度" class="headerlink" title="大量CPU调度"></a>大量CPU调度</h3><p>  pidstat的结果显示%wait的结果很高，%iowait和cpu都不高</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">发送sync</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> stress -c 8 --timeout 600</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">查看系统性能</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 间隔 5 秒后输出一组数据</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> pidstat -u 5 1</span></span><br><span class="line">14:23:25      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command</span><br><span class="line">14:23:30        0      3190   25.00    0.00    0.00   74.80   25.00     0  stress</span><br><span class="line">14:23:30        0      3191   25.00    0.00    0.00   75.20   25.00     0  stress</span><br><span class="line">14:23:30        0      3192   25.00    0.00    0.00   74.80   25.00     1  stress</span><br><span class="line">14:23:30        0      3193   25.00    0.00    0.00   75.00   25.00     1  stress</span><br><span class="line">14:23:30        0      3194   24.80    0.00    0.00   74.60   24.80     0  stress</span><br><span class="line">14:23:30        0      3195   24.80    0.00    0.00   75.00   24.80     0  stress</span><br><span class="line">14:23:30        0      3196   24.80    0.00    0.00   74.60   24.80     1  stress</span><br><span class="line">14:23:30        0      3197   24.80    0.00    0.00   74.80   24.80     1  stress</span><br><span class="line">14:23:30        0      3200    0.00    0.20    0.00    0.20    0.20     0  pidstat</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">发现stress导致的</span></span><br></pre></td></tr></table></figure>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ol>
+<li>计算密集型：mpstat如果%user很高，但是%iowait不高，再用pidstat查看进程的%wait如果也不高。</li>
+<li>I/O密集型：mpstat如果%user不高，但是%iowait很高，再用pidstat查看进程的%wait如果也不高。</li>
+<li>大量的进程需要调度：mpstat如果%user不高，但是%iowait不高，再用pidstat查看进程的%wait如果很高。</li>
+</ol>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/RockeMq-初始以及demo的注解/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/RockeMq-初始以及demo的注解/" class="post-title-link" itemprop="url">RockeMq-初始以及demo的注解</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-08-25 21:44:35" itemprop="dateCreated datePublished" datetime="2019-08-25T21:44:35Z">2019-08-25</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-08-26 06:18:03" itemprop="dateModified" datetime="2019-08-26T06:18:03Z">2019-08-26</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/" itemprop="url" rel="index"><span itemprop="name">消息队列</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/" itemprop="url" rel="index"><span itemprop="name">rocketmq</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="producer"><a href="#producer" class="headerlink" title="producer"></a>producer</h2><h2 id="send-one-way"><a href="#send-one-way" class="headerlink" title="send-one-way"></a>send-one-way</h2><p>发送后不会检查发送状态,方法返回值void，常用于log的收集</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">producer.sendOneway(msg)</span><br></pre></td></tr></table></figure>
+<p>send-sync</p>
+<p>同步发送场景，发送后会返回sendResult用于检查发送状态，适合于订单等场景</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">producer.sendOneway(msg)</span><br></pre></td></tr></table></figure>
+<p>send-async</p>
+<p>异步发送场景，安全性介于上述两者之间，会有发送结果但是在SendCallback回调中处理</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">producer.send(msg,<span class="keyword">new</span> SendCallback() &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onSuccess</span><span class="params">(SendResult sendResult)</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">"producer sendResult="</span>+sendResult);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onException</span><span class="params">(Throwable e)</span> </span>&#123;</span><br><span class="line">        System.out.printf(<span class="string">"%-10d Exception %s %n"</span>, -<span class="number">1</span>, e);</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+<h2 id="consumer"><a href="#consumer" class="headerlink" title="consumer"></a>consumer</h2><h3 id="保续消费"><a href="#保续消费" class="headerlink" title="保续消费"></a>保续消费</h3><p>客户端:send(Message msg, MessageQueueSelector selector, Object arg)</p>
+<ul>
+<li>实现MessageQueueSelector</li>
+</ul>
+<p>消费者</p>
+<ul>
+<li>MessageListenerOrderly:保续消费</li>
+</ul>
+<h3 id="ack机制"><a href="#ack机制" class="headerlink" title="ack机制"></a>ack机制</h3><ul>
+<li>ConsumeConcurrentlyStatus.CONSUME_SUCCESS：消费成功</li>
+<li>ConsumeConcurrentlyStatus.RECONSUME_LATER：重复消费。rocketmq会放到重试队列,这个重试TOPIC的名字是%RETRY%+consumergroup的名字</li>
+</ul>
+<p>注意：</p>
+<ol>
+<li>如果业务的回调没有处理好而抛出异常，会认为是消费失败当ConsumeConcurrentlyStatus.RECONSUME_LATER处理。</li>
+<li>当使用顺序消费的回调MessageListenerOrderly时，由于顺序消费是要前者消费成功才能继续消费，所以没有ConsumeConcurrentlyStatus.RECONSUME_LATER的这个状态，只有ConsumeOrderlyStatus.SUSPEND_CURRENT_QUEUE_A_MOMENT来暂停队列的其余消费，直到原消息不断重试成功为止才能继续消费。</li>
+</ol>
+<h3 id="offset的控制"><a href="#offset的控制" class="headerlink" title="offset的控制"></a>offset的控制</h3><p>和kafka类似的机制。</p>
+<h3 id="todo"><a href="#todo" class="headerlink" title="todo"></a>todo</h3><ol>
+<li>后续补充对offset的理解</li>
+<li>保续消费的实现</li>
+</ol>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/消息队列/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1815,377 +2237,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-Mysql的索引B-树/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/数据结构与算法-Mysql的索引B-树/" class="post-title-link" itemprop="url">数据结构与算法-Mysql的索引B+树-以及索引数据结构的选型</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-08-08 11:46:50 / Modified: 06:44:59" itemprop="dateCreated datePublished" datetime="2019-08-08T11:46:50Z">2019-08-08</time>
-            
-
-            
-              
-
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/" itemprop="url" rel="index"><span itemprop="name">数据结构与算法</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/应用篇/" itemprop="url" rel="index"><span itemprop="name">应用篇</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>Mysql的索引采用B+tree的结构，因为索引需要自持范围查寻、等值查询，支持快速的添加、删除，且时间复杂度不能太高，同时占用的空间不能太大。</p>
-<h2 id="b-tree做索引的实现原理"><a href="#b-tree做索引的实现原理" class="headerlink" title="b+tree做索引的实现原理"></a>b+tree做索引的实现原理</h2><p>  查询</p>
-<ol>
-<li>保存在文件中，采用时间换空间的思路，支持大的索引;</li>
-<li>由于节点在磁盘中，每次访问节点都需要一次磁盘的IO，所以b+tree是多叉树，有效降低了树的高度，极大减小了磁盘IO的次数提高了性能;</li>
-<li>b+tree每个节点的大小都对应一个内存的PAGE_SIZE,保证每次加载只有一次磁盘IO</li>
-<li><p>b+tree只保存索引所以，叶子节点由链表串联起来，所以支持范围查找，并且修改值不用改动索引，且索引很小。</p>
-<p>添加:添加如果节点超过了Page容纳的范围，就将原有节点分裂成俩个不同的节点，逐层向父级分裂知道满足需求<br>删除：设置一个阈值，如果b+tree节点数量小于阈值就进行合并，如果合并后节点数超过PAGE_SIZE在和添加一样进行分裂</p>
-</li>
-</ol>
-<h2 id="b-tree和b-tree的区别"><a href="#b-tree和b-tree的区别" class="headerlink" title="b+tree和b-tree的区别"></a>b+tree和b-tree的区别</h2><ol>
-<li>b+tree的节点保存索引，btree保存值。</li>
-<li>b+tree的叶子节点由链表串联起来。</li>
-</ol>
-<h2 id="索引的选型"><a href="#索引的选型" class="headerlink" title="索引的选型"></a>索引的选型</h2><p>索引是所有的数据存储系统的关键，直接关乎查询的效率，常用的适合做索引的数据结构有：</p>
-<ul>
-<li>散列表：查询修改复杂度都是O(1),适合nosql的存储，如redis，memcached等，大部分索引都在内存中</li>
-<li>红黑树：适合做文件系统的索引，插入、修改、查询的事件复杂度都是O(LogN)，也适合构建内存索引</li>
-<li>B+tree：适合构建磁盘索引，如mysql等</li>
-<li>还有布隆过滤器、位图等：虽然有误判，但是我们可以选择他做二级索引，因为索引很小，且效率很高，判断下数据是否存在，如果返回存在在调用其他索引查找。</li>
-</ul>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-利用向量实现推荐系统/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/数据结构与算法-利用向量实现推荐系统/" class="post-title-link" itemprop="url">数据结构与算法-利用向量实现推荐系统</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-08-07 17:42:06 / Modified: 10:10:14" itemprop="dateCreated datePublished" datetime="2019-08-07T17:42:06Z">2019-08-07</time>
-            
-
-            
-              
-
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/" itemprop="url" rel="index"><span itemprop="name">数据结构与算法</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/应用篇/" itemprop="url" rel="index"><span itemprop="name">应用篇</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>实现音乐推荐系统算法模块的思路：</p>
-<ol>
-<li>找到和你口味的相近的人，把他听的歌曲推荐给你</li>
-<li>找到和你听的歌曲个特征相似的跟去，把这些歌曲推荐给你</li>
-</ol>
-<h2 id="实现原理"><a href="#实现原理" class="headerlink" title="实现原理"></a>实现原理</h2><p>向量的欧几里得距离</p>
-<p><img src="/数据结构与算法-利用向量实现推荐系统/img1.jpg" alt="avator"></p>
-<h3 id="基于相似口味的人"><a href="#基于相似口味的人" class="headerlink" title="基于相似口味的人"></a>基于相似口味的人</h3><ul>
-<li>把听过的某首歌看为是一个向量</li>
-<li>把听过的歌进行打标（收藏、听、分享、不喜欢）计算每一首歌的向量值;</li>
-<li>然后遍历所有的用户，计算向量的欧几里得距离，设定一个阈值，小于这个阈值的说明口味相近，我们将用户没听过的歌推荐给用户</li>
-</ul>
-<h3 id="基于喜欢的歌曲进行推荐"><a href="#基于喜欢的歌曲进行推荐" class="headerlink" title="基于喜欢的歌曲进行推荐"></a>基于喜欢的歌曲进行推荐</h3><ul>
-<li>用户对于喜欢听的歌曲的成都进行标记</li>
-<li>遍历所有歌曲，计算向量的欧几里得距离，设定一个阈值，小于这个阈值的说明歌曲受欢迎程度相似可以进行推荐。</li>
-</ul>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2232,7 +2283,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">162</span>
+                    <span class="site-state-item-count">164</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

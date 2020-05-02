@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://liuhao163.github.io/"/>
-  <updated>2020-04-28T12:22:40.000Z</updated>
+  <updated>2020-05-02T08:33:08.000Z</updated>
   <id>https://liuhao163.github.io/</id>
   
   <author>
@@ -17,11 +17,70 @@
   <generator uri="http://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>系统优化-内存-常用的内存泄露的排查方案</title>
+    <link href="https://liuhao163.github.io/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-%E5%86%85%E5%AD%98-%E5%B8%B8%E7%94%A8%E7%9A%84%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E7%9A%84%E6%8E%92%E6%9F%A5%E6%96%B9%E6%A1%88/"/>
+    <id>https://liuhao163.github.io/系统优化-内存-常用的内存泄露的排查方案/</id>
+    <published>2020-05-02T16:32:56.000Z</published>
+    <updated>2020-05-02T08:33:08.000Z</updated>
+    
+    <summary type="html">
+    
+    </summary>
+    
+      <category term="性能优化" scheme="https://liuhao163.github.io/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/"/>
+    
+      <category term="内存" scheme="https://liuhao163.github.io/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/%E5%86%85%E5%AD%98/"/>
+    
+    
+      <category term="linux" scheme="https://liuhao163.github.io/tags/linux/"/>
+    
+      <category term="性能优化" scheme="https://liuhao163.github.io/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/"/>
+    
+      <category term="内存" scheme="https://liuhao163.github.io/tags/%E5%86%85%E5%AD%98/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>系统优化-内存-通过优化buffer和cache来优化程序</title>
+    <link href="https://liuhao163.github.io/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-%E5%86%85%E5%AD%98-%E9%80%9A%E8%BF%87%E4%BC%98%E5%8C%96buffer%E5%92%8Ccache%E6%9D%A5%E4%BC%98%E5%8C%96%E7%A8%8B%E5%BA%8F/"/>
+    <id>https://liuhao163.github.io/系统优化-内存-通过优化buffer和cache来优化程序/</id>
+    <published>2020-05-01T22:48:38.000Z</published>
+    <updated>2020-05-01T15:09:42.000Z</updated>
+    
+    <content type="html"><![CDATA[<ul><li>Buffer:是优化磁盘的读写</li><li><p>Cache:是优化文件的读写</p><p>我们的程序可以通过优化Buffer和Cache来提高我们程序的运行效率。所谓工欲善其事必先利其器，我们下面介绍下如何去看我们内存的cache情况。</p></li></ul><h2 id="指标和工具"><a href="#指标和工具" class="headerlink" title="指标和工具"></a>指标和工具</h2><p>  查看cache的命中情况我们主要会去查看cache的命中率。我们可以使用bcc-tools下的cachestat和cachetop</p><ul><li>cachestat:统计整体内存的cache情况</li><li>cachetop:统计进程的内存cache情况</li></ul><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ cachestat 1 3</span><br><span class="line">   TOTAL   MISSES     HITS  DIRTIES   BUFFERS_MB  CACHED_MB</span><br><span class="line">       2        0        2        1           17        279</span><br><span class="line">       2        0        2        1           17        279</span><br><span class="line">       2        0        2        1           17        279</span><br></pre></td></tr></table></figure><ul><li>TOTAL:表示总的 I/O 次数</li><li>MISSES:缓存未命中</li><li>HITS:缓存命中</li><li>DIRTIES:脏页</li><li>BUFFERS_MB:buffer的数据</li><li>CACHED_MB:cache的数据</li></ul><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ cachetop</span><br><span class="line">11:58:50 Buffers MB: 258 / Cached MB: 347 / Sort: HITS / Order: ascending</span><br><span class="line">PID      UID      CMD              HITS     MISSES   DIRTIES  READ_HIT%  WRITE_HIT%</span><br><span class="line">   13029 root     python                  1        0        0     100.0%       0.0%</span><br></pre></td></tr></table></figure><p>  它的输出跟 top 类似，默认按照缓存的命中次数（HITS）排序，展示了每个进程的缓存命中情况。具体到每一个指标，这里的 HITS、MISSES 和 DIRTIES ，跟 cachestat 里的含义一样，分别代表间隔时间内的缓存命中次数、未命中次数以及新增到缓存中的脏页数。而 READ_HIT 和 WRITE_HIT ，分别表示读和写的缓存命中率。</p><p>  还有一个缓存数据的大小的指标我们一般也会很关心，我们可以通过go语言写的pcstat查看</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ pcstat /bin/ls</span><br><span class="line">+---------+----------------+------------+-----------+---------+</span><br><span class="line">| Name    | Size (bytes)   | Pages      | Cached    | Percent |</span><br><span class="line">|---------+----------------+------------+-----------+---------|</span><br><span class="line">| /bin/ls | 133792         | 33         | 0         | 000.000 |</span><br><span class="line">+---------+----------------+------------+-----------+---------+</span><br></pre></td></tr></table></figure><p>这个就是/bin/ls的缓存情况</p><h2 id="查找问题思路"><a href="#查找问题思路" class="headerlink" title="查找问题思路"></a>查找问题思路</h2><p>我们通过cachetop找到问题的缓存命中率情况，有一种情况缓存命中率很高。但是缓存命中的数据很少【计算方式，HITS命中数*4k,因为缓存死以page为单位存的以page为4k】</p>]]></content>
+    
+    <summary type="html">
+    
+      
+      
+        &lt;ul&gt;
+&lt;li&gt;Buffer:是优化磁盘的读写&lt;/li&gt;
+&lt;li&gt;&lt;p&gt;Cache:是优化文件的读写&lt;/p&gt;
+&lt;p&gt;我们的程序可以通过优化Buffer和Cache来提高我们程序的运行效率。所谓工欲善其事必先利其器，我们下面介绍下如何去看我们内存的cache情况。&lt;/p&gt;
+&lt;/l
+      
+    
+    </summary>
+    
+      <category term="性能优化" scheme="https://liuhao163.github.io/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/"/>
+    
+      <category term="内存" scheme="https://liuhao163.github.io/categories/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/%E5%86%85%E5%AD%98/"/>
+    
+    
+      <category term="linux" scheme="https://liuhao163.github.io/tags/linux/"/>
+    
+      <category term="性能优化" scheme="https://liuhao163.github.io/tags/%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96/"/>
+    
+      <category term="内存" scheme="https://liuhao163.github.io/tags/%E5%86%85%E5%AD%98/"/>
+    
+  </entry>
+  
+  <entry>
     <title>系统优化-内存-内存的Buffer和Cache</title>
     <link href="https://liuhao163.github.io/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-%E5%86%85%E5%AD%98-%E5%86%85%E5%AD%98%E7%9A%84Buffer%E5%92%8CCache/"/>
     <id>https://liuhao163.github.io/系统优化-内存-内存的Buffer和Cache/</id>
     <published>2020-04-28T19:32:47.000Z</published>
-    <updated>2020-04-28T12:22:40.000Z</updated>
+    <updated>2020-05-01T14:48:14.000Z</updated>
     
     <content type="html"><![CDATA[<p>我们用free去查看内存</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">              total        used        free      shared  buff/cache   available</span><br><span class="line">Mem:            251          70         152           2          27         171</span><br><span class="line">Swap:           135          17         118</span><br></pre></td></tr></table></figure><p>  我们可以看到Mem和Swap的场景。今天我们主要聊下buff和cache这俩个指标，它俩分别代表什么呢？他们来源于哪里呢</p><p>  来源：/proc/meminfo,我们可以通过man free来看到下面的说明</p>  <figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">buffers</span><br><span class="line">       Memory used by kernel buffers (Buffers <span class="keyword">in</span> /proc/meminfo)</span><br><span class="line"></span><br><span class="line">cache  Memory used by the page cache and slabs (Cached and Slab <span class="keyword">in</span> /proc/meminfo)</span><br><span class="line"></span><br><span class="line">buff/cache</span><br><span class="line">       Sum of buffers and cache</span><br></pre></td></tr></table></figure><ul><li>buffers对应的/proc/meminfo的buffers值</li><li><p>cache对应的是/proc/meminfo的Cached值，和SReclaimable值</p><p>它们分别是</p></li><li><p>Buffers 是对原始磁盘块的临时存储，也就是用来缓存磁盘的数据，通常不会特别大（20MB 左右）。这样，内核就可以把分散的写集中起来，统一优化磁盘的写入，比如可以把多次小的写合并成单次大的写等等。</p></li><li>Cached 是从磁盘读取文件的页缓存，也就是用来缓存从文件读取的数据。这样，下次访问这些文件数据时，就可以直接从内存中快速获取，而不需要再次访问缓慢的磁盘。</li><li><p>SReclaimable 是 Slab 的一部分。Slab 包括两部分，其中的可回收部分，用 SReclaimable 记录；而不可回收部分，用 SUnreclaim 记录。</p><p>buffer：主要针对磁盘操作，对磁盘的读、写都会影响buffer。<br>cache：主要针对文件操作，对磁盘的读、写都会影响cache。</p><p>注意：</p></li><li><p>关于磁盘和文件的区别，磁盘是一个块设备，可以划分为不同的分区；</p></li><li>在分区之上再创建文件系统，挂载到某个目录，之后才可以在这个目录中读写文件。</li></ul>]]></content>
     
@@ -574,72 +633,6 @@
       
         &lt;p&gt;Spring容器中一个bean的生命周期如下：&lt;/p&gt;
 &lt;h2 id=&quot;Bean初始化前&quot;&gt;&lt;a href=&quot;#Bean初始化前&quot; class=&quot;headerlink&quot; title=&quot;Bean初始化前&quot;&gt;&lt;/a&gt;Bean初始化前&lt;/h2&gt;&lt;p&gt;  BeanFactoryPo
-      
-    
-    </summary>
-    
-      <category term="java" scheme="https://liuhao163.github.io/categories/java/"/>
-    
-      <category term="spring" scheme="https://liuhao163.github.io/categories/java/spring/"/>
-    
-      <category term="源码" scheme="https://liuhao163.github.io/categories/java/spring/%E6%BA%90%E7%A0%81/"/>
-    
-    
-      <category term="java" scheme="https://liuhao163.github.io/tags/java/"/>
-    
-      <category term="spring" scheme="https://liuhao163.github.io/tags/spring/"/>
-    
-      <category term="框架" scheme="https://liuhao163.github.io/tags/%E6%A1%86%E6%9E%B6/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Spring源码-BeanDefinitionRegistryPostProcessor</title>
-    <link href="https://liuhao163.github.io/Spring%E6%BA%90%E7%A0%81-BeanDefinitionRegistryPostProcessor/"/>
-    <id>https://liuhao163.github.io/Spring源码-BeanDefinitionRegistryPostProcessor/</id>
-    <published>2019-12-25T00:00:00.000Z</published>
-    <updated>2020-02-02T12:25:22.000Z</updated>
-    
-    <content type="html"><![CDATA[<p> 作用：用于动态的生成BeanDefinition，因为无论是xml还是注解都是通过配置静态的生成BeanDefinition并且注册到容器中。我们可以通过实现BeanDefinitionRegistryPostProcessor接口来动态的生成、注册Bean。<br> 原理：</p><ul><li>实现BeanDefinitionRegistryPostProcessor接口，并且注入到容器中；</li><li><p>执行过程：在ApplicationContext的Refresh()方法中，会调用invokeBeanFactoryPostProcessors方法会调用容器中所有实现了BeanDefinitionRegistryPostProcessor接口的类的postProcessBeanDefinitionRegistry方法，在该方法中我们可以动态的创建、注册bean见下面的代码</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"> <span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RegistryDemo</span> <span class="keyword">implements</span> <span class="title">BeanDefinitionRegistryPostProcessor</span> </span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">postProcessBeanDefinitionRegistry</span><span class="params">(BeanDefinitionRegistry beanDefinitionRegistry)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">        GenericBeanDefinition definition = <span class="keyword">new</span> GenericBeanDefinition();</span><br><span class="line">        definition.setBeanClass(Demo.class);    <span class="comment">//设置类</span></span><br><span class="line">        definition.setScope(<span class="string">"singleton"</span>);       <span class="comment">//设置scope</span></span><br><span class="line">        definition.setLazyInit(<span class="keyword">false</span>);          <span class="comment">//设置是否懒加载</span></span><br><span class="line">        definition.setAutowireCandidate(<span class="keyword">true</span>);  <span class="comment">//设置是否可以被其他对象自动注入</span></span><br><span class="line">        beanDefinitionRegistry.registerBeanDefinition(<span class="string">"demo"</span>, definition);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//省略其他代码</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li></ul>]]></content>
-    
-    <summary type="html">
-    
-      
-      
-        &lt;p&gt; 作用：用于动态的生成BeanDefinition，因为无论是xml还是注解都是通过配置静态的生成BeanDefinition并且注册到容器中。我们可以通过实现BeanDefinitionRegistryPostProcessor接口来动态的生成、注册Bean。&lt;br&gt; 原
-      
-    
-    </summary>
-    
-      <category term="java" scheme="https://liuhao163.github.io/categories/java/"/>
-    
-      <category term="spring" scheme="https://liuhao163.github.io/categories/java/spring/"/>
-    
-      <category term="源码" scheme="https://liuhao163.github.io/categories/java/spring/%E6%BA%90%E7%A0%81/"/>
-    
-    
-      <category term="java" scheme="https://liuhao163.github.io/tags/java/"/>
-    
-      <category term="spring" scheme="https://liuhao163.github.io/tags/spring/"/>
-    
-      <category term="框架" scheme="https://liuhao163.github.io/tags/%E6%A1%86%E6%9E%B6/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Spring源码-LifecycleProcessor</title>
-    <link href="https://liuhao163.github.io/Spring%E6%BA%90%E7%A0%81-LifecycleProcessor/"/>
-    <id>https://liuhao163.github.io/Spring源码-LifecycleProcessor/</id>
-    <published>2019-12-24T00:00:00.000Z</published>
-    <updated>2020-02-02T12:24:47.000Z</updated>
-    
-    <content type="html"><![CDATA[<h2 id="使用方法"><a href="#使用方法" class="headerlink" title="使用方法"></a>使用方法</h2><p>  Lifecycle:容器的生命周期回调，容器启动之后运行到某些节点（容器start/stop时候）可以回调Lifecycle子类的方法。比如在容器启动后初始化资源池，在容器停止时候调用资源池销毁的动作</p><p>  我们实现Lifecycle中接口。注：建议实现SmartLifecycle接口，因为它Lifecycle接口的加强接口，默认实现了stop(Runnable callback)，在调用中通过一个CountdownLatch来异步处理stop,SmartLifecycle非常不建议实现stop(Runnable callback)方法</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">  <span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Lifecycle</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">start</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">void</span> <span class="title">stop</span><span class="params">()</span></span>;</span><br><span class="line">    <span class="function"><span class="keyword">boolean</span> <span class="title">isRunning</span><span class="params">()</span></span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">Phased</span> </span>&#123;  </span><br><span class="line">  <span class="function"><span class="keyword">int</span> <span class="title">getPhase</span><span class="params">()</span></span>;  </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">SmartLifecycle</span> <span class="keyword">extends</span> <span class="title">Lifecycle</span>, <span class="title">Phased</span> </span>&#123;  </span><br><span class="line">  <span class="function"><span class="keyword">default</span> <span class="keyword">boolean</span> <span class="title">isAutoStartup</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">default</span> <span class="keyword">void</span> <span class="title">stop</span><span class="params">(Runnable callback)</span> </span>&#123;</span><br><span class="line">    stop();</span><br><span class="line">    callback.run();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">default</span> <span class="keyword">int</span> <span class="title">getPhase</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> DEFAULT_PHASE;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>  在Lifecycle的基础上实现了onRefresh和onClose接口。参见前面：<a href="/Spring源码-ApplicationContext">Spring源码-ApplicationContext</a>文章中finishRefresh中的代码片段。onRefresh会调用Lifecycle实现类的start()方法</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// Initialize lifecycle processor for this context.</span></span><br><span class="line"><span class="comment">//初始化LifecycleProcessor</span></span><br><span class="line">initLifecycleProcessor();</span><br><span class="line"></span><br><span class="line"><span class="comment">// Propagate refresh to lifecycle processor first.</span></span><br><span class="line"><span class="comment">//调用上面的LifecycleProcessor.onRefresh()</span></span><br><span class="line">getLifecycleProcessor().onRefresh();</span><br></pre></td></tr></table></figure><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">LifecycleProcessor</span> <span class="keyword">extends</span> <span class="title">Lifecycle</span> </span>&#123;  </span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">onRefresh</span><span class="params">()</span></span>;  </span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">onClose</span><span class="params">()</span></span>;  </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><h2 id="调用流程"><a href="#调用流程" class="headerlink" title="调用流程"></a>调用流程</h2><p>tbd</p>]]></content>
-    
-    <summary type="html">
-    
-      
-      
-        &lt;h2 id=&quot;使用方法&quot;&gt;&lt;a href=&quot;#使用方法&quot; class=&quot;headerlink&quot; title=&quot;使用方法&quot;&gt;&lt;/a&gt;使用方法&lt;/h2&gt;&lt;p&gt;  Lifecycle:容器的生命周期回调，容器启动之后运行到某些节点（容器start/stop时候）可以回调Lifecyc
       
     
     </summary>

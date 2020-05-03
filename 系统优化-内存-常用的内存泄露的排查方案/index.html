@@ -96,18 +96,18 @@
 
 
 
-  <meta name="description" content="励志当好厨子的程序员">
+  <meta name="description" content="linux动态分配内存经常会遇到俩个问题：  内存没有及时回收，发生内存泄露 访问的是已分配边界外的内存，造成内存越界  这章我们来讲下内存泄露、以及排查内存泄露的方法 内存分配以及回收我们的内存主要分为以下部分、堆、栈、只读端、数据段、内存映射段。  栈：主要存放局部变量，由系统统一管理，所以不需要主动回收内存，一旦程序的作用域超过局部变量，就需要在堆中动态分配内存，在栈中的内存不会导致内存泄露">
 <meta name="keywords" content="linux,性能优化,内存">
 <meta property="og:type" content="article">
 <meta property="og:title" content="系统优化-内存-常用的内存泄露的排查方案">
 <meta property="og:url" content="https://liuhao163.github.io/系统优化-内存-常用的内存泄露的排查方案/index.html">
 <meta property="og:site_name" content="liuhao163.github.io">
-<meta property="og:description" content="励志当好厨子的程序员">
+<meta property="og:description" content="linux动态分配内存经常会遇到俩个问题：  内存没有及时回收，发生内存泄露 访问的是已分配边界外的内存，造成内存越界  这章我们来讲下内存泄露、以及排查内存泄露的方法 内存分配以及回收我们的内存主要分为以下部分、堆、栈、只读端、数据段、内存映射段。  栈：主要存放局部变量，由系统统一管理，所以不需要主动回收内存，一旦程序的作用域超过局部变量，就需要在堆中动态分配内存，在栈中的内存不会导致内存泄露">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2020-05-02T08:33:08.000Z">
+<meta property="og:updated_time" content="2020-05-03T04:12:20.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="系统优化-内存-常用的内存泄露的排查方案">
-<meta name="twitter:description" content="励志当好厨子的程序员">
+<meta name="twitter:description" content="linux动态分配内存经常会遇到俩个问题：  内存没有及时回收，发生内存泄露 访问的是已分配边界外的内存，造成内存越界  这章我们来讲下内存泄露、以及排查内存泄露的方法 内存分配以及回收我们的内存主要分为以下部分、堆、栈、只读端、数据段、内存映射段。  栈：主要存放局部变量，由系统统一管理，所以不需要主动回收内存，一旦程序的作用域超过局部变量，就需要在堆中动态分配内存，在栈中的内存不会导致内存泄露">
 
 
 
@@ -389,12 +389,24 @@
                 
               
 
-              <time title="Created: 2020-05-02 16:32:56 / Modified: 08:33:08" itemprop="dateCreated datePublished" datetime="2020-05-02T16:32:56Z">2020-05-02</time>
+              <time title="Created: 2020-05-02 16:32:56" itemprop="dateCreated datePublished" datetime="2020-05-02T16:32:56Z">2020-05-02</time>
             
 
             
               
 
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2020-05-03 04:12:20" itemprop="dateModified" datetime="2020-05-03T04:12:20Z">2020-05-03</time>
               
             
           </span>
@@ -453,7 +465,31 @@
       
 
       
-        
+        <p>linux动态分配内存经常会遇到俩个问题：</p>
+<ol>
+<li>内存没有及时回收，发生内存泄露</li>
+<li>访问的是已分配边界外的内存，造成内存越界</li>
+</ol>
+<p>这章我们来讲下内存泄露、以及排查内存泄露的方法</p>
+<h2 id="内存分配以及回收"><a href="#内存分配以及回收" class="headerlink" title="内存分配以及回收"></a>内存分配以及回收</h2><p>我们的内存主要分为以下部分、堆、栈、只读端、数据段、内存映射段。</p>
+<ul>
+<li>栈：主要存放局部变量，由系统统一管理，所以不需要主动回收内存，一旦程序的作用域超过局部变量，就需要在堆中动态分配内存，在栈中的内存不会导致内存泄露</li>
+<li>堆：程序通过malloc申请内存，除非程序退出否则申请的内存不会释放。这部分内存会导致内存泄露</li>
+<li>只读段：保存程序的代码和常量，由于不需要继续申请内存，这部分会导致引起内存泄露</li>
+<li>数据段：保存静态变量和全局变量，由于申请时候已经知道了大小所以也不需要释放，这部分会导致引起内存泄露</li>
+<li><p>内存映射段：保存动态链接库和共享内存，由于共享内存的存在，</p>
+<p>综上，堆、和内存映射段会导致内存泄露</p>
+<p>内存泄漏的危害非常大，这些忘记释放的内存，不仅应用程序自己不能访问，系统也不能把它们再次分配给其他应用。内存泄漏不断累积，甚至会耗尽系统内存。虽然oom会Kill程序，但是在kill程序前会有很多严重的问题</p>
+</li>
+</ul>
+<h2 id="如何定位内存泄露"><a href="#如何定位内存泄露" class="headerlink" title="如何定位内存泄露"></a>如何定位内存泄露</h2><p>我们可以使用bcc-tools下的memleak，如图下面就是一个简单的内存泄露场景，child会分配内存而且没有回收</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ docker cp app:/app /app</span><br><span class="line">$ /usr/share/bcc/tools/memleak -p $(pidof app) -a</span><br><span class="line">Attaching to pid 12512, Ctrl+C to quit.</span><br><span class="line">[03:00:41] Top 10 stacks with outstanding allocations:</span><br><span class="line">    addr = 7f8f70863220 size = 8192</span><br><span class="line">    addr = 7f8f70861210 size = 8192</span><br><span class="line">    addr = 7f8f7085b1e0 size = 8192</span><br><span class="line">    addr = 7f8f7085f200 size = 8192</span><br><span class="line">    addr = 7f8f7085d1f0 size = 8192</span><br><span class="line">    40960 bytes <span class="keyword">in</span> 5 allocations from stack</span><br><span class="line">        fibonacci+0x1f [app]</span><br><span class="line">        child+0x4f [app]</span><br><span class="line">        start_thread+0xdb [libpthread-2.27.so]</span><br></pre></td></tr></table></figure>
+<p>解决后的如下面所示</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 重新执行 memleak工具检查内存泄漏情况</span></span><br><span class="line">$ /usr/share/bcc/tools/memleak -a -p $(pidof app)</span><br><span class="line">Attaching to pid 18808, Ctrl+C to quit.</span><br><span class="line">[10:23:18] Top 10 stacks with outstanding allocations:</span><br><span class="line">[10:23:23] Top 10 stacks with outstanding allocations:</span><br></pre></td></tr></table></figure>
+<p>由mMemleak在centos中需要内核4.1以上支持，所以在老系统中我们用到valgrind的memcheck</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"> valgrind  --tool=memcheck --leak-check=summary ./xxx-api</span><br><span class="line"></span><br><span class="line"> ==20474==</span><br><span class="line">==20474== HEAP SUMMARY:</span><br><span class="line">==20474==     <span class="keyword">in</span> use at <span class="built_in">exit</span>: 4,064 bytes <span class="keyword">in</span> 8 blocks</span><br><span class="line">==20474==   total heap usage: 16 allocs, 8 frees, 4,288 bytes allocated</span><br><span class="line">==20474==</span><br><span class="line">==20474== LEAK SUMMARY:</span><br><span class="line">==20474==    definitely lost: 0 bytes <span class="keyword">in</span> 0 blocks</span><br><span class="line">==20474==    indirectly lost: 0 bytes <span class="keyword">in</span> 0 blocks</span><br><span class="line">==20474==      possibly lost: 4,032 bytes <span class="keyword">in</span> 7 blocks</span><br><span class="line">==20474==    still reachable: 32 bytes <span class="keyword">in</span> 1 blocks</span><br><span class="line">==20474==         suppressed: 0 bytes <span class="keyword">in</span> 0 blocks</span><br><span class="line">==20474== Rerun with --leak-check=full to see details of leaked memory</span><br><span class="line">==20474==</span><br><span class="line">==20474== For counts of detected and suppressed errors, rerun with: -v</span><br><span class="line">==20474== Use --track-origins=yes to see <span class="built_in">where</span> uninitialised values come from</span><br><span class="line">==20474== ERROR SUMMARY: 28 errors from 4 contexts (suppressed: 0 from 0)</span><br></pre></td></tr></table></figure>
+<p>上面的definitely lost代表必然的内存泄露，他包括indirectly【非直接】和directly【直接俩种， possibly lost是可能的内存泄露。我们只需要查看definitely lost即可</p>
+
       
     </div>
 
@@ -545,8 +581,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
 
-      <div class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <div class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -833,6 +878,23 @@
         </div>
       </div>
 
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#内存分配以及回收"><span class="nav-number">1.</span> <span class="nav-text">内存分配以及回收</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#如何定位内存泄露"><span class="nav-number">2.</span> <span class="nav-text">如何定位内存泄露</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
       
 
       

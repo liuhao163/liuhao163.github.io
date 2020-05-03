@@ -1005,228 +1005,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql事务隔离级别/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/mysql/mysql事务隔离级别/" class="post-title-link" itemprop="url">mysql事务隔离级别</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-04 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-04T00:00:00Z">2019-02-04</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-01 14:53:26" itemprop="dateModified" datetime="2019-03-01T14:53:26Z">2019-03-01</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="mysql事务的隔离级别以及实现原理"><a href="#mysql事务的隔离级别以及实现原理" class="headerlink" title="mysql事务的隔离级别以及实现原理"></a>mysql事务的隔离级别以及实现原理</h1><h2 id="事务基础"><a href="#事务基础" class="headerlink" title="事务基础"></a>事务基础</h2><p>启动事务的几种方式</p>
-<ol>
-<li>显式启动事务语句， begin 或 start transaction，提交是commit，回滚是rollback</li>
-<li>set autocommit=0,每个CURD都会启动事务且需要手动commit/rollback。</li>
-<li>在实际使用用，我们一般不采用2这种方式启动事务。</li>
-</ol>
-<p>如何查看mysql事务的隔离级别，下面说明事务的隔离级别是读提交</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">variables</span> <span class="keyword">like</span> <span class="string">'transaction_isolation'</span>;</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----------------------+----------------+</span></span><br><span class="line"></span><br><span class="line">| Variable_name | Value |</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----------------------+----------------+</span></span><br><span class="line"></span><br><span class="line">| transaction_isolation | READ-COMMITTED |</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----------------------+----------------+</span></span><br></pre></td></tr></table></figure>
-<h2 id="事务的几种隔离级别"><a href="#事务的几种隔离级别" class="headerlink" title="事务的几种隔离级别"></a>事务的几种隔离级别</h2><p>mysql的事务隔离级别分为：读未提交、读已提交（RC）、可重复读（RR）、串行，他们具体表现如下：</p>
-<ul>
-<li>读未提交：事务中每个查询语句都获取当前数据的最新值。</li>
-<li>读已提交：事务中每个查询语句获取的都是其他事务提交后的相关数据的最新值，Oracle的默认事务隔离级别。</li>
-<li>可重复读：Mysql的Innodb的默认事务隔离级别。</li>
-<li>串行：每个事务需要一个一个的执行。</li>
-</ul>
-<h2 id="mysql事务隔离方式的实现方式（只讨论RC-和-RR）"><a href="#mysql事务隔离方式的实现方式（只讨论RC-和-RR）" class="headerlink" title="mysql事务隔离方式的实现方式（只讨论RC 和 RR）"></a>mysql事务隔离方式的实现方式（只讨论RC 和 RR）</h2><p>mysql的事务隔离实现机制采用的是一致性读视图（consistent read view）。即Mysql在事务启动时对整个数据库拍了一个快照。</p>
-<ul>
-<li>RR是在事务开始时候创建一致性视图</li>
-<li>RC是在事务中的每条sql语句执行前执行</li>
-</ul>
-<p>具体的实现逻辑如下：</p>
-<ol>
-<li>Innodb对没个每个事务会分配一个transaction id,该ID是严格自增的ID。</li>
-<li>Innodb中每行数据是有多版本的，每个版本的数据会包含一个row_txid。将修改成这个版本数据的transaction id赋值给row_txid。</li>
-<li>这个版本不是物理存在的是虚拟的，即在一个事务中一旦发现该行数据不可见，则需要根据row_txid对象的事务+undolog找到可见的数据，具体见下面5。</li>
-<li>当一个事务启动时候会，会维护一个数组，这个数组包含这个事务开始之后，这时候所有活跃的transaction id（所谓即未提交的事务）。数组的取值范围如下：低水位是当前事务中最小的transId，高水位数组中最大的transaction id+1；数组关系可见下图：</li>
-<li>当这个事务去读数据时候，会有如下情况：<ol>
-<li>判断如果这条数据row tx_id&lt;低水位，说明当前的数据在本事务创建前已经被提交过了，所以可见；</li>
-<li>判断如果这条数据row tx_id&gt;高水位，说明当前的数据在本事务创建之后被提交过了，所以不可见，需要通过undolog找回之前的版本；</li>
-<li>判断如果这条数据row tx_id在数组区间，如果row tx_id是数组范围内的值，说明事务未提交过，所以不可见；发只，说明该数据是已经被其他事务提交生成的，所以可见；</li>
-</ol>
-</li>
-</ol>
-<p><img src="/images/mysql/mysql_tx_array.png" alt="avatar"></p>
-<p>上面的规则比较拗口，翻译过来就是：如果数据的版本是先于本事务开始前生成的可见，如果后于本事务开始前生成的本可见。</p>
-<h2 id="mysql如何保证多个事务同时修改一条数据的准确性"><a href="#mysql如何保证多个事务同时修改一条数据的准确性" class="headerlink" title="mysql如何保证多个事务同时修改一条数据的准确性"></a>mysql如何保证多个事务同时修改一条数据的准确性</h2><p>思考下面问题：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">因为mysql在update时候实际上是先select在更新，所以在RR隔离级别中。</span><br><span class="line">俩个同时开始未提交的事务修改同一条语句这时候因为一致性视图，会不会导致一个事务的修改是无效的呢？</span><br></pre></td></tr></table></figure>
-<p>答案是不会的。<br>因为mysql在修改时会遵循一个原则：读当前值，当更新数据时候都是先读后写，所以这时候值能读当前值。俩个事务同时更新一条数据的流程和原理如下：</p>
-<ol>
-<li>当并发进行更新时，对数据进行加x锁，后面的更新操作会block住，直到其他的事务提交后才继续下去；</li>
-<li>由于更新是当前读，所以数据被本事务被更新过后，由于row tx_id就是当前事务，所以读到的值是新的值；</li>
-</ol>
-<h2 id="隔离级别RR如此那RC呢"><a href="#隔离级别RR如此那RC呢" class="headerlink" title="隔离级别RR如此那RC呢"></a>隔离级别RR如此那RC呢</h2><p>其实原理是一样的。只是RR是每一次事务开始时候创建一致性视图，而隔离级别RC则是在事务中每一条sql语句在执行前都要创建一个一致性视图，这样视图是动态的，每条sql语句根据上面提到的规则都要去确定数据的可见性。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql的主从切换/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1424,6 +1202,228 @@
 <li>之后从这个事务开始一直往B同步</li>
 </ol>
 <p>这种方式，由之前通过位点同步的，由从库来决定从哪里同步，到主库通过获取从库的gtid来计算出从哪里开始同步。</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql事务隔离级别/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/mysql/mysql事务隔离级别/" class="post-title-link" itemprop="url">mysql事务隔离级别</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-04 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-04T00:00:00Z">2019-02-04</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-01 14:53:26" itemprop="dateModified" datetime="2019-03-01T14:53:26Z">2019-03-01</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="mysql事务的隔离级别以及实现原理"><a href="#mysql事务的隔离级别以及实现原理" class="headerlink" title="mysql事务的隔离级别以及实现原理"></a>mysql事务的隔离级别以及实现原理</h1><h2 id="事务基础"><a href="#事务基础" class="headerlink" title="事务基础"></a>事务基础</h2><p>启动事务的几种方式</p>
+<ol>
+<li>显式启动事务语句， begin 或 start transaction，提交是commit，回滚是rollback</li>
+<li>set autocommit=0,每个CURD都会启动事务且需要手动commit/rollback。</li>
+<li>在实际使用用，我们一般不采用2这种方式启动事务。</li>
+</ol>
+<p>如何查看mysql事务的隔离级别，下面说明事务的隔离级别是读提交</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">variables</span> <span class="keyword">like</span> <span class="string">'transaction_isolation'</span>;</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----------------------+----------------+</span></span><br><span class="line"></span><br><span class="line">| Variable_name | Value |</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----------------------+----------------+</span></span><br><span class="line"></span><br><span class="line">| transaction_isolation | READ-COMMITTED |</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----------------------+----------------+</span></span><br></pre></td></tr></table></figure>
+<h2 id="事务的几种隔离级别"><a href="#事务的几种隔离级别" class="headerlink" title="事务的几种隔离级别"></a>事务的几种隔离级别</h2><p>mysql的事务隔离级别分为：读未提交、读已提交（RC）、可重复读（RR）、串行，他们具体表现如下：</p>
+<ul>
+<li>读未提交：事务中每个查询语句都获取当前数据的最新值。</li>
+<li>读已提交：事务中每个查询语句获取的都是其他事务提交后的相关数据的最新值，Oracle的默认事务隔离级别。</li>
+<li>可重复读：Mysql的Innodb的默认事务隔离级别。</li>
+<li>串行：每个事务需要一个一个的执行。</li>
+</ul>
+<h2 id="mysql事务隔离方式的实现方式（只讨论RC-和-RR）"><a href="#mysql事务隔离方式的实现方式（只讨论RC-和-RR）" class="headerlink" title="mysql事务隔离方式的实现方式（只讨论RC 和 RR）"></a>mysql事务隔离方式的实现方式（只讨论RC 和 RR）</h2><p>mysql的事务隔离实现机制采用的是一致性读视图（consistent read view）。即Mysql在事务启动时对整个数据库拍了一个快照。</p>
+<ul>
+<li>RR是在事务开始时候创建一致性视图</li>
+<li>RC是在事务中的每条sql语句执行前执行</li>
+</ul>
+<p>具体的实现逻辑如下：</p>
+<ol>
+<li>Innodb对没个每个事务会分配一个transaction id,该ID是严格自增的ID。</li>
+<li>Innodb中每行数据是有多版本的，每个版本的数据会包含一个row_txid。将修改成这个版本数据的transaction id赋值给row_txid。</li>
+<li>这个版本不是物理存在的是虚拟的，即在一个事务中一旦发现该行数据不可见，则需要根据row_txid对象的事务+undolog找到可见的数据，具体见下面5。</li>
+<li>当一个事务启动时候会，会维护一个数组，这个数组包含这个事务开始之后，这时候所有活跃的transaction id（所谓即未提交的事务）。数组的取值范围如下：低水位是当前事务中最小的transId，高水位数组中最大的transaction id+1；数组关系可见下图：</li>
+<li>当这个事务去读数据时候，会有如下情况：<ol>
+<li>判断如果这条数据row tx_id&lt;低水位，说明当前的数据在本事务创建前已经被提交过了，所以可见；</li>
+<li>判断如果这条数据row tx_id&gt;高水位，说明当前的数据在本事务创建之后被提交过了，所以不可见，需要通过undolog找回之前的版本；</li>
+<li>判断如果这条数据row tx_id在数组区间，如果row tx_id是数组范围内的值，说明事务未提交过，所以不可见；发只，说明该数据是已经被其他事务提交生成的，所以可见；</li>
+</ol>
+</li>
+</ol>
+<p><img src="/images/mysql/mysql_tx_array.png" alt="avatar"></p>
+<p>上面的规则比较拗口，翻译过来就是：如果数据的版本是先于本事务开始前生成的可见，如果后于本事务开始前生成的本可见。</p>
+<h2 id="mysql如何保证多个事务同时修改一条数据的准确性"><a href="#mysql如何保证多个事务同时修改一条数据的准确性" class="headerlink" title="mysql如何保证多个事务同时修改一条数据的准确性"></a>mysql如何保证多个事务同时修改一条数据的准确性</h2><p>思考下面问题：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">因为mysql在update时候实际上是先select在更新，所以在RR隔离级别中。</span><br><span class="line">俩个同时开始未提交的事务修改同一条语句这时候因为一致性视图，会不会导致一个事务的修改是无效的呢？</span><br></pre></td></tr></table></figure>
+<p>答案是不会的。<br>因为mysql在修改时会遵循一个原则：读当前值，当更新数据时候都是先读后写，所以这时候值能读当前值。俩个事务同时更新一条数据的流程和原理如下：</p>
+<ol>
+<li>当并发进行更新时，对数据进行加x锁，后面的更新操作会block住，直到其他的事务提交后才继续下去；</li>
+<li>由于更新是当前读，所以数据被本事务被更新过后，由于row tx_id就是当前事务，所以读到的值是新的值；</li>
+</ol>
+<h2 id="隔离级别RR如此那RC呢"><a href="#隔离级别RR如此那RC呢" class="headerlink" title="隔离级别RR如此那RC呢"></a>隔离级别RR如此那RC呢</h2><p>其实原理是一样的。只是RR是每一次事务开始时候创建一致性视图，而隔离级别RC则是在事务中每一条sql语句在执行前都要创建一个一致性视图，这样视图是动态的，每条sql语句根据上面提到的规则都要去确定数据的可见性。</p>
 
           
         
@@ -2249,7 +2249,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql如何保证数据不丢失/">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql是如何降低主备延迟的/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Liu hao">
@@ -2269,7 +2269,7 @@
           <h1 class="post-title" itemprop="name headline">
                 
                 
-                <a href="/mysql/mysql如何保证数据不丢失/" class="post-title-link" itemprop="url">Mysql是如何保证数据不丢失的</a>
+                <a href="/mysql/mysql是如何降低主备延迟的/" class="post-title-link" itemprop="url">MySql是如何降低主备延迟的</a>
               
             
           </h1>
@@ -2335,7 +2335,7 @@
                   , 
                 
               
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql高可用架构/" itemprop="url" rel="index"><span itemprop="name">Mysql高可用架构</span></a></span>
 
                 
                 
@@ -2372,77 +2372,78 @@
       
         
           
-            <h1 id="Mysql是如何保证数据不丢失的"><a href="#Mysql是如何保证数据不丢失的" class="headerlink" title="Mysql是如何保证数据不丢失的"></a>Mysql是如何保证数据不丢失的</h1><h2 id="binlog"><a href="#binlog" class="headerlink" title="binlog"></a>binlog</h2><ol>
-<li>事务执行过程中binlog写入到binlog cache,事务提交时写入到binlog文件中。</li>
-<li>事务的原子性决定这无论事务有多大，binlogcahe都要一次性完整的写入到binlog文件中，写入方式如下：<ol>
-<li>系统为每个binlog_cache开辟了一片内存（每个线程都有一个），参数是blong_cache_size,超过这个阈值的会保存在临时文件中</li>
-<li>事务提交时候，出于性能的考虑回将bionlog_cache都write到文件系统的page_cache中，在通过fsync刷新到磁盘文件中。如下图所示是binlog的同步机制。</li>
-</ol>
-</li>
-</ol>
-<p>如图：<br><img src="/images/mysql/binglog_写入.png" alt="avatar"></p>
-<ul>
-<li>只有fsnyc刷盘这不操作才会占用IOPS。</li>
-<li>write和fsync的时机是用binglog_sync参数来控制的<ul>
-<li>=0 每次事务提交时候都只write不sync</li>
-<li>=1 每次事务提交都sync</li>
-<li>=N（N&gt;1） 每次事务提交都write，积攒到N时候才会fsync</li>
-</ul>
-</li>
-</ul>
-<p>在IO出现瓶颈时候我们可以设置一个较大的值来提升性能（个人不是很推荐做，如果出现这种情况建议从业务考虑优化数据库）</p>
-<h2 id="redolog的写入机制"><a href="#redolog的写入机制" class="headerlink" title="redolog的写入机制"></a>redolog的写入机制</h2><p>redolog从写入到最终写入到磁盘中会经历如下的阶段：写入redolog-buffer中–&gt;在事务提交、或者一定时机（见下面）下：redolog-buffer写入到文件系统的pagecache(write)–&gt;文件系统pagecache写入到磁盘中(fsnyc)，这样的操作的意义是为了提高mysql的吞吐的，具体的机制见下面：</p>
-<p><img src="/images/mysql/redolog_3种状态.png" alt="avatar"></p>
+            <h1 id="MySql是如何降低主备延迟的"><a href="#MySql是如何降低主备延迟的" class="headerlink" title="MySql是如何降低主备延迟的"></a>MySql是如何降低主备延迟的</h1><p>上一章<a href="./mysql是怎么保证高可用的.html">MySQL是怎么保证高可用的</a>，中提到了主库的并行复制能力会影响主备的延迟。在mysql5.6之前，rely_log被sql_thread重放写入备库，这里的sql_thread只能单线程消费，所以会很大程度降低mysql数据库的吞吐，在TPS高的时候就会有很大的延迟。如果想增强吞吐就要多sql_thread并行处理relay_log，如图：</p>
+<p><img src="/images/mysql/mysql_多sqlthread.png" alt="avatar"></p>
+<p>但是mysql并行的主从并行复制要遵守如下原则：</p>
 <ol>
-<li>一个事务会产生很多条redolog如果每次直接持久化磁盘会消耗大量的磁盘IO，所以redolog会先写入redolog-buffer中，之后在write文件系统的到pagecache中，这俩步是内存操作很快。</li>
-<li>是否会影响数据的持久化，比如mysql在事务进行中crash了，这时候redolog-buffer中的数据丢失怎么办？答案是由于事物没有提交，所以事物会进行回滚。</li>
-<li>redolog-buffer持久化的条件和机制：<ol>
-<li>受参数innodb_flush_log_at_tx_commit的控制：<ol>
-<li>=0：每次提交都只停留在redolog-buffer中；</li>
-<li>=1：每次提交都会持久化到磁盘中；</li>
-<li>=2：每次提交都只会写入到文件的pagecache中；</li>
+<li>对于不同的事务的binlog如果修改同一行数据，为了避免相互覆盖，不能并行运行只能串行</li>
+<li>对于相同事务的binlog，为了保证事务的完整性，不能并行复制，</li>
 </ol>
+<h2 id="5-5之前的主从复制策略"><a href="#5-5之前的主从复制策略" class="headerlink" title="5.5之前的主从复制策略"></a>5.5之前的主从复制策略</h2><p>在5.5的时候，为了增强mysql的从库消费relay_log的吞吐，使用者自己实现了主从复制的策略主要有俩种：</p>
+<h3 id="按表并行复制"><a href="#按表并行复制" class="headerlink" title="按表并行复制"></a>按表并行复制</h3><ul>
+<li>每个work维护一个hash_table，key是binlog的dbname+tablename；</li>
+<li>当一个binlog分配给coordainator，coordainator会循环检查这个binlog的key(dbname+tablename)，是否在work的hash_table中，如果出现说明这个binlog和这个worker冲突；<ul>
+<li>如果只有一个冲突，交给这个work处理；</li>
+<li>如果大于一个冲突，coordainator进入等待；</li>
+<li>如果没有冲突，交给空闲的worker处理；</li>
+</ul>
 </li>
-<li>innodb后台会有一个线程每秒一次，会把redolog-buffer中的日志，调用write写到pagecahe中，在fsync到磁盘中；</li>
-<li>其他场景触发redolog的持久化<ol>
-<li>当redolog-buffer占到了innodb_log_buffer_size的一半时候，会调用write将buffer中的log写入到文件系统的pagecache中</li>
-<li>另一种是并行事物提交时候，如果innodb_flush_log_at_tx_commit设置为1时候会，即时当前事物没有commit，也会将redolog写入到文件系统中。</li>
+<li>当worker处理完后会把key从hash_table中删掉；</li>
+</ul>
+<h3 id="按行并行复制"><a href="#按行并行复制" class="headerlink" title="按行并行复制"></a>按行并行复制</h3><p>和上面类似，只不过这次并行控制的粒度更细，只要保证binlog不是修改的同一行数据即可并行复制，那么hash_table的key就变为binlog的dbname+table+唯一健的值（主键+唯一索引），光有主键不够一定要带上唯一索引的值，否则如下情况会报唯一建冲突。</p>
+<p>注：c=原有的值是1,当备库并行复制时候先执行sessionB,由于这时候sessionA还没执行，会报唯一建冲突<br>| sessionA | sessionB |<br>| —— | —— |<br>| update t set c=5 where id=1 ; | - |<br>| - | update t set c=1 where id=1; |</p>
+<h3 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h3><ol>
+<li>必须要能通过解析binlog获取dbname,tablename,pk,uniqekey，所以binlog要是row类型；</li>
+<li>必须有主键；</li>
+<li>不能有外键；(因为外键的级联更新不在binlog中，所以建冲突就不准确)</li>
+<li>按表的策略：在对热点表的时候coordainator会频繁进入等待，又变成了单线程复制；</li>
+<li>按行的策略：要计算hashtable的key需要额外解析pk和uniquekey所以需要额外的开销；</li>
 </ol>
-</li>
+<h2 id="Mysql5-6的并行复制策略"><a href="#Mysql5-6的并行复制策略" class="headerlink" title="Mysql5.6的并行复制策略"></a>Mysql5.6的并行复制策略</h2><h3 id="按照库名并行复制"><a href="#按照库名并行复制" class="headerlink" title="按照库名并行复制"></a>按照库名并行复制</h3><p>优点：</p>
+<ol>
+<li>构造hash很快，只需要库名；</li>
+<li>binlog即使不是row也能很方便获取库名；</li>
 </ol>
-</li>
+<p>缺点：</p>
+<ol>
+<li>若果服务器上只有一个库，优化效果不明显；</li>
 </ol>
-<h3 id="双1设置"><a href="#双1设置" class="headerlink" title="双1设置"></a>双1设置</h3><p>即：binlogsnyc=1，innodb_flush_log_at_tx_commit也设置为1。<br>  由于innodb的事物提交redolog和binlog是2PC。<br>     所以当redolog在prepare时候，为了故障恢复一定会持久化一次，所以这时候需要fsync到磁盘中。<br>     binlog在进行fsync到磁盘中<br>     这时候事物在redolog在commit时候，mysql由于有奔溃恢复机制和后台线程每秒轮训一次刷盘会认为redolog没有必要在fsync一次到磁盘了，只会写入到文件的pagecache中。</p>
-<h3 id="gourp-commit机制"><a href="#gourp-commit机制" class="headerlink" title="gourp commit机制"></a>gourp commit机制</h3><p>一个事物的提交由于redolog和binglog都要持久化，磁盘IO还是很大Mysql是如何优化这部分呢。这里mysql采用了组提交（group commit）的方式。<br>如图所示：<br><img src="/images/mysql/group_commit机制.png" alt="avatar"></p>
+<h2 id="MariaDB的并行复制策略"><a href="#MariaDB的并行复制策略" class="headerlink" title="MariaDB的并行复制策略"></a>MariaDB的并行复制策略</h2><p>它的思想是思想是模拟主库运行：利用group commit,每一组事务能同时提交一定是不冲突的；那么主库commit之后就将一组的binlog一起并行执行</p>
 <ul>
-<li>首先介绍下LSN(log sequence number)，一个单调递增的序号，用来对应redolog的一个个写入点。当然也会写入到数据页中，用于flush脏盘时候避免重复执行（不在讨论范围内）</li>
-<li>如图，当3个事务同时都写完redolog-buffer 并且处于prepare阶段时候，这时候就构成了一个gourp<ol>
-<li>第一个先到达的trx1，成为组里的leader，LSN=50;</li>
-<li>等trx1开始写盘时候，组里已经有其他俩个事物，这时候LSN=160;</li>
-<li>trx1开始写盘，所有lsn&lt;160的日志都会被写入到磁盘中；</li>
-<li>trx3,trx4就可以直接返回了；</li>
+<li>为每个group commit分配个递增的commit_id；</li>
+<li>将commit_id写入到binlog中</li>
+<li>同一个commit_id的binglog分到不同的worker上去。</li>
+<li>执行完这个commit_id后在执行下一个commit_id的binlog。</li>
+</ul>
+<p>缺点：</p>
+<ol>
+<li>并不是真正的象主库并行，主库当一组事物在commit阶段时候，下一组事物是在运行中的。而从库消费的时候只能是一组一组的消费，所以还是会造成主备的延迟。</li>
+<li>当一组有一个很大的事物在worker中运行时候看，其他的worker先运行完了也只能等在哪里。</li>
 </ol>
-</li>
-</ul>
-<p>所以在并发事物中，当写完redolog，越晚调用fsync，带的log越多性能也就越好；mysql在这方法采用的是拖时间的策略，即:在双1配置下<br>  redolog-prepare(write)–&gt;binglog(write)–&gt;redolog-prepare(fsync)–&gt;binlog(fsnyc)–&gt;redolog commit(write)</p>
-<p>如图：<br><img src="/images/mysql/redolog_binlog_groupcommit.png" alt="avatar"></p>
+<h2 id="MySql5-7的并行复制的策略"><a href="#MySql5-7的并行复制的策略" class="headerlink" title="MySql5.7的并行复制的策略"></a>MySql5.7的并行复制的策略</h2><p>采用类似的MariaDb的类似的赋值策略由slave-parallel-type参数控制：</p>
 <ul>
-<li>如上图所示，由于redolog在write和fsnyc中有一个binlog-write的过程，所以在持久化磁盘时候你可以带上更多的log；</li>
-<li>另外：binlog也可以采用组提交，只不过由于这俩个阶段间隔短可能没有redolog那么明显<ul>
-<li>binlog的gruop commit的参数如下：<ul>
-<li>binlog_group_commit_sync_delay:表示延迟多少微妙后就会调用fsnyc</li>
-<li>binlog_gourp_commit_sync_no_delay_count:表示累计多少次后才调用fsync</li>
-<li>俩个参数是or的关系，不过如果binlog_group_commit_sync_delay设置为0，binlog_gourp_commit_sync_no_delay_count就无效了</li>
+<li>DATABASE时候采用类似5.6的并行复制策略</li>
+<li>LOGICAL_CLOCK时候采用MariaDb的并行复制策略，但是做了优化；</li>
 </ul>
-</li>
-</ul>
-</li>
-</ul>
-<p>综上所述：</p>
+<p>和MariaDb相比，将binlog的执行时期从commit阶段放到了2PC的redolog的prepare阶段，mysql认为事物进入prepare阶段就说明数据是可靠的可以进行主从复制了。</p>
 <ul>
-<li>mysql的WAL机制是由于redolog和binlog都是顺序写，保证了高吞吐；</li>
-<li>同时采用了组提交的方式，来减少了IOPS;</li>
+<li>同时处于 prepare 状态的事务，在备库执行时是可以并行的</li>
+<li>处于 prepare 状态的事务，与处于 commit 状态之间，在备库执行时也是可以并行的。</li>
 </ul>
+<p>我们可以通过binlog_group_commit_sync_delay和binlog_group_commit_sync_no_delay参数故意拉长主库的binlog从write到fsync的时间，减少binlog的写盘次数，制造更多同时在prepare时期的binlog，加大并行度。</p>
+<h3 id="MySql5-7-22的并行复制优化"><a href="#MySql5-7-22的并行复制优化" class="headerlink" title="MySql5.7.22的并行复制优化"></a>MySql5.7.22的并行复制优化</h3><p>增加参数binlog-transaction-dependency-tracking。</p>
+<ol>
+<li>COMMIT_ORDER:和上面说的策略一样；但是如果是追历史数据还是会退化成单线程，所以适合线上库。</li>
+<li>WRITESET：对于事务更新的每一行计算hash值，组成集合writeset，如果俩个事务没有操作相同的行，也就是writeset没有交集，就可以并行。</li>
+<li>WRITESET_SESSION：多了一个约束，即在主库上同一个线程先后执行的事务，在从库上也要保证同样的顺序。</li>
+</ol>
+<p>和之前5.5的按行并行复制策略很类似但是有几点优化：</p>
+<ol>
+<li>hash值提前算好了，减少了主从同步时候的压力；</li>
+<li>不需要在从库每次都把所有woker遍历一遍找出是否冲突；</li>
+<li>备库不用解析binlog对备库的binlog格式无要求；</li>
+</ol>
+<p>思考如下：<br>假设一个 MySQL 5.7.22 版本的主库，单线程插入了很多数据，3小时候，搭建从库开始同步数据binlog-transaction-dependency-tracking改如何设置？<br>答：建议采用 WRITESET，因为是单线程插入，如果采用WRITESET_SESSION，那么会退化成单线程同步relaylog。COMMIT_ORDER因为是追历史数据，所以会退化成单线程</p>
 
           
         

@@ -8,7 +8,7 @@
       <link href="/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-%E5%86%85%E5%AD%98-Swap%E6%9C%BA%E5%88%B6/"/>
       <url>/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-%E5%86%85%E5%AD%98-Swap%E6%9C%BA%E5%88%B6/</url>
       
-        <content type="html"><![CDATA[<h2 id="内存回收"><a href="#内存回收" class="headerlink" title="内存回收"></a>内存回收</h2><p>  之前提到当linux的内存不足时候会通过oom机制来kill程序加速释放内存，除了这种方法，linux还可以在资源不足时候释放可以回收的内存。哪些是可回收的内存呢？</p><ul><li>buffer/cache：这些被成为文件页（File-backed Page）大部分文件页可以直接回收，需要了在从磁盘读取，如果系统只修改了内存还没有写入到磁盘，我们成为脏页，需要写回磁盘在就进行回收<ul><li>可以在应用程序中，通过系统调用 fsync ，把脏页同步到磁盘中；</li><li>也可以交给系统，由内核线程 pdflush 负责这些脏页的刷新；</li></ul></li><li>应用程序动态分配的内存，我们称之为匿名页（Anonymous Page），会通过Swap换入/换出的方式将内存写入到磁盘中来释放内存。</li></ul><h2 id="Swap的机制介绍"><a href="#Swap的机制介绍" class="headerlink" title="Swap的机制介绍"></a>Swap的机制介绍</h2><p>  swap将补偿访问的内存通过换入将内存数据写到磁盘中，需要了再从磁盘读取这实际上是一种用时间换空间的思想。</p><h3 id="回收方式："><a href="#回收方式：" class="headerlink" title="回收方式："></a>回收方式：</h3><ol><li>直接回收：大部分动态分配的内存都可以直接回收</li><li><p>kswapd0：一个专门的内核线程用来定期回收内存。为了衡量内存的使用情况，kswapd0定义了三个内存阈值（watermark，也称为水位），分别是页最小阈值（page min)，页最小阈值（pages_min）、页低阈值（pages_low）和页高阈值（pages_high）。剩余内存，则使用 pages_free 表示。这里，我画了一张图表示它们的关系。</p><p><img src="/系统优化-内存-Swap机制/img0.png" alt="avator"></p><p>kswapd0的运行机制如下：</p><p>小于pages_min:内存页耗尽<br>小于pages_low:内存页不足，kswapd0 会执行内存回收，直到剩余内存大于高阈值为止<br>小于pages_high:内存资源还可以满足申请的需求<br>大于pages_high:内存资源充足</p><p>我们可以通过修改/proc/sys/vm/min_free_kbytes来修改pages_min,其他的pages_low和pages_high都是通过pages_min计算出来的。</p></li></ol><h3 id="NUMA-与-Swap"><a href="#NUMA-与-Swap" class="headerlink" title="NUMA 与 Swap"></a>NUMA 与 Swap</h3><p>  NUMBA是（Non-Uniform Memory Access），多个cpu会被划分到不通的node中，我们可以用numbactl看到如下的情况，只有一个node,对应了0，1俩个cpu,有7977MB的内存，空余内存是4416MB。</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ numactl --hardware</span><br><span class="line">available: 1 nodes (0)</span><br><span class="line">node 0 cpus: 0 1</span><br><span class="line">node 0 size: 7977 MB</span><br><span class="line">node 0 free: 4416 MB</span><br><span class="line">...</span><br></pre></td></tr></table></figure><p>实际上，前面提到的三个内存阈值（页最小阈值、页低阈值和页高阈值），都可以通过内存域在 proc 文件系统中的接口 /proc/zoneinfo 来查看。比如，下面就是一个 /proc/zoneinfo 文件的内容示例：</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ cat /proc/zoneinfo</span><br><span class="line">...</span><br><span class="line">Node 0, zone   Normal</span><br><span class="line"> pages free     227894</span><br><span class="line">       min      14896 <span class="comment">## 三个水位线</span></span><br><span class="line">       low      18620</span><br><span class="line">       high     22344</span><br><span class="line">...</span><br><span class="line"> <span class="comment">##空闲page和上面的free对应</span></span><br><span class="line">     nr_free_pages 227894</span><br><span class="line"> <span class="comment">##活跃和非活跃的匿名页数</span></span><br><span class="line">     nr_zone_inactive_anon 11082</span><br><span class="line">     nr_zone_active_anon 14024</span><br><span class="line"> <span class="comment">##活跃和非活跃的文件页数</span></span><br><span class="line">     nr_zone_inactive_file 539024</span><br><span class="line">     nr_zone_active_file 923986</span><br><span class="line">...</span><br></pre></td></tr></table></figure><p>  内存资源紧张时候,默认采用回收匿名页数以及文件页数的方式来回收内存,可以通过/proc/sys/vm/zone_reclaim_mode调整</p><ul><li>默认的 0 ，也就是刚刚提到的模式，表示既可以从其他 Node 寻找空闲内存，也可以从本地回收内存。</li><li>1、2、4 都表示只回收本地内存，2 表示可以回写脏数据回收内存，4 表示可以用 Swap 方式回收内存。</li></ul><h3 id="swappiness"><a href="#swappiness" class="headerlink" title="swappiness"></a>swappiness</h3><p>  内存回收有俩种方式</p><ol><li>回收文件页：通过fsync将buffer和cache写入到磁盘来释放这一部分内存</li><li><p>回收匿名页：通过swap来释放匿名页内存</p><p>Linux 提供了一个 /proc/sys/vm/swappiness 选项，用来调整使用 Swap 的积极程度。范围是 0-100，数值越大，越积极使用 Swap，也就是更倾向于回收匿名页；数值越小，越消极使用 Swap，也就是更倾向于回收文件页。</p><p>注意swappiness只是一个趋势。</p></li></ol>]]></content>
+        <content type="html"><![CDATA[<h2 id="内存回收"><a href="#内存回收" class="headerlink" title="内存回收"></a>内存回收</h2><p>  之前提到当linux的内存不足时候会通过oom机制来kill程序加速释放内存，除了这种方法，linux还可以在资源不足时候释放可以回收的内存。哪些是可回收的内存呢？</p><ul><li>buffer/cache：这些被成为文件页（File-backed Page）大部分文件页可以直接回收，需要了在从磁盘读取，如果系统只修改了内存还没有写入到磁盘，我们成为脏页，需要写回磁盘在就进行回收<ul><li>可以在应用程序中，通过系统调用 fsync ，把脏页同步到磁盘中；</li><li>也可以交给系统，由内核线程 pdflush 负责这些脏页的刷新；</li></ul></li><li>应用程序动态分配的内存，我们称之为匿名页（Anonymous Page），会通过Swap换入/换出的方式将内存写入到磁盘中来释放内存。</li></ul><h2 id="Swap的机制介绍"><a href="#Swap的机制介绍" class="headerlink" title="Swap的机制介绍"></a>Swap的机制介绍</h2><p>  swap将补偿访问的内存通过换入将内存数据写到磁盘中，需要了再从磁盘读取这实际上是一种用时间换空间的思想。</p><h3 id="回收方式"><a href="#回收方式" class="headerlink" title="回收方式"></a>回收方式</h3><ol><li>直接回收：大部分动态分配的内存都可以直接回收</li><li><p>kswapd0：一个专门的内核线程用来定期回收内存。为了衡量内存的使用情况，kswapd0定义了三个内存阈值（watermark，也称为水位），分别是页最小阈值（page min)，页最小阈值（pages_min）、页低阈值（pages_low）和页高阈值（pages_high）。剩余内存，则使用 pages_free 表示。这里，我画了一张图表示它们的关系。</p><p><img src="/系统优化-内存-Swap机制/img0.png" alt="avator"></p><p>kswapd0的运行机制如下：</p><p>小于pages_min:内存页耗尽<br>小于pages_low:内存页不足，kswapd0 会执行内存回收，直到剩余内存大于高阈值为止<br>小于pages_high:内存资源还可以满足申请的需求<br>大于pages_high:内存资源充足</p><p>我们可以通过修改/proc/sys/vm/min_free_kbytes来修改pages_min,其他的pages_low和pages_high都是通过pages_min计算出来的。</p></li></ol><h3 id="NUMA-与-Swap"><a href="#NUMA-与-Swap" class="headerlink" title="NUMA 与 Swap"></a>NUMA 与 Swap</h3><p>  NUMBA是（Non-Uniform Memory Access），多个cpu会被划分到不通的node中，我们可以用numbactl看到如下的情况，只有一个node,对应了0，1俩个cpu,有7977MB的内存，空余内存是4416MB。</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ numactl --hardware</span><br><span class="line">available: 1 nodes (0)</span><br><span class="line">node 0 cpus: 0 1</span><br><span class="line">node 0 size: 7977 MB</span><br><span class="line">node 0 free: 4416 MB</span><br><span class="line">...</span><br></pre></td></tr></table></figure><p>实际上，前面提到的三个内存阈值（页最小阈值、页低阈值和页高阈值），都可以通过内存域在 proc 文件系统中的接口 /proc/zoneinfo 来查看。比如，下面就是一个 /proc/zoneinfo 文件的内容示例：</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ cat /proc/zoneinfo</span><br><span class="line">...</span><br><span class="line">Node 0, zone   Normal</span><br><span class="line"> pages free     227894</span><br><span class="line">       min      14896 <span class="comment">## 三个水位线</span></span><br><span class="line">       low      18620</span><br><span class="line">       high     22344</span><br><span class="line">...</span><br><span class="line"> <span class="comment">##空闲page和上面的free对应</span></span><br><span class="line">     nr_free_pages 227894</span><br><span class="line"> <span class="comment">##活跃和非活跃的匿名页数</span></span><br><span class="line">     nr_zone_inactive_anon 11082</span><br><span class="line">     nr_zone_active_anon 14024</span><br><span class="line"> <span class="comment">##活跃和非活跃的文件页数</span></span><br><span class="line">     nr_zone_inactive_file 539024</span><br><span class="line">     nr_zone_active_file 923986</span><br><span class="line">...</span><br></pre></td></tr></table></figure><p>  内存资源紧张时候,默认采用回收匿名页数以及文件页数的方式来回收内存,可以通过/proc/sys/vm/zone_reclaim_mode调整</p><ul><li>默认的 0 ，也就是刚刚提到的模式，表示既可以从其他 Node 寻找空闲内存，也可以从本地回收内存。</li><li>1、2、4 都表示只回收本地内存，2 表示可以回写脏数据回收内存，4 表示可以用 Swap 方式回收内存。</li></ul><h3 id="swappiness"><a href="#swappiness" class="headerlink" title="swappiness"></a>swappiness</h3><p>  内存回收有俩种方式</p><ol><li>回收文件页：通过fsync将buffer和cache写入到磁盘来释放这一部分内存</li><li><p>回收匿名页：通过swap来释放匿名页内存</p><p>Linux 提供了一个 /proc/sys/vm/swappiness 选项，用来调整使用 Swap 的积极程度。范围是 0-100，数值越大，越积极使用 Swap，也就是更倾向于回收匿名页；数值越小，越消极使用 Swap，也就是更倾向于回收文件页。</p><p>注意swappiness只是一个趋势。</p></li></ol><h3 id="案例排查"><a href="#案例排查" class="headerlink" title="案例排查"></a>案例排查</h3><p>首先确认swap开启,通过free确认，如果没开启可用下面方法开启</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment"># 创建Swap文件</span></span><br><span class="line">$ fallocate -l 8G /mnt/swapfile</span><br><span class="line"><span class="comment"># 修改权限只有根用户可以访问</span></span><br><span class="line">$ chmod 600 /mnt/swapfile</span><br><span class="line"><span class="comment"># 配置Swap文件</span></span><br><span class="line">$ mkswap /mnt/swapfile</span><br><span class="line"><span class="comment"># 开启Swap</span></span><br><span class="line">$ swapon /mnt/swapfile</span><br></pre></td></tr></table></figure><p>测试方案：用命令dd</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 写入空设备，实际上只有磁盘的读请求</span></span><br><span class="line">$ dd <span class="keyword">if</span>=/dev/sda1 of=/dev/null bs=1G count=2048</span><br></pre></td></tr></table></figure><p>这时候我们用sar -r命令观察，我们发现kbmemfree值越来越少，%memused越来越大，且kbbuffers越来越大，因为dd直接和磁盘交互，符合预期。</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 间隔1秒输出一组数据</span></span><br><span class="line"><span class="comment"># -r表示显示内存使用情况，-S表示显示Swap使用情况</span></span><br><span class="line">$ sar -r -S 1</span><br><span class="line">04:39:56    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty</span><br><span class="line">04:39:57      6249676   6839824   1919632     23.50    740512     67316   1691736     10.22    815156    841868         4</span><br><span class="line"></span><br><span class="line">04:39:56    kbswpfree kbswpused  %swpused  kbswpcad   %swpcad</span><br><span class="line">04:39:57      8388604         0      0.00         0      0.00</span><br><span class="line"></span><br><span class="line">04:39:57    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty</span><br><span class="line">04:39:58      6184472   6807064   1984836     24.30    772768     67380   1691736     10.22    847932    874224        20</span><br><span class="line"></span><br><span class="line">04:39:57    kbswpfree kbswpused  %swpused  kbswpcad   %swpcad</span><br><span class="line">04:39:58      8388604         0      0.00         0      0.00</span><br><span class="line"></span><br><span class="line">…</span><br><span class="line"></span><br><span class="line">04:44:06    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty</span><br><span class="line">04:44:07       152780   6525716   8016528     98.13   6530440     51316   1691736     10.22    867124   6869332         0</span><br><span class="line"></span><br><span class="line">04:44:06    kbswpfree kbswpused  %swpused  kbswpcad   %swpcad</span><br><span class="line">04:44:07      8384508      4096      0.05        52      1.27</span><br></pre></td></tr></table></figure><ul><li>刚开始，剩余内存（kbmemfree）不断减少，而缓冲区（kbbuffers）则不断增大，由此可知，剩余内存不断分配给了缓冲区。</li><li>一段时间后，剩余内存已经很小，而缓冲区占用了大部分内存。这时候，Swap 的使用开始逐渐增大，缓冲区和剩余内存则只在小范围内波动。</li></ul><p>为什么缓冲区只在小范围内波动？由哪些进程导致，这时候我们用cachetop进行进一步排查发现是dd导致的，他的READ_HIT只有50%命中率且Miss的page已经到了41022页，可见也符合我们猜测的预期。</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ cachetop 5</span><br><span class="line">12:28:28 Buffers MB: 6349 / Cached MB: 87 / Sort: HITS / Order: ascending</span><br><span class="line">PID      UID      CMD              HITS     MISSES   DIRTIES  READ_HIT%  WRITE_HIT%</span><br><span class="line">   18280 root     python                 22        0        0     100.0%       0.0%</span><br><span class="line">   18279 root     dd                  41088    41022        0      50.0%      50.0%</span><br></pre></td></tr></table></figure><p>  为什么Swap开始升高了？不是应该释放buffer么？我们查看/proc/zoneinfo返现，内存小于low,内存就开始执行回收才做恢复到high附近，周而复始。</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment"># -d 表示高亮变化的字段</span></span><br><span class="line"><span class="comment"># -A 表示仅显示Normal行以及之后的15行输出</span></span><br><span class="line">$ watch -d grep -A 15 <span class="string">'Normal'</span> /proc/zoneinfo</span><br><span class="line">Node 0, zone   Normal</span><br><span class="line">  pages free     21328</span><br><span class="line">        min      14896</span><br><span class="line">        low      18620</span><br><span class="line">        high     22344</span><br><span class="line">        spanned  1835008</span><br><span class="line">        present  1835008</span><br><span class="line">        managed  1796710</span><br><span class="line">        protection: (0, 0, 0, 0, 0)</span><br><span class="line">      nr_free_pages 21328</span><br><span class="line">      nr_zone_inactive_anon 79776</span><br><span class="line">      nr_zone_active_anon 206854</span><br><span class="line">      nr_zone_inactive_file 918561</span><br><span class="line">      nr_zone_active_file 496695</span><br><span class="line">      nr_zone_unevictable 2251</span><br><span class="line">      nr_zone_write_pending 0</span><br></pre></td></tr></table></figure><p>我们发现有时候释放的是未知页即直接内存有时候是文件页即buffer，这是由于我们swappiness配置导致的</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cat /proc/sys/vm/swappiness</span><br><span class="line">60</span><br></pre></td></tr></table></figure>]]></content>
       
       
       <categories>
@@ -1097,9 +1097,9 @@
       
         <tags>
             
-            <tag> 数据库 </tag>
-            
             <tag> nosql </tag>
+            
+            <tag> 数据库 </tag>
             
             <tag> redis </tag>
             
@@ -1126,9 +1126,9 @@
       
         <tags>
             
-            <tag> 数据库 </tag>
-            
             <tag> nosql </tag>
+            
+            <tag> 数据库 </tag>
             
             <tag> redis </tag>
             
@@ -1155,9 +1155,9 @@
       
         <tags>
             
-            <tag> 数据库 </tag>
-            
             <tag> nosql </tag>
+            
+            <tag> 数据库 </tag>
             
             <tag> redis </tag>
             
@@ -1184,9 +1184,9 @@
       
         <tags>
             
-            <tag> 数据库 </tag>
-            
             <tag> nosql </tag>
+            
+            <tag> 数据库 </tag>
             
             <tag> redis </tag>
             
@@ -1213,9 +1213,9 @@
       
         <tags>
             
-            <tag> 数据库 </tag>
-            
             <tag> nosql </tag>
+            
+            <tag> 数据库 </tag>
             
             <tag> redis </tag>
             
@@ -1242,9 +1242,9 @@
       
         <tags>
             
-            <tag> 数据库 </tag>
-            
             <tag> nosql </tag>
+            
+            <tag> 数据库 </tag>
             
             <tag> redis </tag>
             
@@ -4330,6 +4330,25 @@
     
     
     <entry>
+      <title>其他</title>
+      <link href="/mysql/%E5%85%B6%E4%BB%96/"/>
+      <url>/mysql/%E5%85%B6%E4%BB%96/</url>
+      
+        <content type="html"><![CDATA[<h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><p>查询长事物的语句</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> information_schema.innodb_trx <span class="keyword">where</span> TIME_TO_SEC(<span class="keyword">timediff</span>(<span class="keyword">now</span>(),trx_started))&gt;<span class="number">60</span></span><br></pre></td></tr></table></figure>]]></content>
+      
+      
+      <categories>
+          
+          <category> Mysql </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>mysql的锁-全局锁、表锁、行锁、间隙锁</title>
       <link href="/mysql/mysql%E7%9A%84%E9%94%81/"/>
       <url>/mysql/mysql%E7%9A%84%E9%94%81/</url>
@@ -4342,25 +4361,6 @@
           <category> Mysql </category>
           
           <category> Mysql基础 </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
-      <title>其他</title>
-      <link href="/mysql/%E5%85%B6%E4%BB%96/"/>
-      <url>/mysql/%E5%85%B6%E4%BB%96/</url>
-      
-        <content type="html"><![CDATA[<h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><p>查询长事物的语句</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> information_schema.innodb_trx <span class="keyword">where</span> TIME_TO_SEC(<span class="keyword">timediff</span>(<span class="keyword">now</span>(),trx_started))&gt;<span class="number">60</span></span><br></pre></td></tr></table></figure>]]></content>
-      
-      
-      <categories>
-          
-          <category> Mysql </category>
           
       </categories>
       
@@ -4475,27 +4475,6 @@
     
     
     <entry>
-      <title>mysql事务隔离级别</title>
-      <link href="/mysql/mysql%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB/"/>
-      <url>/mysql/mysql%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB/</url>
-      
-        <content type="html"><![CDATA[<h1 id="mysql事务的隔离级别以及实现原理"><a href="#mysql事务的隔离级别以及实现原理" class="headerlink" title="mysql事务的隔离级别以及实现原理"></a>mysql事务的隔离级别以及实现原理</h1><h2 id="事务基础"><a href="#事务基础" class="headerlink" title="事务基础"></a>事务基础</h2><p>启动事务的几种方式</p><ol><li>显式启动事务语句， begin 或 start transaction，提交是commit，回滚是rollback</li><li>set autocommit=0,每个CURD都会启动事务且需要手动commit/rollback。</li><li>在实际使用用，我们一般不采用2这种方式启动事务。</li></ol><p>如何查看mysql事务的隔离级别，下面说明事务的隔离级别是读提交</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">variables</span> <span class="keyword">like</span> <span class="string">'transaction_isolation'</span>;</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----------------------+----------------+</span></span><br><span class="line"></span><br><span class="line">| Variable_name | Value |</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----------------------+----------------+</span></span><br><span class="line"></span><br><span class="line">| transaction_isolation | READ-COMMITTED |</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----------------------+----------------+</span></span><br></pre></td></tr></table></figure><h2 id="事务的几种隔离级别"><a href="#事务的几种隔离级别" class="headerlink" title="事务的几种隔离级别"></a>事务的几种隔离级别</h2><p>mysql的事务隔离级别分为：读未提交、读已提交（RC）、可重复读（RR）、串行，他们具体表现如下：</p><ul><li>读未提交：事务中每个查询语句都获取当前数据的最新值。</li><li>读已提交：事务中每个查询语句获取的都是其他事务提交后的相关数据的最新值，Oracle的默认事务隔离级别。</li><li>可重复读：Mysql的Innodb的默认事务隔离级别。</li><li>串行：每个事务需要一个一个的执行。</li></ul><h2 id="mysql事务隔离方式的实现方式（只讨论RC-和-RR）"><a href="#mysql事务隔离方式的实现方式（只讨论RC-和-RR）" class="headerlink" title="mysql事务隔离方式的实现方式（只讨论RC 和 RR）"></a>mysql事务隔离方式的实现方式（只讨论RC 和 RR）</h2><p>mysql的事务隔离实现机制采用的是一致性读视图（consistent read view）。即Mysql在事务启动时对整个数据库拍了一个快照。</p><ul><li>RR是在事务开始时候创建一致性视图</li><li>RC是在事务中的每条sql语句执行前执行</li></ul><p>具体的实现逻辑如下：</p><ol><li>Innodb对没个每个事务会分配一个transaction id,该ID是严格自增的ID。</li><li>Innodb中每行数据是有多版本的，每个版本的数据会包含一个row_txid。将修改成这个版本数据的transaction id赋值给row_txid。</li><li>这个版本不是物理存在的是虚拟的，即在一个事务中一旦发现该行数据不可见，则需要根据row_txid对象的事务+undolog找到可见的数据，具体见下面5。</li><li>当一个事务启动时候会，会维护一个数组，这个数组包含这个事务开始之后，这时候所有活跃的transaction id（所谓即未提交的事务）。数组的取值范围如下：低水位是当前事务中最小的transId，高水位数组中最大的transaction id+1；数组关系可见下图：</li><li>当这个事务去读数据时候，会有如下情况：<ol><li>判断如果这条数据row tx_id&lt;低水位，说明当前的数据在本事务创建前已经被提交过了，所以可见；</li><li>判断如果这条数据row tx_id&gt;高水位，说明当前的数据在本事务创建之后被提交过了，所以不可见，需要通过undolog找回之前的版本；</li><li>判断如果这条数据row tx_id在数组区间，如果row tx_id是数组范围内的值，说明事务未提交过，所以不可见；发只，说明该数据是已经被其他事务提交生成的，所以可见；</li></ol></li></ol><p><img src="/images/mysql/mysql_tx_array.png" alt="avatar"></p><p>上面的规则比较拗口，翻译过来就是：如果数据的版本是先于本事务开始前生成的可见，如果后于本事务开始前生成的本可见。</p><h2 id="mysql如何保证多个事务同时修改一条数据的准确性"><a href="#mysql如何保证多个事务同时修改一条数据的准确性" class="headerlink" title="mysql如何保证多个事务同时修改一条数据的准确性"></a>mysql如何保证多个事务同时修改一条数据的准确性</h2><p>思考下面问题：</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">因为mysql在update时候实际上是先select在更新，所以在RR隔离级别中。</span><br><span class="line">俩个同时开始未提交的事务修改同一条语句这时候因为一致性视图，会不会导致一个事务的修改是无效的呢？</span><br></pre></td></tr></table></figure><p>答案是不会的。<br>因为mysql在修改时会遵循一个原则：读当前值，当更新数据时候都是先读后写，所以这时候值能读当前值。俩个事务同时更新一条数据的流程和原理如下：</p><ol><li>当并发进行更新时，对数据进行加x锁，后面的更新操作会block住，直到其他的事务提交后才继续下去；</li><li>由于更新是当前读，所以数据被本事务被更新过后，由于row tx_id就是当前事务，所以读到的值是新的值；</li></ol><h2 id="隔离级别RR如此那RC呢"><a href="#隔离级别RR如此那RC呢" class="headerlink" title="隔离级别RR如此那RC呢"></a>隔离级别RR如此那RC呢</h2><p>其实原理是一样的。只是RR是每一次事务开始时候创建一致性视图，而隔离级别RC则是在事务中每一条sql语句在执行前都要创建一个一致性视图，这样视图是动态的，每条sql语句根据上面提到的规则都要去确定数据的可见性。</p>]]></content>
-      
-      
-      <categories>
-          
-          <category> Mysql </category>
-          
-          <category> Mysql基础 </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
       <title>mysql数据的完整性</title>
       <link href="/mysql/mysql%E7%9A%84%E4%B8%BB%E4%BB%8E%E5%88%87%E6%8D%A2/"/>
       <url>/mysql/mysql%E7%9A%84%E4%B8%BB%E4%BB%8E%E5%88%87%E6%8D%A2/</url>
@@ -4508,6 +4487,27 @@
           <category> Mysql </category>
           
           <category> Mysql高可用架构 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>mysql事务隔离级别</title>
+      <link href="/mysql/mysql%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB/"/>
+      <url>/mysql/mysql%E4%BA%8B%E5%8A%A1%E9%9A%94%E7%A6%BB%E7%BA%A7%E5%88%AB/</url>
+      
+        <content type="html"><![CDATA[<h1 id="mysql事务的隔离级别以及实现原理"><a href="#mysql事务的隔离级别以及实现原理" class="headerlink" title="mysql事务的隔离级别以及实现原理"></a>mysql事务的隔离级别以及实现原理</h1><h2 id="事务基础"><a href="#事务基础" class="headerlink" title="事务基础"></a>事务基础</h2><p>启动事务的几种方式</p><ol><li>显式启动事务语句， begin 或 start transaction，提交是commit，回滚是rollback</li><li>set autocommit=0,每个CURD都会启动事务且需要手动commit/rollback。</li><li>在实际使用用，我们一般不采用2这种方式启动事务。</li></ol><p>如何查看mysql事务的隔离级别，下面说明事务的隔离级别是读提交</p><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">show</span> <span class="keyword">variables</span> <span class="keyword">like</span> <span class="string">'transaction_isolation'</span>;</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----------------------+----------------+</span></span><br><span class="line"></span><br><span class="line">| Variable_name | Value |</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----------------------+----------------+</span></span><br><span class="line"></span><br><span class="line">| transaction_isolation | READ-COMMITTED |</span><br><span class="line"></span><br><span class="line">+<span class="comment">-----------------------+----------------+</span></span><br></pre></td></tr></table></figure><h2 id="事务的几种隔离级别"><a href="#事务的几种隔离级别" class="headerlink" title="事务的几种隔离级别"></a>事务的几种隔离级别</h2><p>mysql的事务隔离级别分为：读未提交、读已提交（RC）、可重复读（RR）、串行，他们具体表现如下：</p><ul><li>读未提交：事务中每个查询语句都获取当前数据的最新值。</li><li>读已提交：事务中每个查询语句获取的都是其他事务提交后的相关数据的最新值，Oracle的默认事务隔离级别。</li><li>可重复读：Mysql的Innodb的默认事务隔离级别。</li><li>串行：每个事务需要一个一个的执行。</li></ul><h2 id="mysql事务隔离方式的实现方式（只讨论RC-和-RR）"><a href="#mysql事务隔离方式的实现方式（只讨论RC-和-RR）" class="headerlink" title="mysql事务隔离方式的实现方式（只讨论RC 和 RR）"></a>mysql事务隔离方式的实现方式（只讨论RC 和 RR）</h2><p>mysql的事务隔离实现机制采用的是一致性读视图（consistent read view）。即Mysql在事务启动时对整个数据库拍了一个快照。</p><ul><li>RR是在事务开始时候创建一致性视图</li><li>RC是在事务中的每条sql语句执行前执行</li></ul><p>具体的实现逻辑如下：</p><ol><li>Innodb对没个每个事务会分配一个transaction id,该ID是严格自增的ID。</li><li>Innodb中每行数据是有多版本的，每个版本的数据会包含一个row_txid。将修改成这个版本数据的transaction id赋值给row_txid。</li><li>这个版本不是物理存在的是虚拟的，即在一个事务中一旦发现该行数据不可见，则需要根据row_txid对象的事务+undolog找到可见的数据，具体见下面5。</li><li>当一个事务启动时候会，会维护一个数组，这个数组包含这个事务开始之后，这时候所有活跃的transaction id（所谓即未提交的事务）。数组的取值范围如下：低水位是当前事务中最小的transId，高水位数组中最大的transaction id+1；数组关系可见下图：</li><li>当这个事务去读数据时候，会有如下情况：<ol><li>判断如果这条数据row tx_id&lt;低水位，说明当前的数据在本事务创建前已经被提交过了，所以可见；</li><li>判断如果这条数据row tx_id&gt;高水位，说明当前的数据在本事务创建之后被提交过了，所以不可见，需要通过undolog找回之前的版本；</li><li>判断如果这条数据row tx_id在数组区间，如果row tx_id是数组范围内的值，说明事务未提交过，所以不可见；发只，说明该数据是已经被其他事务提交生成的，所以可见；</li></ol></li></ol><p><img src="/images/mysql/mysql_tx_array.png" alt="avatar"></p><p>上面的规则比较拗口，翻译过来就是：如果数据的版本是先于本事务开始前生成的可见，如果后于本事务开始前生成的本可见。</p><h2 id="mysql如何保证多个事务同时修改一条数据的准确性"><a href="#mysql如何保证多个事务同时修改一条数据的准确性" class="headerlink" title="mysql如何保证多个事务同时修改一条数据的准确性"></a>mysql如何保证多个事务同时修改一条数据的准确性</h2><p>思考下面问题：</p><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">因为mysql在update时候实际上是先select在更新，所以在RR隔离级别中。</span><br><span class="line">俩个同时开始未提交的事务修改同一条语句这时候因为一致性视图，会不会导致一个事务的修改是无效的呢？</span><br></pre></td></tr></table></figure><p>答案是不会的。<br>因为mysql在修改时会遵循一个原则：读当前值，当更新数据时候都是先读后写，所以这时候值能读当前值。俩个事务同时更新一条数据的流程和原理如下：</p><ol><li>当并发进行更新时，对数据进行加x锁，后面的更新操作会block住，直到其他的事务提交后才继续下去；</li><li>由于更新是当前读，所以数据被本事务被更新过后，由于row tx_id就是当前事务，所以读到的值是新的值；</li></ol><h2 id="隔离级别RR如此那RC呢"><a href="#隔离级别RR如此那RC呢" class="headerlink" title="隔离级别RR如此那RC呢"></a>隔离级别RR如此那RC呢</h2><p>其实原理是一样的。只是RR是每一次事务开始时候创建一致性视图，而隔离级别RC则是在事务中每一条sql语句在执行前都要创建一个一致性视图，这样视图是动态的，每条sql语句根据上面提到的规则都要去确定数据的可见性。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> Mysql </category>
+          
+          <category> Mysql基础 </category>
           
       </categories>
       
@@ -4599,27 +4599,6 @@
     
     
     <entry>
-      <title>Mysql是如何保证数据不丢失的</title>
-      <link href="/mysql/mysql%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%A2%E5%A4%B1/"/>
-      <url>/mysql/mysql%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%A2%E5%A4%B1/</url>
-      
-        <content type="html"><![CDATA[<h1 id="Mysql是如何保证数据不丢失的"><a href="#Mysql是如何保证数据不丢失的" class="headerlink" title="Mysql是如何保证数据不丢失的"></a>Mysql是如何保证数据不丢失的</h1><h2 id="binlog"><a href="#binlog" class="headerlink" title="binlog"></a>binlog</h2><ol><li>事务执行过程中binlog写入到binlog cache,事务提交时写入到binlog文件中。</li><li>事务的原子性决定这无论事务有多大，binlogcahe都要一次性完整的写入到binlog文件中，写入方式如下：<ol><li>系统为每个binlog_cache开辟了一片内存（每个线程都有一个），参数是blong_cache_size,超过这个阈值的会保存在临时文件中</li><li>事务提交时候，出于性能的考虑回将bionlog_cache都write到文件系统的page_cache中，在通过fsync刷新到磁盘文件中。如下图所示是binlog的同步机制。</li></ol></li></ol><p>如图：<br><img src="/images/mysql/binglog_写入.png" alt="avatar"></p><ul><li>只有fsnyc刷盘这不操作才会占用IOPS。</li><li>write和fsync的时机是用binglog_sync参数来控制的<ul><li>=0 每次事务提交时候都只write不sync</li><li>=1 每次事务提交都sync</li><li>=N（N&gt;1） 每次事务提交都write，积攒到N时候才会fsync</li></ul></li></ul><p>在IO出现瓶颈时候我们可以设置一个较大的值来提升性能（个人不是很推荐做，如果出现这种情况建议从业务考虑优化数据库）</p><h2 id="redolog的写入机制"><a href="#redolog的写入机制" class="headerlink" title="redolog的写入机制"></a>redolog的写入机制</h2><p>redolog从写入到最终写入到磁盘中会经历如下的阶段：写入redolog-buffer中–&gt;在事务提交、或者一定时机（见下面）下：redolog-buffer写入到文件系统的pagecache(write)–&gt;文件系统pagecache写入到磁盘中(fsnyc)，这样的操作的意义是为了提高mysql的吞吐的，具体的机制见下面：</p><p><img src="/images/mysql/redolog_3种状态.png" alt="avatar"></p><ol><li>一个事务会产生很多条redolog如果每次直接持久化磁盘会消耗大量的磁盘IO，所以redolog会先写入redolog-buffer中，之后在write文件系统的到pagecache中，这俩步是内存操作很快。</li><li>是否会影响数据的持久化，比如mysql在事务进行中crash了，这时候redolog-buffer中的数据丢失怎么办？答案是由于事物没有提交，所以事物会进行回滚。</li><li>redolog-buffer持久化的条件和机制：<ol><li>受参数innodb_flush_log_at_tx_commit的控制：<ol><li>=0：每次提交都只停留在redolog-buffer中；</li><li>=1：每次提交都会持久化到磁盘中；</li><li>=2：每次提交都只会写入到文件的pagecache中；</li></ol></li><li>innodb后台会有一个线程每秒一次，会把redolog-buffer中的日志，调用write写到pagecahe中，在fsync到磁盘中；</li><li>其他场景触发redolog的持久化<ol><li>当redolog-buffer占到了innodb_log_buffer_size的一半时候，会调用write将buffer中的log写入到文件系统的pagecache中</li><li>另一种是并行事物提交时候，如果innodb_flush_log_at_tx_commit设置为1时候会，即时当前事物没有commit，也会将redolog写入到文件系统中。</li></ol></li></ol></li></ol><h3 id="双1设置"><a href="#双1设置" class="headerlink" title="双1设置"></a>双1设置</h3><p>即：binlogsnyc=1，innodb_flush_log_at_tx_commit也设置为1。<br>  由于innodb的事物提交redolog和binlog是2PC。<br>     所以当redolog在prepare时候，为了故障恢复一定会持久化一次，所以这时候需要fsync到磁盘中。<br>     binlog在进行fsync到磁盘中<br>     这时候事物在redolog在commit时候，mysql由于有奔溃恢复机制和后台线程每秒轮训一次刷盘会认为redolog没有必要在fsync一次到磁盘了，只会写入到文件的pagecache中。</p><h3 id="gourp-commit机制"><a href="#gourp-commit机制" class="headerlink" title="gourp commit机制"></a>gourp commit机制</h3><p>一个事物的提交由于redolog和binglog都要持久化，磁盘IO还是很大Mysql是如何优化这部分呢。这里mysql采用了组提交（group commit）的方式。<br>如图所示：<br><img src="/images/mysql/group_commit机制.png" alt="avatar"></p><ul><li>首先介绍下LSN(log sequence number)，一个单调递增的序号，用来对应redolog的一个个写入点。当然也会写入到数据页中，用于flush脏盘时候避免重复执行（不在讨论范围内）</li><li>如图，当3个事务同时都写完redolog-buffer 并且处于prepare阶段时候，这时候就构成了一个gourp<ol><li>第一个先到达的trx1，成为组里的leader，LSN=50;</li><li>等trx1开始写盘时候，组里已经有其他俩个事物，这时候LSN=160;</li><li>trx1开始写盘，所有lsn&lt;160的日志都会被写入到磁盘中；</li><li>trx3,trx4就可以直接返回了；</li></ol></li></ul><p>所以在并发事物中，当写完redolog，越晚调用fsync，带的log越多性能也就越好；mysql在这方法采用的是拖时间的策略，即:在双1配置下<br>  redolog-prepare(write)–&gt;binglog(write)–&gt;redolog-prepare(fsync)–&gt;binlog(fsnyc)–&gt;redolog commit(write)</p><p>如图：<br><img src="/images/mysql/redolog_binlog_groupcommit.png" alt="avatar"></p><ul><li>如上图所示，由于redolog在write和fsnyc中有一个binlog-write的过程，所以在持久化磁盘时候你可以带上更多的log；</li><li>另外：binlog也可以采用组提交，只不过由于这俩个阶段间隔短可能没有redolog那么明显<ul><li>binlog的gruop commit的参数如下：<ul><li>binlog_group_commit_sync_delay:表示延迟多少微妙后就会调用fsnyc</li><li>binlog_gourp_commit_sync_no_delay_count:表示累计多少次后才调用fsync</li><li>俩个参数是or的关系，不过如果binlog_group_commit_sync_delay设置为0，binlog_gourp_commit_sync_no_delay_count就无效了</li></ul></li></ul></li></ul><p>综上所述：</p><ul><li>mysql的WAL机制是由于redolog和binlog都是顺序写，保证了高吞吐；</li><li>同时采用了组提交的方式，来减少了IOPS;</li></ul>]]></content>
-      
-      
-      <categories>
-          
-          <category> Mysql </category>
-          
-          <category> Mysql基础 </category>
-          
-      </categories>
-      
-      
-    </entry>
-    
-    
-    
-    <entry>
       <title>MySql是如何降低主备延迟的</title>
       <link href="/mysql/mysql%E6%98%AF%E5%A6%82%E4%BD%95%E9%99%8D%E4%BD%8E%E4%B8%BB%E5%A4%87%E5%BB%B6%E8%BF%9F%E7%9A%84/"/>
       <url>/mysql/mysql%E6%98%AF%E5%A6%82%E4%BD%95%E9%99%8D%E4%BD%8E%E4%B8%BB%E5%A4%87%E5%BB%B6%E8%BF%9F%E7%9A%84/</url>
@@ -4632,6 +4611,27 @@
           <category> Mysql </category>
           
           <category> Mysql高可用架构 </category>
+          
+      </categories>
+      
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>Mysql是如何保证数据不丢失的</title>
+      <link href="/mysql/mysql%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%A2%E5%A4%B1/"/>
+      <url>/mysql/mysql%E5%A6%82%E4%BD%95%E4%BF%9D%E8%AF%81%E6%95%B0%E6%8D%AE%E4%B8%8D%E4%B8%A2%E5%A4%B1/</url>
+      
+        <content type="html"><![CDATA[<h1 id="Mysql是如何保证数据不丢失的"><a href="#Mysql是如何保证数据不丢失的" class="headerlink" title="Mysql是如何保证数据不丢失的"></a>Mysql是如何保证数据不丢失的</h1><h2 id="binlog"><a href="#binlog" class="headerlink" title="binlog"></a>binlog</h2><ol><li>事务执行过程中binlog写入到binlog cache,事务提交时写入到binlog文件中。</li><li>事务的原子性决定这无论事务有多大，binlogcahe都要一次性完整的写入到binlog文件中，写入方式如下：<ol><li>系统为每个binlog_cache开辟了一片内存（每个线程都有一个），参数是blong_cache_size,超过这个阈值的会保存在临时文件中</li><li>事务提交时候，出于性能的考虑回将bionlog_cache都write到文件系统的page_cache中，在通过fsync刷新到磁盘文件中。如下图所示是binlog的同步机制。</li></ol></li></ol><p>如图：<br><img src="/images/mysql/binglog_写入.png" alt="avatar"></p><ul><li>只有fsnyc刷盘这不操作才会占用IOPS。</li><li>write和fsync的时机是用binglog_sync参数来控制的<ul><li>=0 每次事务提交时候都只write不sync</li><li>=1 每次事务提交都sync</li><li>=N（N&gt;1） 每次事务提交都write，积攒到N时候才会fsync</li></ul></li></ul><p>在IO出现瓶颈时候我们可以设置一个较大的值来提升性能（个人不是很推荐做，如果出现这种情况建议从业务考虑优化数据库）</p><h2 id="redolog的写入机制"><a href="#redolog的写入机制" class="headerlink" title="redolog的写入机制"></a>redolog的写入机制</h2><p>redolog从写入到最终写入到磁盘中会经历如下的阶段：写入redolog-buffer中–&gt;在事务提交、或者一定时机（见下面）下：redolog-buffer写入到文件系统的pagecache(write)–&gt;文件系统pagecache写入到磁盘中(fsnyc)，这样的操作的意义是为了提高mysql的吞吐的，具体的机制见下面：</p><p><img src="/images/mysql/redolog_3种状态.png" alt="avatar"></p><ol><li>一个事务会产生很多条redolog如果每次直接持久化磁盘会消耗大量的磁盘IO，所以redolog会先写入redolog-buffer中，之后在write文件系统的到pagecache中，这俩步是内存操作很快。</li><li>是否会影响数据的持久化，比如mysql在事务进行中crash了，这时候redolog-buffer中的数据丢失怎么办？答案是由于事物没有提交，所以事物会进行回滚。</li><li>redolog-buffer持久化的条件和机制：<ol><li>受参数innodb_flush_log_at_tx_commit的控制：<ol><li>=0：每次提交都只停留在redolog-buffer中；</li><li>=1：每次提交都会持久化到磁盘中；</li><li>=2：每次提交都只会写入到文件的pagecache中；</li></ol></li><li>innodb后台会有一个线程每秒一次，会把redolog-buffer中的日志，调用write写到pagecahe中，在fsync到磁盘中；</li><li>其他场景触发redolog的持久化<ol><li>当redolog-buffer占到了innodb_log_buffer_size的一半时候，会调用write将buffer中的log写入到文件系统的pagecache中</li><li>另一种是并行事物提交时候，如果innodb_flush_log_at_tx_commit设置为1时候会，即时当前事物没有commit，也会将redolog写入到文件系统中。</li></ol></li></ol></li></ol><h3 id="双1设置"><a href="#双1设置" class="headerlink" title="双1设置"></a>双1设置</h3><p>即：binlogsnyc=1，innodb_flush_log_at_tx_commit也设置为1。<br>  由于innodb的事物提交redolog和binlog是2PC。<br>     所以当redolog在prepare时候，为了故障恢复一定会持久化一次，所以这时候需要fsync到磁盘中。<br>     binlog在进行fsync到磁盘中<br>     这时候事物在redolog在commit时候，mysql由于有奔溃恢复机制和后台线程每秒轮训一次刷盘会认为redolog没有必要在fsync一次到磁盘了，只会写入到文件的pagecache中。</p><h3 id="gourp-commit机制"><a href="#gourp-commit机制" class="headerlink" title="gourp commit机制"></a>gourp commit机制</h3><p>一个事物的提交由于redolog和binglog都要持久化，磁盘IO还是很大Mysql是如何优化这部分呢。这里mysql采用了组提交（group commit）的方式。<br>如图所示：<br><img src="/images/mysql/group_commit机制.png" alt="avatar"></p><ul><li>首先介绍下LSN(log sequence number)，一个单调递增的序号，用来对应redolog的一个个写入点。当然也会写入到数据页中，用于flush脏盘时候避免重复执行（不在讨论范围内）</li><li>如图，当3个事务同时都写完redolog-buffer 并且处于prepare阶段时候，这时候就构成了一个gourp<ol><li>第一个先到达的trx1，成为组里的leader，LSN=50;</li><li>等trx1开始写盘时候，组里已经有其他俩个事物，这时候LSN=160;</li><li>trx1开始写盘，所有lsn&lt;160的日志都会被写入到磁盘中；</li><li>trx3,trx4就可以直接返回了；</li></ol></li></ul><p>所以在并发事物中，当写完redolog，越晚调用fsync，带的log越多性能也就越好；mysql在这方法采用的是拖时间的策略，即:在双1配置下<br>  redolog-prepare(write)–&gt;binglog(write)–&gt;redolog-prepare(fsync)–&gt;binlog(fsnyc)–&gt;redolog commit(write)</p><p>如图：<br><img src="/images/mysql/redolog_binlog_groupcommit.png" alt="avatar"></p><ul><li>如上图所示，由于redolog在write和fsnyc中有一个binlog-write的过程，所以在持久化磁盘时候你可以带上更多的log；</li><li>另外：binlog也可以采用组提交，只不过由于这俩个阶段间隔短可能没有redolog那么明显<ul><li>binlog的gruop commit的参数如下：<ul><li>binlog_group_commit_sync_delay:表示延迟多少微妙后就会调用fsnyc</li><li>binlog_gourp_commit_sync_no_delay_count:表示累计多少次后才调用fsync</li><li>俩个参数是or的关系，不过如果binlog_group_commit_sync_delay设置为0，binlog_gourp_commit_sync_no_delay_count就无效了</li></ul></li></ul></li></ul><p>综上所述：</p><ul><li>mysql的WAL机制是由于redolog和binlog都是顺序写，保证了高吞吐；</li><li>同时采用了组提交的方式，来减少了IOPS;</li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> Mysql </category>
+          
+          <category> Mysql基础 </category>
           
       </categories>
       

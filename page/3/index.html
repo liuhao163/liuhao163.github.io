@@ -345,6 +345,451 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Spring源码-ApplicationListener容器的订阅者消费者模式/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/Spring源码-ApplicationListener容器的订阅者消费者模式/" class="post-title-link" itemprop="url">Spring源码-ApplicationListener基于事件的订阅者发布者模式</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-12-28 17:26:02" itemprop="dateCreated datePublished" datetime="2019-12-28T17:26:02Z">2019-12-28</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2020-02-02 12:21:01" itemprop="dateModified" datetime="2020-02-02T12:21:01Z">2020-02-02</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/" itemprop="url" rel="index"><span itemprop="name">spring</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/源码/" itemprop="url" rel="index"><span itemprop="name">源码</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="如何使用"><a href="#如何使用" class="headerlink" title="如何使用"></a>如何使用</h2><p>  spring容器自身提供了基于事件的订阅者发布者模式，即ApplicationListener，它能支持一些系统事件具体见ApplicationEvent的子类，同时也支持我们自定义事件使用方法如下</p>
+<p>  容器自身的事件，如：ApplicationContextEvent,我们想获取一个全局变量ApplicationContext（代码仅供参考）</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ContextRefreshAppliationListener</span> <span class="keyword">implements</span> <span class="title">ApplicationListener</span>&lt;<span class="title">ApplicationContextEvent</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> ApplicationContextEvent applicationContext;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//触发 application.pulish(new ContextRefreshedEvent())</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onApplicationEvent</span><span class="params">(ContextRefreshedEvent event)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//容器启动后在某些节点会发送事件，我们只需要实现onApplicationEvent即可。</span></span><br><span class="line">        applicationContext=event.getApplicationContext();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>自定义事件：</p>
+<ol>
+<li>定义事件，事件继承自ApplicationEvent</li>
+<li>实现该事件的AppliationListener</li>
+<li>在程序某个时间点触发applicationContext.publishEvent方法</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CoustomEvent</span> <span class="keyword">extends</span> <span class="title">ApplicationEvent</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> String name;</span><br><span class="line">    <span class="keyword">private</span> String eventType;</span><br><span class="line">    <span class="keyword">private</span> String summary;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">CoustomEvent</span><span class="params">(Object source, String name, String eventType, String summary)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>(source);</span><br><span class="line">        <span class="keyword">this</span>.name = name;</span><br><span class="line">        <span class="keyword">this</span>.eventType = eventType;</span><br><span class="line">        <span class="keyword">this</span>.summary = summary;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">CoustomEvent</span><span class="params">(Object source)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>(source);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">CoustomAppliationListener</span> <span class="keyword">implements</span> <span class="title">ApplicationListener</span>&lt;<span class="title">CoustomEvent</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//触发 application.pulish(new ContextRefreshedEvent())</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onApplicationEvent</span><span class="params">(CoustomEvent event)</span> </span>&#123;</span><br><span class="line">        System.out.println(event.getName() + <span class="string">" eventType:"</span> + event.getEventType() + <span class="string">" summary:"</span> + event.getSummary() + <span class="string">" in time:"</span> + event.getTimestamp());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//触发</span></span><br><span class="line">applicationContext.publishEvent(<span class="keyword">new</span> CoustomEvent(<span class="string">"source"</span>,<span class="string">"liuhao"</span>,<span class="string">"sendEmail"</span>,<span class="string">" dest liu67224657@qq.com"</span>));</span><br></pre></td></tr></table></figure>
+<h3 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h3><p>tbd</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Spring源码-类扫描器-ClassPathBeanDefinitionScanner/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/Spring源码-类扫描器-ClassPathBeanDefinitionScanner/" class="post-title-link" itemprop="url">Spring源码-类扫描器-ClassPathBeanDefinitionScanner</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-12-28 00:00:00" itemprop="dateCreated datePublished" datetime="2019-12-28T00:00:00Z">2019-12-28</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2020-02-02 12:24:03" itemprop="dateModified" datetime="2020-02-02T12:24:03Z">2020-02-02</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/" itemprop="url" rel="index"><span itemprop="name">spring</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/源码/" itemprop="url" rel="index"><span itemprop="name">源码</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>  我们在<a href="/Spring源码-ApplicationContext">Spring源码-ApplicationContext</a>中介绍了ApplicationContext都做了什么，其中会对容器中的BeanDefinition对应的class进行初始化，那么BeanDefinition是怎么产生的呢？其中ClassPathBeanDefinitionScanner是做什么用的呢？</p>
+<p>  ClassPathBeanDefinitionScanner类扫描器，作用通过对制定的basepackage进行扫描，创建、注册BeanDefinition。见类图:<br>  <img src="/Spring源码-类扫描器-ClassPathBeanDefinitionScanner/ClassPathBeanDefinitionScanner.png" alt="ClassPathBeanDefinitionScanner类图"></p>
+<p>  见下面代码，在无参构造方法中初始化ClassPathBeanDefinitionScanner，之后调用scan(basePackages)将basePackages下的class文件生成BeanDefiniton同时注册</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">AnnotationConfigApplicationContext</span><span class="params">(String... basePackages)</span> </span>&#123;</span><br><span class="line">  <span class="comment">//无参构造函数，初始化reader和scanner，在父类GenericApplicationContext的无参构造方法初始化（beanFactory = new DefaultListableBeanFactory()），</span></span><br><span class="line">  <span class="keyword">this</span>();</span><br><span class="line">  <span class="comment">//扫描basePackages并且加载BeanDefinition</span></span><br><span class="line">  scan(basePackages);</span><br><span class="line">  <span class="comment">//刷新上下文</span></span><br><span class="line">  refresh();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//this()方法的内部</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">AnnotationConfigApplicationContext</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="comment">//IOC容器初始化注解BeanDefinition的读取器</span></span><br><span class="line">  <span class="keyword">this</span>.reader = <span class="keyword">new</span> AnnotatedBeanDefinitionReader(<span class="keyword">this</span>);</span><br><span class="line">  <span class="comment">//IOC容器初始化类扫描器</span></span><br><span class="line">  <span class="keyword">this</span>.scanner = <span class="keyword">new</span> ClassPathBeanDefinitionScanner(<span class="keyword">this</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="scan的解析"><a href="#scan的解析" class="headerlink" title="scan的解析"></a>scan的解析</h2><p>   ClassPathBeanDefinitionScanner.scan()–&gt;ClassPathBeanDefinitionScanner.doScan(),doScan方法的逻辑如下</p>
+<ol>
+<li>文件生成BeanDefinition<ol>
+<li>针对指定的Basepackage找对应的文件，即Resource</li>
+<li>将Resource转换成BeanDefinition注册到容器中<ol>
+<li>用spring-asm将Resource生成MetatDataReader</li>
+<li>判断class是否符合容器注入条件(利用typefilter.match)</li>
+<li>生成BeanDefinition,加入到返回值中返回</li>
+</ol>
+</li>
+</ol>
+</li>
+<li>处理BeanDefinition</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> Set&lt;BeanDefinitionHolder&gt; <span class="title">doScan</span><span class="params">(String... basePackages)</span> </span>&#123;</span><br><span class="line">  Assert.notEmpty(basePackages, <span class="string">"At least one base package must be specified"</span>);</span><br><span class="line">  Set&lt;BeanDefinitionHolder&gt; beanDefinitions = <span class="keyword">new</span> LinkedHashSet&lt;&gt;();</span><br><span class="line">  <span class="keyword">for</span> (String basePackage : basePackages) &#123;</span><br><span class="line">    <span class="comment">//通过文件找到符合规则的BeanDefinition</span></span><br><span class="line">    Set&lt;BeanDefinition&gt; candidates = findCandidateComponents(basePackage);</span><br><span class="line">    <span class="comment">//处理BeanDefinition</span></span><br><span class="line">    <span class="keyword">for</span> (BeanDefinition candidate : candidates) &#123;</span><br><span class="line">      ScopeMetadata scopeMetadata = <span class="keyword">this</span>.scopeMetadataResolver.resolveScopeMetadata(candidate);</span><br><span class="line">      candidate.setScope(scopeMetadata.getScopeName());</span><br><span class="line">      String beanName = <span class="keyword">this</span>.beanNameGenerator.generateBeanName(candidate, <span class="keyword">this</span>.registry);</span><br><span class="line">      <span class="keyword">if</span> (candidate <span class="keyword">instanceof</span> AbstractBeanDefinition) &#123;</span><br><span class="line">        postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">if</span> (candidate <span class="keyword">instanceof</span> AnnotatedBeanDefinition) &#123;</span><br><span class="line">        AnnotationConfigUtils.processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">if</span> (checkCandidate(beanName, candidate)) &#123;</span><br><span class="line">        BeanDefinitionHolder definitionHolder = <span class="keyword">new</span> BeanDefinitionHolder(candidate, beanName);</span><br><span class="line">        definitionHolder =</span><br><span class="line">            AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, <span class="keyword">this</span>.registry);</span><br><span class="line">        beanDefinitions.add(definitionHolder);</span><br><span class="line">        registerBeanDefinition(definitionHolder, <span class="keyword">this</span>.registry);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> beanDefinitions;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="查找并且生成BeanDefinition"><a href="#查找并且生成BeanDefinition" class="headerlink" title="查找并且生成BeanDefinition"></a>查找并且生成BeanDefinition</h3><p>  主要的方法是findCandidateComponents，通过指定的basePackage生成BeanDefinition，其中关键之一是PathMatchingResourcePatternResolver，里面会有目录的匹配引擎来找打牌basePackage下所有符合规则的类。</p>
+<p>  下面的代码是整个findCandidateComponents的逻辑，其中getResourcePatternResolver()就是获取PathMatchingResourcePatternResolver</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> Set&lt;BeanDefinition&gt; <span class="title">findCandidateComponents</span><span class="params">(String basePackage)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (<span class="keyword">this</span>.componentsIndex != <span class="keyword">null</span> &amp;&amp; indexSupportsIncludeFilters()) &#123;</span><br><span class="line">    <span class="keyword">return</span> addCandidateComponentsFromIndex(<span class="keyword">this</span>.componentsIndex, basePackage);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">//扫描制定的basePackage</span></span><br><span class="line">    <span class="keyword">return</span> scanCandidateComponents(basePackage);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> Set&lt;BeanDefinition&gt; <span class="title">scanCandidateComponents</span><span class="params">(String basePackage)</span> </span>&#123;</span><br><span class="line">  Set&lt;BeanDefinition&gt; candidates = <span class="keyword">new</span> LinkedHashSet&lt;&gt;();</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="comment">//解析basePackage，生成绝对地址ClassPath*:/xx/xx/*/**.class</span></span><br><span class="line">    String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +</span><br><span class="line">        resolveBasePackage(basePackage) + <span class="string">'/'</span> + <span class="keyword">this</span>.resourcePattern;</span><br><span class="line">    <span class="comment">//通过PathMatchingResourcePatternResolver找到该目录下的Reousrce即文件</span></span><br><span class="line">    Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);</span><br><span class="line">    ......</span><br><span class="line">    <span class="keyword">for</span> (Resource resource : resources) &#123;</span><br><span class="line">      <span class="comment">//resource生成BeanDefinition 暂且忽略，后面会详细解析</span></span><br><span class="line">      ......</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">catch</span> (IOException ex) &#123;</span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> BeanDefinitionStoreException(<span class="string">"I/O failure during classpath scanning"</span>, ex);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> candidates;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="文件生成Resouces"><a href="#文件生成Resouces" class="headerlink" title="文件生成Resouces"></a>文件生成Resouces</h4><p>getResourcePatternResolver()对应的是PathMatchingResourcePatternResolver类，getResources流程如下</p>
+<ol>
+<li>findCandidateComponents()方法中，先给basePackage先加上classPath*:，调用getResources方法</li>
+<li>走到findPathMatchingResources所在的分支处理locationPattern，分离出rootDirPath和subPattern</li>
+<li>再次调用getResources(rootDirPath)方法回到上面的方法走到else分支调用findAllClassPathResources方法</li>
+<li>在findAllClassPathResources中调用doFindAllClassPathResources,加载RootDir对应的rootDirResources</li>
+<li>继续回到<2>中的findPathMatchingResources，遍历rootDirResources,这里主要执行else分支doFindPathMatchingFileResources</2></li>
+<li>通过rootDirPath和subPattern(即 */**等)找到所有符合规则的Class对应的Resource，过程是：<ul>
+<li>doFindPathMatchingFileResources–&gt;doFindMatchingFileSystemResources</li>
+<li>doFindMatchingFileSystemResources–&gt;retrieveMatchingFiles</li>
+<li>retrieveMatchingFiles–&gt;doRetrieveMatchingFiles递归执行直到找到所有符合规则的File，并且在doFindMatchingFileSystemResources生成FileSystemResource</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//basePackage先加上 classPath*:</span></span><br><span class="line">String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +</span><br><span class="line">          resolveBasePackage(basePackage) + <span class="string">'/'</span> + <span class="keyword">this</span>.resourcePattern;</span><br><span class="line">      <span class="comment">//通过PathMatchingResourcePatternResolver找到该目录下的Reousrce即文件</span></span><br><span class="line">      Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> Resource[] getResources(String locationPattern) <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">  Assert.notNull(locationPattern, <span class="string">"Location pattern must not be null"</span>);</span><br><span class="line">  <span class="comment">//包含ClassPath*:</span></span><br><span class="line">  <span class="keyword">if</span> (locationPattern.startsWith(CLASSPATH_ALL_URL_PREFIX)) &#123;</span><br><span class="line">    <span class="comment">// a class path resource (multiple resources for same name possible)</span></span><br><span class="line">    <span class="keyword">if</span> (getPathMatcher().isPattern(locationPattern.substring(CLASSPATH_ALL_URL_PREFIX.length()))) &#123;</span><br><span class="line">      <span class="comment">// a class path resource pattern</span></span><br><span class="line">      <span class="comment">//包含特殊字符 * ? &#123;&#125;在findPathMatchingResources中会去掉这些特殊字符，在调用getResources，走到else的分支</span></span><br><span class="line">      <span class="keyword">return</span> findPathMatchingResources(locationPattern);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">//调用doFindAllClassPathResources加载所有的类</span></span><br><span class="line">      <span class="comment">// all class path resources with the given name</span></span><br><span class="line">      <span class="keyword">return</span> findAllClassPathResources(locationPattern.substring(CLASSPATH_ALL_URL_PREFIX.length()));</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span> &#123;</span><br><span class="line">    ......</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">protected</span> Resource[] findPathMatchingResources(String locationPattern) <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">  String rootDirPath = determineRootDir(locationPattern);<span class="comment">//eg: classpath*:com/ericliu/spring/**/**/*.class--&gt;classpath*:com/ericliu/spring/</span></span><br><span class="line">  String subPattern = locationPattern.substring(rootDirPath.length());<span class="comment">//eg: classpath*:com/ericliu/spring/**/**/*.class--&gt; **/**/*.class</span></span><br><span class="line">  <span class="comment">//继续调用getResources--&gt;这时候因为classpath*:已经被替换掉会走到findAllClassPathResources分支,</span></span><br><span class="line">  <span class="comment">// 在findAllClassPathResources里加载rootDirPath对应的Reousrce，因为是目录所以数组有几个basePackage就有几个location</span></span><br><span class="line">  <span class="comment">// 如：URL [file:&lt;绝对路径&gt;/&lt;rootDirPath&gt;/]</span></span><br><span class="line">  Resource[] rootDirResources = getResources(rootDirPath);</span><br><span class="line">  Set&lt;Resource&gt; result = <span class="keyword">new</span> LinkedHashSet&lt;&gt;(<span class="number">16</span>);</span><br><span class="line">  <span class="keyword">for</span> (Resource rootDirResource : rootDirResources) &#123;</span><br><span class="line">    rootDirResource = resolveRootDirResource(rootDirResource);</span><br><span class="line">    URL rootDirUrl = rootDirResource.getURL();</span><br><span class="line">    <span class="comment">//根据rootDirUrl的类型调用不同的逻辑，bundle:// ，vfs , *.jar</span></span><br><span class="line">    <span class="keyword">if</span> (equinoxResolveMethod != <span class="keyword">null</span> &amp;&amp; rootDirUrl.getProtocol().startsWith(<span class="string">"bundle"</span>)) &#123;</span><br><span class="line">      URL resolvedUrl = (URL) ReflectionUtils.invokeMethod(equinoxResolveMethod, <span class="keyword">null</span>, rootDirUrl);</span><br><span class="line">      <span class="keyword">if</span> (resolvedUrl != <span class="keyword">null</span>) &#123;</span><br><span class="line">        rootDirUrl = resolvedUrl;</span><br><span class="line">      &#125;</span><br><span class="line">      rootDirResource = <span class="keyword">new</span> UrlResource(rootDirUrl);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (rootDirUrl.getProtocol().startsWith(ResourceUtils.URL_PROTOCOL_VFS)) &#123;</span><br><span class="line">      result.addAll(VfsResourceMatchingDelegate.findMatchingResources(rootDirUrl, subPattern, getPathMatcher()));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (ResourceUtils.isJarURL(rootDirUrl) || isJarResource(rootDirResource)) &#123;</span><br><span class="line">      result.addAll(doFindPathMatchingJarResources(rootDirResource, rootDirUrl, subPattern));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">//主要是执行这里的逻辑，去rootDirResource查找符合subPattern的resource（文件）</span></span><br><span class="line">      result.addAll(doFindPathMatchingFileResources(rootDirResource, subPattern));</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">if</span> (logger.isTraceEnabled()) &#123;</span><br><span class="line">    logger.trace(<span class="string">"Resolved location pattern ["</span> + locationPattern + <span class="string">"] to resources "</span> + result);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> result.toArray(<span class="keyword">new</span> Resource[<span class="number">0</span>]);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>doRetrieveMatchingFiles查找符合规则的文件</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">doRetrieveMatchingFiles</span><span class="params">(String fullPattern, File dir, Set&lt;File&gt; result)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (logger.isTraceEnabled()) &#123;</span><br><span class="line">    logger.trace(<span class="string">"Searching directory ["</span> + dir.getAbsolutePath() +</span><br><span class="line">        <span class="string">"] for files matching pattern ["</span> + fullPattern + <span class="string">"]"</span>);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">for</span> (File content : listDirectory(dir)) &#123;</span><br><span class="line">    String currPath = StringUtils.replace(content.getAbsolutePath(), File.separator, <span class="string">"/"</span>);</span><br><span class="line">    <span class="comment">//如果是目录，且和fullPattern匹配递归去子目录开始查找</span></span><br><span class="line">    <span class="keyword">if</span> (content.isDirectory() &amp;&amp; getPathMatcher().matchStart(fullPattern, currPath + <span class="string">"/"</span>)) &#123;</span><br><span class="line">      <span class="keyword">if</span> (!content.canRead()) &#123;</span><br><span class="line">        <span class="keyword">if</span> (logger.isDebugEnabled()) &#123;</span><br><span class="line">          logger.debug(<span class="string">"Skipping subdirectory ["</span> + dir.getAbsolutePath() +</span><br><span class="line">              <span class="string">"] because the application is not allowed to read the directory"</span>);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">else</span> &#123;</span><br><span class="line">        doRetrieveMatchingFiles(fullPattern, content, result);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (getPathMatcher().match(fullPattern, currPath)) &#123;</span><br><span class="line">      result.add(content);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="Reosurce生成BenDefinition"><a href="#Reosurce生成BenDefinition" class="headerlink" title="Reosurce生成BenDefinition"></a>Reosurce生成BenDefinition</h4><p>scanCandidateComponents方法中循环上面生成的Resource数组，生成BeanDefinition,其中需要</p>
+<ol>
+<li>获取metadataReader</li>
+<li>判断resource是否符合我们的注入条件</li>
+<li>生成ScannedGenericBeanDefinition</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> Set&lt;BeanDefinition&gt; <span class="title">scanCandidateComponents</span><span class="params">(String basePackage)</span> </span>&#123;</span><br><span class="line">    Set&lt;BeanDefinition&gt; candidates = <span class="keyword">new</span> LinkedHashSet&lt;&gt;();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="comment">//解析basePackage，生成绝对地址ClassPath*:/xx/xx/*/**.class</span></span><br><span class="line">      String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +</span><br><span class="line">          resolveBasePackage(basePackage) + <span class="string">'/'</span> + <span class="keyword">this</span>.resourcePattern;</span><br><span class="line">      <span class="comment">//通过PathMatchingResourcePatternResolver找到该目录下的Reousrce即文件</span></span><br><span class="line">      Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);</span><br><span class="line">      ......</span><br><span class="line">      <span class="keyword">for</span> (Resource resource : resources) &#123;</span><br><span class="line">        ......</span><br><span class="line">        <span class="keyword">if</span> (resource.isReadable()) &#123;</span><br><span class="line">          <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">//1.获取MetadataReader，这里是CachingMetadataReaderFactory，通过SimpleMetadataReaderFactory生成SimpleMetadataReader(resource,defaultResourceLoader.getClassLoader)</span></span><br><span class="line">            MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(resource);</span><br><span class="line">            <span class="comment">//判断是否符合条件的Component</span></span><br><span class="line">            <span class="keyword">if</span> (isCandidateComponent(metadataReader)) &#123;</span><br><span class="line">              ScannedGenericBeanDefinition sbd = <span class="keyword">new</span> ScannedGenericBeanDefinition(metadataReader);</span><br><span class="line">              sbd.setResource(resource);</span><br><span class="line">              sbd.setSource(resource);</span><br><span class="line">              <span class="comment">/**</span></span><br><span class="line"><span class="comment">               *  isCandidateComponent(sbd)为true</span></span><br><span class="line"><span class="comment">               *    isIndependent不是内部类（内部类对应的外部类为空，且没有static内部类）</span></span><br><span class="line"><span class="comment">               *    isConcrete：不是借口和抽象类 || 是抽象类，但是metadata有Lookup注解</span></span><br><span class="line"><span class="comment">               *  加入到结果集</span></span><br><span class="line"><span class="comment">               */</span></span><br><span class="line">              <span class="keyword">if</span> (isCandidateComponent(sbd)) &#123;</span><br><span class="line">                <span class="keyword">if</span> (debugEnabled) &#123;</span><br><span class="line">                  logger.debug(<span class="string">"Identified candidate component class: "</span> + resource);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">//</span></span><br><span class="line">                candidates.add(sbd);</span><br><span class="line">              &#125;</span><br><span class="line">              <span class="keyword">else</span> &#123;</span><br><span class="line">                ......</span><br><span class="line">              &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">else</span> &#123;</span><br><span class="line">              ......</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;</span><br><span class="line">          <span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> BeanDefinitionStoreException(</span><br><span class="line">                <span class="string">"Failed to read candidate component class: "</span> + resource, ex);</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line">          ......</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">catch</span> (IOException ex) &#123;</span><br><span class="line">      <span class="keyword">throw</span> <span class="keyword">new</span> BeanDefinitionStoreException(<span class="string">"I/O failure during classpath scanning"</span>, ex);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> candidates;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p>  获取Resource对应的MetadataReader</p>
+<ol>
+<li>这里是CachingMetadataReaderFactory类，它继承了SimpleMetadataReaderFactory调用super.getMetadataReader得到SimpleMetadataReader</li>
+<li>SimpleMetadataReader构造方法SimpleMetadataReader(resource,defaultResourceLoader.getClassLoader)</li>
+<li>SimpleMetadataReader通过spring-asm来操作class文件字节码解析resource（resource通过io读成byte具体如何解析见jvm对class类的解析）</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//SimpleMetadataReaderFactory</span></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> MetadataReader <span class="title">getMetadataReader</span><span class="params">(Resource resource)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> SimpleMetadataReader(resource, <span class="keyword">this</span>.resourceLoader.getClassLoader());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//SimpleMetadataReader</span></span><br><span class="line">SimpleMetadataReader(Resource resource, <span class="meta">@Nullable</span> ClassLoader classLoader) <span class="keyword">throws</span> IOException &#123;</span><br><span class="line">  <span class="comment">//观察者</span></span><br><span class="line">  SimpleAnnotationMetadataReadingVisitor visitor = <span class="keyword">new</span> SimpleAnnotationMetadataReadingVisitor(classLoader);</span><br><span class="line">  getClassReader(resource).accept(visitor, PARSING_OPTIONS);</span><br><span class="line">  <span class="keyword">this</span>.resource = resource;</span><br><span class="line">  <span class="keyword">this</span>.annotationMetadata = visitor.getMetadata();<span class="comment">//获取MetaData</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  调用isCandidateComponent方法，通过MetaDataReader来判断其是否符合注入条件，我们通过ClassPathBeanDefinitionScanner的构造方法层层跟进到registerDefaultFilters方法时候就能知道spring的includeFilters支持那些默认的注解见下面,（如果要实现自定义注解要实现TypeFilter和matcher方法具体见<a href="/Spring源码-实现自定义注解">Spring源码-实现自定义注解</a>）</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">registerDefaultFilters</span><span class="params">()</span> </span>&#123;</span><br><span class="line">  <span class="comment">//Component</span></span><br><span class="line">  <span class="keyword">this</span>.includeFilters.add(<span class="keyword">new</span> AnnotationTypeFilter(Component.class));</span><br><span class="line">  ClassLoader cl = ClassPathScanningCandidateComponentProvider.class.getClassLoader();</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="comment">//javax.annotation.ManagedBean</span></span><br><span class="line">    <span class="keyword">this</span>.includeFilters.add(<span class="keyword">new</span> AnnotationTypeFilter(</span><br><span class="line">        ((Class&lt;? extends Annotation&gt;) ClassUtils.forName(<span class="string">"javax.annotation.ManagedBean"</span>, cl)), <span class="keyword">false</span>));</span><br><span class="line">    ......</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">catch</span> (ClassNotFoundException ex) &#123;</span><br><span class="line">    <span class="comment">// JSR-250 1.1 API (as included in Java EE 6) not available - simply skip.</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="comment">//javax.inject.Named</span></span><br><span class="line">    <span class="keyword">this</span>.includeFilters.add(<span class="keyword">new</span> AnnotationTypeFilter(</span><br><span class="line">        ((Class&lt;? extends Annotation&gt;) ClassUtils.forName(<span class="string">"javax.inject.Named"</span>, cl)), <span class="keyword">false</span>));</span><br><span class="line">    ......</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">catch</span> (ClassNotFoundException ex) &#123;</span><br><span class="line">    <span class="comment">// JSR-330 API not available - simply skip.</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  isCandidateComponent的方法注释</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">boolean</span> <span class="title">isCandidateComponent</span><span class="params">(MetadataReader metadataReader)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">  <span class="keyword">for</span> (TypeFilter tf : <span class="keyword">this</span>.excludeFilters) &#123;</span><br><span class="line">    <span class="keyword">if</span> (tf.match(metadataReader, getMetadataReaderFactory())) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">for</span> (TypeFilter tf : <span class="keyword">this</span>.includeFilters) &#123;</span><br><span class="line">    <span class="comment">//typteFilter.match返回true</span></span><br><span class="line">    <span class="keyword">if</span> (tf.match(metadataReader, getMetadataReaderFactory())) &#123;</span><br><span class="line">      <span class="comment">//判断condintional是否符合条件，注意里面实现的方法名是shouldSkip这里没有注解或者符合条件返回false</span></span><br><span class="line">      <span class="keyword">return</span> isConditionMatch(metadataReader);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  生成BeanDefinition，这里是ScannedGenericBeanDefinition,设置Resource和Source属性，再次isCandidateComponent判断是否符合条件如果符合直接加入到结果candidates中（不是内部类同时 不是接口和抽象类，或者是接口但是方法有Lookup注解）</p>
+<h3 id="处理BeanDefinition"><a href="#处理BeanDefinition" class="headerlink" title="处理BeanDefinition"></a>处理BeanDefinition</h3><p>回到doScan方法，在执行完findCandidateComponents方法回去了需要注册的BeanDefiniton之后，我们要继续填充beanDefiniton的属性，并且注册到registry，见代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> Set&lt;BeanDefinitionHolder&gt; <span class="title">doScan</span><span class="params">(String... basePackages)</span> </span>&#123;</span><br><span class="line">  Assert.notEmpty(basePackages, <span class="string">"At least one base package must be specified"</span>);</span><br><span class="line">  Set&lt;BeanDefinitionHolder&gt; beanDefinitions = <span class="keyword">new</span> LinkedHashSet&lt;&gt;();</span><br><span class="line">  <span class="keyword">for</span> (String basePackage : basePackages) &#123;</span><br><span class="line">    Set&lt;BeanDefinition&gt; candidates = findCandidateComponents(basePackage);</span><br><span class="line">    <span class="keyword">for</span> (BeanDefinition candidate : candidates) &#123;</span><br><span class="line">      <span class="comment">//从definition的Annotated获取Scope注解，根据scope注解获取ScopeMetadata</span></span><br><span class="line">      ScopeMetadata scopeMetadata = <span class="keyword">this</span>.scopeMetadataResolver.resolveScopeMetadata(candidate);</span><br><span class="line">      candidate.setScope(scopeMetadata.getScopeName());</span><br><span class="line">      <span class="comment">//生成beanName,从Commponent，或者javax.annotation.ManagedBean、javax.inject.Named的value取，或者系统默认生成</span></span><br><span class="line">      String beanName = <span class="keyword">this</span>.beanNameGenerator.generateBeanName(candidate, <span class="keyword">this</span>.registry);</span><br><span class="line">      <span class="comment">//设置beanDefinition的默认属性，设置是否参与自动注入</span></span><br><span class="line">      <span class="keyword">if</span> (candidate <span class="keyword">instanceof</span> AbstractBeanDefinition) &#123;</span><br><span class="line">        postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">//通过注解的MetaData设置属性，用来覆盖默认属性如 lazyInit,Primary,DependsOn,Role,Description属性</span></span><br><span class="line">      <span class="keyword">if</span> (candidate <span class="keyword">instanceof</span> AnnotatedBeanDefinition) &#123;</span><br><span class="line">        AnnotationConfigUtils.processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="comment">//注册BeanDefinition</span></span><br><span class="line">      <span class="comment">// 1.!this.registry.containsBeanDefinition(beanName)</span></span><br><span class="line">      <span class="comment">// 2.如果beanName存在，beanDefinition和existingDef兼容，说明不用再次注册</span></span><br><span class="line">      <span class="comment">// （不是ScannedGenericBeanDefinition or source相同 or beanDefinition==existingDefinition）</span></span><br><span class="line">      <span class="comment">// 3.如果beanName存在，还不兼容抛异常ConflictingBeanDefinitionException</span></span><br><span class="line">      <span class="keyword">if</span> (checkCandidate(beanName, candidate)) &#123;</span><br><span class="line">        <span class="comment">//创建BeanDefinitionHolder</span></span><br><span class="line">        BeanDefinitionHolder definitionHolder = <span class="keyword">new</span> BeanDefinitionHolder(candidate, beanName);</span><br><span class="line">        definitionHolder =</span><br><span class="line">            AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, <span class="keyword">this</span>.registry);</span><br><span class="line">        <span class="comment">//放到beanDefinitions结果集</span></span><br><span class="line">        beanDefinitions.add(definitionHolder);</span><br><span class="line">        <span class="comment">//注册到registry中</span></span><br><span class="line">        registerBeanDefinition(definitionHolder, <span class="keyword">this</span>.registry);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> beanDefinitions;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Spring源码-BeanDefinition/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1946,422 +2391,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JVM的编译优化-后期/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/JVM的编译优化-后期/" class="post-title-link" itemprop="url">JVM的编译优化-后期</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-11-17 10:45:28" itemprop="dateCreated datePublished" datetime="2019-11-17T10:45:28Z">2019-11-17</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-12-08 08:58:39" itemprop="dateModified" datetime="2019-12-08T08:58:39Z">2019-12-08</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/" itemprop="url" rel="index"><span itemprop="name">jvm</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>  JIT(java in time complier)，即为了提高热点代码效率将代码编译成本地代码。</p>
-<h2 id="解释器与编译器"><a href="#解释器与编译器" class="headerlink" title="解释器与编译器"></a>解释器与编译器</h2><p>  HotSpot采用的是解释器与编译器共存。</p>
-<p>  解释器可以发挥编译优势，省去编译成本地代码的时间，直接运行；编译器把反复执行的代码编译成本地代码提高执行效率。同时如果编译器的优化比较激进发现编译后的结果不成立可以通过解释器退回到之前状态。</p>
-<p>  解释器和编译器这种搭配方式称为混合模式。可以通过-Xint来控制</p>
-<h2 id="俩个编译器ClientComplier和ServerComplier"><a href="#俩个编译器ClientComplier和ServerComplier" class="headerlink" title="俩个编译器ClientComplier和ServerComplier"></a>俩个编译器ClientComplier和ServerComplier</h2><p>ClientComplier注重编译速度，ServerComplier注重编译的质量。HotSpot在JDK1.7时代默认采用分层编译</p>
-<ul>
-<li>C0：解释执行</li>
-<li>C1：将字节码编译成本地代码，简单的优化。</li>
-<li>C2：会启用一些耗时优化。</li>
-</ul>
-<h2 id="出发条件"><a href="#出发条件" class="headerlink" title="出发条件"></a>出发条件</h2><p>HotSpot采用基于计数器的方式。</p>
-<ul>
-<li>方法的重复调用<ul>
-<li>条件：重复一定次数（方法调用计数器控制）</li>
-<li>方式：调用次数+1.触发阈值后发送编译请求。编译完成后替换方法地址</li>
-<li>半衰周期：当一段时间没到阈值会，方法调用计数器会衰减一半</li>
-<li>默认值：client:1500,server:10000</li>
-</ul>
-</li>
-<li>循环体的调用：OSR(on stack replacement)栈上替换，发生在运行时的方法栈<ul>
-<li>条件：重复一定次数（回边计数器）</li>
-<li>方式：以方法为单位如果，每一次循环回边计数器都+1，如果回边计数器和方法调用计数器超过一定数值后发送编译请求。（这时候重新调整计数器以便继续循环）编译完成后替换方法地址</li>
-</ul>
-</li>
-</ul>
-<h2 id="编译过程"><a href="#编译过程" class="headerlink" title="编译过程"></a>编译过程</h2><p>后台编译</p>
-<p><img src="/JVM的编译优化-后期/clientcomiler.png" alt="client-compile"></p>
-<p>具体的HIR LIR我也没太看明白以后看编译原理在不上:P</p>
-<h2 id="编译优化的技术"><a href="#编译优化的技术" class="headerlink" title="编译优化的技术"></a>编译优化的技术</h2><p>编译代码比解释代码优化，一方面是没有虚拟接解释代码的消耗，一方面是所有的代码优化措施都集中在JIT上。</p>
-<h3 id="优化技术概览"><a href="#优化技术概览" class="headerlink" title="优化技术概览"></a>优化技术概览</h3><p><img src="/JVM的编译优化-后期/jit优化技术.png" alt="jit优化技术"><br><img src="/JVM的编译优化-后期/jit优化技术2.png" alt="jit优化技术"></p>
-<h3 id="公共子表达式优化"><a href="#公共子表达式优化" class="headerlink" title="公共子表达式优化"></a>公共子表达式优化</h3><p>比如程序有俩个b<em>c和c</em>b，javac不会进行优化，java则会优化成E=b*c,然后代码使用E</p>
-<h3 id="异常消除"><a href="#异常消除" class="headerlink" title="异常消除"></a>异常消除</h3><p>NullPointer，ArrayIndexOutOfBounds等异常信息，在运行时如果不优化每次判断都会带来开销，所以jit会对齐进行优化，消除这些隐式的判断。而且会根据Profile收集到的信息进行“智能”优化。比如一个对象经常为空的情况就不回采用try catch的优化。</p>
-<h3 id="方法内联"><a href="#方法内联" class="headerlink" title="方法内联"></a>方法内联</h3><p>由于JAVA是面向对象的，很对方法是虚方法，为了优化就采用CHA，如果是虚方法会去查询有几个版本如果只有一个版本会进行内联，如果继承关系发生改变，比如动态代码，这时候要退回解释执行。如果发现多个版本还会采用Inline Cache来尝试内联</p>
-<h3 id="逃逸分析"><a href="#逃逸分析" class="headerlink" title="逃逸分析"></a>逃逸分析</h3><p>栈上分配、同步消除、标量替换</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JVM的编译优化-前期/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/JVM的编译优化-前期/" class="post-title-link" itemprop="url">JVM的编译优化-前期</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-11-15 15:46:02" itemprop="dateCreated datePublished" datetime="2019-11-15T15:46:02Z">2019-11-15</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-11-18 03:52:51" itemprop="dateModified" datetime="2019-11-18T03:52:51Z">2019-11-18</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/" itemprop="url" rel="index"><span itemprop="name">jvm</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>JAVA是将类文件编译后生成操作码交给解释器执行，所以是解释性语言。</p>
-<h2 id="面向栈的指令集和面向寄存器的指令集"><a href="#面向栈的指令集和面向寄存器的指令集" class="headerlink" title="面向栈的指令集和面向寄存器的指令集"></a>面向栈的指令集和面向寄存器的指令集</h2><p>  java是通过操作码将数据压入/弹出到操作栈中进行操作，所以是面向栈的，而还有一种流派是直接生成本地代码调用寄存器的指令，<br>  俩者的区别。</p>
-<ul>
-<li>面向栈：便于移植，代码简单，由于不依赖寄存器，支持寄存器不支持的功能。由于执行指令多所以性能差</li>
-<li>面向寄存器：不便于移植，功能依赖于CPU等硬件。性能好</li>
-</ul>
-<h2 id="javac编译的过程"><a href="#javac编译的过程" class="headerlink" title="javac编译的过程"></a>javac编译的过程</h2><p><img src="/JVM的编译优化/javac编译过程.png" alt="编译过程"></p>
-<p>源码如下</p>
-<p><img src="/JVM的编译优化/javac编译过程的主题代码.png" alt="编译过程"></p>
-<h3 id="解析文件和添加符号表"><a href="#解析文件和添加符号表" class="headerlink" title="解析文件和添加符号表"></a>解析文件和添加符号表</h3><ul>
-<li>词法、语法分析：通过词法分析器和语法分析器生成抽象语法树</li>
-<li>输入到符号表：将语法树种的在javac源码就是enterTree过程，符号表是一个kv的数据结构，用于收集符号以及变量，在语义校验阶段用于校验语法和产生中间代码，目标代码生成阶段是分配符号内存的依据</li>
-</ul>
-<h3 id="注解处理器处理注解"><a href="#注解处理器处理注解" class="headerlink" title="注解处理器处理注解"></a>注解处理器处理注解</h3><p>JDK1.5之后支持了注解，实际上是一个个的语法插件，会对语法树进行读取、修改，如果对语法树进行修改，需要重新解析文件和添加符号表，称为Round。也就是图上的回环</p>
-<h3 id="语义分析与字节码生成"><a href="#语义分析与字节码生成" class="headerlink" title="语义分析与字节码生成"></a>语义分析与字节码生成</h3><ul>
-<li>标注检查：检查变量是否已经声明，类型与赋值类型是否匹配。</li>
-<li>数据及控制流分析：进一步对语法和语义做检查。注意局部变量设置为final的语义检查是在编译器的，因为局部变量没有该final的常量标志位，所以在编译后是否声明称final没有区别。</li>
-<li>解语法糖：泛型、自动装箱、拆箱等都需要在编译阶段还原。</li>
-<li>字节码生成：<ul>
-<li>实例构造器init方法和类构造器clinit方法添加到语法树，将调用父类的实例构造器等方法收敛到这俩个方法中</li>
-<li>优化操作：将String的添加等操作改为StringBuffer.append</li>
-</ul>
-</li>
-</ul>
-<h2 id="JAVA语法糖详解"><a href="#JAVA语法糖详解" class="headerlink" title="JAVA语法糖详解"></a>JAVA语法糖详解</h2><h3 id="泛型和类型擦除"><a href="#泛型和类型擦除" class="headerlink" title="泛型和类型擦除"></a>泛型和类型擦除</h3>
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2408,7 +2437,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">166</span>
+                    <span class="site-state-item-count">168</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2491,7 +2520,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">35</span>
+                      
+                    
+                    <span class="site-state-item-count">36</span>
                     <span class="site-state-item-name">categories</span>
                   </a>
                 </div>
@@ -2622,7 +2653,9 @@
                     
                       
                     
-                    <span class="site-state-item-count">59</span>
+                      
+                    
+                    <span class="site-state-item-count">60</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>

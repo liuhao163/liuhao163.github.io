@@ -105,7 +105,7 @@
 <meta property="og:description" content="在讲内存的时候我们提到了buffer用于加速磁盘的读写，cache用于加速文件的读写，那么磁盘和文件它们俩个的区别是什么呢？linux的文件系统的机制又是什么？ 磁盘和文件系统 磁盘：是块设备，用于数据的持久化； 文件系统：在磁盘基础上提供管理文件的树状结构； 文件系统为每个文件都分配了俩种数据结构：  索引节点:【inode】记录文件的原信息，如：数据位置、修改时间、权限等  目录项：【d">
 <meta property="og:locale" content="zh-Hans">
 <meta property="og:image" content="https://liuhao163.github.io/系统优化-IO-基础概念/img0.png">
-<meta property="og:updated_time" content="2020-05-05T03:44:48.000Z">
+<meta property="og:updated_time" content="2020-05-05T04:32:39.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="系统优化-IO-基础概念">
 <meta name="twitter:description" content="在讲内存的时候我们提到了buffer用于加速磁盘的读写，cache用于加速文件的读写，那么磁盘和文件它们俩个的区别是什么呢？linux的文件系统的机制又是什么？ 磁盘和文件系统 磁盘：是块设备，用于数据的持久化； 文件系统：在磁盘基础上提供管理文件的树状结构； 文件系统为每个文件都分配了俩种数据结构：  索引节点:【inode】记录文件的原信息，如：数据位置、修改时间、权限等  目录项：【d">
@@ -408,7 +408,7 @@
                 
                   <span class="post-meta-item-text">Edited on</span>
                 
-                <time title="Modified: 2020-05-05 03:44:48" itemprop="dateModified" datetime="2020-05-05T03:44:48Z">2020-05-05</time>
+                <time title="Modified: 2020-05-05 04:32:39" itemprop="dateModified" datetime="2020-05-05T04:32:39Z">2020-05-05</time>
               
             
           </span>
@@ -482,7 +482,7 @@
 <p><img src="/系统优化-IO-基础概念/img0.png" alt="avator"></p>
 <p>  其中，磁盘读写的最小单位是扇区，然而扇区只有512B大小，如果每次都读写这么小的单位，效率一定很低。所以，文件系统又把连续的扇区组成了逻辑块，然后每次都以逻辑块为最小单元，来管理数据。常见的逻辑块大小为 4KB，也就是由连续的 8 个扇区组成。</p>
 <p>  目录项是缓存在内存中。<br>  索引项是记录磁盘的信息的但是，CPU为了弥补磁盘和内存的访问差异，会将inode也缓存到内存的cache页中。</p>
-<h2 id="虚拟文件系统VFS"><a href="#虚拟文件系统VFS" class="headerlink" title="虚拟文件系统VFS"></a>虚拟文件系统VFS</h2><p>  我们的文件系统有很多种，系统内核为了简化程序对文件系统访问，在用户程序和文件系统之间假设了VFS层，VFS 定义了一组所有文件系统都支持的数据结构和标准接口。这样，用户进程和内核中的其他子系统，只需要跟 VFS 提供的统一接口进行交互就可以了，而不需要再关心底层各种文件系统的实现细节。</p>
+<h2 id="虚拟文件系统VFS"><a href="#虚拟文件系统VFS" class="headerlink" title="虚拟文件系统VFS"></a>虚拟文件系统VFS</h2><p>  Liunx在各种文件系统的实现上定义了一层虚拟文件系统【VFS】，它定义了一组所有文件系统都支持的数据结构和标准接口。这样，用户进程和内核中的其他子系统，只需要通过VFS提供的统一接口和磁盘进行交互，而不需要再关心底层各种文件系统的实现细节。</p>
 <ul>
 <li>磁盘文件系统：也就是把数据直接存储在计算机本地挂载的磁盘中。常见的 Ext4、XFS、OverlayFS 等，都是这类文件系统。</li>
 <li>内存文件系统：这类文件系统，不需要任何磁盘分配存储空间，但会占用内存。我们经常用到的 /proc 文件系统，其实就是一种最常见的虚拟文件系统。此外，/sys 文件系统也属于这一类，主要向用户空间导出层次化的内核对象。</li>

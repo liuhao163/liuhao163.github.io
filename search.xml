@@ -8,7 +8,7 @@
       <link href="/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-IO-%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5/"/>
       <url>/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-IO-%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5/</url>
       
-        <content type="html"><![CDATA[<p>  在讲内存的时候我们提到了buffer用于加速磁盘的读写，cache用于加速文件的读写，那么磁盘和文件它们俩个的区别是什么呢？linux的文件系统的机制又是什么？</p><h2 id="磁盘和文件系统"><a href="#磁盘和文件系统" class="headerlink" title="磁盘和文件系统"></a>磁盘和文件系统</h2><ul><li>磁盘：是块设备，用于数据的持久化；</li><li><p>文件系统：磁盘通过文件挂载到系统中，程序访问磁盘需要通过文件进行访问，文件系统是管理文件的树状结构。</p><p>文件系统为每个文件都分配了俩种数据结构：</p></li><li><p>索引项:【inode】</p></li><li>目录项：【dentry】，多个目录项组成的树状结构就是我们的文件系统</li></ul><p>整个文件系统由目录项、超级块、索引块、数据块四部分组成，他们的关系如图：</p><p><img src="/系统优化-IO-基础概念/img0.png" alt="avator"></p><ul><li>目录项：</li><li>超级块：</li><li>索引快：</li><li>数据块：</li></ul><h2 id="虚拟文件系统VFS"><a href="#虚拟文件系统VFS" class="headerlink" title="虚拟文件系统VFS"></a>虚拟文件系统VFS</h2><p>  我们的文件系统有很多种，系统内核为了简化程序对文件系统访问，在用户程序和文件系统之间假设了VFS层，VFS 定义了一组所有文件系统都支持的数据结构和标准接口。这样，用户进程和内核中的其他子系统，只需要跟 VFS 提供的统一接口进行交互就可以了，而不需要再关心底层各种文件系统的实现细节。</p><ul><li>磁盘文件系统</li><li>内存文件系统</li><li>网络文件系统</li></ul><h2 id="文件系统的I-O"><a href="#文件系统的I-O" class="headerlink" title="文件系统的I/O"></a>文件系统的I/O</h2><h2 id="如何查看I-O"><a href="#如何查看I-O" class="headerlink" title="如何查看I/O"></a>如何查看I/O</h2>]]></content>
+        <content type="html"><![CDATA[<p>  在讲内存的时候我们提到了buffer用于加速磁盘的读写，cache用于加速文件的读写，那么磁盘和文件它们俩个的区别是什么呢？linux的文件系统的机制又是什么？</p><h2 id="磁盘和文件系统"><a href="#磁盘和文件系统" class="headerlink" title="磁盘和文件系统"></a>磁盘和文件系统</h2><ul><li>磁盘：是块设备，用于数据的持久化；</li><li><p>文件系统：在磁盘基础上提供管理文件的树状结构；</p><p>文件系统为每个文件都分配了俩种数据结构：</p></li><li><p>索引节点:【inode】记录文件的原信息，如：数据位置、修改时间、权限等</p></li><li><p>目录项：【dentry】，多个目录项组成的树状结构就是我们的文件系统，保存，父节点、子节点其他目录项的关联关系、文件名称、inode地址等信息，多个目录项组成了文件树</p><p>整个文件系统由目录项、超级块、索引块、数据块四部分组成，他们的关系如图：</p></li></ul><p><img src="/系统优化-IO-基础概念/img0.png" alt="avator"></p><p>  其中，磁盘读写的最小单位是扇区，然而扇区只有512B大小，如果每次都读写这么小的单位，效率一定很低。所以，文件系统又把连续的扇区组成了逻辑块，然后每次都以逻辑块为最小单元，来管理数据。常见的逻辑块大小为 4KB，也就是由连续的 8 个扇区组成。</p><p>  目录项是缓存在内存中。<br>  索引项是记录磁盘的信息的但是，CPU为了弥补磁盘和内存的访问差异，会将inode也缓存到内存的cache页中。</p><h2 id="虚拟文件系统VFS"><a href="#虚拟文件系统VFS" class="headerlink" title="虚拟文件系统VFS"></a>虚拟文件系统VFS</h2><p>  我们的文件系统有很多种，系统内核为了简化程序对文件系统访问，在用户程序和文件系统之间假设了VFS层，VFS 定义了一组所有文件系统都支持的数据结构和标准接口。这样，用户进程和内核中的其他子系统，只需要跟 VFS 提供的统一接口进行交互就可以了，而不需要再关心底层各种文件系统的实现细节。</p><ul><li>磁盘文件系统：也就是把数据直接存储在计算机本地挂载的磁盘中。常见的 Ext4、XFS、OverlayFS 等，都是这类文件系统。</li><li>内存文件系统：这类文件系统，不需要任何磁盘分配存储空间，但会占用内存。我们经常用到的 /proc 文件系统，其实就是一种最常见的虚拟文件系统。此外，/sys 文件系统也属于这一类，主要向用户空间导出层次化的内核对象。</li><li>网络文件系统：也就是用来访问其他计算机数据的文件系统，比如 NFS、SMB、iSCSI 等</li></ul><h2 id="文件系统的I-O"><a href="#文件系统的I-O" class="headerlink" title="文件系统的I/O"></a>文件系统的I/O</h2><ul><li>是否利用标准库缓存的I/O:<strong>标准库</strong>为了加速I/O的访问效率，会实现一层缓冲，在进行系统调用，比如java里的各种BufferedStream。注意这里的缓冲是标准库实现的</li><li>是否利用内存缓存I/O:我们I/O的系统调用，默认都会用到内存的cache页和buffer页，如果采用直接I/O，在I/O操作时候要使用O_DIRECT。</li><li>阻塞和非阻塞I/O:如果是阻塞I/O是指应用程序执行 I/O 操作后，如果没有获得响应，就会阻塞当前线程，自然就不能执行其他任务;是指应用程序执行 I/O 操作后，不会阻塞当前的线程，可以继续执行其他的任务，随后再通过轮询或者事件通知的形式，获取调用的结果。访问管道或者网络套接字时，设置O_NONBLOCK标志，就表示用非阻塞方式访问；而如果不做任何设置，默认的就是阻塞访问。</li><li><p>同步I/O和异步I/O:是指应用程序执行 I/O 操作后，要一直等到整个 I/O 完成后，才能获得 I/O 响应。是指应用程序执行 I/O 操作后，不用等待完成和完成后的响应，而是继续执行就可以。等到这次 I/O 完成后，响应会用事件通知的方式，告诉应用程序。</p><p>举个例子，在操作文件时，如果你设置了 O_SYNC 或者 O_DSYNC 标志，就代表同步 I/O。如果设置了 O_DSYNC，就要等文件数据写入磁盘后，才能返回；而 O_SYNC，则是在 O_DSYNC 基础上，要求文件元数据也要写入磁盘后，才能返回。<br>再比如，在访问管道或者网络套接字时，设置了 O_ASYNC 选项后，相应的 I/O 就是异步 I/O。这样，内核会再通过 SIGIO 或者 SIGPOLL，来通知进程文件是否可读写。</p></li></ul><h2 id="如何查看I-O"><a href="#如何查看I-O" class="headerlink" title="如何查看I/O"></a>如何查看I/O</h2><p>我们可以采用df命令</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ df -h /dev/sda1</span><br><span class="line">Filesystem      Size  Used Avail Use% Mounted on</span><br><span class="line">/dev/sda1        29G  3.1G   26G  11% /</span><br></pre></td></tr></table></figure><p>这里的数据是不包括inode的信息的，所以会出现一种情况，明明我们的文件系统还有很大的空间，但是却提示磁盘空间不足了，原因就在于inode是会写入磁盘的，很有可能是小文件太多inode占用了太大的空间，我们可以铜鼓df的-i参数查看inode的信息</p><p>如果想查看inode信息</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ df -i /dev/sda1</span><br><span class="line">Filesystem      Inodes  IUsed   IFree IUse% Mounted on</span><br><span class="line">/dev/sda1      3870720 157460 3713260    5% /</span><br></pre></td></tr></table></figure><h2 id="缓存"><a href="#缓存" class="headerlink" title="缓存"></a>缓存</h2><p>我们CPU为了加速I/O的性能，会将的目录项和索引节点加载到内存中，他们处于内存的内核空间由slab控制，可以通过/proc/slabinfo查看</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$ cat /proc/slabinfo | grep -E <span class="string">'^#|dentry|inode'</span></span><br><span class="line"><span class="comment"># name            &lt;active_objs&gt; &lt;num_objs&gt; &lt;objsize&gt; &lt;objperslab&gt; &lt;pagesperslab&gt; : tunables &lt;limit&gt; &lt;batchcount&gt; &lt;sharedfactor&gt; : slabdata &lt;active_slabs&gt; &lt;num_slabs&gt; &lt;sharedavail&gt;</span></span><br><span class="line">xfs_inode              0      0    960   17    4 : tunables    0    0    0 : slabdata      0      0      0</span><br><span class="line">...sh</span><br><span class="line">ext4_inode_cache   32104  34590   1088   15    4 : tunables    0    0    0 : slabdata   2306   2306      0hugetlbfs_inode_cache     13     13    624   13    2 : tunables    0    0    0 : slabdata      1      1      0</span><br><span class="line">sock_inode_cache    1190   1242    704   23    4 : tunables    0    0    0 : slabdata     54     54      0</span><br><span class="line">shmem_inode_cache   1622   2139    712   23    4 : tunables    0    0    0 : slabdata     93     93      0</span><br><span class="line">proc_inode_cache    3560   4080    680   12    2 : tunables    0    0    0 : slabdata    340    340      0</span><br><span class="line">inode_cache        25172  25818    608   13    2 : tunables    0    0    0 : slabdata   1986   1986      0</span><br><span class="line">dentry             76050 121296    192   21    1 : tunables    0    0    0 : slabdata   5776   5776      0</span><br></pre></td></tr></table></figure><p>主要查看inode_cache、proc_inode_cache、dentry大小。</p><p>注意我们如果用下面命令查找文件的时候因为开始没有缓存，会增加dentry、inode_cache、proc_inode_cache用量。</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find / --name &lt;filename&gt;</span><br></pre></td></tr></table></figure>]]></content>
       
       
       <categories>
@@ -98,8 +98,8 @@
     
     <entry>
       <title>系统优化-内存-常用的内存泄露的排查方案</title>
-      <link href="/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-%E5%86%85%E5%AD%98-%E5%B8%B8%E7%94%A8%E7%9A%84%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E7%9A%84%E6%8E%92%E6%9F%A5%E6%96%B9%E6%A1%88%20copy/"/>
-      <url>/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-%E5%86%85%E5%AD%98-%E5%B8%B8%E7%94%A8%E7%9A%84%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E7%9A%84%E6%8E%92%E6%9F%A5%E6%96%B9%E6%A1%88%20copy/</url>
+      <link href="/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-%E5%86%85%E5%AD%98-%E5%B8%B8%E7%94%A8%E7%9A%84%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E7%9A%84%E6%8E%92%E6%9F%A5%E6%96%B9%E6%A1%88/"/>
+      <url>/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-%E5%86%85%E5%AD%98-%E5%B8%B8%E7%94%A8%E7%9A%84%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E7%9A%84%E6%8E%92%E6%9F%A5%E6%96%B9%E6%A1%88/</url>
       
         <content type="html"><![CDATA[<p>linux动态分配内存经常会遇到俩个问题：</p><ol><li>内存没有及时回收，发生内存泄露</li><li>访问的是已分配边界外的内存，造成内存越界</li></ol><p>这章我们来讲下内存泄露、以及排查内存泄露的方法</p><h2 id="内存分配以及回收"><a href="#内存分配以及回收" class="headerlink" title="内存分配以及回收"></a>内存分配以及回收</h2><p>我们的内存主要分为以下部分、堆、栈、只读端、数据段、内存映射段。</p><ul><li>栈：主要存放局部变量，由系统统一管理，所以不需要主动回收内存，一旦程序的作用域超过局部变量，就需要在堆中动态分配内存，在栈中的内存不会导致内存泄露</li><li>堆：程序通过malloc申请内存，除非程序退出否则申请的内存不会释放。这部分内存会导致内存泄露</li><li>只读段：保存程序的代码和常量，由于不需要继续申请内存，这部分会导致引起内存泄露</li><li>数据段：保存静态变量和全局变量，由于申请时候已经知道了大小所以也不需要释放，这部分会导致引起内存泄露</li><li><p>内存映射段：保存动态链接库和共享内存，由于共享内存的存在，</p><p>综上，堆、和内存映射段会导致内存泄露</p><p>内存泄漏的危害非常大，这些忘记释放的内存，不仅应用程序自己不能访问，系统也不能把它们再次分配给其他应用。内存泄漏不断累积，甚至会耗尽系统内存。虽然oom会Kill程序，但是在kill程序前会有很多严重的问题</p></li></ul><h2 id="如何定位内存泄露"><a href="#如何定位内存泄露" class="headerlink" title="如何定位内存泄露"></a>如何定位内存泄露</h2><p>我们可以使用bcc-tools下的memleak，如图下面就是一个简单的内存泄露场景，child会分配内存而且没有回收</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ docker cp app:/app /app</span><br><span class="line">$ /usr/share/bcc/tools/memleak -p $(pidof app) -a</span><br><span class="line">Attaching to pid 12512, Ctrl+C to quit.</span><br><span class="line">[03:00:41] Top 10 stacks with outstanding allocations:</span><br><span class="line">    addr = 7f8f70863220 size = 8192</span><br><span class="line">    addr = 7f8f70861210 size = 8192</span><br><span class="line">    addr = 7f8f7085b1e0 size = 8192</span><br><span class="line">    addr = 7f8f7085f200 size = 8192</span><br><span class="line">    addr = 7f8f7085d1f0 size = 8192</span><br><span class="line">    40960 bytes <span class="keyword">in</span> 5 allocations from stack</span><br><span class="line">        fibonacci+0x1f [app]</span><br><span class="line">        child+0x4f [app]</span><br><span class="line">        start_thread+0xdb [libpthread-2.27.so]</span><br></pre></td></tr></table></figure><p>解决后的如下面所示</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 重新执行 memleak工具检查内存泄漏情况</span></span><br><span class="line">$ /usr/share/bcc/tools/memleak -a -p $(pidof app)</span><br><span class="line">Attaching to pid 18808, Ctrl+C to quit.</span><br><span class="line">[10:23:18] Top 10 stacks with outstanding allocations:</span><br><span class="line">[10:23:23] Top 10 stacks with outstanding allocations:</span><br></pre></td></tr></table></figure><p>由mMemleak在centos中需要内核4.1以上支持，所以在老系统中我们用到valgrind的memcheck</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"> valgrind  --tool=memcheck --leak-check=summary ./xxx-api</span><br><span class="line"></span><br><span class="line"> ==20474==</span><br><span class="line">==20474== HEAP SUMMARY:</span><br><span class="line">==20474==     <span class="keyword">in</span> use at <span class="built_in">exit</span>: 4,064 bytes <span class="keyword">in</span> 8 blocks</span><br><span class="line">==20474==   total heap usage: 16 allocs, 8 frees, 4,288 bytes allocated</span><br><span class="line">==20474==</span><br><span class="line">==20474== LEAK SUMMARY:</span><br><span class="line">==20474==    definitely lost: 0 bytes <span class="keyword">in</span> 0 blocks</span><br><span class="line">==20474==    indirectly lost: 0 bytes <span class="keyword">in</span> 0 blocks</span><br><span class="line">==20474==      possibly lost: 4,032 bytes <span class="keyword">in</span> 7 blocks</span><br><span class="line">==20474==    still reachable: 32 bytes <span class="keyword">in</span> 1 blocks</span><br><span class="line">==20474==         suppressed: 0 bytes <span class="keyword">in</span> 0 blocks</span><br><span class="line">==20474== Rerun with --leak-check=full to see details of leaked memory</span><br><span class="line">==20474==</span><br><span class="line">==20474== For counts of detected and suppressed errors, rerun with: -v</span><br><span class="line">==20474== Use --track-origins=yes to see <span class="built_in">where</span> uninitialised values come from</span><br><span class="line">==20474== ERROR SUMMARY: 28 errors from 4 contexts (suppressed: 0 from 0)</span><br></pre></td></tr></table></figure><p>上面的definitely lost代表必然的内存泄露，他包括indirectly【非直接】和directly【直接俩种， possibly lost是可能的内存泄露。我们只需要查看definitely lost即可</p>]]></content>
       
@@ -129,8 +129,8 @@
     
     <entry>
       <title>系统优化-内存-常用的内存泄露的排查方案</title>
-      <link href="/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-%E5%86%85%E5%AD%98-%E5%B8%B8%E7%94%A8%E7%9A%84%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E7%9A%84%E6%8E%92%E6%9F%A5%E6%96%B9%E6%A1%88/"/>
-      <url>/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-%E5%86%85%E5%AD%98-%E5%B8%B8%E7%94%A8%E7%9A%84%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E7%9A%84%E6%8E%92%E6%9F%A5%E6%96%B9%E6%A1%88/</url>
+      <link href="/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-%E5%86%85%E5%AD%98-%E5%B8%B8%E7%94%A8%E7%9A%84%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E7%9A%84%E6%8E%92%E6%9F%A5%E6%96%B9%E6%A1%88%20copy/"/>
+      <url>/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-%E5%86%85%E5%AD%98-%E5%B8%B8%E7%94%A8%E7%9A%84%E5%86%85%E5%AD%98%E6%B3%84%E9%9C%B2%E7%9A%84%E6%8E%92%E6%9F%A5%E6%96%B9%E6%A1%88%20copy/</url>
       
         <content type="html"><![CDATA[<p>linux动态分配内存经常会遇到俩个问题：</p><ol><li>内存没有及时回收，发生内存泄露</li><li>访问的是已分配边界外的内存，造成内存越界</li></ol><p>这章我们来讲下内存泄露、以及排查内存泄露的方法</p><h2 id="内存分配以及回收"><a href="#内存分配以及回收" class="headerlink" title="内存分配以及回收"></a>内存分配以及回收</h2><p>我们的内存主要分为以下部分、堆、栈、只读端、数据段、内存映射段。</p><ul><li>栈：主要存放局部变量，由系统统一管理，所以不需要主动回收内存，一旦程序的作用域超过局部变量，就需要在堆中动态分配内存，在栈中的内存不会导致内存泄露</li><li>堆：程序通过malloc申请内存，除非程序退出否则申请的内存不会释放。这部分内存会导致内存泄露</li><li>只读段：保存程序的代码和常量，由于不需要继续申请内存，这部分会导致引起内存泄露</li><li>数据段：保存静态变量和全局变量，由于申请时候已经知道了大小所以也不需要释放，这部分会导致引起内存泄露</li><li><p>内存映射段：保存动态链接库和共享内存，由于共享内存的存在，</p><p>综上，堆、和内存映射段会导致内存泄露</p><p>内存泄漏的危害非常大，这些忘记释放的内存，不仅应用程序自己不能访问，系统也不能把它们再次分配给其他应用。内存泄漏不断累积，甚至会耗尽系统内存。虽然oom会Kill程序，但是在kill程序前会有很多严重的问题</p></li></ul><h2 id="如何定位内存泄露"><a href="#如何定位内存泄露" class="headerlink" title="如何定位内存泄露"></a>如何定位内存泄露</h2><p>我们可以使用bcc-tools下的memleak，如图下面就是一个简单的内存泄露场景，child会分配内存而且没有回收</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ docker cp app:/app /app</span><br><span class="line">$ /usr/share/bcc/tools/memleak -p $(pidof app) -a</span><br><span class="line">Attaching to pid 12512, Ctrl+C to quit.</span><br><span class="line">[03:00:41] Top 10 stacks with outstanding allocations:</span><br><span class="line">    addr = 7f8f70863220 size = 8192</span><br><span class="line">    addr = 7f8f70861210 size = 8192</span><br><span class="line">    addr = 7f8f7085b1e0 size = 8192</span><br><span class="line">    addr = 7f8f7085f200 size = 8192</span><br><span class="line">    addr = 7f8f7085d1f0 size = 8192</span><br><span class="line">    40960 bytes <span class="keyword">in</span> 5 allocations from stack</span><br><span class="line">        fibonacci+0x1f [app]</span><br><span class="line">        child+0x4f [app]</span><br><span class="line">        start_thread+0xdb [libpthread-2.27.so]</span><br></pre></td></tr></table></figure><p>解决后的如下面所示</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 重新执行 memleak工具检查内存泄漏情况</span></span><br><span class="line">$ /usr/share/bcc/tools/memleak -a -p $(pidof app)</span><br><span class="line">Attaching to pid 18808, Ctrl+C to quit.</span><br><span class="line">[10:23:18] Top 10 stacks with outstanding allocations:</span><br><span class="line">[10:23:23] Top 10 stacks with outstanding allocations:</span><br></pre></td></tr></table></figure><p>由mMemleak在centos中需要内核4.1以上支持，所以在老系统中我们用到valgrind的memcheck</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"> valgrind  --tool=memcheck --leak-check=summary ./xxx-api</span><br><span class="line"></span><br><span class="line"> ==20474==</span><br><span class="line">==20474== HEAP SUMMARY:</span><br><span class="line">==20474==     <span class="keyword">in</span> use at <span class="built_in">exit</span>: 4,064 bytes <span class="keyword">in</span> 8 blocks</span><br><span class="line">==20474==   total heap usage: 16 allocs, 8 frees, 4,288 bytes allocated</span><br><span class="line">==20474==</span><br><span class="line">==20474== LEAK SUMMARY:</span><br><span class="line">==20474==    definitely lost: 0 bytes <span class="keyword">in</span> 0 blocks</span><br><span class="line">==20474==    indirectly lost: 0 bytes <span class="keyword">in</span> 0 blocks</span><br><span class="line">==20474==      possibly lost: 4,032 bytes <span class="keyword">in</span> 7 blocks</span><br><span class="line">==20474==    still reachable: 32 bytes <span class="keyword">in</span> 1 blocks</span><br><span class="line">==20474==         suppressed: 0 bytes <span class="keyword">in</span> 0 blocks</span><br><span class="line">==20474== Rerun with --leak-check=full to see details of leaked memory</span><br><span class="line">==20474==</span><br><span class="line">==20474== For counts of detected and suppressed errors, rerun with: -v</span><br><span class="line">==20474== Use --track-origins=yes to see <span class="built_in">where</span> uninitialised values come from</span><br><span class="line">==20474== ERROR SUMMARY: 28 errors from 4 contexts (suppressed: 0 from 0)</span><br></pre></td></tr></table></figure><p>上面的definitely lost代表必然的内存泄露，他包括indirectly【非直接】和directly【直接俩种， possibly lost是可能的内存泄露。我们只需要查看definitely lost即可</p>]]></content>
       
@@ -906,9 +906,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1368,9 +1368,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1401,9 +1401,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 技术 </tag>
+            
+            <tag> java </tag>
             
             <tag> io </tag>
             
@@ -1434,9 +1434,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1467,9 +1467,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1500,9 +1500,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1533,9 +1533,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1566,9 +1566,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1599,9 +1599,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1632,9 +1632,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1665,9 +1665,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1727,9 +1727,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -1756,9 +1756,9 @@
       
         <tags>
             
-            <tag> 技术 </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> 技术 </tag>
             
         </tags>
       
@@ -1785,9 +1785,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -2151,9 +2151,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -2213,9 +2213,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 消息队列 </tag>
+            
+            <tag> java </tag>
             
             <tag> rocketmq </tag>
             
@@ -3487,11 +3487,11 @@
     
     
     <entry>
-      <title>JAVA线程-为什么局部变量是线程安全的</title>
-      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/"/>
-      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/</url>
+      <title>JAVA线程-开启多少线程合适</title>
+      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/"/>
+      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/</url>
       
-        <content type="html"><![CDATA[<h1 id="方法是如何被执行"><a href="#方法是如何被执行" class="headerlink" title="方法是如何被执行"></a>方法是如何被执行</h1><p>例如下面的程序</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">7</span>；</span><br><span class="line"><span class="keyword">int</span>[] b = fibonacci(a);</span><br><span class="line"><span class="keyword">int</span>[] c = b;</span><br></pre></td></tr></table></figure><p>当jvm调用fibonacci(a)时，通过cpu的寄存器找到方法的地址。cpu支持一种栈结构，他和方法息息相关，所以一般叫做调用栈。<br>栈这种数据结构的特点是后进先出，所以当一个遇到方法嵌套时候比如a–&gt;b–&gt;c，那么入栈的时候就是c–&gt;b–&gt;a，执行顺序也是c–&gt;b–&gt;a。</p><h1 id="方法中的局部变量"><a href="#方法中的局部变量" class="headerlink" title="方法中的局部变量"></a>方法中的局部变量</h1><p>  方法实际上是以栈帧为单位入栈的，一个方法从入口到返回都在一个栈帧中，栈帧和方法的生命周期是一样的，当方法结束，栈帧也就失效了，而方法中的局部变量都是保存在栈帧中的，他的生命周期也是在方法内部。且为了线程之间不相互干扰，每个线程都有一个独立的栈帧。综上，栈帧是线程安全的。</p><p>  这种方式有个名词叫线程封闭，即仅在单线程内访问数据，不共享就没有线程安全的问题。例如：我们常用的数据库连接池，connection的方法并没有声明线程安全，我们在使用中都是在一个方法内获取conenection，查询数据，关闭connecton，这这种线程封闭方式来解决线程安全的问题。</p>]]></content>
+        <content type="html"><![CDATA[<h1 id="为什么要使用多线程"><a href="#为什么要使用多线程" class="headerlink" title="为什么要使用多线程"></a>为什么要使用多线程</h1><p>  我们评价一个操作系统性能好的系统往往是俩点低延迟、高吞吐。做到这俩点，往往需要一优化算法，二有效利用硬件。对于一不在此讨论的范畴，而硬件利用率大致往往分俩类，即cpu的利用率，和i/o的利用。<br>  单线程时代：我们的程序往往是cpu和io设备相互配合执行，所以一个单线程的程序执行cpu操作时候io就要停下来等待cpu完成，为了提高io和cpu的利用率，操作系统为我们提供了多线程技术。<br>  线程1处理cpu的计算，线程2处理io请求。处理玩io请求后在切换回来，这样利用率就得到了提高</p><h1 id="线程多了就一定快么"><a href="#线程多了就一定快么" class="headerlink" title="线程多了就一定快么"></a>线程多了就一定快么</h1><p>  针对我们程序的特点分为，io密集型和计算密集型俩种。如果io操作执行的比例比较大就是io密集型，如果cpu计算的比例比较大就是计算密集型。<br>  在单核时代，对于计算密集型的业务增加线程反而会拖慢程序执行效率，因为只有一个核，所以同时只能有一个线程在运行，增加线程反而加大了线程切换的损耗。<br>  在多核时代，对于计算密集型的业务是可以通过增加线程提高性能的，但是设置应该是cpu的核数+1，充分利用起cpu。<br>  对于io密集型的业务，由于一般io的耗时比cpu要多的多，那么线程往往是cpu的核数*io耗时/cpu耗时+1。</p>]]></content>
       
       
       <categories>
@@ -3516,11 +3516,11 @@
     
     
     <entry>
-      <title>JAVA线程-开启多少线程合适</title>
-      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/"/>
-      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/</url>
+      <title>JAVA线程-为什么局部变量是线程安全的</title>
+      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/"/>
+      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/</url>
       
-        <content type="html"><![CDATA[<h1 id="为什么要使用多线程"><a href="#为什么要使用多线程" class="headerlink" title="为什么要使用多线程"></a>为什么要使用多线程</h1><p>  我们评价一个操作系统性能好的系统往往是俩点低延迟、高吞吐。做到这俩点，往往需要一优化算法，二有效利用硬件。对于一不在此讨论的范畴，而硬件利用率大致往往分俩类，即cpu的利用率，和i/o的利用。<br>  单线程时代：我们的程序往往是cpu和io设备相互配合执行，所以一个单线程的程序执行cpu操作时候io就要停下来等待cpu完成，为了提高io和cpu的利用率，操作系统为我们提供了多线程技术。<br>  线程1处理cpu的计算，线程2处理io请求。处理玩io请求后在切换回来，这样利用率就得到了提高</p><h1 id="线程多了就一定快么"><a href="#线程多了就一定快么" class="headerlink" title="线程多了就一定快么"></a>线程多了就一定快么</h1><p>  针对我们程序的特点分为，io密集型和计算密集型俩种。如果io操作执行的比例比较大就是io密集型，如果cpu计算的比例比较大就是计算密集型。<br>  在单核时代，对于计算密集型的业务增加线程反而会拖慢程序执行效率，因为只有一个核，所以同时只能有一个线程在运行，增加线程反而加大了线程切换的损耗。<br>  在多核时代，对于计算密集型的业务是可以通过增加线程提高性能的，但是设置应该是cpu的核数+1，充分利用起cpu。<br>  对于io密集型的业务，由于一般io的耗时比cpu要多的多，那么线程往往是cpu的核数*io耗时/cpu耗时+1。</p>]]></content>
+        <content type="html"><![CDATA[<h1 id="方法是如何被执行"><a href="#方法是如何被执行" class="headerlink" title="方法是如何被执行"></a>方法是如何被执行</h1><p>例如下面的程序</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">7</span>；</span><br><span class="line"><span class="keyword">int</span>[] b = fibonacci(a);</span><br><span class="line"><span class="keyword">int</span>[] c = b;</span><br></pre></td></tr></table></figure><p>当jvm调用fibonacci(a)时，通过cpu的寄存器找到方法的地址。cpu支持一种栈结构，他和方法息息相关，所以一般叫做调用栈。<br>栈这种数据结构的特点是后进先出，所以当一个遇到方法嵌套时候比如a–&gt;b–&gt;c，那么入栈的时候就是c–&gt;b–&gt;a，执行顺序也是c–&gt;b–&gt;a。</p><h1 id="方法中的局部变量"><a href="#方法中的局部变量" class="headerlink" title="方法中的局部变量"></a>方法中的局部变量</h1><p>  方法实际上是以栈帧为单位入栈的，一个方法从入口到返回都在一个栈帧中，栈帧和方法的生命周期是一样的，当方法结束，栈帧也就失效了，而方法中的局部变量都是保存在栈帧中的，他的生命周期也是在方法内部。且为了线程之间不相互干扰，每个线程都有一个独立的栈帧。综上，栈帧是线程安全的。</p><p>  这种方式有个名词叫线程封闭，即仅在单线程内访问数据，不共享就没有线程安全的问题。例如：我们常用的数据库连接池，connection的方法并没有声明线程安全，我们在使用中都是在一个方法内获取conenection，查询数据，关闭connecton，这这种线程封闭方式来解决线程安全的问题。</p>]]></content>
       
       
       <categories>
@@ -3708,9 +3708,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 技术 </tag>
+            
+            <tag> java </tag>
             
             <tag> cas </tag>
             
@@ -3739,9 +3739,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 技术 </tag>
+            
+            <tag> java </tag>
             
             <tag> cas </tag>
             
@@ -3770,9 +3770,9 @@
       
         <tags>
             
-            <tag> java </tag>
-            
             <tag> 技术 </tag>
+            
+            <tag> java </tag>
             
             <tag> io </tag>
             

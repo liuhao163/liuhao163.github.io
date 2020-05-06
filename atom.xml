@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://liuhao163.github.io/"/>
-  <updated>2020-05-06T04:23:14.000Z</updated>
+  <updated>2020-05-06T04:25:17.000Z</updated>
   <id>https://liuhao163.github.io/</id>
   
   <author>
@@ -21,9 +21,9 @@
     <link href="https://liuhao163.github.io/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-IO-%E8%BF%90%E8%A1%8C%E5%8E%9F%E7%90%86%E5%92%8C%E9%87%8D%E8%A6%81%E7%9A%84%E6%8C%87%E6%A0%87/"/>
     <id>https://liuhao163.github.io/系统优化-IO-运行原理和重要的指标/</id>
     <published>2020-05-06T11:38:04.000Z</published>
-    <updated>2020-05-06T04:23:14.000Z</updated>
+    <updated>2020-05-06T04:25:17.000Z</updated>
     
-    <content type="html"><![CDATA[<h2 id="磁盘"><a href="#磁盘" class="headerlink" title="磁盘"></a>磁盘</h2><p>  按照存储介质来来分类：</p><ul><li>机械硬盘HDD：包含磁头和磁片，读取数据通过改变磁头和磁道来进行数据的读取，随机IO因为寻址和改变磁道性能很差，在IO压力比较大的场景要尽量避免随机IO。</li><li><p>固态硬盘SSD：由电子元件组成，不需要磁道读取,所以随机IO和顺序IO性能都要比机械硬盘好得多。</p><p>但是，固态硬盘的随机IO因为也遵循擦除、写入所以随机IO会引起大量的垃圾回收，并且无法用到预读性能也不高。、</p><p>此外，机械磁盘和固态磁盘还分别有一个最小的读写单位。机械磁盘的最小读写单位是扇区，一般大小为 512 字节。而固态磁盘的最小读写单位是页，通常大小是 4KB、8KB 等。</p><p>按照接口来分类：比如可以把硬盘分为 IDE（Integrated Drive Electronics）、SCSI（Small Computer System Interface） 、SAS（Serial Attached SCSI） 、SATA（Serial ATA） 、FC（Fibre Channel） 等。</p><p>IDE：后缀一般为hd<br>SCSI或者SATA：后缀一般为sd</p><p>根据设备编号后面一般跟小写字母a、b、c,我们在设备上还可以分区用0~9数字表示比如：/dev/sda1</p></li></ul><h2 id="通用块层"><a href="#通用块层" class="headerlink" title="通用块层"></a>通用块层</h2><p>  和VFS类似在文件系统到驱动程序直接实现了通用块层，俩个作用</p><ol><li>为程序和文件系统提供统一的访问接口。</li><li>实现IO的调度一般有：NONE、NOOP、CFQ、DeadLine<ol><li>NONE ，更确切来说，并不能算 I/O 调度算法。因为它完全不使用任何 I/O 调度器，对文件系统和应用程序的 I/O 其实不做任何处理，常用在虚拟机中（此时磁盘 I/O 调度完全由物理机负责）。</li><li>NOOP ，是最简单的一种 I/O 调度算法。它实际上是一个先入先出的队列，只做一些最基本的请求合并，常用于 SSD 磁盘。、</li><li>CFQ（Completely Fair Scheduler），也被称为完全公平调度器，是现在很多发行版的默认 I/O 调度器，它为每个进程维护了一个 I/O 调度队列，并按照时间片来均匀分布每个进程的 I/O 请求。类似于进程 CPU 调度，CFQ 还支持进程 I/O 的优先级调度，所以它适用于运行大量进程的系统，像是桌面环境、多媒体应用等。、</li><li>DeadLine 调度算法，分别为读、写请求创建了不同的 I/O 队列，可以提高机械磁盘的吞吐量，并确保达到最终期限（deadline）的请求被优先处理。DeadLine 调度算法，多用在 I/O 压力比较重的场景，比如数据库等。</li></ol></li></ol><h2 id="I-O栈"><a href="#I-O栈" class="headerlink" title="I/O栈"></a>I/O栈</h2><p>  如图：</p><p>  <img src="/系统优化-IO-运行原理和重要的指标/img0.png" alt="avator"></p><ul><li>文件系统层：对上为程序提供统一访问接口，对下会通过通用块层，来存储和管理磁盘数据。</li><li>通用块层：包括块设备I/O队列和I/O调度器，负责I/O请求的排队、合并等调度工作</li><li>设备层，包括存储设备和相应的驱动程序，负责最终物理设备的 I/O 操作。</li></ul>]]></content>
+    <content type="html"><![CDATA[<h2 id="磁盘"><a href="#磁盘" class="headerlink" title="磁盘"></a>磁盘</h2><p>  按照存储介质来来分类：</p><ul><li>机械硬盘HDD：包含磁头和磁片，读取数据通过改变磁头和磁道来进行数据的读取，随机IO因为寻址和改变磁道性能很差，在IO压力比较大的场景要尽量避免随机IO。</li><li><p>固态硬盘SSD：由电子元件组成，不需要磁道读取,所以随机IO和顺序IO性能都要比机械硬盘好得多。</p><p>但是，固态硬盘的随机IO因为也遵循擦除、写入所以随机IO会引起大量的垃圾回收，并且无法用到预读性能也不高。、</p><p>此外，机械磁盘和固态磁盘还分别有一个最小的读写单位。机械磁盘的最小读写单位是扇区，一般大小为 512 字节。而固态磁盘的最小读写单位是页，通常大小是 4KB、8KB 等。</p><p>按照接口来分类：比如可以把硬盘分为 IDE（Integrated Drive Electronics）、SCSI（Small Computer System Interface） 、SAS（Serial Attached SCSI） 、SATA（Serial ATA） 、FC（Fibre Channel） 等。</p><p>IDE：后缀一般为hd<br>SCSI或者SATA：后缀一般为sd</p><p>根据设备编号后面一般跟小写字母a、b、c,我们在设备上还可以分区用0~9数字表示比如：/dev/sda1</p></li></ul><h2 id="通用块层"><a href="#通用块层" class="headerlink" title="通用块层"></a>通用块层</h2><p>  和VFS类似在文件系统到驱动程序之间实现了通用块层，俩个作用：</p><ol><li>向上为程序和文件系统提供统一的访问接口，向下屏蔽个文件系统程序之间的差异，提供统一框架管理各系统的驱动程序</li><li>实现IO的调度一般有：NONE、NOOP、CFQ、DeadLine<ol><li>NONE ，更确切来说，并不能算 I/O 调度算法。因为它完全不使用任何 I/O 调度器，对文件系统和应用程序的 I/O 其实不做任何处理，常用在虚拟机中（此时磁盘 I/O 调度完全由物理机负责）。</li><li>NOOP ，是最简单的一种 I/O 调度算法。它实际上是一个先入先出的队列，只做一些最基本的请求合并，常用于 SSD 磁盘。、</li><li>CFQ（Completely Fair Scheduler），也被称为完全公平调度器，是现在很多发行版的默认 I/O 调度器，它为每个进程维护了一个 I/O 调度队列，并按照时间片来均匀分布每个进程的 I/O 请求。类似于进程 CPU 调度，CFQ 还支持进程 I/O 的优先级调度，所以它适用于运行大量进程的系统，像是桌面环境、多媒体应用等。、</li><li>DeadLine 调度算法，分别为读、写请求创建了不同的 I/O 队列，可以提高机械磁盘的吞吐量，并确保达到最终期限（deadline）的请求被优先处理。DeadLine 调度算法，多用在 I/O 压力比较重的场景，比如数据库等。</li></ol></li></ol><h2 id="I-O栈"><a href="#I-O栈" class="headerlink" title="I/O栈"></a>I/O栈</h2><p>  如图：</p><p>  <img src="/系统优化-IO-运行原理和重要的指标/img0.png" alt="avator"></p><ul><li>文件系统层：对上为程序提供统一访问接口，对下会通过通用块层，来存储和管理磁盘数据。</li><li>通用块层：包括块设备I/O队列和I/O调度器，负责I/O请求的排队、合并等调度工作</li><li>设备层，包括存储设备和相应的驱动程序，负责最终物理设备的 I/O 操作。</li></ul>]]></content>
     
     <summary type="html">
     

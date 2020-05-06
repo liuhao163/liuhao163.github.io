@@ -390,7 +390,7 @@
                 
               
 
-              <time title="Created: 2020-05-06 11:38:04 / Modified: 04:25:17" itemprop="dateCreated datePublished" datetime="2020-05-06T11:38:04Z">2020-05-06</time>
+              <time title="Created: 2020-05-06 11:38:04 / Modified: 06:59:00" itemprop="dateCreated datePublished" datetime="2020-05-06T11:38:04Z">2020-05-06</time>
             
 
             
@@ -485,7 +485,29 @@
 <li>通用块层：包括块设备I/O队列和I/O调度器，负责I/O请求的排队、合并等调度工作</li>
 <li>设备层，包括存储设备和相应的驱动程序，负责最终物理设备的 I/O 操作。</li>
 </ul>
-
+<h2 id="常用的查看工具"><a href="#常用的查看工具" class="headerlink" title="常用的查看工具"></a>常用的查看工具</h2><p>我们主要关注的几个指标</p>
+<ul>
+<li>使用率：如果io的使用率过高，表示系统存在瓶颈。</li>
+<li>饱和度：是指磁盘处理 I/O 的繁忙程度。过高的饱和度，意味着磁盘存在严重的性能瓶颈。当饱和度为 100% 时，磁盘无法接受新的 I/O 请求。</li>
+<li>请求数/S：是指每秒的 I/O 请求数。</li>
+<li>吞吐：是指每秒的 I/O 请求大小。</li>
+<li>响应时间：是指 I/O 请求从发出到收到响应的间隔时间。</li>
+</ul>
+<h3 id="iostat"><a href="#iostat" class="headerlink" title="iostat"></a>iostat</h3><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># -d -x表示显示所有磁盘I/O的指标</span></span><br><span class="line">$ iostat -d -x 1</span><br><span class="line">Device:         rrqm/s   wrqm/s     r/s     w/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util</span><br><span class="line">sdb               0.00     0.04    0.56    1.74    29.28    50.93    69.51     0.00    1.28    0.21    1.63   0.04   0.01</span><br><span class="line">sda               0.00     0.67    0.03    1.74     0.25    28.85    32.91     0.00    0.04    0.13    0.04   0.02   0.00</span><br></pre></td></tr></table></figure>
+<p>  图内指标如下：</p>
+<p>  <img src="/系统优化-IO-运行原理和重要的指标/img1.png" alt="avator"></p>
+<p>  这些指标中，你要注意：</p>
+<ul>
+<li>%util ，就是我们前面提到的磁盘 I/O 使用率；</li>
+<li>r/s+ w/s ，就是 IOPS；</li>
+<li>rkB/s+wkB/s ，就是吞吐量；</li>
+<li><p>r_await+w_await ，就是响应时间。</p>
+<p>在观测指标时，也别忘了结合请求的大小（ rareq-sz 和 wareq-sz）一起分析。你可能注意到，从 iostat 并不能直接得到磁盘饱和度。事实上，饱和度通常也没有其他简单的观测方法，不过，你可以把观测到的，平均请求队列长度或者读写请求完成的等待时间，跟基准测试的结果（比如通过 fio）进行对比，综合评估磁盘的饱和情况。</p>
+</li>
+</ul>
+<h3 id="iotop"><a href="#iotop" class="headerlink" title="iotop"></a>iotop</h3><p>类似于top可以查看整体的io情况</p>
+<h3 id="pidstat"><a href="#pidstat" class="headerlink" title="pidstat"></a>pidstat</h3><p>如果想查看进程的io情况我们要用pidstat加参数-d</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># pidstat -d</span></span><br><span class="line">03:02:23 PM   UID       PID   kB_rd/s   kB_wr/s kB_ccwr/s  Command</span><br><span class="line">03:02:23 PM     0         1    145.77     25.49      0.72  systemd</span><br><span class="line">03:02:23 PM     0        30      0.00      0.00      0.00  kswapd0</span><br><span class="line"></span><br><span class="line"><span class="comment"># kB_ccwr/s 是每秒取消的写请求</span></span><br></pre></td></tr></table></figure>
           
         
       

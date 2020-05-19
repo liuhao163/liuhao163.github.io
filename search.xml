@@ -4,6 +4,192 @@
   
     
     <entry>
+      <title>系统优化-网络-基础概念以及指标</title>
+      <link href="/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-%E7%BD%91%E7%BB%9C-%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5%E4%BB%A5%E5%8F%8A%E6%8C%87%E6%A0%87/"/>
+      <url>/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-%E7%BD%91%E7%BB%9C-%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5%E4%BB%A5%E5%8F%8A%E6%8C%87%E6%A0%87/</url>
+      
+        <content type="html"><![CDATA[<p>  前面我们讲了CPU、内存、磁盘IO，下面我们来看网络这部分，网络处理的流程最复杂，跟我们前面讲到的进程调度、中断处理、内存管理以及 I/O 等都密不可分。</p><p>  OSI的网络七层模型，以及TCP/IP的四层or五层模型,如下：</p><p>  <img src="/系统优化-网络-基础概念以及指标/img0.png" alt="avator"></p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 性能优化 </category>
+          
+          <category> 网络 </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> linux </tag>
+            
+            <tag> 性能优化 </tag>
+            
+            <tag> 网络 </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>系统优化-IO-优化套路</title>
+      <link href="/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-IO-%E4%BC%98%E5%8C%96%E5%A5%97%E8%B7%AF/"/>
+      <url>/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-IO-%E4%BC%98%E5%8C%96%E5%A5%97%E8%B7%AF/</url>
+      
+        <content type="html"><![CDATA[<h2 id="基准测试"><a href="#基准测试" class="headerlink" title="基准测试"></a>基准测试</h2><p>用fio+blktrace</p><p>fio用于基准测试，blktrace可以进行io的录制通过fio的回放功能得到系统真实场景的io情况</p><h2 id="优化套路"><a href="#优化套路" class="headerlink" title="优化套路"></a>优化套路</h2><h3 id="代码优化"><a href="#代码优化" class="headerlink" title="代码优化"></a>代码优化</h3><ul><li>追加写替代随机写</li><li>采用有缓存的io</li><li>采用标准库缓存或者外部缓存介绍io</li><li>如果对大文件写考虑用mmap(zero copy)</li><li>用fsync替代O_SYNC</li><li>做好进程隔离防止某个进程占有所有的io资源，比如采用cgroup对进程的io做限制</li><li>如果io的调度采用CFQ，考虑对ionice进行设置<ul><li>ionice 支持三个优先级类：Idle、Best-effort 和 Realtime。其中， Best-effort 和 Realtime 还分别支持 0-7 的级别，数值越小，则表示优先级别越高。</li></ul></li></ul><h3 id="文件系统优化"><a href="#文件系统优化" class="headerlink" title="文件系统优化"></a>文件系统优化</h3><ul><li>采用适合的文件系统</li><li>对文件系统参数调优</li><li>优化文件系统的缓存<ul><li>可以优化 pdflush 脏页的刷新频率（比如设置 dirty_expire_centisecs 和 dirty_writeback_centisecs）以及脏页的限额（比如调整 dirty_background_ratio 和 dirty_ratio 等）。</li></ul></li></ul><h3 id="磁盘优化"><a href="#磁盘优化" class="headerlink" title="磁盘优化"></a>磁盘优化</h3><ul><li>硬件优化用SDD取代HDD等</li><li>采用RAID方案提高读写能力</li><li>采用适合的线程调度算法</li><li>如果磁盘读写负担较大，可以单独配置磁盘</li><li>对顺序读取增加磁盘的预读能力<ul><li>调整内核选项 /sys/block/sdb/queue/read_ahead_kb，默认大小是 128 KB，单位为 KB。</li><li>使用 blockdev 工具设置，比如 blockdev –setra 8192 /dev/sdb，注意这里的单位是 512B（0.5KB），所以它的数值总是 read_ahead_kb 的两倍。</li></ul></li><li>通过调整请求队列增加磁盘吞吐<ul><li>可以调整磁盘队列的长度 /sys/block/sdb/queue/nr_requests，适当增大队列长度，可以提升磁盘的吞吐量（当然也会导致 I/O 延迟增大）。</li></ul></li></ul>]]></content>
+      
+      
+      <categories>
+          
+          <category> 性能优化 </category>
+          
+          <category> I/O </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> linux </tag>
+            
+            <tag> 性能优化 </tag>
+            
+            <tag> I/O </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>系统优化-IO-总结</title>
+      <link href="/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-IO-%E6%80%BB%E7%BB%93/"/>
+      <url>/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-IO-%E6%80%BB%E7%BB%93/</url>
+      
+        <content type="html"><![CDATA[<h2 id="IO的原理"><a href="#IO的原理" class="headerlink" title="IO的原理"></a>IO的原理</h2><h3 id="磁盘"><a href="#磁盘" class="headerlink" title="磁盘"></a>磁盘</h3><p>  磁盘是块状设备，用来持久化数据，磁盘的性能明显劣于内存，系统用了缓存（cache）和缓冲（buffer）来弥补这部分的性能差异。</p><p>  磁盘有许多类型有:IDE(hd)，SATA(sd)还有网络存储等，序号一般从a-z。我们在这些设备上还可以进行分区，分区用0-9表示。</p><p>  我们将磁盘分区挂载到文件系统的某个目录中使用</p><h3 id="文件系统"><a href="#文件系统" class="headerlink" title="文件系统"></a>文件系统</h3><p>  linux通过文件系统操作磁盘中的数据。文件系统由目录项、索引块、超级块、逻辑块组成。</p><ul><li>逻辑块：数据的最小单位是扇出一般是512b,磁盘为了加速访问将8个相邻的扇区组成了一个逻辑块进行操作，一个逻辑块4kb。逻辑块用来存储文件数据</li><li>索引块：存储索引节点（inode），索引节点存储了文件的原信息。比如大小、创建时间、权限、地址</li><li>目录项：存储文件和目录项之间的关系。</li><li><p>超级块：用来表示索引块、逻辑快使用情况。</p><p>缓存：</p><p>页缓存：加速磁盘IO访问<br>索引节点缓存：加速索引节点的访问<br>目录项缓存：加速目录项查找和访问</p><p>vfs:隐藏各种磁盘的实现提供统一的接口<br>通用区：在vfs下层隐藏多种磁盘系统的实现，对上提供统一接口；对下提供多种io请求合并优化的策略。</p></li></ul><h3 id="重点指标"><a href="#重点指标" class="headerlink" title="重点指标"></a>重点指标</h3><p>如图</p><p><img src="/系统优化-IO-总结/img0.png" alt="avator"></p><h3 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h3><p>下面的表格是提供I/O的性能指标的工具：</p><p><img src="/系统优化-IO-总结/img1.png" alt="avator"></p><p>以指标的维度看：</p><p><img src="/系统优化-IO-总结/img2.png" alt="avator"></p><p>按照常用的排查思路我们看各工具：</p><p><img src="/系统优化-IO-总结/img3.png" alt="avator"></p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 性能优化 </category>
+          
+          <category> I/O </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> linux </tag>
+            
+            <tag> 性能优化 </tag>
+            
+            <tag> I/O </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>系统优化-IO-案例redis引起的io问题</title>
+      <link href="/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-IO-%E6%A1%88%E4%BE%8Bredis%E5%BC%95%E8%B5%B7%E7%9A%84io%E9%97%AE%E9%A2%98/"/>
+      <url>/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-IO-%E6%A1%88%E4%BE%8Bredis%E5%BC%95%E8%B5%B7%E7%9A%84io%E9%97%AE%E9%A2%98/</url>
+      
+        <content type="html"><![CDATA[<h2 id="测试方案"><a href="#测试方案" class="headerlink" title="测试方案"></a>测试方案</h2><p>容器准备</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">docker run --name=redis -itd -p 10000:80 feisky/redis-server</span><br><span class="line">docker run --name=app --network=container:redis -itd feisky/redis-app</span><br><span class="line"></span><br><span class="line">docker ps <span class="comment">#确定启动了俩个容器</span></span><br><span class="line">CONTAINER ID        IMAGE                 COMMAND                  CREATED             STATUS              PORTS                             NAMES</span><br><span class="line">e8aa78bb2a42        feisky/redis-app      <span class="string">"python /app.py"</span>         15 minutes ago      Up 15 minutes                                         app</span><br><span class="line">5567d2ba22c7        feisky/redis-server   <span class="string">"docker-entrypoint..."</span>   21 minutes ago      Up 21 minutes       6379/tcp, 0.0.0.0:10000-&gt;80/tcp   redis</span><br></pre></td></tr></table></figure><p>数据准备</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">curl http://127.0.0.1:10000/init/5000</span><br><span class="line"><span class="comment"># 返回 &#123;"elapsed_seconds":23.771671295166016,"keys_initialized":5000&#125;</span></span><br></pre></td></tr></table></figure><p>测试</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> <span class="literal">true</span>; <span class="keyword">do</span> curl http://192.168.0.10:10000/get_cache; <span class="keyword">done</span></span><br></pre></td></tr></table></figure><h2 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h2><p>接口响应要7s，用top查看cpu0的us是11.1，wa是35.6，初步判断是io的问题，cpu占用较高的进程是Pyhton和redis-server</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">top - 12:37:23 up 4 days, 13:13,  2 users,  load average: 0.51, 0.25, 0.20</span><br><span class="line">Tasks: 102 total,   2 running, 100 sleeping,   0 stopped,   0 zombie</span><br><span class="line">%Cpu0  : 11.1 us,  8.8 sy,  0.0 ni, 40.6 id, 35.6 wa,  0.0 hi,  1.1 si,  2.7 st</span><br><span class="line">KiB Mem :  1014884 total,   106288 free,   229516 used,   679080 buff/cache</span><br><span class="line">KiB Swap:        0 total,        0 free,        0 used.   524716 avail Mem</span><br><span class="line"></span><br><span class="line">  PID USER      PR  NI    VIRT    RES    SHR S %CPU %MEM     TIME+ COMMAND</span><br><span class="line"> 2335 root      20   0  192992  23796   5148 S 17.6  2.3   0:06.97 python</span><br><span class="line">  394 100       20   0   28340   3020   1128 R  8.6  0.3   0:06.05 redis-server</span><br></pre></td></tr></table></figure><p>我们用iostat -d -x进一步定位io的问题，发现很奇怪的发现一个查询接口居然有大量的write</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">iostat -d -x 1</span><br><span class="line">Linux 3.10.0-957.27.2.el7.x86_64 (10-254-192-16)        05/16/2020      _x86_64_        (1 CPU)</span><br><span class="line"></span><br><span class="line">Device:         rrqm/s   wrqm/s     r/s     w/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util</span><br><span class="line">vda               0.00     0.26    0.53    5.36   105.01   107.24    72.00     0.13   35.83   57.35   33.69   0.75   0.44</span><br><span class="line"></span><br><span class="line">Device:         rrqm/s   wrqm/s     r/s     w/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util</span><br><span class="line">vda               0.00     0.00    1.08  504.30     8.60  1259.68     5.02     0.43    1.62   54.00    1.51   0.74  37.53</span><br><span class="line"></span><br><span class="line">Device:         rrqm/s   wrqm/s     r/s     w/s    rkB/s    wkB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util</span><br><span class="line">vda               0.00     0.00    0.00  576.14     0.00  1459.09     5.07     0.36    1.41    0.00    1.41   0.63  36.36</span><br></pre></td></tr></table></figure><p>用pidstat -d 定位发现是redis-server在写，接着我们用strace定位，发现有大量的write和fdatasync，经过排查发现我们的redis-server用的是AOF策略是alwalys，每条指令都需要write和fsync，会产生大量的write。我们改变策略改为everysec，问题解决大部分，为什么是大部分，我们看到西面的命令存在大量的SADD。这些是没必要的，我们可以通过修改代码优化。</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">strace -f -T -tt -p 394</span><br><span class="line">[pid   394] 12:49:57.864317 fdatasync(7) = 0 &lt;0.003447&gt;</span><br><span class="line">[pid   394] 12:49:57.867921 write(8, <span class="string">":1\r\n"</span>, 4) = 4 &lt;0.000285&gt;</span><br><span class="line">[pid   394] 12:49:57.868293 epoll_pwait(5, [&#123;EPOLLIN, &#123;u32=8, u64=8&#125;&#125;], 10128, 55, NULL, 8) = 1 &lt;0.000078&gt;</span><br><span class="line">[pid   394] 12:49:57.868481 <span class="built_in">read</span>(8, <span class="string">"*2\r\n<span class="variable">$3</span>\r\nGET\r\n<span class="variable">$41</span>\r\nuuid:510df338-"</span>..., 16384) = 61 &lt;0.000040&gt;</span><br><span class="line">[pid   394] 12:49:57.868609 <span class="built_in">read</span>(3, 0x7fffaef0dce7, 1) = -1 EAGAIN (Resource temporarily unavailable) &lt;0.000047&gt;</span><br><span class="line">[pid   394] 12:49:57.868754 write(8, <span class="string">"<span class="variable">$3</span>\r\nbad\r\n"</span>, 9) = 9 &lt;0.000249&gt;</span><br><span class="line">[pid   394] 12:49:57.869108 epoll_pwait(5, [&#123;EPOLLIN, &#123;u32=8, u64=8&#125;&#125;], 10128, 54, NULL, 8) = 1 &lt;0.000037&gt;</span><br><span class="line">[pid   394] 12:49:57.869226 <span class="built_in">read</span>(8, <span class="string">"*2\r\n<span class="variable">$3</span>\r\nGET\r\n<span class="variable">$41</span>\r\nuuid:52aa4944-"</span>..., 16384) = 61 &lt;0.000062&gt;</span><br><span class="line">[pid   394] 12:49:57.869403 <span class="built_in">read</span>(3, 0x7fffaef0dce7, 1) = -1 EAGAIN (Resource temporarily unavailable) &lt;0.000036&gt;</span><br><span class="line">[pid   394] 12:49:57.869505 write(8, <span class="string">"<span class="variable">$3</span>\r\nbad\r\n"</span>, 9) = 9 &lt;0.000205&gt;</span><br><span class="line">[pid   394] 12:49:57.869833 epoll_pwait(5, [&#123;EPOLLIN, &#123;u32=8, u64=8&#125;&#125;], 10128, 54, NULL, 8) = 1 &lt;0.000038&gt;</span><br><span class="line">[pid   394] 12:49:57.869939 <span class="built_in">read</span>(8, <span class="string">"*4\r\n<span class="variable">$4</span>\r\nSCAN\r\n<span class="variable">$4</span>\r\n1590\r\n<span class="variable">$5</span>\r\nMATC"</span>..., 16384) = 47 &lt;0.000038&gt;</span><br><span class="line">[pid   394] 12:49:57.870071 <span class="built_in">read</span>(3, 0x7fffaef0dce7, 1) = -1 EAGAIN (Resource temporarily unavailable) &lt;0.000036&gt;</span><br><span class="line">[pid   394] 12:49:57.870172 write(8, <span class="string">"*2\r\n<span class="variable">$4</span>\r\n5942\r\n*10\r\n<span class="variable">$41</span>\r\nuuid:4bd"</span>..., 499) = 499 &lt;0.000352&gt;</span><br><span class="line">[pid   394] 12:49:57.870600 epoll_pwait(5, [&#123;EPOLLIN, &#123;u32=8, u64=8&#125;&#125;], 10128, 53, NULL, 8) = 1 &lt;0.000037&gt;</span><br><span class="line">[pid   394] 12:49:57.870753 <span class="built_in">read</span>(8, <span class="string">"*2\r\n<span class="variable">$3</span>\r\nGET\r\n<span class="variable">$41</span>\r\nuuid:4bdfcf62-"</span>..., 16384) = 61 &lt;0.000057&gt;</span><br><span class="line">[pid   394] 12:49:57.870887 <span class="built_in">read</span>(3, 0x7fffaef0dce7, 1) = -1 EAGAIN (Resource temporarily unavailable) &lt;0.000036&gt;</span><br><span class="line">[pid   394] 12:49:57.870987 write(8, <span class="string">"<span class="variable">$4</span>\r\ngood\r\n"</span>, 10) = 10 &lt;0.000196&gt;</span><br><span class="line">[pid   394] 12:49:57.871297 epoll_pwait(5, [&#123;EPOLLIN, &#123;u32=8, u64=8&#125;&#125;], 10128, 52, NULL, 8) = 1 &lt;0.000105&gt;</span><br></pre></td></tr></table></figure><p>经过修改AOF的策略和优化掉SADD命令相关代码接口响应市场降为0.16034674644470215ms</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 性能优化 </category>
+          
+          <category> CPU </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> linux </tag>
+            
+            <tag> 性能优化 </tag>
+            
+            <tag> CPU </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>系统优化-IO-IO问题导致的接口延迟过高</title>
+      <link href="/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-IO-IO%E9%97%AE%E9%A2%98%E5%AF%BC%E8%87%B4%E7%9A%84%E6%8E%A5%E5%8F%A3%E5%BB%B6%E8%BF%9F%E8%BF%87%E9%AB%98/"/>
+      <url>/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-IO-IO%E9%97%AE%E9%A2%98%E5%AF%BC%E8%87%B4%E7%9A%84%E6%8E%A5%E5%8F%A3%E5%BB%B6%E8%BF%9F%E8%BF%87%E9%AB%98/</url>
+      
+        <content type="html"><![CDATA[<p>案例准备:启动一个web应用，用另一个中端请求，发现响应极慢</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run --name=app -p 10000:80 -itd feisky/word-pop</span><br></pre></td></tr></table></figure><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl http://192.168.0.10:1000/popularity/word</span><br></pre></td></tr></table></figure><p>top、iostat发现磁盘的io很高，用strace的套路查看代码发现没有write的痕迹，这时候我们可以用bcc-tools下的filetop查看</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 切换到工具目录</span></span><br><span class="line">$ <span class="built_in">cd</span> /usr/share/bcc/tools</span><br><span class="line"></span><br><span class="line"><span class="comment"># -C 选项表示输出新内容时不清空屏幕</span></span><br><span class="line">$ ./filetop -C</span><br><span class="line"></span><br><span class="line">TID    COMM             READS  WRITES R_Kb    W_Kb    T FILE</span><br><span class="line">514    python           0      1      0       2832    R 669.txt</span><br><span class="line">514    python           0      1      0       2490    R 667.txt</span><br><span class="line">514    python           0      1      0       2685    R 671.txt</span><br><span class="line">514    python           0      1      0       2392    R 670.txt</span><br><span class="line">514    python           0      1      0       2050    R 672.txt</span><br><span class="line"></span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">TID    COMM             READS  WRITES R_Kb    W_Kb    T FILE</span><br><span class="line">514    python           2      0      5957    0       R 651.txt</span><br><span class="line">514    python           2      0      5371    0       R 112.txt</span><br><span class="line">514    python           2      0      4785    0       R 861.txt</span><br><span class="line">514    python           2      0      4736    0       R 213.txt</span><br><span class="line">514    python           2      0      4443    0       R 45.txt</span><br></pre></td></tr></table></figure><p>我们可以看到 线程ID，命令，读/写的次数、大小，文件类型，文件名称找到了创建了xxx.txt文件，我们通过ps找到tid所属的进程</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ps efT|grep 514</span><br></pre></td></tr></table></figure><p>在通过bcc下的opensnoop找到具体的文件</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ opensnoop</span><br><span class="line">12280  python              6   0 /tmp/9046db9e-fe25-11e8-b13f-0242ac110002/650.txt</span><br><span class="line">12280  python              6   0 /tmp/9046db9e-fe25-11e8-b13f-0242ac110002/651.txt</span><br><span class="line">12280  python              6   0 /tmp/9046db9e-fe25-11e8-b13f-0242ac110002/652.txt</span><br></pre></td></tr></table></figure><p>猜测是程序接到请求后，创建了一堆临时文件，在读取到内存，然后删除了文件导致的，修改程序问题解决。</p>]]></content>
+      
+      
+      <categories>
+          
+          <category> 性能优化 </category>
+          
+          <category> I/O </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> linux </tag>
+            
+            <tag> 性能优化 </tag>
+            
+            <tag> I/O </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>系统优化-IO-写log引起的问题IO问题</title>
+      <link href="/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-IO-%E5%86%99log%E5%BC%95%E8%B5%B7%E7%9A%84%E9%97%AE%E9%A2%98IO%E9%97%AE%E9%A2%98/"/>
+      <url>/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-IO-%E5%86%99log%E5%BC%95%E8%B5%B7%E7%9A%84%E9%97%AE%E9%A2%98IO%E9%97%AE%E9%A2%98/</url>
+      
+        <content type="html"><![CDATA[<p>  以下场景是一个典型的由于写log导致IO问题的场景。</p><blockquote><p>注：我的测试环境是1c2g内存的虚拟机，所以无法模拟案例，案例的需求是2c8g，所以这里只罗列除了排查思路。</p></blockquote><p>  准备工作</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -v /tmp:/tmp --name=app -itd feisky/logapp</span><br></pre></td></tr></table></figure><p>  启动后发现系统响应变慢</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 按1切换到每个CPU的使用情况</span></span><br><span class="line">$ top</span><br><span class="line">top - 14:43:43 up 1 day,  1:39,  2 users,  load average: 2.48, 1.09, 0.63</span><br><span class="line">Tasks: 130 total,   2 running,  74 sleeping,   0 stopped,   0 zombie</span><br><span class="line">%Cpu0  :  0.7 us,  6.0 sy,  0.0 ni,  0.7 id, 92.7 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu1  :  0.0 us,  0.3 sy,  0.0 ni, 92.3 id,  7.3 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">KiB Mem :  8169308 total,   747684 free,   741336 used,  6680288 buff/cache</span><br><span class="line">KiB Swap:        0 total,        0 free,        0 used.  7113124 avail Mem</span><br><span class="line"></span><br><span class="line">  PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND</span><br><span class="line">18940 root      20   0  656108 355740   5236 R   6.3  4.4   0:12.56 python</span><br><span class="line">1312 root      20   0  236532  24116   9648 S   0.3  0.3   9:29.80 python3</span><br></pre></td></tr></table></figure><ol><li>cpu0 的wa已经到了92.7</li><li>pyhton占了6.3的是你用率</li><li><p>内存的buff/cache占了6个g</p><p>综上觉得是io的问题，pyhton这个进程导致的，内存的占用有可能是因为大量的io读写文件导致的</p><p>用iostat查看下io的情况</p></li></ol><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># -d表示显示I/O性能指标，-x表示显示扩展统计（即所有I/O指标）</span></span><br><span class="line">$ iostat -x -d 1</span><br><span class="line">Device            r/s     w/s     rkB/s     wkB/s   rrqm/s   wrqm/s  %rrqm  %wrqm r_await w_await aqu-sz rareq-sz wareq-sz  svctm  %util</span><br><span class="line">loop0            0.00    0.00      0.00      0.00     0.00     0.00   0.00   0.00    0.00    0.00   0.00     0.00     0.00   0.00   0.00</span><br><span class="line">sdb              0.00    0.00      0.00      0.00     0.00     0.00   0.00   0.00    0.00    0.00   0.00     0.00     0.00   0.00   0.00</span><br><span class="line">sda              0.00   64.00      0.00  32768.00     0.00     0.00   0.00   0.00    0.00 7270.44 1102.18     0.00   512.00  15.50  99.20</span><br></pre></td></tr></table></figure><p>系统sda的写到了32mb每秒，w_waite到了7s，私用率几乎100%，进一步印证了才想</p><p>下面我们该用pidstat查看具体时间那个进程导致的了，这里看到是18904-python导致的</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">$ pidstat -d 1</span><br><span class="line"></span><br><span class="line">15:08:35      UID       PID   kB_rd/s   kB_wr/s kB_ccwr/s iodelay  Command</span><br><span class="line">15:08:36        0     18940      0.00  45816.00      0.00      96  python</span><br><span class="line"></span><br><span class="line">15:08:36      UID       PID   kB_rd/s   kB_wr/s kB_ccwr/s iodelay  Command</span><br><span class="line">15:08:37        0       354      0.00      0.00      0.00     350  jbd2/sda1-8</span><br><span class="line">15:08:37        0     18940      0.00  46000.00      0.00      96  python</span><br><span class="line">15:08:37        0     20065      0.00      0.00      0.00    1503  kworker/u4:2</span><br></pre></td></tr></table></figure><p>strace -p pid来查看源码，发现程序会给句柄为3的文件写入300mb的数据，stat(“/tmp/logtest.txt.1”，找到了文件所在</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">$ strace -p 18940</span><br><span class="line">strace: Process 18940 attached</span><br><span class="line">...</span><br><span class="line">mmap(NULL, 314576896, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0f7aee9000</span><br><span class="line">mmap(NULL, 314576896, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7f0f682e8000</span><br><span class="line">write(3, <span class="string">"2018-12-05 15:23:01,709 - __main"</span>..., 314572844</span><br><span class="line">) = 314572844</span><br><span class="line">munmap(0x7f0f682e8000, 314576896)       = 0</span><br><span class="line">write(3, <span class="string">"\n"</span>, 1)                       = 1</span><br><span class="line">munmap(0x7f0f7aee9000, 314576896)       = 0</span><br><span class="line">close(3)                                = 0</span><br><span class="line"><span class="built_in">stat</span>(<span class="string">"/tmp/logtest.txt.1"</span>, &#123;st_mode=S_IFREG|0644, st_size=943718535, ...&#125;) = 0</span><br></pre></td></tr></table></figure><p>我们可以用lsof -p进一步印证是哪些文件</p><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ lsof -p 18940</span><br><span class="line">COMMAND   PID USER   FD   TYPE DEVICE  SIZE/OFF    NODE NAME</span><br><span class="line">python  18940 root  cwd    DIR   0,50      4096 1549389 /</span><br><span class="line">python  18940 root  rtd    DIR   0,50      4096 1549389 /</span><br><span class="line">…</span><br><span class="line">python  18940 root    2u   CHR  136,0       0t0       3 /dev/pts/0</span><br><span class="line">python  18940 root    3w   REG    8,1 117944320     303 /tmp/logtest.txt</span><br></pre></td></tr></table></figure>]]></content>
+      
+      
+      <categories>
+          
+          <category> 性能优化 </category>
+          
+          <category> I/O </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> linux </tag>
+            
+            <tag> 性能优化 </tag>
+            
+            <tag> I/O </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>系统优化-IO-运行原理和重要的指标</title>
       <link href="/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-IO-%E8%BF%90%E8%A1%8C%E5%8E%9F%E7%90%86%E5%92%8C%E9%87%8D%E8%A6%81%E7%9A%84%E6%8C%87%E6%A0%87/"/>
       <url>/%E7%B3%BB%E7%BB%9F%E4%BC%98%E5%8C%96-IO-%E8%BF%90%E8%A1%8C%E5%8E%9F%E7%90%86%E5%92%8C%E9%87%8D%E8%A6%81%E7%9A%84%E6%8C%87%E6%A0%87/</url>
@@ -3518,11 +3704,11 @@
     
     
     <entry>
-      <title>JAVA线程-开启多少线程合适</title>
-      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/"/>
-      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/</url>
+      <title>JAVA线程-为什么局部变量是线程安全的</title>
+      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/"/>
+      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/</url>
       
-        <content type="html"><![CDATA[<h1 id="为什么要使用多线程"><a href="#为什么要使用多线程" class="headerlink" title="为什么要使用多线程"></a>为什么要使用多线程</h1><p>  我们评价一个操作系统性能好的系统往往是俩点低延迟、高吞吐。做到这俩点，往往需要一优化算法，二有效利用硬件。对于一不在此讨论的范畴，而硬件利用率大致往往分俩类，即cpu的利用率，和i/o的利用。<br>  单线程时代：我们的程序往往是cpu和io设备相互配合执行，所以一个单线程的程序执行cpu操作时候io就要停下来等待cpu完成，为了提高io和cpu的利用率，操作系统为我们提供了多线程技术。<br>  线程1处理cpu的计算，线程2处理io请求。处理玩io请求后在切换回来，这样利用率就得到了提高</p><h1 id="线程多了就一定快么"><a href="#线程多了就一定快么" class="headerlink" title="线程多了就一定快么"></a>线程多了就一定快么</h1><p>  针对我们程序的特点分为，io密集型和计算密集型俩种。如果io操作执行的比例比较大就是io密集型，如果cpu计算的比例比较大就是计算密集型。<br>  在单核时代，对于计算密集型的业务增加线程反而会拖慢程序执行效率，因为只有一个核，所以同时只能有一个线程在运行，增加线程反而加大了线程切换的损耗。<br>  在多核时代，对于计算密集型的业务是可以通过增加线程提高性能的，但是设置应该是cpu的核数+1，充分利用起cpu。<br>  对于io密集型的业务，由于一般io的耗时比cpu要多的多，那么线程往往是cpu的核数*io耗时/cpu耗时+1。</p>]]></content>
+        <content type="html"><![CDATA[<h1 id="方法是如何被执行"><a href="#方法是如何被执行" class="headerlink" title="方法是如何被执行"></a>方法是如何被执行</h1><p>例如下面的程序</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">7</span>；</span><br><span class="line"><span class="keyword">int</span>[] b = fibonacci(a);</span><br><span class="line"><span class="keyword">int</span>[] c = b;</span><br></pre></td></tr></table></figure><p>当jvm调用fibonacci(a)时，通过cpu的寄存器找到方法的地址。cpu支持一种栈结构，他和方法息息相关，所以一般叫做调用栈。<br>栈这种数据结构的特点是后进先出，所以当一个遇到方法嵌套时候比如a–&gt;b–&gt;c，那么入栈的时候就是c–&gt;b–&gt;a，执行顺序也是c–&gt;b–&gt;a。</p><h1 id="方法中的局部变量"><a href="#方法中的局部变量" class="headerlink" title="方法中的局部变量"></a>方法中的局部变量</h1><p>  方法实际上是以栈帧为单位入栈的，一个方法从入口到返回都在一个栈帧中，栈帧和方法的生命周期是一样的，当方法结束，栈帧也就失效了，而方法中的局部变量都是保存在栈帧中的，他的生命周期也是在方法内部。且为了线程之间不相互干扰，每个线程都有一个独立的栈帧。综上，栈帧是线程安全的。</p><p>  这种方式有个名词叫线程封闭，即仅在单线程内访问数据，不共享就没有线程安全的问题。例如：我们常用的数据库连接池，connection的方法并没有声明线程安全，我们在使用中都是在一个方法内获取conenection，查询数据，关闭connecton，这这种线程封闭方式来解决线程安全的问题。</p>]]></content>
       
       
       <categories>
@@ -3547,11 +3733,11 @@
     
     
     <entry>
-      <title>JAVA线程-为什么局部变量是线程安全的</title>
-      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/"/>
-      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E6%96%B9%E6%B3%95%E4%B8%AD%E7%9A%84%E5%B1%80%E9%83%A8%E5%8F%98%E9%87%8F%E6%98%AF%E7%BA%BF%E7%A8%8B%E5%AE%89%E5%85%A8%E7%9A%84%E4%B9%88/</url>
+      <title>JAVA线程-开启多少线程合适</title>
+      <link href="/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/"/>
+      <url>/JAVA%E7%BA%BF%E7%A8%8B-%E5%BC%80%E5%90%AF%E5%A4%9A%E5%B0%91%E7%BA%BF%E7%A8%8B%E5%90%88%E9%80%82/</url>
       
-        <content type="html"><![CDATA[<h1 id="方法是如何被执行"><a href="#方法是如何被执行" class="headerlink" title="方法是如何被执行"></a>方法是如何被执行</h1><p>例如下面的程序</p><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">int</span> a = <span class="number">7</span>；</span><br><span class="line"><span class="keyword">int</span>[] b = fibonacci(a);</span><br><span class="line"><span class="keyword">int</span>[] c = b;</span><br></pre></td></tr></table></figure><p>当jvm调用fibonacci(a)时，通过cpu的寄存器找到方法的地址。cpu支持一种栈结构，他和方法息息相关，所以一般叫做调用栈。<br>栈这种数据结构的特点是后进先出，所以当一个遇到方法嵌套时候比如a–&gt;b–&gt;c，那么入栈的时候就是c–&gt;b–&gt;a，执行顺序也是c–&gt;b–&gt;a。</p><h1 id="方法中的局部变量"><a href="#方法中的局部变量" class="headerlink" title="方法中的局部变量"></a>方法中的局部变量</h1><p>  方法实际上是以栈帧为单位入栈的，一个方法从入口到返回都在一个栈帧中，栈帧和方法的生命周期是一样的，当方法结束，栈帧也就失效了，而方法中的局部变量都是保存在栈帧中的，他的生命周期也是在方法内部。且为了线程之间不相互干扰，每个线程都有一个独立的栈帧。综上，栈帧是线程安全的。</p><p>  这种方式有个名词叫线程封闭，即仅在单线程内访问数据，不共享就没有线程安全的问题。例如：我们常用的数据库连接池，connection的方法并没有声明线程安全，我们在使用中都是在一个方法内获取conenection，查询数据，关闭connecton，这这种线程封闭方式来解决线程安全的问题。</p>]]></content>
+        <content type="html"><![CDATA[<h1 id="为什么要使用多线程"><a href="#为什么要使用多线程" class="headerlink" title="为什么要使用多线程"></a>为什么要使用多线程</h1><p>  我们评价一个操作系统性能好的系统往往是俩点低延迟、高吞吐。做到这俩点，往往需要一优化算法，二有效利用硬件。对于一不在此讨论的范畴，而硬件利用率大致往往分俩类，即cpu的利用率，和i/o的利用。<br>  单线程时代：我们的程序往往是cpu和io设备相互配合执行，所以一个单线程的程序执行cpu操作时候io就要停下来等待cpu完成，为了提高io和cpu的利用率，操作系统为我们提供了多线程技术。<br>  线程1处理cpu的计算，线程2处理io请求。处理玩io请求后在切换回来，这样利用率就得到了提高</p><h1 id="线程多了就一定快么"><a href="#线程多了就一定快么" class="headerlink" title="线程多了就一定快么"></a>线程多了就一定快么</h1><p>  针对我们程序的特点分为，io密集型和计算密集型俩种。如果io操作执行的比例比较大就是io密集型，如果cpu计算的比例比较大就是计算密集型。<br>  在单核时代，对于计算密集型的业务增加线程反而会拖慢程序执行效率，因为只有一个核，所以同时只能有一个线程在运行，增加线程反而加大了线程切换的损耗。<br>  在多核时代，对于计算密集型的业务是可以通过增加线程提高性能的，但是设置应该是cpu的核数+1，充分利用起cpu。<br>  对于io密集型的业务，由于一般io的耗时比cpu要多的多，那么线程往往是cpu的核数*io耗时/cpu耗时+1。</p>]]></content>
       
       
       <categories>
@@ -4029,9 +4215,9 @@
             
             <tag> 技术 </tag>
             
-            <tag> 计算机基础 </tag>
-            
             <tag> 网络 </tag>
+            
+            <tag> 计算机基础 </tag>
             
         </tags>
       
@@ -4089,9 +4275,9 @@
             
             <tag> 技术 </tag>
             
-            <tag> 计算机基础 </tag>
-            
             <tag> 网络 </tag>
+            
+            <tag> 计算机基础 </tag>
             
         </tags>
       

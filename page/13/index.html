@@ -345,6 +345,418 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA的并发包:Lock和Conidtion/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/JAVA的并发包:Lock和Conidtion/" class="post-title-link" itemprop="url">JAVA的并发包:Lock和Conidtion</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-30 17:24:06" itemprop="dateCreated datePublished" datetime="2019-03-30T17:24:06Z">2019-03-30</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-04-09 13:36:51" itemprop="dateModified" datetime="2019-04-09T13:36:51Z">2019-04-09</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="再造管程的意义"><a href="#再造管程的意义" class="headerlink" title="再造管程的意义"></a>再造管程的意义</h2><p>  java的管程的关键字是synchronized，在1.6后对管程做了升级，引入了偏向锁，轻量级锁的概念，性能几乎和Lock相近。然而在某些场景还是没法取到Lock。<br>  主要集中synchronized如下的几个痛点</p>
+<ol>
+<li>无法主动响应中断：在synchronzed代码块中，如果已经获取了资源a,在获取b失败后，就直接进入了阻塞，无法主动响应中断，这时候遇到死锁我们是无法处理的；</li>
+<li>无法设置过期时间：synchronzed无法设置过期时间;</li>
+<li>无法在非阻塞情况下竞争锁资源：</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">lockInterruptibly</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException</span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">lock</span><span class="params">(<span class="keyword">long</span> time, TimeUnit unit)</span></span></span><br><span class="line"><span class="function"><span class="keyword">boolean</span> <span class="title">tryLock</span><span class="params">(<span class="keyword">long</span> time, TimeUnit unit)</span></span></span><br><span class="line"><span class="function"><span class="keyword">boolean</span> <span class="title">tryLock</span><span class="params">()</span></span>;</span><br></pre></td></tr></table></figure>
+<h2 id="lock的原理"><a href="#lock的原理" class="headerlink" title="lock的原理"></a>lock的原理</h2><p>我们以ReentrantLock为例子，类似管程，每个资源都一个等待队列。它是用一个双向链表实现的等待队列，同时每个链表的节点包含一个volatile的变量state作为锁标记位：0-release,1-lock。在调用lock/unlock方法中会通过cas修改volatile来实现state的变化。他是如何来保证在上锁解锁时候的可见性的呢？我们用下面的代码说明<br>rtl.lock上锁–&gt;之后value+=1–&gt;解锁,他们在并发场景下根据HB原则.</p>
+<ol>
+<li>顺序原则：线程1中：rtl.lock （HB于） value+=1 ；value+=1（HB于）rtl.unlock()</li>
+<li>volatile的原则：此情况是针对线程1的rtl.unlock已经修改state成功但是由于可见性线程2的rtl.lock也申请锁的时候是否会失败？答案是不会，因为但当线程1的rtl.unlock修改state()和线程2的lock修改sate()发生冲突时候，由于rlt.lock需要先读取state，根据volatile的原则，写HB于读，所以unlock一定HB于lock，这时候lock一定读到的是最新的值</li>
+<li>传递性原则：由于线程1的value+=1（HB于）rtl.unlock()，所以线程1的value+=1一定（HB于）于线程2的rtl.lock()</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">X</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> Lock rtl = <span class="keyword">new</span> ReentrantLock();</span><br><span class="line">  <span class="keyword">int</span> value;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">addOne</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 获取锁</span></span><br><span class="line">    rtl.lock();  </span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      value+=<span class="number">1</span>;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">      <span class="comment">// 保证锁能释放</span></span><br><span class="line">      rtl.unlock();</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="lock的特点"><a href="#lock的特点" class="headerlink" title="lock的特点"></a>lock的特点</h2><h2 id="可重入锁"><a href="#可重入锁" class="headerlink" title="可重入锁"></a>可重入锁</h2><p>lock和synchronized一样都是可重入锁：即同一个线程在获取锁之后，可以重复获取锁资源。（不可重入锁：即在此尝试获取锁资源会进入阻塞）</p>
+<h2 id="公平锁和非公平数锁"><a href="#公平锁和非公平数锁" class="headerlink" title="公平锁和非公平数锁"></a>公平锁和非公平数锁</h2><p>lock可以实现贡公平锁，如：ReentrantLock的构造方法,见下面代码，具体可以看Sync的代码，如果是非公平锁，有可能最后获取资源的反而最先释放。详细可以去看<br>ReentrantLock内部类Sync的tryAcquire俩种实现。其中FairSync里有一个判断hasQueuedPredecessors</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Creates an instance of &#123;<span class="doctag">@code</span> ReentrantLock&#125;.</span></span><br><span class="line"><span class="comment"> * This is equivalent to using &#123;<span class="doctag">@code</span> ReentrantLock(false)&#125;.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">ReentrantLock</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    sync = <span class="keyword">new</span> NonfairSync();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Creates an instance of &#123;<span class="doctag">@code</span> ReentrantLock&#125; with the</span></span><br><span class="line"><span class="comment"> * given fairness policy.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> fair &#123;<span class="doctag">@code</span> true&#125; if this lock should use a fair ordering policy</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">ReentrantLock</span><span class="params">(<span class="keyword">boolean</span> fair)</span> </span>&#123;</span><br><span class="line">    sync = fair ? <span class="keyword">new</span> FairSync() : <span class="keyword">new</span> NonfairSync();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Lock中的等待通知机制-Condition"><a href="#Lock中的等待通知机制-Condition" class="headerlink" title="Lock中的等待通知机制-Condition"></a>Lock中的等待通知机制-Condition</h2><p>管程中最主要的一个功能就是wait的等待通知机制。那么lock的等待通知机制则是Condition</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">ReentrantLock lock=<span class="keyword">new</span> ReentrantLock();</span><br><span class="line">Condition condition=lock.newCondition();</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">test</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//阻塞等同于 object.wait()</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        condition.await();</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//阻塞等同于 object.notify() object.notifyAll();</span></span><br><span class="line">    condition.signal();</span><br><span class="line">    condition.signalAll();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="操作异步转同步"><a href="#操作异步转同步" class="headerlink" title="操作异步转同步"></a>操作异步转同步</h2><p>有些操作本身是异步的，但是我们在使用中需要同步的场景，比如dubbo中我们的客户端通过tcp发送数据给服务端后，我们需要接收到返回值才能继续处理请求。而tcp本身就是异步的。这时候就需要同步转异步操作是如何实现的呢,见DefaultFeature，伪代码如下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Request</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> ReentrantLock lock = <span class="keyword">new</span> ReentrantLock();</span><br><span class="line">    <span class="keyword">private</span> Condition condition = lock.newCondition();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Object ret;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Request <span class="title">get</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        lock.lock();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="comment">//等待结果转同步</span></span><br><span class="line">            <span class="keyword">if</span> (!isDone()) &#123;</span><br><span class="line">                condition.await(<span class="number">1000L</span>,TimeUnit.MILLISECONDS);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (!isDone()) &#123;</span><br><span class="line">                <span class="keyword">throw</span>  <span class="keyword">new</span> RuntimeException(<span class="string">"timeout"</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">isDone</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doReceived</span><span class="params">(Object response)</span> </span>&#123;</span><br><span class="line">        lock.lock();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">this</span>.ret = response;</span><br><span class="line">            <span class="comment">//在别的线程获取结果后异步通知</span></span><br><span class="line">            condition.signalAll();</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="lock的最佳实践"><a href="#lock的最佳实践" class="headerlink" title="lock的最佳实践"></a>lock的最佳实践</h2><p>永远只用于锁要修改的成员表变量<br>永远只在访问可变的成员标量加锁<br>永远不要在调用其他对象的方法加锁—因为你不确定他内部是如何实现的</p>
+<p>推荐阅读：</p>
+<p>Doug Lea《Java 并发编程：设计原则与模式》</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-排序/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/数据结构与算法-排序/" class="post-title-link" itemprop="url">数据结构与算法-排序(上)</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-25 14:02:48" itemprop="dateCreated datePublished" datetime="2019-03-25T14:02:48Z">2019-03-25</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-28 14:53:32" itemprop="dateModified" datetime="2019-03-28T14:53:32Z">2019-03-28</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/" itemprop="url" rel="index"><span itemprop="name">数据结构与算法</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/算法/" itemprop="url" rel="index"><span itemprop="name">算法</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="如何选择一种排序算法"><a href="#如何选择一种排序算法" class="headerlink" title="如何选择一种排序算法"></a>如何选择一种排序算法</h1><h2 id="算法的执行效率"><a href="#算法的执行效率" class="headerlink" title="算法的执行效率"></a>算法的执行效率</h2><ul>
+<li>最好、最坏、平均时间复杂度：需要根据要排序数据的大小、以及是否接近有序来考虑时间复杂度。</li>
+<li>考虑时间复杂度的系数、常量、低阶：对于通一时间复杂度的数据要考虑这些。</li>
+<li>比较次数和交换次数：基于比较的排序涉及到数据的交换所以要考虑比较次数和交换次数。</li>
+</ul>
+<h2 id="算法的内存消耗"><a href="#算法的内存消耗" class="headerlink" title="算法的内存消耗"></a>算法的内存消耗</h2><p>原地排序指空间复杂度是O(1)的排序，我们在选择的时候也要针对硬件考虑算法的空间复杂度</p>
+<h2 id="算法的稳定性"><a href="#算法的稳定性" class="headerlink" title="算法的稳定性"></a>算法的稳定性</h2><p>指如果数据有俩个相等的元素，当排序后者俩个相等元素之间的顺序没发生改变，我们管他叫稳定的排序。相反则是不稳定的排序。</p>
+<p>  算法稳定性的意义以及用法，对于一个对象按照俩个属性维度排序。如：对于一个账户的金额排序，金额相等的按照时间倒序。</p>
+<ol>
+<li>我们可以先按照时间倒叙排序，得到时间倒叙排序的列表；</li>
+<li><p>用稳定性排序算法按照金额大小进行排序，由于是稳定性的排序算法所以金额相等的数据原有顺序不变依然是时间倒叙。</p>
+<p>规律：先按照第二个属性排序（即xx相等，按照xx排序），在按照第一个属性排序。</p>
+</li>
+</ol>
+<h2 id="算法的有序度和逆序度"><a href="#算法的有序度和逆序度" class="headerlink" title="算法的有序度和逆序度"></a>算法的有序度和逆序度</h2><p>一个数组中，有顺序的元素个数较为有序度。相反，则成为逆序度。一个完全有序的数据我们称他为满有序度。公式是：逆序度=满有序度-有序度。<br>排序实际上是减少逆序度最终达到满有序度的过程</p>
+<h1 id="冒泡排序"><a href="#冒泡排序" class="headerlink" title="冒泡排序"></a>冒泡排序</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BubbleSort</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">int</span>[] sort(<span class="keyword">int</span>[] array) &#123;</span><br><span class="line">        <span class="comment">//第一层循环没循环一次冒泡一次，如果某一次没有发生位置变化说明数组已经完全有序，停止冒泡needBuuble</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; array.length; i++) &#123;</span><br><span class="line">            <span class="keyword">boolean</span> needBuuble=<span class="keyword">false</span>;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = i + <span class="number">1</span>; j &lt; array.length-i; j++) &#123;</span><br><span class="line">                <span class="keyword">int</span> tmp = array[j];</span><br><span class="line">                <span class="keyword">if</span> (array[i] &gt; array[j]) &#123;</span><br><span class="line">                    array[j] = array[i];</span><br><span class="line">                    array[i] = tmp;</span><br><span class="line">                    needBuuble=<span class="keyword">true</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span>(!needBuuble)&#123;</span><br><span class="line">                <span class="keyword">return</span> array;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> array;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="算法分析"><a href="#算法分析" class="headerlink" title="算法分析"></a>算法分析</h2><p>  时间复杂度：最好的情况是数组完全有序，只做一次循环就退出。最坏的时间复杂度是O(n*n),完全倒序需要都交换一次。</p>
+<p>  空间复杂度：相邻俩个元素比较交换，没有用到额外的空间属于O(1)</p>
+<p>  算法稳定性：俩个元素相同，不交换位置所以是算法稳定。</p>
+<p>注：如果不优化，时间复杂度就是O(n*n).</p>
+<h1 id="选择排序"><a href="#选择排序" class="headerlink" title="选择排序"></a>选择排序</h1><p>选择排序，循环数组，每次都找到数组最小值，然后和当前元素互换位置，知道结束，</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SelectionSorts</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 选择排序，循环数组，每次都找到数组最小值，然后和当前元素互换位置，知道结束，</span></span><br><span class="line"><span class="comment">     * 时间负责度最好O(n*n)，最坏O(n*n)，平均都是O(n*n)，且不稳定</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> a</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">int</span>[] sort(<span class="keyword">int</span>[] a) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; a.length; i++) &#123;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//记录最小值和索引</span></span><br><span class="line">            <span class="keyword">int</span> min=a[i];</span><br><span class="line">            <span class="keyword">int</span> minIdx=i;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//循环查找最小值</span></span><br><span class="line">            <span class="keyword">for</span>(<span class="keyword">int</span> j=i+<span class="number">1</span>;j&lt;a.length;j++)&#123;</span><br><span class="line">                <span class="keyword">if</span>(a[j]&lt;min)&#123;</span><br><span class="line">                    min=a[j];</span><br><span class="line">                    minIdx=j;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//如果当前值不是最小值，最小值和当前值互换位置</span></span><br><span class="line">            <span class="keyword">if</span>(i!=minIdx)&#123;</span><br><span class="line">                <span class="keyword">int</span> tmp=a[minIdx];</span><br><span class="line">                a[minIdx]=a[i];</span><br><span class="line">                a[i]=tmp;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> a;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="选择排序-算法分析"><a href="#选择排序-算法分析" class="headerlink" title="选择排序-算法分析"></a>选择排序-算法分析</h2><p>  时间复杂度：时间负责度最好O(n<em>n)，最坏O(n</em>n)，平均都是O(n*n)</p>
+<p>  空间复杂度：没有用到额外的空间属于O(1)</p>
+<p>  算法稳定性：不稳定每次都要交换位置，如果值相等也可能在交换后改变顺序</p>
+<h1 id="归并排序"><a href="#归并排序" class="headerlink" title="归并排序"></a>归并排序</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">sort</span><span class="params">(<span class="keyword">int</span> a[], <span class="keyword">int</span> start, <span class="keyword">int</span> end)</span> </span>&#123;</span><br><span class="line">       <span class="keyword">if</span> (start &gt;= end) &#123;</span><br><span class="line">           <span class="keyword">return</span>;</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="comment">//利用分治思想递归</span></span><br><span class="line">       <span class="keyword">int</span> mid = (start + end) / <span class="number">2</span>;</span><br><span class="line">       sort(a, start, mid);</span><br><span class="line">       sort(a, mid + <span class="number">1</span>, end);</span><br><span class="line"></span><br><span class="line">       merge(a, start, mid, end);</span><br><span class="line">   &#125;</span><br><span class="line"></span><br><span class="line">   <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">merge</span><span class="params">(<span class="keyword">int</span>[] a, <span class="keyword">int</span> start, <span class="keyword">int</span> mid, <span class="keyword">int</span> end)</span> </span>&#123;</span><br><span class="line">       <span class="comment">//临时数组等于a里start--&gt;end</span></span><br><span class="line">       <span class="keyword">int</span>[] tmp = <span class="keyword">new</span> <span class="keyword">int</span>[end - start + <span class="number">1</span>];<span class="comment">//注意：一定是end-start+1，因为这是Index,长度要+1（0--2长度是3）</span></span><br><span class="line">       <span class="keyword">int</span> k = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">       <span class="comment">//给tmp赋值，逻辑是i从start--&gt;mid，j从mid+1--&gt;end</span></span><br><span class="line">       <span class="keyword">int</span> i = start;</span><br><span class="line">       <span class="keyword">int</span> j = mid + <span class="number">1</span>;</span><br><span class="line">       <span class="keyword">while</span> (i &lt;= mid &amp;&amp; j &lt;= end) &#123;</span><br><span class="line">           tmp[k++] = a[i] &lt; a[j] ? a[i++] : a[j++];</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="comment">//剩余补进临时数组</span></span><br><span class="line">       <span class="keyword">while</span> (i &lt;= mid) &#123;</span><br><span class="line">           tmp[k++] = a[i++];</span><br><span class="line">       &#125;</span><br><span class="line">       <span class="keyword">while</span> (j &lt;= end) &#123;</span><br><span class="line">           tmp[k++] = a[j++];</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="comment">//将临时数据写入到a中</span></span><br><span class="line">       <span class="keyword">for</span> (<span class="keyword">int</span> x = <span class="number">0</span>; x &lt; tmp.length; x++) &#123;</span><br><span class="line">           a[start + x] = tmp[x];</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+<h2 id="归并排序-算法分析"><a href="#归并排序-算法分析" class="headerlink" title="归并排序 算法分析"></a>归并排序 算法分析</h2><p>  时间复杂度：时间负责度最好O(nlogn)，最坏O(nnlogn)，平均都是O(nnlogn)</p>
+<p>  空间复杂度：每次merge都需要开辟一块空间但是每次都释放掉，空间复杂度就是O(n)</p>
+<p>  算法稳定性：稳定</p>
+<h1 id="快速排序"><a href="#快速排序" class="headerlink" title="快速排序"></a>快速排序</h1><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 获取数组的一个标志位（交换区点一般是数组最后一位，小于这个点的在左边，大于的在右边）</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> a</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> s</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> e</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">sort</span><span class="params">(<span class="keyword">int</span>[] a, <span class="keyword">int</span> s, <span class="keyword">int</span> e)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (s &gt;= e) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> poivt = poivt(a, s, e);</span><br><span class="line">    sort(a, s, poivt - <span class="number">1</span>);<span class="comment">//排序取到分区点后，分区点-1，参与排序</span></span><br><span class="line">    sort(a, poivt, e);<span class="comment">//从分区点到终点排序</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">int</span> <span class="title">poivt</span><span class="params">(<span class="keyword">int</span>[] a, <span class="keyword">int</span> s, <span class="keyword">int</span> e)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> swapIdx = s;<span class="comment">//交换区为s，随着数组循环移动</span></span><br><span class="line">    <span class="keyword">int</span> flag = a[e];<span class="comment">//设置flag即最后交换区</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">//s--&gt;e-1,循环到交换区前</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = s; i &lt;= e - <span class="number">1</span>; i++) &#123;</span><br><span class="line">        <span class="comment">//即时小于也要交换，让swpIdx后移</span></span><br><span class="line">        <span class="keyword">if</span> (a[i] &lt;= flag) &#123;</span><br><span class="line">            <span class="keyword">int</span> tmp = a[i];</span><br><span class="line">            a[i] = a[swapIdx];</span><br><span class="line">            a[swapIdx] = tmp;</span><br><span class="line">            swapIdx++;<span class="comment">//扩大前半部分</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//最后将flag移动到此次poivt点并且返回交换区点</span></span><br><span class="line">    <span class="keyword">int</span> tmp = a[swapIdx];</span><br><span class="line">    a[swapIdx] = flag;</span><br><span class="line">    a[e] = tmp;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> swapIdx;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="快排复杂度分析"><a href="#快排复杂度分析" class="headerlink" title="快排复杂度分析"></a>快排复杂度分析</h2>
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-队列/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -899,6 +1311,187 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA线程-开启多少线程合适/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/JAVA线程-开启多少线程合适/" class="post-title-link" itemprop="url">JAVA线程-开启多少线程合适</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-22 15:56:22" itemprop="dateCreated datePublished" datetime="2019-03-22T15:56:22Z">2019-03-22</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-03-25 15:54:24" itemprop="dateModified" datetime="2019-03-25T15:54:24Z">2019-03-25</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="为什么要使用多线程"><a href="#为什么要使用多线程" class="headerlink" title="为什么要使用多线程"></a>为什么要使用多线程</h1><p>  我们评价一个操作系统性能好的系统往往是俩点低延迟、高吞吐。做到这俩点，往往需要一优化算法，二有效利用硬件。对于一不在此讨论的范畴，而硬件利用率大致往往分俩类，即cpu的利用率，和i/o的利用。<br>  单线程时代：我们的程序往往是cpu和io设备相互配合执行，所以一个单线程的程序执行cpu操作时候io就要停下来等待cpu完成，为了提高io和cpu的利用率，操作系统为我们提供了多线程技术。<br>  线程1处理cpu的计算，线程2处理io请求。处理玩io请求后在切换回来，这样利用率就得到了提高</p>
+<h1 id="线程多了就一定快么"><a href="#线程多了就一定快么" class="headerlink" title="线程多了就一定快么"></a>线程多了就一定快么</h1><p>  针对我们程序的特点分为，io密集型和计算密集型俩种。如果io操作执行的比例比较大就是io密集型，如果cpu计算的比例比较大就是计算密集型。<br>  在单核时代，对于计算密集型的业务增加线程反而会拖慢程序执行效率，因为只有一个核，所以同时只能有一个线程在运行，增加线程反而加大了线程切换的损耗。<br>  在多核时代，对于计算密集型的业务是可以通过增加线程提高性能的，但是设置应该是cpu的核数+1，充分利用起cpu。<br>  对于io密集型的业务，由于一般io的耗时比cpu要多的多，那么线程往往是cpu的核数*io耗时/cpu耗时+1。</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA线程-方法中的局部变量是线程安全的么/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1027,187 +1620,6 @@
 <p>当jvm调用fibonacci(a)时，通过cpu的寄存器找到方法的地址。cpu支持一种栈结构，他和方法息息相关，所以一般叫做调用栈。<br>栈这种数据结构的特点是后进先出，所以当一个遇到方法嵌套时候比如a–&gt;b–&gt;c，那么入栈的时候就是c–&gt;b–&gt;a，执行顺序也是c–&gt;b–&gt;a。</p>
 <h1 id="方法中的局部变量"><a href="#方法中的局部变量" class="headerlink" title="方法中的局部变量"></a>方法中的局部变量</h1><p>  方法实际上是以栈帧为单位入栈的，一个方法从入口到返回都在一个栈帧中，栈帧和方法的生命周期是一样的，当方法结束，栈帧也就失效了，而方法中的局部变量都是保存在栈帧中的，他的生命周期也是在方法内部。且为了线程之间不相互干扰，每个线程都有一个独立的栈帧。综上，栈帧是线程安全的。</p>
 <p>  这种方式有个名词叫线程封闭，即仅在单线程内访问数据，不共享就没有线程安全的问题。例如：我们常用的数据库连接池，connection的方法并没有声明线程安全，我们在使用中都是在一个方法内获取conenection，查询数据，关闭connecton，这这种线程封闭方式来解决线程安全的问题。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA线程-开启多少线程合适/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/JAVA线程-开启多少线程合适/" class="post-title-link" itemprop="url">JAVA线程-开启多少线程合适</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-03-22 15:56:22" itemprop="dateCreated datePublished" datetime="2019-03-22T15:56:22Z">2019-03-22</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-03-25 15:54:24" itemprop="dateModified" datetime="2019-03-25T15:54:24Z">2019-03-25</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="为什么要使用多线程"><a href="#为什么要使用多线程" class="headerlink" title="为什么要使用多线程"></a>为什么要使用多线程</h1><p>  我们评价一个操作系统性能好的系统往往是俩点低延迟、高吞吐。做到这俩点，往往需要一优化算法，二有效利用硬件。对于一不在此讨论的范畴，而硬件利用率大致往往分俩类，即cpu的利用率，和i/o的利用。<br>  单线程时代：我们的程序往往是cpu和io设备相互配合执行，所以一个单线程的程序执行cpu操作时候io就要停下来等待cpu完成，为了提高io和cpu的利用率，操作系统为我们提供了多线程技术。<br>  线程1处理cpu的计算，线程2处理io请求。处理玩io请求后在切换回来，这样利用率就得到了提高</p>
-<h1 id="线程多了就一定快么"><a href="#线程多了就一定快么" class="headerlink" title="线程多了就一定快么"></a>线程多了就一定快么</h1><p>  针对我们程序的特点分为，io密集型和计算密集型俩种。如果io操作执行的比例比较大就是io密集型，如果cpu计算的比例比较大就是计算密集型。<br>  在单核时代，对于计算密集型的业务增加线程反而会拖慢程序执行效率，因为只有一个核，所以同时只能有一个线程在运行，增加线程反而加大了线程切换的损耗。<br>  在多核时代，对于计算密集型的业务是可以通过增加线程提高性能的，但是设置应该是cpu的核数+1，充分利用起cpu。<br>  对于io密集型的业务，由于一般io的耗时比cpu要多的多，那么线程往往是cpu的核数*io耗时/cpu耗时+1。</p>
 
           
         
@@ -1870,422 +2282,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA中用等待、通知机制优化循环等待/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/JAVA中用等待、通知机制优化循环等待/" class="post-title-link" itemprop="url">JAVA中用等待、通知机制优化循环等待</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-03-18 14:35:08 / Modified: 15:02:33" itemprop="dateCreated datePublished" datetime="2019-03-18T14:35:08Z">2019-03-18</time>
-            
-
-            
-              
-
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="为什么要采用循环等待机制"><a href="#为什么要采用循环等待机制" class="headerlink" title="为什么要采用循环等待机制"></a>为什么要采用循环等待机制</h1><p>之前的文章在解决死锁中的打破：占有且等待中的代码中，采用了死循环的方式来处理竞争失败的情况。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//返回true</span></span><br><span class="line"> <span class="keyword">while</span> (!Allocator.getInstance().apply(<span class="keyword">this</span>, target)) &#123;&#125;</span><br></pre></td></tr></table></figure>
-<p>当线程之间竞争不激烈，或者apply方法耗时较短时候这个方案还好，反之，可能有时需要循环几万次才能获取锁这种情况就会大量的浪费cpu计算资源。</p>
-<h1 id="java中的等待通知机制的使用"><a href="#java中的等待通知机制的使用" class="headerlink" title="java中的等待通知机制的使用"></a>java中的等待通知机制的使用</h1><p>java中为我们提供了wait(),notify(),notifyAll()。方法配置synchronized完成通知等待。我们在不满足条件时候可以用lock.wait()来释放资源，进入等待状态，当满足提交过后，在调用notify()重新获取资源。</p>
-<h2 id="wait-的说明"><a href="#wait-的说明" class="headerlink" title="wait()的说明"></a>wait()的说明</h2><p>wait是Object对象的方法，实际上是和“锁”对象对应使用的，</p>
-<ol>
-<li>wait必须在synchronized代码块中，否则会报异常：IllegalMonitorStateException</li>
-<li>wait()方法必须和synchronized对应起来，即synchronized(c){},那么一定是c.wait()</li>
-</ol>
-<h2 id="notify-和notifyAll-方法的使用注意事项"><a href="#notify-和notifyAll-方法的使用注意事项" class="headerlink" title="notify()和notifyAll()方法的使用注意事项"></a>notify()和notifyAll()方法的使用注意事项</h2><ul>
-<li>当我们notfiy()之后，线程重新获取被保护资源。一定要在次判断锁条件，因为notify之后到资源重新被获取，这段时间有可能再次不满足条件。</li>
-<li>没有特殊情况尽量用notifyAll()方法。因为notify只会“唤醒”一个线程，有可能这个线程不是需要唤醒的线程导致执行效率低下。而notfiyAll会唤醒所有在等待的线程，并且同时竞争资源，保证会唤醒需要的唤醒的线程。</li>
-</ul>
-<p>之前的代码改造如下:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Allocator</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> Allocator instance = <span class="keyword">new</span> Allocator();</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Allocator <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">Allocator</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Set&lt;Account&gt; set = <span class="keyword">new</span> HashSet&lt;&gt;();</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">boolean</span> <span class="title">apply</span><span class="params">(Account from, Account to)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> (set.contains(from) || set.contains(to)) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="keyword">this</span>.wait();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        set.add(from);</span><br><span class="line">        set.add(to);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">free</span><span class="params">(Account from, Account to)</span> </span>&#123;</span><br><span class="line">        set.remove(from);</span><br><span class="line">        set.remove(to);</span><br><span class="line">        <span class="keyword">this</span>.notifyAll();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Account</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> balance;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">transfer</span><span class="params">(Account target, <span class="keyword">int</span> amt)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            Allocator.getInstance().apply(<span class="keyword">this</span>, target);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123;</span><br><span class="line">                <span class="keyword">synchronized</span> (target) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (balance &gt;= amt) &#123;</span><br><span class="line">                        balance -= amt;</span><br><span class="line">                        target.setBalance(target.getBalance() + amt);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            Allocator.getInstance().free(<span class="keyword">this</span>, target);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h1 id="思考"><a href="#思考" class="headerlink" title="思考"></a>思考</h1><h2 id="wait-和sleep-的区别"><a href="#wait-和sleep-的区别" class="headerlink" title="wait()和sleep()的区别"></a>wait()和sleep()的区别</h2><p>wait</p>
-<ol>
-<li>wait是Object中的方法，和锁对应;wait要在Synchronized代码块中执行</li>
-<li>wait会释放被锁资源。</li>
-</ol>
-<p>sleep</p>
-<ol>
-<li>sleep是Thread中的静态方法，让当前线程休眠一段时间</li>
-<li>sleep是让出当前线程的执行权限，让优先级低的线程执行，但是不会释放锁资源，也就是说其他线程遇到synchronized代码快会阻塞住</li>
-</ol>
-<h2 id="wait的原理"><a href="#wait的原理" class="headerlink" title="wait的原理"></a>wait的原理</h2><p>  wait方法被调用后，当前线程会去掉锁标记，并且会将当前线程对象放入到对象资源池，知道notify或者notifyAll被调用。<br>  当notify或者notfiyAll被调用时候，会将对象资源池中的一个线程对象或者所有线程移入到锁标记资源池，在锁标记资源池的线程对象会争抢锁，获取资源，获取到资源的开始执行</p>
-<h2 id="wait有哪些被唤醒的方法"><a href="#wait有哪些被唤醒的方法" class="headerlink" title="wait有哪些被唤醒的方法"></a>wait有哪些被唤醒的方法</h2><p>lock.notify、lock.notifyAll</p>
-<p>wait(1000L)，时间到后</p>
-<p>thread.interrupt 别的线程调用线程的interrupt方法</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA中的排他锁--synchroized/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/JAVA中的排他锁--synchroized/" class="post-title-link" itemprop="url">JAVA中的排他锁--synchroized</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-03-17 21:27:26" itemprop="dateCreated datePublished" datetime="2019-03-17T21:27:26Z">2019-03-17</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-06-06 09:11:20" itemprop="dateModified" datetime="2019-06-06T09:11:20Z">2019-06-06</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="锁的作用，解决原子性问题"><a href="#锁的作用，解决原子性问题" class="headerlink" title="锁的作用，解决原子性问题"></a>锁的作用，解决原子性问题</h1><p>例如：32位处理器在并发修改一个long类型的数据为什么是不安全的，原因是long类型是64位的数据在32位处理器中分为高32位和低32位，当2个线程同时修改一个long类型的高32位和低32位时候可能就会引起数据不一致的情况。解决方案是，给这个数据加锁，同时只允许一个线程对他进行修改。java中就是利用synchroized关键字。锁模型如下</p>
-<p><img src="/synchroized1.png" alt="avator"></p>
-<h2 id="synchroized关键字的几种用法"><a href="#synchroized关键字的几种用法" class="headerlink" title="synchroized关键字的几种用法"></a>synchroized关键字的几种用法</h2><p>synchroized有3种使用方法分别是锁static方法，锁实例方法，锁方法块，如下：</p>
-<p>分别表示：</p>
-<ol>
-<li>修饰静态方法锁类的class对象，当这个静态方法被调用时候，该类所有的加锁的静态方法都会被锁住。</li>
-<li>修饰实例方法，锁当前方法实例化的对象，其他线程对该对象的所有synchronized方法都会被锁住，以及该对象涉及锁住的代码块</li>
-<li>代码块锁对象，该对象修饰的其他的代码块、以及该对象的synchronized都会被锁住。</li>
-</ol>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">X</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 修饰非静态方法</span></span><br><span class="line">  <span class="function"><span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">foo</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 临界区</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 修饰静态方法</span></span><br><span class="line">  <span class="function"><span class="keyword">synchronized</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">bar</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 临界区</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 修饰代码块</span></span><br><span class="line">  Object obj = <span class="keyword">new</span> Object()；</span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">baz</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span>(obj) &#123;</span><br><span class="line">      <span class="comment">// 临界区</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="锁和被锁资源的关系"><a href="#锁和被锁资源的关系" class="headerlink" title="锁和被锁资源的关系"></a>锁和被锁资源的关系</h2><p>被锁资源和锁的关系应该是N：1关系，即一个资源只能对应一个锁。如下就是错误的且实际编程会经常发生</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">SafeCalc</span> </span>&#123;</span><br><span class="line">  <span class="keyword">static</span> <span class="keyword">long</span> value = <span class="number">0L</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//锁是SafeCalc的实例</span></span><br><span class="line">  <span class="function"><span class="keyword">synchronized</span> <span class="keyword">long</span> <span class="title">get</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> value;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//锁是SafeCalc.class</span></span><br><span class="line">  <span class="function"><span class="keyword">synchronized</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">addOne</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    value += <span class="number">1</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//addOne和get方法对应的不是同一把锁，所以在实际中锁是无效的</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="注意HB原则要切实锁住对象"><a href="#注意HB原则要切实锁住对象" class="headerlink" title="注意HB原则要切实锁住对象"></a>注意HB原则要切实锁住对象</h2><p>下图的方法是错误的，因为hb原则没有规定get和addOne不适用于任何一条hb原则，所以当并发开始后，有可能get会出现数据不一致情况。解决方法：</p>
-<ol>
-<li>get加synchronized关键字:当并发发生后，解锁hb于加锁，所以后面的方法对前面方法一定可见</li>
-<li>将value设置为volatile：并发发生volitile写hb于读，所以addOne之后get一定可见</li>
-</ol>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">SafeCalc</span> </span>&#123;</span><br><span class="line">  volitile <span class="keyword">long</span> value = <span class="number">0L</span>;</span><br><span class="line">  <span class="function"><span class="keyword">long</span> <span class="title">get</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> value;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="function"><span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">addOne</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    value += <span class="number">1</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h1 id="如何一把锁保护多个资源"><a href="#如何一把锁保护多个资源" class="headerlink" title="如何一把锁保护多个资源"></a>如何一把锁保护多个资源</h1><p>因为被锁的资源和锁之间关系是N:1的关系，那么如何用一把锁保护多个资源呢</p>
-<h2 id="如何保护没有关联关系的锁"><a href="#如何保护没有关联关系的锁" class="headerlink" title="如何保护没有关联关系的锁"></a>如何保护没有关联关系的锁</h2><p>如下，对于账户里面的余额和密码，我们采用了俩把锁balLock和pwLock分别保护俩个资源，同时也可用一把锁同时保护俩个资源，即给所有的方法加synchroinzed关键字，但是这样锁的粒度较大性能不如前一种好，因为一个修改余额的操作可能会影响到密码相关的操作。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Account</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 锁：保护账户余额</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> Object balLock</span><br><span class="line">    = <span class="keyword">new</span> Object();</span><br><span class="line">  <span class="comment">// 账户余额  </span></span><br><span class="line">  <span class="keyword">private</span> Integer balance;</span><br><span class="line">  <span class="comment">// 锁：保护账户密码</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> Object pwLock</span><br><span class="line">    = <span class="keyword">new</span> Object();</span><br><span class="line">  <span class="comment">// 账户密码</span></span><br><span class="line">  <span class="keyword">private</span> String password;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 取款</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">withdraw</span><span class="params">(Integer amt)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span>(balLock) &#123;</span><br><span class="line">      <span class="keyword">if</span> (<span class="keyword">this</span>.balance &gt; amt)&#123;</span><br><span class="line">        <span class="keyword">this</span>.balance -= amt;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 查看余额</span></span><br><span class="line">  <span class="function">Integer <span class="title">getBalance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span>(balLock) &#123;</span><br><span class="line">      <span class="keyword">return</span> balance;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 更改密码</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">updatePassword</span><span class="params">(String pw)</span></span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span>(pwLock) &#123;</span><br><span class="line">      <span class="keyword">this</span>.password = pw;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 查看密码</span></span><br><span class="line">  <span class="function">String <span class="title">getPassword</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span>(pwLock) &#123;</span><br><span class="line">      <span class="keyword">return</span> password;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="如何保护有关联关系的资源"><a href="#如何保护有关联关系的资源" class="headerlink" title="如何保护有关联关系的资源"></a>如何保护有关联关系的资源</h2><p>  例如上面提到的Account对象要提供转账方法，很直观的想法是给transfer方法加锁。如下所示，但是这个方法只是看似正确。因为synchronized方法修饰的调用方法的实例即this对象，并不能锁住target对象。<br>  因为在高并发情况下。如果target也向对方转账，是无法保证taget数据的一致性的。如：a–&gt;b 100元,同时另一个线程b–&gt;c100元.如图：</p>
-<p><img src="./synchronized2.png" alt="avator"></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Account</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">int</span> balance;</span><br><span class="line">  <span class="comment">// 转账</span></span><br><span class="line">  <span class="function"><span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">transfer</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">      Account target, <span class="keyword">int</span> amt)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">this</span>.balance &gt; amt) &#123;</span><br><span class="line">      <span class="keyword">this</span>.balance -= amt;</span><br><span class="line">      target.balance += amt;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>解决方案是transfer中的代码块用同一把锁锁住，最好的方法是用Account.class，因为jvm虚拟机所有线程只会加载一个Account对象</p>
-<h2 id="注意不能将不可变对象置为锁"><a href="#注意不能将不可变对象置为锁" class="headerlink" title="注意不能将不可变对象置为锁"></a>注意不能将不可变对象置为锁</h2><p>因为不可变对象的值一旦发生改变，锁就会失效</p>
-<h1 id="锁的优化以及如何规避死锁问题"><a href="#锁的优化以及如何规避死锁问题" class="headerlink" title="锁的优化以及如何规避死锁问题"></a>锁的优化以及如何规避死锁问题</h1><p>如上所述，对于转账这个场景给Account.class加锁，虽然并发问题是解决了，但是系统中所有的转账都会变成串行的操作，在现实系统中该方法完全不可用。我们可以采用细粒度的方法对程序进行优化。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Account</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">int</span> balance;</span><br><span class="line">  <span class="comment">// 转账</span></span><br><span class="line">  <span class="function"><span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">transfer</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">      Account target, <span class="keyword">int</span> amt)</span></span>&#123;</span><br><span class="line">        <span class="keyword">synchronized</span>(<span class="keyword">this</span>)&#123;</span><br><span class="line">            <span class="keyword">synchronized</span>(target)&#123;</span><br><span class="line">              <span class="keyword">if</span> (<span class="keyword">this</span>.balance &gt; amt) &#123;</span><br><span class="line">                  <span class="keyword">this</span>.balance -= amt;</span><br><span class="line">                  target.balance += amt;</span><br><span class="line">              &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>  这个方法是同时锁住转入账户和转出账户，并发问题解决了但是引入了另一个问题，即并发编程最臭名昭著的“死锁”，为什么会发生死锁呢。设想如下场景：<br>  线程T1里a要向b转账，同时线程T2里b也要向a转账，这时候T1拿到了a的锁synchronized(this),同时T2拿到了b的锁synchronized(this)，下一步T1和T2因为synchronized(target)同时等待对方释放锁。这时候就进入死了死锁。那么死锁的条件是什么呢？</p>
-<ol>
-<li>互斥：即代码中的target和this俩个线程互斥。</li>
-<li>占有且等待：即T1synchronized(this)占有资源且等待target。</li>
-<li>不释放：T1不会主动释放锁的资源。</li>
-<li><p>循环等待：上文中说的互相等待。</p>
-<p>那么如何避免死锁呢打破上述的任何一个条件即可。互斥我们是无法打破的我们看下剩下3个条件如何打破。</p>
-</li>
-</ol>
-<h2 id="打破：占有且等待"><a href="#打破：占有且等待" class="headerlink" title="打破：占有且等待"></a>打破：占有且等待</h2><p>我们针对“等待”俩个字，让锁一下获得所有的资源。具体方式，我们可以创建一个Allocator方法提供apply申请资源和free释放资源的方法。注意Allocator一定是单例，在锁保证全局唯一，代码如下</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Allocator</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> Allocator instance = <span class="keyword">new</span> Allocator();</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Allocator <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">Allocator</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Set&lt;Account&gt; set = <span class="keyword">new</span> HashSet&lt;&gt;();</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">boolean</span> <span class="title">apply</span><span class="params">(Account from, Account to)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (set.contains(from) || set.contains(to)) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        set.add(from);</span><br><span class="line">        set.add(to);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">free</span><span class="params">(Account from, Account to)</span> </span>&#123;</span><br><span class="line">        set.remove(from);</span><br><span class="line">        set.remove(to);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Account</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> balance;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">transfer</span><span class="params">(Account target, <span class="keyword">int</span> amt)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">while</span> (!Allocator.getInstance().apply(<span class="keyword">this</span>, target)) &#123;&#125;</span><br><span class="line">            <span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123;</span><br><span class="line">                <span class="keyword">synchronized</span> (target) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (balance &gt;= amt) &#123;</span><br><span class="line">                        balance -= amt;</span><br><span class="line">                        target.setBalance(target.getBalance() + amt);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            Allocator.getInstance().free(<span class="keyword">this</span>, target);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="打破：不释放"><a href="#打破：不释放" class="headerlink" title="打破：不释放"></a>打破：不释放</h2><p>即主动释放资源，但是java的synchronized关键字因为在出现竞争时候线程会进入阻塞状态，本身是没有这个功能可以用Lock替代</p>
-<h2 id="打破：循环等待"><a href="#打破：循环等待" class="headerlink" title="打破：循环等待"></a>打破：循环等待</h2><p>这个其实很简单，我们给每个账号上分配一个id,对这个id排序，加锁按照id的顺序加锁，保证每个线程的加锁顺序一样。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Account</span> </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> id;</span><br><span class="line">    <span class="keyword">int</span> balance;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">transfer</span><span class="params">(Account target, <span class="keyword">int</span> amt)</span> </span>&#123;</span><br><span class="line">        Account first = <span class="keyword">this</span>;</span><br><span class="line">        Account second = target;</span><br><span class="line">        <span class="comment">//按照id排序</span></span><br><span class="line">        <span class="keyword">if</span> (first.id &lt; second.id) &#123;</span><br><span class="line">            first = target;</span><br><span class="line">            second = <span class="keyword">this</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">synchronized</span> (first) &#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (second) &#123;</span><br><span class="line">                <span class="keyword">if</span> (balance &gt;= amt) &#123;</span><br><span class="line">                    balance -= amt;</span><br><span class="line">                    target.balance += amt;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2332,7 +2328,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">176</span>
+                    <span class="site-state-item-count">178</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

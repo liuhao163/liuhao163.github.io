@@ -345,6 +345,356 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JPA-Mongodb的Example查询不出数据的问题/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/JPA-Mongodb的Example查询不出数据的问题/" class="post-title-link" itemprop="url">JPA+Mongodb的Example查询不出数据的问题</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-07-08 10:18:18 / Modified: 02:39:59" itemprop="dateCreated datePublished" datetime="2020-07-08T10:18:18Z">2020-07-08</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/经验积累/" itemprop="url" rel="index"><span itemprop="name">经验积累</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/经验积累/项目积累/" itemprop="url" rel="index"><span itemprop="name">项目积累</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h2><p>一次查询中发现一个诡异的问题，用jpa写入到mongodb的数据无法查询出来。</p>
+<h2 id="原因分析"><a href="#原因分析" class="headerlink" title="原因分析"></a>原因分析</h2><p>  查询采用了SpringCloudData的JPA+Mongodb的Example动态拼接查询条件，具体代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">  <span class="function"><span class="keyword">public</span> PageDTO&lt;EmployeeInfoDTO&gt; <span class="title">findByCondition</span><span class="params">(String name, String number, Integer pageNumber, Integer pageSize)</span> </span>&#123;</span><br><span class="line">EmployeeInfoDO query=<span class="keyword">new</span> EmployeeInfoDO();</span><br><span class="line"><span class="comment">//......动态设置query权限</span></span><br><span class="line">      Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.Direction.DESC, <span class="string">"gmtCreate"</span>);</span><br><span class="line">      Page&lt;EmployeeInfoDO&gt; ret = employeeInfoRepo.findAll(Example.of(query, ExampleMatcher.matchingAll()), pageable);</span><br><span class="line"><span class="comment">//......</span></span><br><span class="line"><span class="keyword">return</span> pageDTO;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<p> 但是这里有个坑，即：jpa的mongodb为了方便将document还原成java对象，会在写入的时候设置一个字段”_class”，而Example在查询时候回将<strong>EmployeeInfoDO 的classname</strong>作为查询条件，而我们写入DB的时候在注入MappingMongoConverter已经忽略调了_class字段，所以当然就查不到数据了。</p>
+<p>  MappingMongoConverter</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> MappingMongoConverter <span class="title">mappingMongoConverter</span><span class="params">(MongoDbFactory factory, MongoMappingContext context, BeanFactory beanFactory)</span> </span>&#123;</span><br><span class="line">    DbRefResolver dbRefResolver = <span class="keyword">new</span> DefaultDbRefResolver(factory);</span><br><span class="line"></span><br><span class="line">    MappingMongoConverter mappingConverter = <span class="keyword">new</span> MappingMongoConverter(dbRefResolver, context);</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        mappingConverter.setCustomConversions(beanFactory.getBean(CustomConversions.class));</span><br><span class="line">    &#125; <span class="keyword">catch</span> (NoSuchBeanDefinitionException ignore) &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Don't save _class to mongo</span></span><br><span class="line">    mappingConverter.setTypeMapper(<span class="keyword">new</span> DefaultMongoTypeMapper(<span class="keyword">null</span>));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> mappingConverter;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>设置有效的ExampleMatcher忽略”_class”</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> ExampleMatcher EXAMPLE_MATCHER_IGNORE_CLASS = ExampleMatcher.matchingAll().withIgnorePaths(<span class="string">"_class"</span>);</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Go语言-painc和recover技巧/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/Go语言-painc和recover技巧/" class="post-title-link" itemprop="url">Go语言-painc和recover技巧</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-07-06 13:29:53 / Modified: 05:37:53" itemprop="dateCreated datePublished" datetime="2020-07-06T13:29:53Z">2020-07-06</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/golang/" itemprop="url" rel="index"><span itemprop="name">golang</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/golang/编程技巧/" itemprop="url" rel="index"><span itemprop="name">编程技巧</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>Java程序为了防止意外退出，在处理异常时候有try-catch，golang我们则会想到recover函数来处理painc。</p>
+<h2 id="recover的使用"><a href="#recover的使用" class="headerlink" title="recover的使用"></a>recover的使用</h2><p>recover()是go的内置函数，只能放在defer中，recover的返回值是painc中的对象。常见的用法如下：</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">process</span><span class="params">(i <span class="keyword">int</span>)</span></span>&#123;</span><br><span class="line">    <span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">        <span class="keyword">if</span> r := <span class="built_in">recover</span>(); r != <span class="literal">nil</span> &#123;</span><br><span class="line">            fmt.Printf(<span class="string">"捕获到的错误：%s\n"</span>, r)</span><br><span class="line">        &#125;</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	painc(<span class="string">"退出"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h2><ol>
+<li>recover一定要在defer中，且不能直接调用 比如 <strong>defer recover</strong> 。</li>
+<li>如果循环体中出现了painc，因为recover在defer中，则循环会被break，并且recover会在跳出循环后执行。见下面代码</li>
+</ol>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//我们希望的是遇到偶数painc之后recover捕获error，还能继续执行但是循环已经被跳出了</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Recovery</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ &#123;</span><br><span class="line">        <span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">            <span class="keyword">if</span> r := <span class="built_in">recover</span>(); r != <span class="literal">nil</span> &#123;</span><br><span class="line">                fmt.Printf(<span class="string">"捕获到的错误：%s\n"</span>, r)</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;()</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> i%<span class="number">2</span> == <span class="number">0</span> &#123;</span><br><span class="line">            <span class="built_in">panic</span>(fmt.Sprintf(<span class="string">"偶数退出：%v"</span>,i))</span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            fmt.Println(i)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//正确做法</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Recovery</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ &#123;</span><br><span class="line">        process(i)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">process</span><span class="params">(i <span class="keyword">int</span>)</span></span>&#123;</span><br><span class="line">    <span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">        <span class="keyword">if</span> r := <span class="built_in">recover</span>(); r != <span class="literal">nil</span> &#123;</span><br><span class="line">            fmt.Printf(<span class="string">"捕获到的错误：%s\n"</span>, r)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> i%<span class="number">2</span> == <span class="number">0</span> &#123;</span><br><span class="line">        <span class="built_in">panic</span>(fmt.Sprintf(<span class="string">"偶数退出：%v"</span>,i))</span><br><span class="line">    &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">        fmt.Println(i)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Go语言-技巧set类实现/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1962,404 +2312,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/共享中心建设原则/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/共享中心建设原则/" class="post-title-link" itemprop="url">共享中心建设原则</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2020-06-16 23:35:46" itemprop="dateCreated datePublished" datetime="2020-06-16T23:35:46Z">2020-06-16</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2020-07-01 12:45:05" itemprop="dateModified" datetime="2020-07-01T12:45:05Z">2020-07-01</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/读后感/" itemprop="url" rel="index"><span itemprop="name">读后感</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/读后感/企业IT架构转型之道/" itemprop="url" rel="index"><span itemprop="name">企业IT架构转型之道</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>中台不是一成不变的要能跟这业务一起成长，提供多样的接口，作为业务的沉淀</p>
-<h2 id="共享服务考量指标"><a href="#共享服务考量指标" class="headerlink" title="共享服务考量指标"></a>共享服务考量指标</h2><ul>
-<li>设计：遵循面向对象的原则<br>运营：中台要切实能够解决业务问题，业务能够运营</li>
-<li><ul>
-<li>工程：在做拆分时候要考虑投入的成本</li>
-</ul>
-</li>
-</ul>
-<h2 id="建设中台的几个原则"><a href="#建设中台的几个原则" class="headerlink" title="建设中台的几个原则"></a>建设中台的几个原则</h2><ol>
-<li>高内聚，低耦合</li>
-<li>数据完整性</li>
-<li>业务可运营性</li>
-<li>循序渐进</li>
-</ol>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/中台演进之路/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/中台演进之路/" class="post-title-link" itemprop="url">中台演进之路</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2020-06-15 22:56:43" itemprop="dateCreated datePublished" datetime="2020-06-15T22:56:43Z">2020-06-15</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2020-07-01 12:45:05" itemprop="dateModified" datetime="2020-07-01T12:45:05Z">2020-07-01</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/读后感/" itemprop="url" rel="index"><span itemprop="name">读后感</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/读后感/企业IT架构转型之道/" itemprop="url" rel="index"><span itemprop="name">企业IT架构转型之道</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>与大部分企业的服务化的演进之路如初一辙</p>
-<h2 id="单体应用阶段"><a href="#单体应用阶段" class="headerlink" title="单体应用阶段"></a>单体应用阶段</h2><p>单体应用，所有的服务跑在一个war包中，这个war包200多MB。之后遇到了如下的问题</p>
-<ol>
-<li>数据库的链接到了瓶颈：因为所有的程序在一个war包中，这个工程的数据库连接池非常大，已经逼近了单机数据库的连接池的上限；</li>
-<li>所有功能耦合在一起：牵一发而懂全身，很可能一个小改动就引起宕机;</li>
-<li>性能问题：没法做业务的隔离，一个接口慢，会拖垮整个项目</li>
-<li>业务膨胀导致没有一个人能了解所有的代码，祖传代码盛行。</li>
-</ol>
-<h2 id="服务化"><a href="#服务化" class="headerlink" title="服务化"></a>服务化</h2><p>飞行中换发动机，采用去中心化的分布式架构逐步用服务替换掉单体应用。</p>
-<h3 id="淘宝的微服务化"><a href="#淘宝的微服务化" class="headerlink" title="淘宝的微服务化"></a>淘宝的微服务化</h3><p>  淘宝采用去中心化的微服务架构。与之相对的是中心化架构，著名的“ESB”架构，这个架构有个致命的问题，ESB作为真个架构的路由，所有的服务都会落在ESB上，那么他就会成为整个系统的瓶颈，维护成本很高，并且会制约业务发展。这些是互联网业务无法容忍的，所以淘宝就采用了HSF这种去中心化的分布式架构，服务直接点对点的直接调用。（它的特点naming服务只做服务发现、订阅和配置更新的推送，在服务之间大量的请求并没有走naming）。</p>
-<p>  这种架构也就是现在的微服务架构，因为它：</p>
-<ol>
-<li>以服务方式提供应用</li>
-<li>以服务的方式而非项目的方式组织架构</li>
-<li>通过服务的只能编排提供业务支撑</li>
-<li><p>智能运维，以及健壮的平台稳定性（降级、限流、熔断）</p>
-<p>当然微服务话我们也要接受如下挑战：</p>
-</li>
-<li><p>服务的管控：服务的配置中心，服务的全链路跟踪等需要支持否则排错，自我运维闭环是无法实现的；</p>
-</li>
-<li>分布式事务的支持：与单体不同，对于数据一致性要求高的场景我们要想办法支持分布式事务的场景;</li>
-<li>只能运维的支持以及平台稳定性挑战;</li>
-<li>组织架构的变化：要根据服务特点组织组织架构的变化;</li>
-</ol>
-<h2 id="演进史"><a href="#演进史" class="headerlink" title="演进史"></a>演进史</h2><p>建立共享服务中心，前期根据业务拆分了4个中心用户中心，商品中心，交易中心，店铺中心。</p>
-<h3 id="用户中心"><a href="#用户中心" class="headerlink" title="用户中心"></a>用户中心</h3><p>改造成本低相较于其他模块功能简单，受益巨大上游调用次数多，所以是很好的🕙。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2406,7 +2358,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">197</span>
+                    <span class="site-state-item-count">199</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2646,7 +2598,11 @@
                     
                       
                     
-                    <span class="site-state-item-count">64</span>
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">66</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>

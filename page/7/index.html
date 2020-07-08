@@ -345,6 +345,420 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA内存模型与线程/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/JAVA内存模型与线程/" class="post-title-link" itemprop="url">JAVA内存模型与线程</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-11-18 16:04:54 / Modified: 12:36:52" itemprop="dateCreated datePublished" datetime="2019-11-18T16:04:54Z">2019-11-18</time>
+            
+
+            
+              
+
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/" itemprop="url" rel="index"><span itemprop="name">jvm</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>  是对之前java并发的一个补充。：P</p>
+<p>  java的操作都是将数据从主内存加载到工作内存去做操作，为了保证线程的安全归定了几个原子性操作。</p>
+<h2 id="java的几个原子性操作"><a href="#java的几个原子性操作" class="headerlink" title="java的几个原子性操作"></a>java的几个原子性操作</h2><ul>
+<li>read：主内存，将数据从主内存传输到工作内存，以便load使用</li>
+<li>load：工作内存，将read的变量副本放入到工作内存中</li>
+<li>assign：工作内存，赋值操作。将执行引擎（jvm）中的值赋值给变量。</li>
+<li>use：工作内存，把工作内存中的值传递给执行引擎。</li>
+<li>store：工作内存，将数据传输到主内存中，以便write操作使用</li>
+<li>write：主内存，将数据写入到主内存中。</li>
+<li>lock：主内存，将变量标识为线程独占</li>
+<li>unlock：主内存，释放锁标记，标识变量变为共享状态。</li>
+</ul>
+<p>几个规定</p>
+<ul>
+<li>read和load，store和write成对出现，并且先后顺序不能改变</li>
+<li>assign必须在load之后，且assign之后必须写会主内存，且加载到内存的变量必须assign</li>
+<li>use、store之前必须assign，load</li>
+<li>lock操作后工作内存会被清空</li>
+<li>unlock必须在lock之后，且unlock必须等待变量别写会主内存。</li>
+</ul>
+<h2 id="保证线程安全的3个要点"><a href="#保证线程安全的3个要点" class="headerlink" title="保证线程安全的3个要点"></a>保证线程安全的3个要点</h2><ul>
+<li>原子性：8个原子操作</li>
+<li>可见性：voltile、final、synchrozied可以保证</li>
+<li>顺序性：voltile、synchrozied</li>
+</ul>
+<h2 id="线程实现"><a href="#线程实现" class="headerlink" title="线程实现"></a>线程实现</h2><p>1:1模型：使用内核线程，实现简单，但是无法支持高并发因为内核态和用户态消耗大，并且由于是1：1无法支持高并发。<br>1:N：使用用户线程，可支持高并发，但是调度等实现难度大。<br>N:M：用户线程用于并发，内核线程用于调度。综合上面俩种优缺点。</p>
+<h2 id="线程状态"><a href="#线程状态" class="headerlink" title="线程状态"></a>线程状态</h2><p>new:new一个线程<br>run:执行start<br>block:synchronized<br>wait:没有参数的wait<br>time_waiting:有参数的wait和sleep</p>
+<h2 id="jvm的锁优化"><a href="#jvm的锁优化" class="headerlink" title="jvm的锁优化"></a>jvm的锁优化</h2><p>由于锁需要从用户态转到内核态作为控制，所以采用如下几种优化方案。</p>
+<ul>
+<li>锁消除：通过逃逸分析发现没有变量逃逸的情况，会去掉锁。</li>
+<li>锁粗化：如果多一个对象反复加锁、解锁会考虑合并</li>
+<li>偏向锁：如果当前线程获取锁，复制markword,markword修改锁标记位，以及获取锁线程的线程ID；</li>
+<li>轻量级锁：如果遇到竞争，复制markword，markword修改锁标记位，以及锁的lockrecord地址。</li>
+</ul>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JVM的编译优化-后期/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/JVM的编译优化-后期/" class="post-title-link" itemprop="url">JVM的编译优化-后期</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-11-17 10:45:28" itemprop="dateCreated datePublished" datetime="2019-11-17T10:45:28Z">2019-11-17</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-12-08 08:58:39" itemprop="dateModified" datetime="2019-12-08T08:58:39Z">2019-12-08</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/" itemprop="url" rel="index"><span itemprop="name">jvm</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>  JIT(java in time complier)，即为了提高热点代码效率将代码编译成本地代码。</p>
+<h2 id="解释器与编译器"><a href="#解释器与编译器" class="headerlink" title="解释器与编译器"></a>解释器与编译器</h2><p>  HotSpot采用的是解释器与编译器共存。</p>
+<p>  解释器可以发挥编译优势，省去编译成本地代码的时间，直接运行；编译器把反复执行的代码编译成本地代码提高执行效率。同时如果编译器的优化比较激进发现编译后的结果不成立可以通过解释器退回到之前状态。</p>
+<p>  解释器和编译器这种搭配方式称为混合模式。可以通过-Xint来控制</p>
+<h2 id="俩个编译器ClientComplier和ServerComplier"><a href="#俩个编译器ClientComplier和ServerComplier" class="headerlink" title="俩个编译器ClientComplier和ServerComplier"></a>俩个编译器ClientComplier和ServerComplier</h2><p>ClientComplier注重编译速度，ServerComplier注重编译的质量。HotSpot在JDK1.7时代默认采用分层编译</p>
+<ul>
+<li>C0：解释执行</li>
+<li>C1：将字节码编译成本地代码，简单的优化。</li>
+<li>C2：会启用一些耗时优化。</li>
+</ul>
+<h2 id="出发条件"><a href="#出发条件" class="headerlink" title="出发条件"></a>出发条件</h2><p>HotSpot采用基于计数器的方式。</p>
+<ul>
+<li>方法的重复调用<ul>
+<li>条件：重复一定次数（方法调用计数器控制）</li>
+<li>方式：调用次数+1.触发阈值后发送编译请求。编译完成后替换方法地址</li>
+<li>半衰周期：当一段时间没到阈值会，方法调用计数器会衰减一半</li>
+<li>默认值：client:1500,server:10000</li>
+</ul>
+</li>
+<li>循环体的调用：OSR(on stack replacement)栈上替换，发生在运行时的方法栈<ul>
+<li>条件：重复一定次数（回边计数器）</li>
+<li>方式：以方法为单位如果，每一次循环回边计数器都+1，如果回边计数器和方法调用计数器超过一定数值后发送编译请求。（这时候重新调整计数器以便继续循环）编译完成后替换方法地址</li>
+</ul>
+</li>
+</ul>
+<h2 id="编译过程"><a href="#编译过程" class="headerlink" title="编译过程"></a>编译过程</h2><p>后台编译</p>
+<p><img src="/JVM的编译优化-后期/clientcomiler.png" alt="client-compile"></p>
+<p>具体的HIR LIR我也没太看明白以后看编译原理在不上:P</p>
+<h2 id="编译优化的技术"><a href="#编译优化的技术" class="headerlink" title="编译优化的技术"></a>编译优化的技术</h2><p>编译代码比解释代码优化，一方面是没有虚拟接解释代码的消耗，一方面是所有的代码优化措施都集中在JIT上。</p>
+<h3 id="优化技术概览"><a href="#优化技术概览" class="headerlink" title="优化技术概览"></a>优化技术概览</h3><p><img src="/JVM的编译优化-后期/jit优化技术.png" alt="jit优化技术"><br><img src="/JVM的编译优化-后期/jit优化技术2.png" alt="jit优化技术"></p>
+<h3 id="公共子表达式优化"><a href="#公共子表达式优化" class="headerlink" title="公共子表达式优化"></a>公共子表达式优化</h3><p>比如程序有俩个b<em>c和c</em>b，javac不会进行优化，java则会优化成E=b*c,然后代码使用E</p>
+<h3 id="异常消除"><a href="#异常消除" class="headerlink" title="异常消除"></a>异常消除</h3><p>NullPointer，ArrayIndexOutOfBounds等异常信息，在运行时如果不优化每次判断都会带来开销，所以jit会对齐进行优化，消除这些隐式的判断。而且会根据Profile收集到的信息进行“智能”优化。比如一个对象经常为空的情况就不回采用try catch的优化。</p>
+<h3 id="方法内联"><a href="#方法内联" class="headerlink" title="方法内联"></a>方法内联</h3><p>由于JAVA是面向对象的，很对方法是虚方法，为了优化就采用CHA，如果是虚方法会去查询有几个版本如果只有一个版本会进行内联，如果继承关系发生改变，比如动态代码，这时候要退回解释执行。如果发现多个版本还会采用Inline Cache来尝试内联</p>
+<h3 id="逃逸分析"><a href="#逃逸分析" class="headerlink" title="逃逸分析"></a>逃逸分析</h3><p>栈上分配、同步消除、标量替换</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JVM的编译优化-前期/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2139,377 +2553,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Redis-Key的过期策略/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/Redis-Key的过期策略/" class="post-title-link" itemprop="url">Redis-Key的过期策略</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-10-11 12:38:44 / Modified: 05:17:40" itemprop="dateCreated datePublished" datetime="2019-10-11T12:38:44Z">2019-10-11</time>
-            
-
-            
-              
-
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/redis/" itemprop="url" rel="index"><span itemprop="name">redis</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="key的过期策略"><a href="#key的过期策略" class="headerlink" title="key的过期策略"></a>key的过期策略</h2><h2 id="主动过期"><a href="#主动过期" class="headerlink" title="主动过期"></a>主动过期</h2><p>  为key设置expire。由于redis是单线程的如果对于过期的key扫描的过多会影响服务的卡顿，所以redis提供了惰性过期和主动扫描过期俩种方案。</p>
-<p>  扫描机制，redis会把设置过期时间的key放在内存中，key的扫描过期机制如下：</p>
-<ol>
-<li>为了防止频繁扫描，redis每秒扫描10次过期的key，明且每次扫描建个是25ms</li>
-<li>每次扫描随机取20个key</li>
-<li>判断20个key是否过期，并且回收过期key</li>
-<li><p>如果过期的key占1/4会重复回收</p>
-<p>如果这段时间有大量的key过期，势必会增加扫描频次，同时由于redis的内存管理对数据页的回收，会导致CPU飙升，服务卡顿。</p>
-<p>注意：salve没有扫描机制，master过期后会生成一条del的命令给slave执行（如果这时候宕机可能造成数据不一致）。</p>
-</li>
-</ol>
-<h2 id="LRU"><a href="#LRU" class="headerlink" title="LRU"></a>LRU</h2><p>  redis本质是内存数据库当内存占用满后，根据maxmemory-policy配置，会有如下几种策略</p>
-<ul>
-<li>noeviction：默认策略，直接拒绝写服务（del后会执行），不会丢失数据</li>
-<li>volatile-lru：对设置expire的key进行淘汰。策略是lru</li>
-<li>volatile-ttl：对设置expire的key进行淘汰。策略是ttl</li>
-<li>volatile-random：对设置expire的key进行淘汰。策略是随机</li>
-<li>allkeys-lru：对所有的key进行淘汰。策略是lru</li>
-<li><p>allkeys-random：对所有的key进行淘汰。策略是随机</p>
-<p>redis为了节省内存采用了近似lru算法的淘汰机制，是一种懒惰淘汰机制，即当写入操作发现内存已经超过了maxmemory时候，根据maxmemory-policy去allkeys和设置了过期时间的keys中随机取5个key淘汰掉最旧的key。</p>
-</li>
-</ul>
-<h2 id="异步线程"><a href="#异步线程" class="headerlink" title="异步线程"></a>异步线程</h2><h3 id="懒惰删除"><a href="#懒惰删除" class="headerlink" title="懒惰删除"></a>懒惰删除</h3><p>redis如果删除一个key正好这个key是大key，会阻碍业务的执行。redis4.0增加了unlink命令可以将key放到异步队列中由异步线程去消费。</p>
-<h3 id="AOF的异步刷盘"><a href="#AOF的异步刷盘" class="headerlink" title="AOF的异步刷盘"></a>AOF的异步刷盘</h3><p>由于AOF需要调用sync，会影响业务。所以AOF的刷盘也会放到一个异步队列和线程中。为了保证效率是独立的一个线程处理</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Redis-运维/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/Redis-运维/" class="post-title-link" itemprop="url">redis-运维</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-10-10 20:12:48" itemprop="dateCreated datePublished" datetime="2019-10-10T20:12:48Z">2019-10-10</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-10-11 06:26:11" itemprop="dateModified" datetime="2019-10-11T06:26:11Z">2019-10-11</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/redis/" itemprop="url" rel="index"><span itemprop="name">redis</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="Redis的监控命令和几个重点指标"><a href="#Redis的监控命令和几个重点指标" class="headerlink" title="Redis的监控命令和几个重点指标"></a>Redis的监控命令和几个重点指标</h2><p>info &lt; seciton &gt;命令</p>
-<h3 id="查看qps"><a href="#查看qps" class="headerlink" title="查看qps"></a>查看qps</h3><p>  查看redis的qps【info stats】，instantaneous_ops_per_sec 这是qps<br>  查看具体的key redis-cli monitor</p>
-<h3 id="查看客户端"><a href="#查看客户端" class="headerlink" title="查看客户端"></a>查看客户端</h3><p>info clients</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># Clients</span><br><span class="line">connected_clients:<span class="number">1</span></span><br><span class="line">client_longest_output_list:<span class="number">0</span></span><br><span class="line">client_biggest_input_buf:<span class="number">0</span></span><br><span class="line">blocked_clients:<span class="number">0</span></span><br></pre></td></tr></table></figure>
-<p>拒绝连接数如果过多应该开打链接<br>info stats</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rejected_connections:<span class="number">0</span></span><br></pre></td></tr></table></figure>
-<h3 id="查看内存"><a href="#查看内存" class="headerlink" title="查看内存"></a>查看内存</h3><p>info memory</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">used_memory_human:<span class="number">796.36</span>K <span class="comment">//使用</span></span><br><span class="line">used_memory_rss_human:<span class="number">1.26</span>M <span class="comment">//top的数值</span></span><br><span class="line">used_memory_peak_human:<span class="number">877.38</span>K <span class="comment">//峰值</span></span><br><span class="line">total_system_memory_human:<span class="number">251.67</span>G</span><br></pre></td></tr></table></figure>
-<h3 id="复制挤压缓冲器"><a href="#复制挤压缓冲器" class="headerlink" title="复制挤压缓冲器"></a>复制挤压缓冲器</h3><p>info replication</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">role:master</span><br><span class="line">connected_slaves:<span class="number">0</span></span><br><span class="line">master_repl_offset:<span class="number">0</span></span><br><span class="line">repl_backlog_active:<span class="number">0</span></span><br><span class="line">repl_backlog_size:<span class="number">1048576</span> <span class="comment">//挤压缓冲区大小</span></span><br><span class="line">repl_backlog_first_byte_offset:<span class="number">0</span></span><br><span class="line">repl_backlog_histlen:<span class="number">0</span></span><br></pre></td></tr></table></figure>
-<p>info stats</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sync_full:<span class="number">0</span></span><br><span class="line">sync_partial_ok:<span class="number">0</span></span><br><span class="line">sync_partial_err:<span class="number">0</span> <span class="comment">//半同步失败次数如果过多需要增大挤压缓冲区大小</span></span><br></pre></td></tr></table></figure>
-<h2 id="安全相关"><a href="#安全相关" class="headerlink" title="安全相关"></a>安全相关</h2><p>指令安全：禁止危险命令</p>
-<p>端口安全：不要暴露到公网，同时设置bindIp或者密码，注意设置密码从库也需要密码才能复制</p>
-<p>脚本安全：禁止客户输入lua脚本</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2556,7 +2599,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">197</span>
+                    <span class="site-state-item-count">199</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2796,7 +2839,11 @@
                     
                       
                     
-                    <span class="site-state-item-count">64</span>
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">66</span>
                     <span class="site-state-item-name">tags</span>
                   </a>
                 </div>

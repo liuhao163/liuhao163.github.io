@@ -104,7 +104,7 @@
 <meta property="og:site_name" content="liuhao163.github.io">
 <meta property="og:description" content="最近负责一个项目将人脸算法工程，和人脸后端工程集成到一个arm架构的小型盒子中。我主要负责后端工程这部分，语言栈是golang,通过gocv调用opencv【ffmpeg】拉取rtsp视频流到本地抽帧进行人脸的比对。   这其中涉及到gocv+opencv，由于盒子的的架构比较特殊切公司出于安全原因无法连接外网，大部分依赖只能通过源码编译，我踩了不少的坑特此记录 如何安装ffmpeg  所以我">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2020-12-28T06:27:32.740Z">
+<meta property="og:updated_time" content="2021-01-05T06:41:24.678Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="记一次安装opencv和gocv踩过的坑">
 <meta name="twitter:description" content="最近负责一个项目将人脸算法工程，和人脸后端工程集成到一个arm架构的小型盒子中。我主要负责后端工程这部分，语言栈是golang,通过gocv调用opencv【ffmpeg】拉取rtsp视频流到本地抽帧进行人脸的比对。   这其中涉及到gocv+opencv，由于盒子的的架构比较特殊切公司出于安全原因无法连接外网，大部分依赖只能通过源码编译，我踩了不少的坑特此记录 如何安装ffmpeg  所以我">
@@ -406,7 +406,7 @@
                 
                   <span class="post-meta-item-text">Edited on</span>
                 
-                <time title="Modified: 2020-12-28 06:27:32" itemprop="dateModified" datetime="2020-12-28T06:27:32Z">2020-12-28</time>
+                <time title="Modified: 2021-01-05 06:41:24" itemprop="dateModified" datetime="2021-01-05T06:41:24Z">2021-01-05</time>
               
             
           </span>
@@ -478,12 +478,12 @@
 <li>OPENCV_GENERATE_PKGCONFIG 编译golang的程序时候gocv检查依赖是通过pkg-config所以要安装，会生成<em>.pc文件，之后我们可以将</em>.pc文件放到pkg-config，后面会讲到如何放</li>
 <li>WITH_FFMPEG 处理视频流的解码要依赖</li>
 </ul>
-<h2 id="执行cmake3时候解决FFMPEG-NO"><a href="#执行cmake3时候解决FFMPEG-NO" class="headerlink" title="执行cmake3时候解决FFMPEG NO"></a>执行cmake3时候解决FFMPEG NO</h2><p>  我在编译opencv4.5.0，执行cmake时候发现ffmpeg总是no，导致程序启动时候无法顺利拉流下来提示Error read file :xxxx这是由于安装opencv时候check依赖ffmpeg失败导致的。原来opencv检查ffpmeg是通过pkg-config的，所以</p>
+<h2 id="安装opencv-执行cmake3时候解决FFMPEG-NO"><a href="#安装opencv-执行cmake3时候解决FFMPEG-NO" class="headerlink" title="安装opencv,执行cmake3时候解决FFMPEG NO"></a>安装opencv,执行cmake3时候解决FFMPEG NO</h2><p>  我在编译opencv4.5.0，执行cmake时候发现ffmpeg总是no，导致程序启动时候无法顺利拉流下来提示Error read file :xxxx这是由于安装opencv时候check依赖ffmpeg失败导致的。原来opencv检查ffpmeg是通过pkg-config的，所以</p>
 <p>  解决方案：我们需要将刚才编译的ffmpeg下的*.pc都拷贝到pkg-config指定的目录中</p>
 <h2 id="指定pkg-config"><a href="#指定pkg-config" class="headerlink" title="指定pkg-config"></a>指定pkg-config</h2><p>  我们在编译golang程序时候有可能会失败，指找不到opencv库，有可能是pkg-config加载失败导致的解决方案</p>
 <figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> PKG_CONFIG_PATH=&lt;存放*.pc的目录，一般是xxx/pkgconfig&gt;:<span class="variable">$PKG_CONFIG_PATH</span></span><br><span class="line">pkg-config --cflags  -- opencv4  <span class="comment">#测试opencv4</span></span><br></pre></td></tr></table></figure>
 <h2 id="加载动态链接库"><a href="#加载动态链接库" class="headerlink" title="加载动态链接库"></a>加载动态链接库</h2><p>如果想让系统找到opencv库文件需要这么做</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /etc/ld.so.conf.d</span><br><span class="line">touch OpenCV.conf</span><br><span class="line"><span class="built_in">echo</span> &lt;libopenxxx.so&gt; &gt; OpenCV.conf</span><br><span class="line">ldconfig</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /etc/ld.so.conf.d</span><br><span class="line">touch OpenCV.conf</span><br><span class="line"><span class="built_in">echo</span> &lt;libopenxxx.so所在的补录，这里一般是/usr/<span class="built_in">local</span>/lib &gt; OpenCV.conf</span><br><span class="line">ldconfig</span><br></pre></td></tr></table></figure>
 <h2 id="编译golang程序"><a href="#编译golang程序" class="headerlink" title="编译golang程序"></a>编译golang程序</h2><p>  以为没法连外网所以把源码和依赖拷贝到盒子中</p>
 <p>  下载依赖</p>
 <ul>
@@ -610,7 +610,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">208</span>
+                    <span class="site-state-item-count">209</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -937,7 +937,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#如何安装ffmpeg"><span class="nav-number">1.</span> <span class="nav-text">如何安装ffmpeg</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#如何编译opencv"><span class="nav-number">2.</span> <span class="nav-text">如何编译opencv</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#执行cmake3时候解决FFMPEG-NO"><span class="nav-number">3.</span> <span class="nav-text">执行cmake3时候解决FFMPEG NO</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#指定pkg-config"><span class="nav-number">4.</span> <span class="nav-text">指定pkg-config</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#加载动态链接库"><span class="nav-number">5.</span> <span class="nav-text">加载动态链接库</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#编译golang程序"><span class="nav-number">6.</span> <span class="nav-text">编译golang程序</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#如何安装ffmpeg"><span class="nav-number">1.</span> <span class="nav-text">如何安装ffmpeg</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#如何编译opencv"><span class="nav-number">2.</span> <span class="nav-text">如何编译opencv</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#安装opencv-执行cmake3时候解决FFMPEG-NO"><span class="nav-number">3.</span> <span class="nav-text">安装opencv,执行cmake3时候解决FFMPEG NO</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#指定pkg-config"><span class="nav-number">4.</span> <span class="nav-text">指定pkg-config</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#加载动态链接库"><span class="nav-number">5.</span> <span class="nav-text">加载动态链接库</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#编译golang程序"><span class="nav-number">6.</span> <span class="nav-text">编译golang程序</span></a></li></ol></div>
             
 
           </div>
@@ -958,7 +958,7 @@
 
     <footer id="footer" class="footer">
       <div class="footer-inner">
-        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2020</span>
+        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2021</span>
   <span class="with-love" id="animate">
     <i class="fa fa-user"></i>
   </span>

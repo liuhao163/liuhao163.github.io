@@ -345,6 +345,202 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA并发案例分析-高性能队列Disruptor的设计/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/JAVA并发案例分析-高性能队列Disruptor的设计/" class="post-title-link" itemprop="url">JAVA并发案例分析-高性能队列Disruptor的设计</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-06-08 10:47:53" itemprop="dateCreated datePublished" datetime="2019-06-08T10:47:53Z">2019-06-08</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2019-06-15 04:30:29" itemprop="dateModified" datetime="2019-06-15T04:30:29Z">2019-06-15</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="Disruptor的使用方法"><a href="#Disruptor的使用方法" class="headerlink" title="Disruptor的使用方法"></a>Disruptor的使用方法</h2><ol>
+<li>生产消费针对对象event,定义Event</li>
+<li>构造Disruptor时候需要实现一个EventFactory，这里是LongEvent::new</li>
+<li>消费者要注册是一个handleEvent</li>
+<li>生产者要通过publishEvent</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 自定义 Event</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">LongEvent</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">long</span> value;</span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">set</span><span class="params">(<span class="keyword">long</span> value)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.value = value;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 指定 RingBuffer 大小,</span></span><br><span class="line"><span class="comment">// 必须是 2 的 N 次方</span></span><br><span class="line"><span class="keyword">int</span> bufferSize = <span class="number">1024</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 构建 Disruptor</span></span><br><span class="line">Disruptor&lt;LongEvent&gt; disruptor</span><br><span class="line">  = <span class="keyword">new</span> Disruptor&lt;&gt;(</span><br><span class="line">    LongEvent::<span class="keyword">new</span>,</span><br><span class="line">    bufferSize,</span><br><span class="line">    DaemonThreadFactory.INSTANCE);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 注册事件处理器</span></span><br><span class="line">disruptor.handleEventsWith(</span><br><span class="line">  (event, sequence, endOfBatch) -&gt;</span><br><span class="line">    System.out.println(<span class="string">"E: "</span>+event));</span><br><span class="line"></span><br><span class="line"><span class="comment">// 启动 Disruptor</span></span><br><span class="line">disruptor.start();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 获取 RingBuffer</span></span><br><span class="line">RingBuffer&lt;LongEvent&gt; ringBuffer</span><br><span class="line">  = disruptor.getRingBuffer();</span><br><span class="line"><span class="comment">// 生产 Event</span></span><br><span class="line">ByteBuffer bb = ByteBuffer.allocate(<span class="number">8</span>);</span><br><span class="line"><span class="keyword">for</span> (<span class="keyword">long</span> l = <span class="number">0</span>; <span class="keyword">true</span>; l++)&#123;</span><br><span class="line">  bb.putLong(<span class="number">0</span>, l);</span><br><span class="line">  <span class="comment">// 生产者生产消息</span></span><br><span class="line">  ringBuffer.publishEvent(</span><br><span class="line">    (event, sequence, buffer) -&gt; event.set(buffer.getLong(<span class="number">0</span>)), bb);</span><br><span class="line">  Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Disruptor高效的要点"><a href="#Disruptor高效的要点" class="headerlink" title="Disruptor高效的要点"></a>Disruptor高效的要点</h2><ol>
+<li>数据结构采用RingBuffer并且针对RingBuffer做了如下的优化，初始化时候利用EventFactory的newInstance方法创建所有的元素，<ol>
+<li>由于一起创建所以这些元素在内存地址上是连续的，在消费元素时候有效的理由了CPU缓存（程序的局部性）当消费元素a的时候，a+1会加载到CPU的cashe中。</li>
+<li>在生产元素时候，利用setEvent这种方式重用对象，避免重新创建对象频繁的gc</li>
+</ol>
+</li>
+<li>解决伪缓存的方式：利用内存填充的方式防止变量共享一个缓存行，在无锁的并发情况下导致缓存行重复失效。</li>
+<li>CAS的无锁设计高效生产消费队列</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 生产者获取 n 个写入位置</span></span><br><span class="line"><span class="keyword">do</span> &#123;</span><br><span class="line">  <span class="comment">//cursor 类似于入队索引，指的是上次生产到这里</span></span><br><span class="line">  current = cursor.get();</span><br><span class="line">  <span class="comment">// 目标是在生产 n 个</span></span><br><span class="line">  next = current + n;</span><br><span class="line">  <span class="comment">// 减掉一个循环</span></span><br><span class="line">  <span class="keyword">long</span> wrapPoint = next - bufferSize;</span><br><span class="line">  <span class="comment">// 获取上一次的最小消费位置</span></span><br><span class="line">  <span class="keyword">long</span> cachedGatingSequence = gatingSequenceCache.get();</span><br><span class="line">  <span class="comment">// 没有足够的空余位置</span></span><br><span class="line">  <span class="keyword">if</span> (wrapPoint&gt;cachedGatingSequence || cachedGatingSequence&gt;current)&#123;</span><br><span class="line">    <span class="comment">// 重新计算所有消费者里面的最小值位置</span></span><br><span class="line">    <span class="keyword">long</span> gatingSequence = Util.getMinimumSequence(</span><br><span class="line">        gatingSequences, current);</span><br><span class="line">    <span class="comment">// 仍然没有足够的空余位置，出让 CPU 使用权，重新执行下一循环</span></span><br><span class="line">    <span class="keyword">if</span> (wrapPoint &gt; gatingSequence)&#123;</span><br><span class="line">      LockSupport.parkNanos(<span class="number">1</span>);</span><br><span class="line">      <span class="keyword">continue</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 从新设置上一次的最小消费位置</span></span><br><span class="line">    gatingSequenceCache.set(gatingSequence);</span><br><span class="line">  &#125; <span class="keyword">else</span> <span class="keyword">if</span> (cursor.compareAndSet(current, next))&#123;</span><br><span class="line">    <span class="comment">// 获取写入位置成功，跳出循环</span></span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125; <span class="keyword">while</span> (<span class="keyword">true</span>);</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA并发案例分析-Netty于Reactor模式/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1989,198 +2185,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Immutability模式：如何利用不变性解决并发问题？/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/Immutability模式：如何利用不变性解决并发问题？/" class="post-title-link" itemprop="url">Immutability模式：如何利用不变性解决并发问题？</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-05-18 17:52:08" itemprop="dateCreated datePublished" datetime="2019-05-18T17:52:08Z">2019-05-18</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2019-06-06 10:01:40" itemprop="dateModified" datetime="2019-06-06T10:01:40Z">2019-06-06</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>并发情况下如果对一个共享变量进行读写就会有并发问题，如果只有读是没有并发问题的，所以解决并发问题的一个重要思路就是不提供变量的写的功能</p>
-<h2 id="如何快速实现不可变类"><a href="#如何快速实现不可变类" class="headerlink" title="如何快速实现不可变类"></a>如何快速实现不可变类</h2><ol>
-<li>类的声明以及属性都要声明成final对象（类的声明是为了防止子类继承父类修改父类的属性）</li>
-<li>只提供只读的方法，如果要修改对象，去创建一个新的不可变对象。</li>
-</ol>
-<p>例如String，是典型的一个不可变对象，String中的replace对象在修改时候我们是创建了一个新的不可变对象</p>
-<h2 id="利用flyweight模式减少重复对象的创建"><a href="#利用flyweight模式减少重复对象的创建" class="headerlink" title="利用flyweight模式减少重复对象的创建"></a>利用flyweight模式减少重复对象的创建</h2><p>由于不可变对象不能修改，如果遇到修改话可能会产生大量的对象占用系统内存,为了避免这种情况发生JAVA采用了flyweight模式来减少对象的产生，用一句话概述</p>
-<p>  提前缓存好一部分对象，如果没有在去创建，如果有就直接取用，因为这些对象是不可变的共享完全没问题。<br>  比较特殊的是Long，因为对象范围比较大，所以Long只保存了-128-127的对象。具体见代码</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Long <span class="title">valueOf</span><span class="params">(<span class="keyword">long</span> l)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">final</span> <span class="keyword">int</span> offset = <span class="number">128</span>;</span><br><span class="line">  <span class="comment">// [-128,127] 直接的数字做了缓存</span></span><br><span class="line">  <span class="keyword">if</span> (l &gt;= -<span class="number">128</span> &amp;&amp; l &lt;= <span class="number">127</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> LongCache</span><br><span class="line">      .cache[(<span class="keyword">int</span>)l + offset];</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="keyword">new</span> Long(l);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 缓存，等价于对象池</span></span><br><span class="line"><span class="comment">// 仅缓存 [-128,127] 直接的数字</span></span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">LongCache</span> </span>&#123;</span><br><span class="line">  <span class="keyword">static</span> <span class="keyword">final</span> Long cache[]= <span class="keyword">new</span> Long[-(-<span class="number">128</span>) + <span class="number">127</span> + <span class="number">1</span>];</span><br><span class="line"></span><br><span class="line">  <span class="keyword">static</span> &#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>; i&lt;cache.length; i++)</span><br><span class="line">      cache[i] = <span class="keyword">new</span> Long(i-<span class="number">128</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h2><p>不可变对象的属性即时声明了不可变，但是他的属性也有可能改变如下</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//Foo 线程安全</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Foo</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> age = <span class="number">0</span>;</span><br><span class="line">    String name = <span class="string">"abc"</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">Bar</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> Foo foo=<span class="keyword">new</span> Foo();<span class="comment">//可改变foo里的属性</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span>[] i=<span class="keyword">new</span> <span class="keyword">int</span>[<span class="number">10</span>];<span class="comment">//可改变数组元素</span></span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setAge</span><span class="params">(<span class="keyword">int</span> i)</span></span>&#123;</span><br><span class="line">        foo.age=i;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>不可变类作为属性本身不具备不可见性并且是线程不安全的</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//Foo 线程安全</span></span><br><span class="line"><span class="keyword">final</span> <span class="class"><span class="keyword">class</span> <span class="title">Foo</span></span>&#123;</span><br><span class="line">  <span class="keyword">final</span> <span class="keyword">int</span> age=<span class="number">0</span>;</span><br><span class="line">  <span class="keyword">final</span> <span class="keyword">int</span> name=<span class="string">"abc"</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//Bar 线程不安全</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Bar</span> </span>&#123;</span><br><span class="line">  Foo foo;<span class="comment">//并发时候会有问题</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">setFoo</span><span class="params">(Foo f)</span></span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.foo=f;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2227,7 +2231,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">208</span>
+                    <span class="site-state-item-count">209</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2558,7 +2562,7 @@
 
     <footer id="footer" class="footer">
       <div class="footer-inner">
-        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2020</span>
+        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2021</span>
   <span class="with-love" id="animate">
     <i class="fa fa-user"></i>
   </span>

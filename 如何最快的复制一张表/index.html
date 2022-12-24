@@ -1,0 +1,1212 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2">
+
+<link rel="stylesheet" href="/css/main.css?v=7.0.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.0.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.0.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.0.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false,"dimmer":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="如何快速的复制一张表我们往往会采用insert … select。但是这种做法会对原表加锁。所以更稳妥的办法是将表导出到临时文件中。本文章会讨论如何快速的赋值一张表。测试数据如下 12345678910111213141516171819create database db1;use db1;create table t(id int primary key, a int, b int, inde">
+<meta name="keywords" content="技术,数据库">
+<meta property="og:type" content="article">
+<meta property="og:title" content="如何最快的复制一张表">
+<meta property="og:url" content="https://liuhao163.github.io/如何最快的复制一张表/index.html">
+<meta property="og:site_name" content="liuhao163.github.io">
+<meta property="og:description" content="如何快速的复制一张表我们往往会采用insert … select。但是这种做法会对原表加锁。所以更稳妥的办法是将表导出到临时文件中。本文章会讨论如何快速的赋值一张表。测试数据如下 12345678910111213141516171819create database db1;use db1;create table t(id int primary key, a int, b int, inde">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://liuhao163.github.io/如何最快的复制一张表/loaddata.jpg">
+<meta property="og:image" content="https://liuhao163.github.io/如何最快的复制一张表/物理copy法.jpg">
+<meta property="og:updated_time" content="2022-09-21T15:03:02.233Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="如何最快的复制一张表">
+<meta name="twitter:description" content="如何快速的复制一张表我们往往会采用insert … select。但是这种做法会对原表加锁。所以更稳妥的办法是将表导出到临时文件中。本文章会讨论如何快速的赋值一张表。测试数据如下 12345678910111213141516171819create database db1;use db1;create table t(id int primary key, a int, b int, inde">
+<meta name="twitter:image" content="https://liuhao163.github.io/如何最快的复制一张表/loaddata.jpg">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="liuhao163.github.io" type="application/atom+xml">
+
+
+
+
+  <link rel="canonical" href="https://liuhao163.github.io/如何最快的复制一张表/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>如何最快的复制一张表 | liuhao163.github.io</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">liuhao163.github.io</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <p class="site-subtitle">杂七杂八</p>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-sitemap">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/sitemap.xml" rel="section"><i class="menu-item-icon fa fa-fw fa-sitemap"></i> <br>Sitemap</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/如何最快的复制一张表/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">如何最快的复制一张表
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-01 23:47:09" itemprop="dateCreated datePublished" datetime="2019-03-01T23:47:09Z">2019-03-01</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql运维/" itemprop="url" rel="index"><span itemprop="name">Mysql运维</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="如何快速的复制一张表"><a href="#如何快速的复制一张表" class="headerlink" title="如何快速的复制一张表"></a>如何快速的复制一张表</h1><p>我们往往会采用insert … select。但是这种做法会对原表加锁。所以更稳妥的办法是将表导出到临时文件中。本文章会讨论如何快速的赋值一张表。测试数据如下</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> db1;</span><br><span class="line"><span class="keyword">use</span> db1;</span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> t(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>, a <span class="built_in">int</span>, b <span class="built_in">int</span>, <span class="keyword">index</span>(a))<span class="keyword">engine</span>=<span class="keyword">innodb</span>;</span><br><span class="line">delimiter ;;</span><br><span class="line">  <span class="keyword">create</span> <span class="keyword">procedure</span> idata()</span><br><span class="line">  <span class="keyword">begin</span></span><br><span class="line">    <span class="keyword">declare</span> i <span class="built_in">int</span>;</span><br><span class="line">    <span class="keyword">set</span> i=<span class="number">1</span>;</span><br><span class="line">    while(i&lt;=1000)do</span><br><span class="line">      <span class="keyword">insert</span> <span class="keyword">into</span> t <span class="keyword">values</span>(i,i,i);</span><br><span class="line">      <span class="keyword">set</span> i=i+<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">end</span> <span class="keyword">while</span>;</span><br><span class="line">  <span class="keyword">end</span>;;</span><br><span class="line">delimiter ;</span><br><span class="line"><span class="keyword">call</span> idata();</span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> db2;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> db2.t <span class="keyword">like</span> db1.t</span><br></pre></td></tr></table></figure>
+<h1 id="mysqldump方法"><a href="#mysqldump方法" class="headerlink" title="mysqldump方法"></a>mysqldump方法</h1><p>例如命令</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysqldump -h$host -P$port -u$user <span class="comment">--add-locks=0 --no-create-info --single-transaction  --set-gtid-purged=OFF db1 t --where="a&gt;900" --result-file=/client_tmp/t.sql</span></span><br></pre></td></tr></table></figure>
+<p>参数说明：</p>
+<ol>
+<li>single-transaction 不对表db1 t 加锁， START TRANSACTION WITH CONSISTENT SNAPSHOT的方法；</li>
+<li>add-locks 输出的文件不增加”LOCK TABLES t WRITE”</li>
+<li>no-create-info 不需要导出表结构</li>
+<li>set-gtid-purged 不需要gtid的信息</li>
+<li>result-file 生成文件的位置，注意是客户机的位置</li>
+</ol>
+<p>这时候t.sql就是一条insert语句，我们在新表上执行t.sql就可以导入数据了，导入语句如下</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql -h127.0.0.1 -P13000  -uroot db2 -e "source /client_tmp/t.sql"</span><br></pre></td></tr></table></figure>
+<p>注：source并不是Mysql的命令，真正的语句还是Insert</p>
+<h1 id="导出CSV文件"><a href="#导出CSV文件" class="headerlink" title="导出CSV文件"></a>导出CSV文件</h1><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> db1.t <span class="keyword">where</span> a&gt;<span class="number">900</span> <span class="keyword">into</span> <span class="keyword">outfile</span> <span class="string">'/server_tmp/t.csv'</span>;</span><br></pre></td></tr></table></figure>
+<p>这条语句注意如下：</p>
+<ol>
+<li>受参数secure-file-priv控制<ol>
+<li>如果是NULL，说明 outfile被进制</li>
+<li>设置为empty，可写到任意地方，一般不建议这么设置这是不安全的</li>
+<li>设置为目录，说明outfile只能到指定的目录</li>
+</ol>
+</li>
+<li>t.csv没有覆盖功能，所以要保证目标目录下的t.csv不存在否则会报错</li>
+<li>原则是一条数据行对应文本一行，但是如果数据行有换行符能会跟上“\”这个转义字符这样字段之间、数据行之间可能会分开</li>
+</ol>
+<p>导入命令如下：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">load</span> <span class="keyword">data</span> <span class="keyword">infile</span> <span class="string">'/server_tmp/t.csv'</span> <span class="keyword">into</span> <span class="keyword">table</span> db2.t;</span><br></pre></td></tr></table></figure>
+<p>执行流程如下：</p>
+<ol>
+<li>打开文件，”\t”区分字段，“\n”区分数据</li>
+<li>校验csv文件的字段和新表字段是否一致，不一致会报错</li>
+<li>循环写入到新表知道写入完成</li>
+<li>如果binlog_format是statement<ol>
+<li>主库完成后，将csv文件内容直接写到binlog中</li>
+<li>binlog写入load data local infile ‘/tmp/SQL_LOAD_MB-1-0’ INTO TABLE <code>db2</code>.<code>t</code>。</li>
+<li>这个binlog传到备库</li>
+<li>备库apply接到这个binlog<ol>
+<li>现将csv内容写入到SQL_LOAD_MB-1-0中</li>
+<li>执行loaddate导入数据</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<p>如图：<br><img src="./loaddata.jpg" alt="avtor"></p>
+<p>注意：loaddata有俩种方式</p>
+<ul>
+<li>加local，读取的是服务器文件，受参数secure-file-priv控制</li>
+<li>不加local，读取的是客户端文件，不收参数secure-file-priv控制</li>
+</ul>
+<p>还有csv里不包含表结构，所以可以用下面的语句导出表结构和csv数据文件</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysqldump -h$host -P$port -u$user <span class="comment">---single-transaction  --set-gtid-purged=OFF db1 t --where="a&gt;900" --tab=$secure_file_priv</span></span><br></pre></td></tr></table></figure>
+<h1 id="物理copy法"><a href="#物理copy法" class="headerlink" title="物理copy法"></a>物理copy法</h1><p>优点：速度最快，适合大表的导入<br>缺点：只能在服务器copy表文件；并且没法导入部分数据；且双方都得是innodb表</p>
+<p>流程如下</p>
+<ol>
+<li>执行create table r like t;</li>
+<li>执行alter table r discard tablespace，这时候r.ibd会被删掉</li>
+<li>执行flush table t for export，这时候db1会生成t.cfg文件</li>
+<li>在db1目录下执行cp t.cfg r.cfg;cp t.ibd r.ibd</li>
+<li>执行unlock tables，这时候t.cfg会被删除</li>
+<li>执行alter table r import tablespace,将这个r.ibd作为表空间，由于是步骤4cp过来的所以就有了表数据</li>
+</ol>
+<p>如图<br><img src="./物理copy法.jpg" alt="avtor"></p>
+<p>注意：</p>
+<ul>
+<li>在步骤3 flush 表之后，表是被lock的</li>
+<li>执行import tablespace时候为了让表空间id和数据文件一直会刷新所有的数据页，import会有一定执行空间但是比逻辑导入会快很多。</li>
+<li>一定要注意权限问题（尤其是执行步骤4时候要确认好是否对.ibd有读写权限）</li>
+</ul>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/技术/" rel="tag"># 技术</a>
+          
+            <a href="/tags/数据库/" rel="tag"># 数据库</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/insert-语句的加锁/" rel="next" title="insert 语句的加锁">
+                <i class="fa fa-chevron-left"></i> insert 语句的加锁
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/grant后一定要flush-privileges/" rel="prev" title="grant后一定要flush privileges">
+                grant后一定要flush privileges <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Liu hao</p>
+              <p class="site-description motion-element" itemprop="description">励志当好厨子的程序员</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">222</span>
+                    <span class="site-state-item-name">posts</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/categories/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">54</span>
+                    <span class="site-state-item-name">categories</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">81</span>
+                    <span class="site-state-item-name">tags</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="https://github.com/liuhao163" title="GitHub &rarr; https://github.com/liuhao163" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:liu67224657@qq.com" title="E-Mail &rarr; mailto:liu67224657@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#如何快速的复制一张表"><span class="nav-number">1.</span> <span class="nav-text">如何快速的复制一张表</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#mysqldump方法"><span class="nav-number">2.</span> <span class="nav-text">mysqldump方法</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#导出CSV文件"><span class="nav-number">3.</span> <span class="nav-text">导出CSV文件</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#物理copy法"><span class="nav-number">4.</span> <span class="nav-text">物理copy法</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2022</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Liu hao</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> v7.0.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/src/utils.js?v=7.0.0"></script>
+
+  <script src="/js/src/motion.js?v=7.0.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/src/affix.js?v=7.0.0"></script>
+
+  <script src="/js/src/schemes/pisces.js?v=7.0.0"></script>
+
+
+
+  
+  <script src="/js/src/scrollspy.js?v=7.0.0"></script>
+<script src="/js/src/post-details.js?v=7.0.0"></script>
+
+
+
+  
+
+
+  <script src="/js/src/bootstrap.js?v=7.0.0"></script>
+
+
+  
+  
+
+
+  
+
+
+  
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

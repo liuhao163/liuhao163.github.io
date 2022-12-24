@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2">
+
+<link rel="stylesheet" href="/css/main.css?v=7.0.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.0.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.0.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.0.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false,"dimmer":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="重构指什么  这里的 重构行为 是指在不改变软件功能的前提下，通过一些 重构手段 调整代码结构使其更易维护、代码更加健壮，并且能有效降低项目的学习成本。   为何重构  改进软件设计 使软件更易读 帮助解决一些诡异的BUG 提高变成速度  重构的时机很重要  我们何时重构呢？一般来说，我们很难说找到一个比较长的周期什么事都不做，只重构。那么重构应该就穿插在我们日常工作中。  预备性重构：添加新的功">
+<meta name="keywords" content="方法论,重构,代码优化">
+<meta property="og:type" content="article">
+<meta property="og:title" content="重构-为什么要重构以及代码中的坏味道">
+<meta property="og:url" content="https://liuhao163.github.io/重构-为什么要重构以及代码中的坏味道/index.html">
+<meta property="og:site_name" content="liuhao163.github.io">
+<meta property="og:description" content="重构指什么  这里的 重构行为 是指在不改变软件功能的前提下，通过一些 重构手段 调整代码结构使其更易维护、代码更加健壮，并且能有效降低项目的学习成本。   为何重构  改进软件设计 使软件更易读 帮助解决一些诡异的BUG 提高变成速度  重构的时机很重要  我们何时重构呢？一般来说，我们很难说找到一个比较长的周期什么事都不做，只重构。那么重构应该就穿插在我们日常工作中。  预备性重构：添加新的功">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2022-09-21T15:03:02.381Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="重构-为什么要重构以及代码中的坏味道">
+<meta name="twitter:description" content="重构指什么  这里的 重构行为 是指在不改变软件功能的前提下，通过一些 重构手段 调整代码结构使其更易维护、代码更加健壮，并且能有效降低项目的学习成本。   为何重构  改进软件设计 使软件更易读 帮助解决一些诡异的BUG 提高变成速度  重构的时机很重要  我们何时重构呢？一般来说，我们很难说找到一个比较长的周期什么事都不做，只重构。那么重构应该就穿插在我们日常工作中。  预备性重构：添加新的功">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="liuhao163.github.io" type="application/atom+xml">
+
+
+
+
+  <link rel="canonical" href="https://liuhao163.github.io/重构-为什么要重构以及代码中的坏味道/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>重构-为什么要重构以及代码中的坏味道 | liuhao163.github.io</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">liuhao163.github.io</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <p class="site-subtitle">杂七杂八</p>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-sitemap">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/sitemap.xml" rel="section"><i class="menu-item-icon fa fa-fw fa-sitemap"></i> <br>Sitemap</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/重构-为什么要重构以及代码中的坏味道/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">重构-为什么要重构以及代码中的坏味道
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2021-06-02 22:30:23" itemprop="dateCreated datePublished" datetime="2021-06-02T22:30:23Z">2021-06-02</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/重构/" itemprop="url" rel="index"><span itemprop="name">重构</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="重构指什么"><a href="#重构指什么" class="headerlink" title="重构指什么"></a>重构指什么</h2><p>  这里的 <strong>重构行为</strong> 是指在不改变软件功能的前提下，通过一些 <strong>重构手段</strong> 调整代码结构使其更易维护、代码更加健壮，并且能有效降低项目的学习成本。</p>
+<p>  为何重构</p>
+<ul>
+<li>改进软件设计</li>
+<li>使软件更易读</li>
+<li>帮助解决一些诡异的BUG</li>
+<li>提高变成速度</li>
+</ul>
+<h2 id="重构的时机很重要"><a href="#重构的时机很重要" class="headerlink" title="重构的时机很重要"></a>重构的时机很重要</h2><p>  我们何时重构呢？一般来说，我们很难说找到一个比较长的周期什么事都不做，只重构。那么重构应该就穿插在我们日常工作中。</p>
+<ul>
+<li>预备性重构：添加新的功能之前做技术设计，发现这部分代码设计的不够合理我们可以在这时候进行该功能的重构</li>
+<li>帮助理解的重构：当我读不懂这段代码的时候，我就要考虑进行重构，或者说的极限点，当我觉得这部分代码需要些注释才能解释明白的时候我可以考虑进行重构</li>
+<li>捡垃圾式的重构：在读代码时候发现这段代码逻辑相同，或者结构迂回有问题</li>
+<li>有计划的重构和见机行事的重构：在写新功能时候顺手就把不合理的代码改掉</li>
+<li>长期重构：一些比较大的架构需要调整的视乎</li>
+<li><p>review时候重构</p>
+<p>另外重构尽量在程序员之间内部闭环少让产品、项目经理参与他们可能出于成本考虑阻碍重构，另外重新比重构划算时候就重写吧</p>
+</li>
+</ul>
+<h2 id="重构的挑战是什么"><a href="#重构的挑战是什么" class="headerlink" title="重构的挑战是什么"></a>重构的挑战是什么</h2><ul>
+<li>延缓新功能开发：如果一块代码被封装隔离起来了，即便写的很糟只要你不用理解它你就可以不重构它</li>
+<li>代码所有权：一旦接口发布出去了就不好在重构了，否则需要做大量兼容工作</li>
+<li>分支：主干发布，分支开发这种会导致，merge地狱出现</li>
+<li>测试：重构要提前想好测试方案，减少出现BUG的几率</li>
+<li>遗留代码：祖传代码没人敢动，还是提前准备充足测试方案</li>
+<li>数据库的重构：做好版本管理，将改动合并到代码库中便于回滚</li>
+</ul>
+<h2 id="代码有哪些坏味道"><a href="#代码有哪些坏味道" class="headerlink" title="代码有哪些坏味道"></a>代码有哪些坏味道</h2><p>  在我们工程的代码中出现如下的情况，会使我们的代码产生坏的味道入股不管，这些坏味道很快就会让我们的工程腐败，所以我们可以考虑对这些地方进行进行重构。</p>
+<h3 id="神秘命名"><a href="#神秘命名" class="headerlink" title="神秘命名"></a>神秘命名</h3><p>  当我们发现我们对方法或者函数命名不够准确，很难理解这时候我们应该考虑架构是否合理，代码结构是否应该调整。</p>
+<p>  解决方法：</p>
+<ol>
+<li>改变函数声明</li>
+<li>字段改名</li>
+<li>变量改名</li>
+</ol>
+<h3 id="重复代码"><a href="#重复代码" class="headerlink" title="重复代码"></a>重复代码</h3><p>  在一个地方看到相同的代码结构，导致后期维护需要维护多个副本</p>
+<p>  解决方法：</p>
+<ol>
+<li>提炼函数</li>
+<li>如果只是相似而不是相同，我们可以先 <strong>移动语句</strong> 重组代码顺序</li>
+<li>如果重复代码在不同的子类中，我们可以用 <strong>函数上移</strong> 将代码放到父类中</li>
+</ol>
+<h3 id="过长函数"><a href="#过长函数" class="headerlink" title="过长函数"></a>过长函数</h3><p>  过长的函数会导致代码很难理解</p>
+<p>  解决方法：</p>
+<ol>
+<li>提炼函数，拆分成多个小函数</li>
+<li>以查询取代临时变量，减少难以理解的临时变量</li>
+<li>引入参数对象、保持参数完整性，减少过长的参数列表</li>
+<li>如果还有_太多参数和临时变量，我们可以以 <strong>以命令取代函数</strong> 将这个长的函数封装成一个命令类，构造函数是参数</li>
+<li>对于循环 <strong>拆分循环</strong> ,对于条件表达式可以 <strong>分解条件表达式</strong>，或者以 <strong>多态处理</strong></li>
+</ol>
+<h3 id="过长参数列表"><a href="#过长参数列表" class="headerlink" title="过长参数列表"></a>过长参数列表</h3><p>  危害同上</p>
+<p>  解决方法：</p>
+<ol>
+<li>假设参数列表中的一个参数，是通过另一个参数求解出来的，我们可以用 <strong>已查询取代参数</strong> 来去掉这个参数</li>
+<li>保持参数完整性</li>
+<li>已入参数对象</li>
+<li>移除标记参数</li>
+<li>如果多个函数引用相同的参数列表，可以 <strong>函数组合成类</strong></li>
+</ol>
+<h3 id="全局数据"><a href="#全局数据" class="headerlink" title="全局数据"></a>全局数据</h3><p>  如果没有对数据的修改封装，很可能会造成系统BUG</p>
+<p>  解决方案</p>
+<ol>
+<li>少用，如果必须要用缩短其作用域（包级别调用）</li>
+<li>封装变量</li>
+</ol>
+<h3 id="可变数据"><a href="#可变数据" class="headerlink" title="可变数据"></a>可变数据</h3><p>  对数据的修改很可能会导致BUG，同上</p>
+<p>  解决方案</p>
+<ol>
+<li>封装变量</li>
+<li>拆分变量</li>
+<li>移动语句，提炼函数</li>
+<li>将查询函数和修改函数分离</li>
+<li>移除设值函数</li>
+<li>如果可变数据能在其他地方计算出来，我们可以 <strong>查询取代派生变量</strong> 即：字段只没有变，每次返回的都是计算过程</li>
+<li>函数组合成类、函数组合成变换、引用对象改为值对象</li>
+</ol>
+<h3 id="发散式变化"><a href="#发散式变化" class="headerlink" title="发散式变化"></a>发散式变化</h3><p>  某个模块因为不同的原因在不同的地方发生变化，最终导致这个模块无法维护，这个其实违反了地耦合的原则，一个类应该指关心自己的上下文。</p>
+<p>  解决方案</p>
+<ol>
+<li>先用拆分阶段将两者拆分、然后用搬移函数将处理逻辑分开。</li>
+<li>如果函数内部混合了俩类处理逻辑、先提炼函数讲起拆分，如果是以类的方式定义的可以用提炼类来做拆分</li>
+</ol>
+<h3 id="霰弹式修改"><a href="#霰弹式修改" class="headerlink" title="霰弹式修改"></a>霰弹式修改</h3><p>  如果每次修改一个地方，都需要在很多其他类中做修改，这个其实违反了高内聚的原则。</p>
+<p>  解决方案</p>
+<ol>
+<li>搬移函数或者搬移字段把要修改的代码放在同一个模块</li>
+<li>如果有很多函数都在操作想死的数据，可以使用 <strong>函数组合</strong></li>
+<li>如果优先函数是功能转换或者数据填充，可以使用 <strong>函数组合成变换</strong></li>
+<li>如果一些函数输出可以组合后提供给一段专门使用这些计算结果的逻辑，可以使用 <strong>拆分阶段</strong></li>
+<li>一个常用策略是 <strong>内联函数</strong> 或者是 <strong>内连类</strong> 将不该分散的逻辑拽到一起。</li>
+</ol>
+<h3 id="依恋情节"><a href="#依恋情节" class="headerlink" title="依恋情节"></a>依恋情节</h3><p>todo</p>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/方法论/" rel="tag"># 方法论</a>
+          
+            <a href="/tags/重构/" rel="tag"># 重构</a>
+          
+            <a href="/tags/代码优化/" rel="tag"># 代码优化</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/记一次安装opencv和gocv踩过的坑/" rel="next" title="记一次安装opencv和gocv踩过的坑">
+                <i class="fa fa-chevron-left"></i> 记一次安装opencv和gocv踩过的坑
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/Spring事务-事务传播级别/" rel="prev" title="Spring事务-事务传播级别">
+                Spring事务-事务传播级别 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Liu hao</p>
+              <p class="site-description motion-element" itemprop="description">励志当好厨子的程序员</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">222</span>
+                    <span class="site-state-item-name">posts</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/categories/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">54</span>
+                    <span class="site-state-item-name">categories</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">81</span>
+                    <span class="site-state-item-name">tags</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="https://github.com/liuhao163" title="GitHub &rarr; https://github.com/liuhao163" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:liu67224657@qq.com" title="E-Mail &rarr; mailto:liu67224657@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#重构指什么"><span class="nav-number">1.</span> <span class="nav-text">重构指什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#重构的时机很重要"><span class="nav-number">2.</span> <span class="nav-text">重构的时机很重要</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#重构的挑战是什么"><span class="nav-number">3.</span> <span class="nav-text">重构的挑战是什么</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#代码有哪些坏味道"><span class="nav-number">4.</span> <span class="nav-text">代码有哪些坏味道</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#神秘命名"><span class="nav-number">4.1.</span> <span class="nav-text">神秘命名</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#重复代码"><span class="nav-number">4.2.</span> <span class="nav-text">重复代码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#过长函数"><span class="nav-number">4.3.</span> <span class="nav-text">过长函数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#过长参数列表"><span class="nav-number">4.4.</span> <span class="nav-text">过长参数列表</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#全局数据"><span class="nav-number">4.5.</span> <span class="nav-text">全局数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#可变数据"><span class="nav-number">4.6.</span> <span class="nav-text">可变数据</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#发散式变化"><span class="nav-number">4.7.</span> <span class="nav-text">发散式变化</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#霰弹式修改"><span class="nav-number">4.8.</span> <span class="nav-text">霰弹式修改</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#依恋情节"><span class="nav-number">4.9.</span> <span class="nav-text">依恋情节</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2022</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Liu hao</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> v7.0.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/src/utils.js?v=7.0.0"></script>
+
+  <script src="/js/src/motion.js?v=7.0.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/src/affix.js?v=7.0.0"></script>
+
+  <script src="/js/src/schemes/pisces.js?v=7.0.0"></script>
+
+
+
+  
+  <script src="/js/src/scrollspy.js?v=7.0.0"></script>
+<script src="/js/src/post-details.js?v=7.0.0"></script>
+
+
+
+  
+
+
+  <script src="/js/src/bootstrap.js?v=7.0.0"></script>
+
+
+  
+  
+
+
+  
+
+
+  
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

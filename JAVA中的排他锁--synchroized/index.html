@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2">
+
+<link rel="stylesheet" href="/css/main.css?v=7.0.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.0.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.0.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.0.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false,"dimmer":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="锁的作用，解决原子性问题例如：32位处理器在并发修改一个long类型的数据为什么是不安全的，原因是long类型是64位的数据在32位处理器中分为高32位和低32位，当2个线程同时修改一个long类型的高32位和低32位时候可能就会引起数据不一致的情况。解决方案是，给这个数据加锁，同时只允许一个线程对他进行修改。java中就是利用synchroized关键字。锁模型如下  synchroized关键">
+<meta name="keywords" content="java,并发">
+<meta property="og:type" content="article">
+<meta property="og:title" content="JAVA中的排他锁--synchroized">
+<meta property="og:url" content="https://liuhao163.github.io/JAVA中的排他锁--synchroized/index.html">
+<meta property="og:site_name" content="liuhao163.github.io">
+<meta property="og:description" content="锁的作用，解决原子性问题例如：32位处理器在并发修改一个long类型的数据为什么是不安全的，原因是long类型是64位的数据在32位处理器中分为高32位和低32位，当2个线程同时修改一个long类型的高32位和低32位时候可能就会引起数据不一致的情况。解决方案是，给这个数据加锁，同时只允许一个线程对他进行修改。java中就是利用synchroized关键字。锁模型如下  synchroized关键">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://liuhao163.github.io/synchroized1.png">
+<meta property="og:image" content="https://liuhao163.github.io/JAVA中的排他锁--synchroized/synchronized2.png">
+<meta property="og:updated_time" content="2022-09-21T15:03:02.091Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="JAVA中的排他锁--synchroized">
+<meta name="twitter:description" content="锁的作用，解决原子性问题例如：32位处理器在并发修改一个long类型的数据为什么是不安全的，原因是long类型是64位的数据在32位处理器中分为高32位和低32位，当2个线程同时修改一个long类型的高32位和低32位时候可能就会引起数据不一致的情况。解决方案是，给这个数据加锁，同时只允许一个线程对他进行修改。java中就是利用synchroized关键字。锁模型如下  synchroized关键">
+<meta name="twitter:image" content="https://liuhao163.github.io/synchroized1.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="liuhao163.github.io" type="application/atom+xml">
+
+
+
+
+  <link rel="canonical" href="https://liuhao163.github.io/JAVA中的排他锁--synchroized/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>JAVA中的排他锁--synchroized | liuhao163.github.io</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">liuhao163.github.io</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <p class="site-subtitle">杂七杂八</p>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-sitemap">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/sitemap.xml" rel="section"><i class="menu-item-icon fa fa-fw fa-sitemap"></i> <br>Sitemap</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA中的排他锁--synchroized/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">JAVA中的排他锁--synchroized
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-17 21:27:26" itemprop="dateCreated datePublished" datetime="2019-03-17T21:27:26Z">2019-03-17</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h1 id="锁的作用，解决原子性问题"><a href="#锁的作用，解决原子性问题" class="headerlink" title="锁的作用，解决原子性问题"></a>锁的作用，解决原子性问题</h1><p>例如：32位处理器在并发修改一个long类型的数据为什么是不安全的，原因是long类型是64位的数据在32位处理器中分为高32位和低32位，当2个线程同时修改一个long类型的高32位和低32位时候可能就会引起数据不一致的情况。解决方案是，给这个数据加锁，同时只允许一个线程对他进行修改。java中就是利用synchroized关键字。锁模型如下</p>
+<p><img src="/synchroized1.png" alt="avator"></p>
+<h2 id="synchroized关键字的几种用法"><a href="#synchroized关键字的几种用法" class="headerlink" title="synchroized关键字的几种用法"></a>synchroized关键字的几种用法</h2><p>synchroized有3种使用方法分别是锁static方法，锁实例方法，锁方法块，如下：</p>
+<p>分别表示：</p>
+<ol>
+<li>修饰静态方法锁类的class对象，当这个静态方法被调用时候，该类所有的加锁的静态方法都会被锁住。</li>
+<li>修饰实例方法，锁当前方法实例化的对象，其他线程对该对象的所有synchronized方法都会被锁住，以及该对象涉及锁住的代码块</li>
+<li>代码块锁对象，该对象修饰的其他的代码块、以及该对象的synchronized都会被锁住。</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">X</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 修饰非静态方法</span></span><br><span class="line">  <span class="function"><span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">foo</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 临界区</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 修饰静态方法</span></span><br><span class="line">  <span class="function"><span class="keyword">synchronized</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">bar</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 临界区</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 修饰代码块</span></span><br><span class="line">  Object obj = <span class="keyword">new</span> Object()；</span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">baz</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span>(obj) &#123;</span><br><span class="line">      <span class="comment">// 临界区</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="锁和被锁资源的关系"><a href="#锁和被锁资源的关系" class="headerlink" title="锁和被锁资源的关系"></a>锁和被锁资源的关系</h2><p>被锁资源和锁的关系应该是N：1关系，即一个资源只能对应一个锁。如下就是错误的且实际编程会经常发生</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">SafeCalc</span> </span>&#123;</span><br><span class="line">  <span class="keyword">static</span> <span class="keyword">long</span> value = <span class="number">0L</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//锁是SafeCalc的实例</span></span><br><span class="line">  <span class="function"><span class="keyword">synchronized</span> <span class="keyword">long</span> <span class="title">get</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> value;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//锁是SafeCalc.class</span></span><br><span class="line">  <span class="function"><span class="keyword">synchronized</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">addOne</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    value += <span class="number">1</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">//addOne和get方法对应的不是同一把锁，所以在实际中锁是无效的</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="注意HB原则要切实锁住对象"><a href="#注意HB原则要切实锁住对象" class="headerlink" title="注意HB原则要切实锁住对象"></a>注意HB原则要切实锁住对象</h2><p>下图的方法是错误的，因为hb原则没有规定get和addOne不适用于任何一条hb原则，所以当并发开始后，有可能get会出现数据不一致情况。解决方法：</p>
+<ol>
+<li>get加synchronized关键字:当并发发生后，解锁hb于加锁，所以后面的方法对前面方法一定可见</li>
+<li>将value设置为volatile：并发发生volitile写hb于读，所以addOne之后get一定可见</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">SafeCalc</span> </span>&#123;</span><br><span class="line">  volitile <span class="keyword">long</span> value = <span class="number">0L</span>;</span><br><span class="line">  <span class="function"><span class="keyword">long</span> <span class="title">get</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> value;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="function"><span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">addOne</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    value += <span class="number">1</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="如何一把锁保护多个资源"><a href="#如何一把锁保护多个资源" class="headerlink" title="如何一把锁保护多个资源"></a>如何一把锁保护多个资源</h1><p>因为被锁的资源和锁之间关系是N:1的关系，那么如何用一把锁保护多个资源呢</p>
+<h2 id="如何保护没有关联关系的锁"><a href="#如何保护没有关联关系的锁" class="headerlink" title="如何保护没有关联关系的锁"></a>如何保护没有关联关系的锁</h2><p>如下，对于账户里面的余额和密码，我们采用了俩把锁balLock和pwLock分别保护俩个资源，同时也可用一把锁同时保护俩个资源，即给所有的方法加synchroinzed关键字，但是这样锁的粒度较大性能不如前一种好，因为一个修改余额的操作可能会影响到密码相关的操作。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Account</span> </span>&#123;</span><br><span class="line">  <span class="comment">// 锁：保护账户余额</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> Object balLock</span><br><span class="line">    = <span class="keyword">new</span> Object();</span><br><span class="line">  <span class="comment">// 账户余额  </span></span><br><span class="line">  <span class="keyword">private</span> Integer balance;</span><br><span class="line">  <span class="comment">// 锁：保护账户密码</span></span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">final</span> Object pwLock</span><br><span class="line">    = <span class="keyword">new</span> Object();</span><br><span class="line">  <span class="comment">// 账户密码</span></span><br><span class="line">  <span class="keyword">private</span> String password;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 取款</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">withdraw</span><span class="params">(Integer amt)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span>(balLock) &#123;</span><br><span class="line">      <span class="keyword">if</span> (<span class="keyword">this</span>.balance &gt; amt)&#123;</span><br><span class="line">        <span class="keyword">this</span>.balance -= amt;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 查看余额</span></span><br><span class="line">  <span class="function">Integer <span class="title">getBalance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span>(balLock) &#123;</span><br><span class="line">      <span class="keyword">return</span> balance;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 更改密码</span></span><br><span class="line">  <span class="function"><span class="keyword">void</span> <span class="title">updatePassword</span><span class="params">(String pw)</span></span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span>(pwLock) &#123;</span><br><span class="line">      <span class="keyword">this</span>.password = pw;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 查看密码</span></span><br><span class="line">  <span class="function">String <span class="title">getPassword</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">synchronized</span>(pwLock) &#123;</span><br><span class="line">      <span class="keyword">return</span> password;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="如何保护有关联关系的资源"><a href="#如何保护有关联关系的资源" class="headerlink" title="如何保护有关联关系的资源"></a>如何保护有关联关系的资源</h2><p>  例如上面提到的Account对象要提供转账方法，很直观的想法是给transfer方法加锁。如下所示，但是这个方法只是看似正确。因为synchronized方法修饰的调用方法的实例即this对象，并不能锁住target对象。<br>  因为在高并发情况下。如果target也向对方转账，是无法保证taget数据的一致性的。如：a–&gt;b 100元,同时另一个线程b–&gt;c100元.如图：</p>
+<p><img src="./synchronized2.png" alt="avator"></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Account</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">int</span> balance;</span><br><span class="line">  <span class="comment">// 转账</span></span><br><span class="line">  <span class="function"><span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">transfer</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">      Account target, <span class="keyword">int</span> amt)</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">this</span>.balance &gt; amt) &#123;</span><br><span class="line">      <span class="keyword">this</span>.balance -= amt;</span><br><span class="line">      target.balance += amt;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>解决方案是transfer中的代码块用同一把锁锁住，最好的方法是用Account.class，因为jvm虚拟机所有线程只会加载一个Account对象</p>
+<h2 id="注意不能将不可变对象置为锁"><a href="#注意不能将不可变对象置为锁" class="headerlink" title="注意不能将不可变对象置为锁"></a>注意不能将不可变对象置为锁</h2><p>因为不可变对象的值一旦发生改变，锁就会失效</p>
+<h1 id="锁的优化以及如何规避死锁问题"><a href="#锁的优化以及如何规避死锁问题" class="headerlink" title="锁的优化以及如何规避死锁问题"></a>锁的优化以及如何规避死锁问题</h1><p>如上所述，对于转账这个场景给Account.class加锁，虽然并发问题是解决了，但是系统中所有的转账都会变成串行的操作，在现实系统中该方法完全不可用。我们可以采用细粒度的方法对程序进行优化。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Account</span> </span>&#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="keyword">int</span> balance;</span><br><span class="line">  <span class="comment">// 转账</span></span><br><span class="line">  <span class="function"><span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">transfer</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">      Account target, <span class="keyword">int</span> amt)</span></span>&#123;</span><br><span class="line">        <span class="keyword">synchronized</span>(<span class="keyword">this</span>)&#123;</span><br><span class="line">            <span class="keyword">synchronized</span>(target)&#123;</span><br><span class="line">              <span class="keyword">if</span> (<span class="keyword">this</span>.balance &gt; amt) &#123;</span><br><span class="line">                  <span class="keyword">this</span>.balance -= amt;</span><br><span class="line">                  target.balance += amt;</span><br><span class="line">              &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  这个方法是同时锁住转入账户和转出账户，并发问题解决了但是引入了另一个问题，即并发编程最臭名昭著的“死锁”，为什么会发生死锁呢。设想如下场景：<br>  线程T1里a要向b转账，同时线程T2里b也要向a转账，这时候T1拿到了a的锁synchronized(this),同时T2拿到了b的锁synchronized(this)，下一步T1和T2因为synchronized(target)同时等待对方释放锁。这时候就进入死了死锁。那么死锁的条件是什么呢？</p>
+<ol>
+<li>互斥：即代码中的target和this俩个线程互斥。</li>
+<li>占有且等待：即T1synchronized(this)占有资源且等待target。</li>
+<li>不释放：T1不会主动释放锁的资源。</li>
+<li><p>循环等待：上文中说的互相等待。</p>
+<p>那么如何避免死锁呢打破上述的任何一个条件即可。互斥我们是无法打破的我们看下剩下3个条件如何打破。</p>
+</li>
+</ol>
+<h2 id="打破：占有且等待"><a href="#打破：占有且等待" class="headerlink" title="打破：占有且等待"></a>打破：占有且等待</h2><p>我们针对“等待”俩个字，让锁一下获得所有的资源。具体方式，我们可以创建一个Allocator方法提供apply申请资源和free释放资源的方法。注意Allocator一定是单例，在锁保证全局唯一，代码如下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Allocator</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> Allocator instance = <span class="keyword">new</span> Allocator();</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> Allocator <span class="title">getInstance</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="title">Allocator</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Set&lt;Account&gt; set = <span class="keyword">new</span> HashSet&lt;&gt;();</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">boolean</span> <span class="title">apply</span><span class="params">(Account from, Account to)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (set.contains(from) || set.contains(to)) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        set.add(from);</span><br><span class="line">        set.add(to);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">free</span><span class="params">(Account from, Account to)</span> </span>&#123;</span><br><span class="line">        set.remove(from);</span><br><span class="line">        set.remove(to);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Account</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> balance;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">transfer</span><span class="params">(Account target, <span class="keyword">int</span> amt)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">while</span> (!Allocator.getInstance().apply(<span class="keyword">this</span>, target)) &#123;&#125;</span><br><span class="line">            <span class="keyword">synchronized</span> (<span class="keyword">this</span>) &#123;</span><br><span class="line">                <span class="keyword">synchronized</span> (target) &#123;</span><br><span class="line">                    <span class="keyword">if</span> (balance &gt;= amt) &#123;</span><br><span class="line">                        balance -= amt;</span><br><span class="line">                        target.setBalance(target.getBalance() + amt);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            Allocator.getInstance().free(<span class="keyword">this</span>, target);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="打破：不释放"><a href="#打破：不释放" class="headerlink" title="打破：不释放"></a>打破：不释放</h2><p>即主动释放资源，但是java的synchronized关键字因为在出现竞争时候线程会进入阻塞状态，本身是没有这个功能可以用Lock替代</p>
+<h2 id="打破：循环等待"><a href="#打破：循环等待" class="headerlink" title="打破：循环等待"></a>打破：循环等待</h2><p>这个其实很简单，我们给每个账号上分配一个id,对这个id排序，加锁按照id的顺序加锁，保证每个线程的加锁顺序一样。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Account</span> </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> id;</span><br><span class="line">    <span class="keyword">int</span> balance;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">transfer</span><span class="params">(Account target, <span class="keyword">int</span> amt)</span> </span>&#123;</span><br><span class="line">        Account first = <span class="keyword">this</span>;</span><br><span class="line">        Account second = target;</span><br><span class="line">        <span class="comment">//按照id排序</span></span><br><span class="line">        <span class="keyword">if</span> (first.id &lt; second.id) &#123;</span><br><span class="line">            first = target;</span><br><span class="line">            second = <span class="keyword">this</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">synchronized</span> (first) &#123;</span><br><span class="line">            <span class="keyword">synchronized</span> (second) &#123;</span><br><span class="line">                <span class="keyword">if</span> (balance &gt;= amt) &#123;</span><br><span class="line">                    balance -= amt;</span><br><span class="line">                    target.balance += amt;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"># java</a>
+          
+            <a href="/tags/并发/" rel="tag"># 并发</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/AtomicReferenceFieldUpdater/" rel="next" title="AtomicReferenceFieldUpdater">
+                <i class="fa fa-chevron-left"></i> AtomicReferenceFieldUpdater
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/JAVA中用等待、通知机制优化循环等待/" rel="prev" title="JAVA中用等待、通知机制优化循环等待">
+                JAVA中用等待、通知机制优化循环等待 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Liu hao</p>
+              <p class="site-description motion-element" itemprop="description">励志当好厨子的程序员</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">222</span>
+                    <span class="site-state-item-name">posts</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/categories/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">54</span>
+                    <span class="site-state-item-name">categories</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">81</span>
+                    <span class="site-state-item-name">tags</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="https://github.com/liuhao163" title="GitHub &rarr; https://github.com/liuhao163" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:liu67224657@qq.com" title="E-Mail &rarr; mailto:liu67224657@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#锁的作用，解决原子性问题"><span class="nav-number">1.</span> <span class="nav-text">锁的作用，解决原子性问题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#synchroized关键字的几种用法"><span class="nav-number">1.1.</span> <span class="nav-text">synchroized关键字的几种用法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#锁和被锁资源的关系"><span class="nav-number">1.2.</span> <span class="nav-text">锁和被锁资源的关系</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#注意HB原则要切实锁住对象"><span class="nav-number">1.3.</span> <span class="nav-text">注意HB原则要切实锁住对象</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#如何一把锁保护多个资源"><span class="nav-number">2.</span> <span class="nav-text">如何一把锁保护多个资源</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#如何保护没有关联关系的锁"><span class="nav-number">2.1.</span> <span class="nav-text">如何保护没有关联关系的锁</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#如何保护有关联关系的资源"><span class="nav-number">2.2.</span> <span class="nav-text">如何保护有关联关系的资源</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#注意不能将不可变对象置为锁"><span class="nav-number">2.3.</span> <span class="nav-text">注意不能将不可变对象置为锁</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#锁的优化以及如何规避死锁问题"><span class="nav-number">3.</span> <span class="nav-text">锁的优化以及如何规避死锁问题</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#打破：占有且等待"><span class="nav-number">3.1.</span> <span class="nav-text">打破：占有且等待</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#打破：不释放"><span class="nav-number">3.2.</span> <span class="nav-text">打破：不释放</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#打破：循环等待"><span class="nav-number">3.3.</span> <span class="nav-text">打破：循环等待</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2022</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Liu hao</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> v7.0.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/src/utils.js?v=7.0.0"></script>
+
+  <script src="/js/src/motion.js?v=7.0.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/src/affix.js?v=7.0.0"></script>
+
+  <script src="/js/src/schemes/pisces.js?v=7.0.0"></script>
+
+
+
+  
+  <script src="/js/src/scrollspy.js?v=7.0.0"></script>
+<script src="/js/src/post-details.js?v=7.0.0"></script>
+
+
+
+  
+
+
+  <script src="/js/src/bootstrap.js?v=7.0.0"></script>
+
+
+  
+  
+
+
+  
+
+
+  
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

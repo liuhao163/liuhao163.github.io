@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2">
+
+<link rel="stylesheet" href="/css/main.css?v=7.0.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.0.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.0.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.0.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false,"dimmer":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="上一篇讲了rocketmq在消费消息时候consumer的流程和原理，本章会将broker做了什么。 ConsumeQueue  这里会涉及到一个关键类是ConsumeQueue，rocketmq为了规避kafka在mq增多时候会导致磁盘IO下降的问题，特有的设计。它是一个逻辑队列，里面保存了CommitLog的index。每次拉取消息broker会根据MessageQueue的Id去里面查找">
+<meta name="keywords" content="java,消息队列,rocketmq">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RoketMq源码学习-五-消息的消费-下">
+<meta property="og:url" content="https://liuhao163.github.io/RoketMq源码学习-五-消息的消费-下/index.html">
+<meta property="og:site_name" content="liuhao163.github.io">
+<meta property="og:description" content="上一篇讲了rocketmq在消费消息时候consumer的流程和原理，本章会将broker做了什么。 ConsumeQueue  这里会涉及到一个关键类是ConsumeQueue，rocketmq为了规避kafka在mq增多时候会导致磁盘IO下降的问题，特有的设计。它是一个逻辑队列，里面保存了CommitLog的index。每次拉取消息broker会根据MessageQueue的Id去里面查找">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://liuhao163.github.io/RoketMq源码学习-五-消息的消费-下/cmq.png">
+<meta property="og:updated_time" content="2022-09-21T15:03:02.172Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="RoketMq源码学习-五-消息的消费-下">
+<meta name="twitter:description" content="上一篇讲了rocketmq在消费消息时候consumer的流程和原理，本章会将broker做了什么。 ConsumeQueue  这里会涉及到一个关键类是ConsumeQueue，rocketmq为了规避kafka在mq增多时候会导致磁盘IO下降的问题，特有的设计。它是一个逻辑队列，里面保存了CommitLog的index。每次拉取消息broker会根据MessageQueue的Id去里面查找">
+<meta name="twitter:image" content="https://liuhao163.github.io/RoketMq源码学习-五-消息的消费-下/cmq.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="liuhao163.github.io" type="application/atom+xml">
+
+
+
+
+  <link rel="canonical" href="https://liuhao163.github.io/RoketMq源码学习-五-消息的消费-下/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>RoketMq源码学习-五-消息的消费-下 | liuhao163.github.io</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">liuhao163.github.io</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <p class="site-subtitle">杂七杂八</p>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-sitemap">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/sitemap.xml" rel="section"><i class="menu-item-icon fa fa-fw fa-sitemap"></i> <br>Sitemap</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/RoketMq源码学习-五-消息的消费-下/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">RoketMq源码学习-五-消息的消费-下
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-09-15 01:30:00" itemprop="dateCreated datePublished" datetime="2019-09-15T01:30:00Z">2019-09-15</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/" itemprop="url" rel="index"><span itemprop="name">消息队列</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/" itemprop="url" rel="index"><span itemprop="name">rocketmq</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/源码学习/" itemprop="url" rel="index"><span itemprop="name">源码学习</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>  上一篇讲了rocketmq在消费消息时候consumer的流程和原理，本章会将broker做了什么。</p>
+<h2 id="ConsumeQueue"><a href="#ConsumeQueue" class="headerlink" title="ConsumeQueue"></a>ConsumeQueue</h2><p>  这里会涉及到一个关键类是ConsumeQueue，rocketmq为了规避kafka在mq增多时候会导致磁盘IO下降的问题，特有的设计。它是一个逻辑队列，里面保存了CommitLog的index。每次拉取消息broker会根据MessageQueue的Id去里面查找偏移量然后去commitLog拉取消息</p>
+<p>  它保存的信息格式如下：<br>  <img src="/RoketMq源码学习-五-消息的消费-下/cmq.png" alt="avatror"><br>  其中：消息的起始物理偏移量physical offset(long 8字节)+消息大小size(int 4字节)+tagsCode(long 8字节)，每条数据的大小为20个字节，从而每个文件的默认大小为600万个字节。</p>
+<p>  文件的地址是：$HOME/store/consumequeue/{topic}/{queueId}/{fileName}</p>
+<p>  每个cosumequeue文件的名称fileName，名字长度为20位，左边补零，剩余为起始偏移量；比如00000000000000000000代表了第一个文件，起始偏移量为0，文件大小为600W，当第一个文件满之后创建的第二个文件的名字为00000000000006000000，起始偏移量为6000000，以此类推，第三个文件名字为00000000000012000000，起始偏移量为12000000，消息存储的时候会顺序写入文件，当文件满了，写入下一个文件</p>
+<h2 id="代码解析"><a href="#代码解析" class="headerlink" title="代码解析"></a>代码解析</h2><h3 id="Broker处理PULL-MESSAGE请求"><a href="#Broker处理PULL-MESSAGE请求" class="headerlink" title="Broker处理PULL_MESSAGE请求"></a>Broker处理PULL_MESSAGE请求</h3><p>通过PullMessageProcessor#processRequest来处理拉取消息</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> RemotingCommand <span class="title">processRequest</span><span class="params">(<span class="keyword">final</span> Channel channel, RemotingCommand request, <span class="keyword">boolean</span> brokerAllowSuspend)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> RemotingCommandException </span>&#123;</span><br><span class="line">    <span class="comment">//响应</span></span><br><span class="line">    RemotingCommand response = RemotingCommand.createResponseCommand(PullMessageResponseHeader.class);</span><br><span class="line">    <span class="keyword">final</span> PullMessageResponseHeader responseHeader = (PullMessageResponseHeader) response.readCustomHeader();</span><br><span class="line">    <span class="comment">//解析请求头</span></span><br><span class="line">    <span class="keyword">final</span> PullMessageRequestHeader requestHeader =</span><br><span class="line">        (PullMessageRequestHeader) request.decodeCommandCustomHeader(PullMessageRequestHeader.class);</span><br><span class="line">    <span class="comment">//Reponse setOpaque用于处理响应</span></span><br><span class="line">    response.setOpaque(request.getOpaque());</span><br><span class="line"></span><br><span class="line">    ...... 验证权限</span><br><span class="line"></span><br><span class="line">    <span class="comment">//获取订阅组配置，如果不存在就new一个</span></span><br><span class="line">    SubscriptionGroupConfig subscriptionGroupConfig =</span><br><span class="line">        <span class="keyword">this</span>.brokerController.getSubscriptionGroupManager().findSubscriptionGroupConfig(requestHeader.getConsumerGroup());</span><br><span class="line"></span><br><span class="line">    ......验证订阅组</span><br><span class="line"></span><br><span class="line">    <span class="comment">//见consumer的PullSysFlag.buildSysFlag</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">boolean</span> hasSuspendFlag = PullSysFlag.hasSuspendFlag(requestHeader.getSysFlag());</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">boolean</span> hasCommitOffsetFlag = PullSysFlag.hasCommitOffsetFlag(requestHeader.getSysFlag());</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">boolean</span> hasSubscriptionFlag = PullSysFlag.hasSubscriptionFlag(requestHeader.getSysFlag());</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">long</span> suspendTimeoutMillisLong = hasSuspendFlag ? requestHeader.getSuspendTimeoutMillis() : <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//验证topic权限</span></span><br><span class="line">    TopicConfig topicConfig = <span class="keyword">this</span>.brokerController.getTopicConfigManager().selectTopicConfig(requestHeader.getTopic());</span><br><span class="line">    ...验证topic</span><br><span class="line"></span><br><span class="line">    <span class="comment">//验证queueId</span></span><br><span class="line">    <span class="keyword">if</span> (requestHeader.getQueueId() &lt; <span class="number">0</span> || requestHeader.getQueueId() &gt;= topicConfig.getReadQueueNums()) &#123;</span><br><span class="line">        ......</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    SubscriptionData subscriptionData = <span class="keyword">null</span>;</span><br><span class="line">    ConsumerFilterData consumerFilterData = <span class="keyword">null</span>;</span><br><span class="line">    ...... 校验过滤方式</span><br><span class="line">    MessageFilter messageFilter;</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">this</span>.brokerController.getBrokerConfig().isFilterSupportRetry()) &#123;</span><br><span class="line">        messageFilter = <span class="keyword">new</span> ExpressionForRetryMessageFilter(subscriptionData, consumerFilterData,</span><br><span class="line">            <span class="keyword">this</span>.brokerController.getConsumerFilterManager());</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        messageFilter = <span class="keyword">new</span> ExpressionMessageFilter(subscriptionData, consumerFilterData,</span><br><span class="line">            <span class="keyword">this</span>.brokerController.getConsumerFilterManager());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//关键代码从MessageStore中读取Message</span></span><br><span class="line">    <span class="comment">// 这里是根据请求的QueueId也就是MessageQueue的queueId去查询当前的ConsumerQueue对应的消息（没有则创建一个）</span></span><br><span class="line">    <span class="keyword">final</span> GetMessageResult getMessageResult =</span><br><span class="line">        <span class="keyword">this</span>.brokerController.getMessageStore().getMessage(requestHeader.getConsumerGroup(), requestHeader.getTopic(),</span><br><span class="line">            requestHeader.getQueueId(), requestHeader.getQueueOffset(), requestHeader.getMaxMsgNums(), messageFilter);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (getMessageResult != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">//设置response</span></span><br><span class="line">        response.setRemark(getMessageResult.getStatus().name());</span><br><span class="line">        responseHeader.setNextBeginOffset(getMessageResult.getNextBeginOffset());</span><br><span class="line">        responseHeader.setMinOffset(getMessageResult.getMinOffset());</span><br><span class="line">        responseHeader.setMaxOffset(getMessageResult.getMaxOffset());</span><br><span class="line"></span><br><span class="line">        <span class="comment">//设置SuggestWhichBrokerId</span></span><br><span class="line">        <span class="keyword">if</span> (getMessageResult.isSuggestPullingFromSlave()) &#123;</span><br><span class="line">            responseHeader.setSuggestWhichBrokerId(subscriptionGroupConfig.getWhichBrokerWhenConsumeSlowly());</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            responseHeader.setSuggestWhichBrokerId(MixAll.MASTER_ID);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">switch</span> (<span class="keyword">this</span>.brokerController.getMessageStoreConfig().getBrokerRole()) &#123;</span><br><span class="line">            <span class="keyword">case</span> ASYNC_MASTER:</span><br><span class="line">            <span class="keyword">case</span> SYNC_MASTER:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> SLAVE:</span><br><span class="line">                <span class="keyword">if</span> (!<span class="keyword">this</span>.brokerController.getBrokerConfig().isSlaveReadEnable()) &#123;</span><br><span class="line">                    response.setCode(ResponseCode.PULL_RETRY_IMMEDIATELY);</span><br><span class="line">                    responseHeader.setSuggestWhichBrokerId(MixAll.MASTER_ID);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">this</span>.brokerController.getBrokerConfig().isSlaveReadEnable()) &#123;</span><br><span class="line">            <span class="comment">// consume too slow ,redirect to another machine</span></span><br><span class="line">            <span class="keyword">if</span> (getMessageResult.isSuggestPullingFromSlave()) &#123;</span><br><span class="line">                responseHeader.setSuggestWhichBrokerId(subscriptionGroupConfig.getWhichBrokerWhenConsumeSlowly());</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">// consume ok</span></span><br><span class="line">            <span class="keyword">else</span> &#123;</span><br><span class="line">                responseHeader.setSuggestWhichBrokerId(subscriptionGroupConfig.getBrokerId());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            responseHeader.setSuggestWhichBrokerId(MixAll.MASTER_ID);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//处理响应值</span></span><br><span class="line">        <span class="keyword">switch</span> (getMessageResult.getStatus()) &#123;</span><br><span class="line">            <span class="keyword">case</span> FOUND:</span><br><span class="line">                response.setCode(ResponseCode.SUCCESS);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> MESSAGE_WAS_REMOVING:</span><br><span class="line">                response.setCode(ResponseCode.PULL_RETRY_IMMEDIATELY);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> NO_MATCHED_LOGIC_QUEUE:</span><br><span class="line">            <span class="keyword">case</span> NO_MESSAGE_IN_QUEUE:</span><br><span class="line">                <span class="keyword">if</span> (<span class="number">0</span> != requestHeader.getQueueOffset()) &#123;</span><br><span class="line">                    response.setCode(ResponseCode.PULL_OFFSET_MOVED);</span><br><span class="line">                    <span class="comment">// <span class="doctag">XXX:</span> warn and notify me</span></span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    response.setCode(ResponseCode.PULL_NOT_FOUND);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> NO_MATCHED_MESSAGE:</span><br><span class="line">                response.setCode(ResponseCode.PULL_RETRY_IMMEDIATELY);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> OFFSET_FOUND_NULL:</span><br><span class="line">                response.setCode(ResponseCode.PULL_NOT_FOUND);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> OFFSET_OVERFLOW_BADLY:</span><br><span class="line">                response.setCode(ResponseCode.PULL_OFFSET_MOVED);</span><br><span class="line">                <span class="comment">// <span class="doctag">XXX:</span> warn and notify me</span></span><br><span class="line">                log.info(<span class="string">"the request offset: &#123;&#125; over flow badly, broker max offset: &#123;&#125;, consumer: &#123;&#125;"</span>,</span><br><span class="line">                    requestHeader.getQueueOffset(), getMessageResult.getMaxOffset(), channel.remoteAddress());</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> OFFSET_OVERFLOW_ONE:</span><br><span class="line">                response.setCode(ResponseCode.PULL_NOT_FOUND);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> OFFSET_TOO_SMALL:</span><br><span class="line">                response.setCode(ResponseCode.PULL_OFFSET_MOVED);</span><br><span class="line">                log.info(<span class="string">"the request offset too small. group=&#123;&#125;, topic=&#123;&#125;, requestOffset=&#123;&#125;, brokerMinOffset=&#123;&#125;, clientIp=&#123;&#125;"</span>,</span><br><span class="line">                    requestHeader.getConsumerGroup(), requestHeader.getTopic(), requestHeader.getQueueOffset(),</span><br><span class="line">                    getMessageResult.getMinOffset(), channel.remoteAddress());</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="keyword">assert</span> <span class="keyword">false</span>;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">this</span>.hasConsumeMessageHook()) &#123;</span><br><span class="line">            .....<span class="comment">//执行hook</span></span><br><span class="line">            <span class="keyword">this</span>.executeConsumeMessageHookBefore(context);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">switch</span> (response.getCode()) &#123;</span><br><span class="line">            <span class="keyword">case</span> ResponseCode.SUCCESS:</span><br><span class="line">                <span class="comment">//处理统计信息</span></span><br><span class="line">                <span class="keyword">this</span>.brokerController.getBrokerStatsManager().incGroupGetNums(requestHeader.getConsumerGroup(), requestHeader.getTopic(),</span><br><span class="line">                    getMessageResult.getMessageCount());</span><br><span class="line"></span><br><span class="line">                <span class="keyword">this</span>.brokerController.getBrokerStatsManager().incGroupGetSize(requestHeader.getConsumerGroup(), requestHeader.getTopic(),</span><br><span class="line">                    getMessageResult.getBufferTotalSize());</span><br><span class="line"></span><br><span class="line">                <span class="keyword">this</span>.brokerController.getBrokerStatsManager().incBrokerGetNums(getMessageResult.getMessageCount());</span><br><span class="line">                <span class="keyword">if</span> (<span class="keyword">this</span>.brokerController.getBrokerConfig().isTransferMsgByHeap()) &#123;</span><br><span class="line">                    <span class="keyword">final</span> <span class="keyword">long</span> beginTimeMills = <span class="keyword">this</span>.brokerController.getMessageStore().now();</span><br><span class="line"></span><br><span class="line">                    <span class="comment">//重点代码 getMessageResult读取Message并且写入到reponse中</span></span><br><span class="line">                    <span class="keyword">final</span> <span class="keyword">byte</span>[] r = <span class="keyword">this</span>.readGetMessageResult(getMessageResult, requestHeader.getConsumerGroup(), requestHeader.getTopic(), requestHeader.getQueueId());</span><br><span class="line">                    <span class="keyword">this</span>.brokerController.getBrokerStatsManager().incGroupGetLatency(requestHeader.getConsumerGroup(),</span><br><span class="line">                        requestHeader.getTopic(), requestHeader.getQueueId(),</span><br><span class="line">                        (<span class="keyword">int</span>) (<span class="keyword">this</span>.brokerController.getMessageStore().now() - beginTimeMills));</span><br><span class="line">                    response.setBody(r);</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">//zero-copy??</span></span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        FileRegion fileRegion =</span><br><span class="line">                            <span class="keyword">new</span> ManyMessageTransfer(response.encodeHeader(getMessageResult.getBufferTotalSize()), getMessageResult);</span><br><span class="line">                        channel.writeAndFlush(fileRegion).addListener(<span class="keyword">new</span> ChannelFutureListener() &#123;</span><br><span class="line">                            <span class="meta">@Override</span></span><br><span class="line">                            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">operationComplete</span><span class="params">(ChannelFuture future)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">                                getMessageResult.release();</span><br><span class="line">                                <span class="keyword">if</span> (!future.isSuccess()) &#123;</span><br><span class="line">                                    log.error(<span class="string">"transfer many message by pagecache failed, &#123;&#125;"</span>, channel.remoteAddress(), future.cause());</span><br><span class="line">                                &#125;</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;);</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">                        log.error(<span class="string">"transfer many message by pagecache exception"</span>, e);</span><br><span class="line">                        getMessageResult.release();</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                    response = <span class="keyword">null</span>;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> ResponseCode.PULL_NOT_FOUND:</span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> (brokerAllowSuspend &amp;&amp; hasSuspendFlag) &#123;</span><br><span class="line">                    <span class="keyword">long</span> pollingTimeMills = suspendTimeoutMillisLong;</span><br><span class="line">                    <span class="keyword">if</span> (!<span class="keyword">this</span>.brokerController.getBrokerConfig().isLongPollingEnable()) &#123;</span><br><span class="line">                        pollingTimeMills = <span class="keyword">this</span>.brokerController.getBrokerConfig().getShortPollingTimeMills();</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                    String topic = requestHeader.getTopic();</span><br><span class="line">                    <span class="keyword">long</span> offset = requestHeader.getQueueOffset();</span><br><span class="line">                    <span class="keyword">int</span> queueId = requestHeader.getQueueId();</span><br><span class="line">                    PullRequest pullRequest = <span class="keyword">new</span> PullRequest(request, channel, pollingTimeMills,</span><br><span class="line">                        <span class="keyword">this</span>.brokerController.getMessageStore().now(), offset, subscriptionData, messageFilter);</span><br><span class="line">                    <span class="comment">//</span></span><br><span class="line">                    <span class="keyword">this</span>.brokerController.getPullRequestHoldService().suspendPullRequest(topic, queueId, pullRequest);</span><br><span class="line">                    response = <span class="keyword">null</span>;</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">case</span> ResponseCode.PULL_RETRY_IMMEDIATELY:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> ResponseCode.PULL_OFFSET_MOVED:</span><br><span class="line">                <span class="keyword">if</span> (<span class="keyword">this</span>.brokerController.getMessageStoreConfig().getBrokerRole() != BrokerRole.SLAVE</span><br><span class="line">                    || <span class="keyword">this</span>.brokerController.getMessageStoreConfig().isOffsetCheckInSlave()) &#123;</span><br><span class="line">                    MessageQueue mq = <span class="keyword">new</span> MessageQueue();</span><br><span class="line">                    mq.setTopic(requestHeader.getTopic());</span><br><span class="line">                    mq.setQueueId(requestHeader.getQueueId());</span><br><span class="line">                    mq.setBrokerName(<span class="keyword">this</span>.brokerController.getBrokerConfig().getBrokerName());</span><br><span class="line"></span><br><span class="line">                    OffsetMovedEvent event = <span class="keyword">new</span> OffsetMovedEvent();</span><br><span class="line">                    event.setConsumerGroup(requestHeader.getConsumerGroup());</span><br><span class="line">                    event.setMessageQueue(mq);</span><br><span class="line">                    event.setOffsetRequest(requestHeader.getQueueOffset());</span><br><span class="line">                    event.setOffsetNew(getMessageResult.getNextBeginOffset());</span><br><span class="line">                    <span class="keyword">this</span>.generateOffsetMovedEvent(event);</span><br><span class="line">                    log.warn(</span><br><span class="line">                        <span class="string">"PULL_OFFSET_MOVED:correction offset. topic=&#123;&#125;, groupId=&#123;&#125;, requestOffset=&#123;&#125;, newOffset=&#123;&#125;, suggestBrokerId=&#123;&#125;"</span>,</span><br><span class="line">                        requestHeader.getTopic(), requestHeader.getConsumerGroup(), event.getOffsetRequest(), event.getOffsetNew(),</span><br><span class="line">                        responseHeader.getSuggestWhichBrokerId());</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    responseHeader.setSuggestWhichBrokerId(subscriptionGroupConfig.getBrokerId());</span><br><span class="line">                    response.setCode(ResponseCode.PULL_RETRY_IMMEDIATELY);</span><br><span class="line">                    log.warn(<span class="string">"PULL_OFFSET_MOVED:none correction. topic=&#123;&#125;, groupId=&#123;&#125;, requestOffset=&#123;&#125;, suggestBrokerId=&#123;&#125;"</span>,</span><br><span class="line">                        requestHeader.getTopic(), requestHeader.getConsumerGroup(), requestHeader.getQueueOffset(),</span><br><span class="line">                        responseHeader.getSuggestWhichBrokerId());</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="keyword">assert</span> <span class="keyword">false</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        response.setCode(ResponseCode.SYSTEM_ERROR);</span><br><span class="line">        response.setRemark(<span class="string">"store getMessage return null"</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">boolean</span> storeOffsetEnable = brokerAllowSuspend;</span><br><span class="line">    storeOffsetEnable = storeOffsetEnable &amp;&amp; hasCommitOffsetFlag;</span><br><span class="line">    storeOffsetEnable = storeOffsetEnable</span><br><span class="line">        &amp;&amp; <span class="keyword">this</span>.brokerController.getMessageStoreConfig().getBrokerRole() != BrokerRole.SLAVE;</span><br><span class="line">    <span class="keyword">if</span> (storeOffsetEnable) &#123;</span><br><span class="line">        <span class="comment">//记录消费的Offset</span></span><br><span class="line">        <span class="keyword">this</span>.brokerController.getConsumerOffsetManager().commitOffset(RemotingHelper.parseChannelRemoteAddr(channel),</span><br><span class="line">            requestHeader.getConsumerGroup(), requestHeader.getTopic(), requestHeader.getQueueId(), requestHeader.getCommitOffset());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> response;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>DefaultMessageStore#getMessage</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> GetMessageResult <span class="title">getMessage</span><span class="params">(<span class="keyword">final</span> String group, <span class="keyword">final</span> String topic, <span class="keyword">final</span> <span class="keyword">int</span> queueId, <span class="keyword">final</span> <span class="keyword">long</span> offset,</span></span></span><br><span class="line"><span class="function"><span class="params">                                   <span class="keyword">final</span> <span class="keyword">int</span> maxMsgNums,</span></span></span><br><span class="line"><span class="function"><span class="params">                                   <span class="keyword">final</span> MessageFilter messageFilter)</span> </span>&#123;</span><br><span class="line">    ......</span><br><span class="line"></span><br><span class="line">    <span class="keyword">long</span> beginTime = <span class="keyword">this</span>.getSystemClock().now();</span><br><span class="line">    GetMessageStatus status = GetMessageStatus.NO_MESSAGE_IN_QUEUE;</span><br><span class="line">    <span class="keyword">long</span> nextBeginOffset = offset;</span><br><span class="line">    <span class="keyword">long</span> minOffset = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">long</span> maxOffset = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    GetMessageResult getResult = <span class="keyword">new</span> GetMessageResult();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//物理队列最大偏移量</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">long</span> maxOffsetPy = <span class="keyword">this</span>.commitLog.getMaxOffset();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//get or create</span></span><br><span class="line">    ConsumeQueue consumeQueue = findConsumeQueue(topic, queueId);</span><br><span class="line">    <span class="keyword">if</span> (consumeQueue != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">//consumerQueue中消息的最小偏移量和最大偏移量，这里是消息数 校验</span></span><br><span class="line">        minOffset = consumeQueue.getMinOffsetInQueue();</span><br><span class="line">        maxOffset = consumeQueue.getMaxOffsetInQueue();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (maxOffset == <span class="number">0</span>) &#123;</span><br><span class="line">            status = GetMessageStatus.NO_MESSAGE_IN_QUEUE;</span><br><span class="line">            nextBeginOffset = nextOffsetCorrection(offset, <span class="number">0</span>);</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (offset &lt; minOffset) &#123;</span><br><span class="line">            status = GetMessageStatus.OFFSET_TOO_SMALL;</span><br><span class="line">            nextBeginOffset = nextOffsetCorrection(offset, minOffset);</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (offset == maxOffset) &#123;</span><br><span class="line">            status = GetMessageStatus.OFFSET_OVERFLOW_ONE;</span><br><span class="line">            nextBeginOffset = nextOffsetCorrection(offset, offset);</span><br><span class="line">        &#125; <span class="keyword">else</span> <span class="keyword">if</span> (offset &gt; maxOffset) &#123;</span><br><span class="line">            status = GetMessageStatus.OFFSET_OVERFLOW_BADLY;</span><br><span class="line">            <span class="keyword">if</span> (<span class="number">0</span> == minOffset) &#123;</span><br><span class="line">                nextBeginOffset = nextOffsetCorrection(offset, minOffset);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                nextBeginOffset = nextOffsetCorrection(offset, maxOffset);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">//重点方法,这里的offset是消息的index，代表从这条消息开始读，所以转成真正的offset要*20</span></span><br><span class="line">            SelectMappedBufferResult bufferConsumeQueue = consumeQueue.getIndexBuffer(offset);</span><br><span class="line">            <span class="keyword">if</span> (bufferConsumeQueue != <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    status = GetMessageStatus.NO_MATCHED_MESSAGE;</span><br><span class="line">                    <span class="comment">//标志位</span></span><br><span class="line">                    <span class="keyword">long</span> nextPhyFileStartOffset = Long.MIN_VALUE;</span><br><span class="line">                    <span class="keyword">long</span> maxPhyOffsetPulling = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">                    <span class="comment">//一次最大拉取多少条信息这里是自己数，所以是Nums*20（）</span></span><br><span class="line">                    <span class="keyword">final</span> <span class="keyword">int</span> maxFilterMessageCount = Math.max(<span class="number">16000</span>, maxMsgNums * ConsumeQueue.CQ_STORE_UNIT_SIZE);</span><br><span class="line">                    <span class="keyword">final</span> <span class="keyword">boolean</span> diskFallRecorded = <span class="keyword">this</span>.messageStoreConfig.isDiskFallRecorded();</span><br><span class="line">                    ConsumeQueueExt.CqExtUnit cqExtUnit = <span class="keyword">new</span> ConsumeQueueExt.CqExtUnit();</span><br><span class="line">                    <span class="comment">//开始读取bufferConsumeQueue步长是20也就是一次读取一条，不超过bufferConsumeQueue的size和设置的最大条数</span></span><br><span class="line">                    <span class="keyword">for</span> (; i &lt; bufferConsumeQueue.getSize() &amp;&amp; i &lt; maxFilterMessageCount; i += ConsumeQueue.CQ_STORE_UNIT_SIZE) &#123;</span><br><span class="line">                        <span class="comment">//这就是ConsumerQueue每条消息的长度，</span></span><br><span class="line">                        <span class="comment">// offsetPy-物理消息偏移量</span></span><br><span class="line">                        <span class="comment">// sizePy-物理消息长度</span></span><br><span class="line">                        <span class="comment">// tag的hashCode</span></span><br><span class="line">                        <span class="keyword">long</span> offsetPy = bufferConsumeQueue.getByteBuffer().getLong();</span><br><span class="line">                        <span class="keyword">int</span> sizePy = bufferConsumeQueue.getByteBuffer().getInt();</span><br><span class="line">                        <span class="keyword">long</span> tagsCode = bufferConsumeQueue.getByteBuffer().getLong();</span><br><span class="line"></span><br><span class="line">                        maxPhyOffsetPulling = offsetPy;</span><br><span class="line"></span><br><span class="line">                        <span class="keyword">if</span> (nextPhyFileStartOffset != Long.MIN_VALUE) &#123;</span><br><span class="line">                            <span class="comment">//todo ??</span></span><br><span class="line">                            <span class="keyword">if</span> (offsetPy &lt; nextPhyFileStartOffset)</span><br><span class="line">                                <span class="keyword">continue</span>;</span><br><span class="line">                        &#125;</span><br><span class="line"></span><br><span class="line">                        <span class="comment">//检验消息是在磁盘还是内存，这里是maxOffsetPy-offsetPy&gt;memary（这里是总物理内存*使用40%），并且检查是否已满</span></span><br><span class="line">                        <span class="keyword">boolean</span> isInDisk = checkInDiskByCommitOffset(offsetPy, maxOffsetPy);</span><br><span class="line">                        <span class="keyword">if</span> (<span class="keyword">this</span>.isTheBatchFull(sizePy, maxMsgNums, getResult.getBufferTotalSize(), getResult.getMessageCount(),</span><br><span class="line">                                isInDisk)) &#123;</span><br><span class="line">                            <span class="keyword">break</span>;</span><br><span class="line">                        &#125;</span><br><span class="line"></span><br><span class="line">                        <span class="comment">//消息过滤</span></span><br><span class="line">                        <span class="keyword">boolean</span> extRet = <span class="keyword">false</span>, isTagsCodeLegal = <span class="keyword">true</span>;</span><br><span class="line">                        <span class="keyword">if</span> (consumeQueue.isExtAddr(tagsCode)) &#123;</span><br><span class="line">                            extRet = consumeQueue.getExt(tagsCode, cqExtUnit);</span><br><span class="line">                            <span class="keyword">if</span> (extRet) &#123;</span><br><span class="line">                                tagsCode = cqExtUnit.getTagsCode();</span><br><span class="line">                            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                                <span class="comment">// can't find ext content.Client will filter messages by tag also.</span></span><br><span class="line">                                log.error(<span class="string">"[BUG] can't find consume queue extend file content!addr=&#123;&#125;, offsetPy=&#123;&#125;, sizePy=&#123;&#125;, topic=&#123;&#125;, group=&#123;&#125;"</span>,</span><br><span class="line">                                        tagsCode, offsetPy, sizePy, topic, group);</span><br><span class="line">                                isTagsCodeLegal = <span class="keyword">false</span>;</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;</span><br><span class="line"></span><br><span class="line">                        <span class="comment">//从ConsumerQueue过滤消息</span></span><br><span class="line">                        <span class="keyword">if</span> (messageFilter != <span class="keyword">null</span></span><br><span class="line">                                &amp;&amp; !messageFilter.isMatchedByConsumeQueue(isTagsCodeLegal ? tagsCode : <span class="keyword">null</span>, extRet ? cqExtUnit : <span class="keyword">null</span>)) &#123;</span><br><span class="line">                            <span class="keyword">if</span> (getResult.getBufferTotalSize() == <span class="number">0</span>) &#123;</span><br><span class="line">                                status = GetMessageStatus.NO_MATCHED_MESSAGE;</span><br><span class="line">                            &#125;</span><br><span class="line"></span><br><span class="line">                            <span class="keyword">continue</span>;</span><br><span class="line">                        &#125;</span><br><span class="line"></span><br><span class="line">                        <span class="comment">//根据ConsumeQueue从commitLog中读取消息</span></span><br><span class="line">                        SelectMappedBufferResult selectResult = <span class="keyword">this</span>.commitLog.getMessage(offsetPy, sizePy);</span><br><span class="line">                        <span class="keyword">if</span> (<span class="keyword">null</span> == selectResult) &#123;</span><br><span class="line">                            <span class="keyword">if</span> (getResult.getBufferTotalSize() == <span class="number">0</span>) &#123;</span><br><span class="line">                                status = GetMessageStatus.MESSAGE_WAS_REMOVING;</span><br><span class="line">                            &#125;</span><br><span class="line">                            <span class="comment">//如果没有消息，滚动到下一个文件开始</span></span><br><span class="line">                            nextPhyFileStartOffset = <span class="keyword">this</span>.commitLog.rollNextFile(offsetPy);</span><br><span class="line">                            <span class="keyword">continue</span>;</span><br><span class="line">                        &#125;</span><br><span class="line"></span><br><span class="line">                        <span class="comment">//从commitLog过滤消息</span></span><br><span class="line">                        <span class="keyword">if</span> (messageFilter != <span class="keyword">null</span></span><br><span class="line">                                &amp;&amp; !messageFilter.isMatchedByCommitLog(selectResult.getByteBuffer().slice(), <span class="keyword">null</span>)) &#123;</span><br><span class="line">                            <span class="keyword">if</span> (getResult.getBufferTotalSize() == <span class="number">0</span>) &#123;</span><br><span class="line">                                status = GetMessageStatus.NO_MATCHED_MESSAGE;</span><br><span class="line">                            &#125;</span><br><span class="line">                            <span class="comment">// release...</span></span><br><span class="line">                            selectResult.release();</span><br><span class="line">                            <span class="keyword">continue</span>;</span><br><span class="line">                        &#125;</span><br><span class="line"></span><br><span class="line">                        <span class="comment">//统计信息</span></span><br><span class="line">                        <span class="keyword">this</span>.storeStatsService.getGetMessageTransferedMsgCount().incrementAndGet();</span><br><span class="line">                        <span class="comment">//添加到结果中</span></span><br><span class="line">                        getResult.addMessage(selectResult);</span><br><span class="line">                        status = GetMessageStatus.FOUND;</span><br><span class="line">                        nextPhyFileStartOffset = Long.MIN_VALUE;</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">if</span> (diskFallRecorded) &#123;</span><br><span class="line">                        <span class="keyword">long</span> fallBehind = maxOffsetPy - maxPhyOffsetPulling;</span><br><span class="line">                        brokerStatsManager.recordDiskFallBehindSize(group, topic, queueId, fallBehind);</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                    nextBeginOffset = offset + (i / ConsumeQueue.CQ_STORE_UNIT_SIZE);</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">long</span> diff = maxOffsetPy - maxPhyOffsetPulling;</span><br><span class="line">                    <span class="keyword">long</span> memory = (<span class="keyword">long</span>) (StoreUtil.TOTAL_PHYSICAL_MEMORY_SIZE</span><br><span class="line">                            * (<span class="keyword">this</span>.messageStoreConfig.getAccessMessageInMemoryMaxRatio() / <span class="number">100.0</span>));</span><br><span class="line">                    getResult.setSuggestPullingFromSlave(diff &gt; memory);</span><br><span class="line">                &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line"></span><br><span class="line">                    bufferConsumeQueue.release();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                status = GetMessageStatus.OFFSET_FOUND_NULL;</span><br><span class="line">                nextBeginOffset = nextOffsetCorrection(offset, consumeQueue.rollNextFile(offset));</span><br><span class="line">                log.warn(<span class="string">"consumer request topic: "</span> + topic + <span class="string">"offset: "</span> + offset + <span class="string">" minOffset: "</span> + minOffset + <span class="string">" maxOffset: "</span></span><br><span class="line">                        + maxOffset + <span class="string">", but access logic queue failed."</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        status = GetMessageStatus.NO_MATCHED_LOGIC_QUEUE;</span><br><span class="line">        nextBeginOffset = nextOffsetCorrection(offset, <span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (GetMessageStatus.FOUND == status) &#123;</span><br><span class="line">        <span class="keyword">this</span>.storeStatsService.getGetMessageTimesTotalFound().incrementAndGet();</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">this</span>.storeStatsService.getGetMessageTimesTotalMiss().incrementAndGet();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">long</span> eclipseTime = <span class="keyword">this</span>.getSystemClock().now() - beginTime;</span><br><span class="line">    <span class="keyword">this</span>.storeStatsService.setGetMessageEntireTimeMax(eclipseTime);</span><br><span class="line"></span><br><span class="line">    getResult.setStatus(status);</span><br><span class="line">    getResult.setNextBeginOffset(nextBeginOffset);</span><br><span class="line">    getResult.setMaxOffset(maxOffset);</span><br><span class="line">    getResult.setMinOffset(minOffset);</span><br><span class="line">    <span class="keyword">return</span> getResult;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>读取索引<br>ConsumerQueue#getIndexBuffer</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> SelectMappedBufferResult <span class="title">getIndexBuffer</span><span class="params">(<span class="keyword">final</span> <span class="keyword">long</span> startIndex)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> mappedFileSize = <span class="keyword">this</span>.mappedFileSize;</span><br><span class="line">    <span class="keyword">long</span> offset = startIndex * CQ_STORE_UNIT_SIZE;</span><br><span class="line">    <span class="keyword">if</span> (offset &gt;= <span class="keyword">this</span>.getMinLogicOffset()) &#123;</span><br><span class="line">        <span class="comment">//通过偏移量找到所在的文件</span></span><br><span class="line">        MappedFile mappedFile = <span class="keyword">this</span>.mappedFileQueue.findMappedFileByOffset(offset);</span><br><span class="line">        <span class="keyword">if</span> (mappedFile != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="comment">//重点方法 pos=offset % mappedFileSize即当前的偏移量</span></span><br><span class="line">            <span class="comment">//fileFromOffset+pos，byteBuffer(position:pos,limit:readPosition - pos),size:readPosition - pos,file：this</span></span><br><span class="line">            SelectMappedBufferResult result = mappedFile.selectMappedBuffer((<span class="keyword">int</span>) (offset % mappedFileSize));</span><br><span class="line">            <span class="keyword">return</span> result;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="ReputService"><a href="#ReputService" class="headerlink" title="ReputService"></a>ReputService</h2><p>在broker启动时会启动改线程，没1ms执行一次负责将CommitLog中的新消息的信息记录cosumeQueue和IndexFile文件中。给出关键代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ReputMessageService</span> <span class="keyword">extends</span> <span class="title">ServiceThread</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">       <span class="keyword">private</span> <span class="keyword">volatile</span> <span class="keyword">long</span> reputFromOffset = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">       <span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">isCommitLogAvailable</span><span class="params">()</span> </span>&#123;</span><br><span class="line">           <span class="keyword">return</span> <span class="keyword">this</span>.reputFromOffset &lt; DefaultMessageStore.<span class="keyword">this</span>.commitLog.getMaxOffset();</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">doReput</span><span class="params">()</span> </span>&#123;</span><br><span class="line">           <span class="comment">//doNext and reputFromOffset小于broker的最大的可读的offset即最后一个文件的写活提交的offset</span></span><br><span class="line">           <span class="keyword">for</span> (<span class="keyword">boolean</span> doNext = <span class="keyword">true</span>; <span class="keyword">this</span>.isCommitLogAvailable() &amp;&amp; doNext; ) &#123;</span><br><span class="line">               ......</span><br><span class="line"></span><br><span class="line">               <span class="comment">//当前commit文件reputFromOffset到ReadPostion的的byteBuffer</span></span><br><span class="line">               SelectMappedBufferResult result = DefaultMessageStore.<span class="keyword">this</span>.commitLog.getData(reputFromOffset);</span><br><span class="line">               <span class="keyword">if</span> (result != <span class="keyword">null</span>) &#123;</span><br><span class="line">                   <span class="keyword">try</span> &#123;</span><br><span class="line">                       <span class="comment">//更新reputFromOffset</span></span><br><span class="line">                       <span class="keyword">this</span>.reputFromOffset = result.getStartOffset();</span><br><span class="line"></span><br><span class="line">                       <span class="keyword">for</span> (<span class="keyword">int</span> readSize = <span class="number">0</span>; readSize &lt; result.getSize() &amp;&amp; doNext; ) &#123;</span><br><span class="line">                           <span class="comment">// 生成重放消息重放调度请求</span></span><br><span class="line">                           DispatchRequest dispatchRequest =</span><br><span class="line">                                   DefaultMessageStore.<span class="keyword">this</span>.commitLog.checkMessageAndReturnSize(result.getByteBuffer(), <span class="keyword">false</span>, <span class="keyword">false</span>);</span><br><span class="line">                           <span class="comment">// -1-失败，0-到文件尾，1-正常</span></span><br><span class="line">                           <span class="keyword">int</span> size = dispatchRequest.getMsgSize();</span><br><span class="line">                           <span class="keyword">if</span> (dispatchRequest.isSuccess()) &#123;</span><br><span class="line">                               <span class="keyword">if</span> (size &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                                   <span class="comment">//构建ConsumeQueue</span></span><br><span class="line">                                   DefaultMessageStore.<span class="keyword">this</span>.doDispatch(dispatchRequest);</span><br><span class="line"></span><br><span class="line">                                   <span class="keyword">if</span> (BrokerRole.SLAVE != DefaultMessageStore.<span class="keyword">this</span>.getMessageStoreConfig().getBrokerRole()</span><br><span class="line">                                           &amp;&amp; DefaultMessageStore.<span class="keyword">this</span>.brokerConfig.isLongPollingEnable()) &#123;</span><br><span class="line">                                       <span class="comment">//通知有新的消息</span></span><br><span class="line">                                       DefaultMessageStore.<span class="keyword">this</span>.messageArrivingListener.arriving(dispatchRequest.getTopic(),</span><br><span class="line">                                               dispatchRequest.getQueueId(), dispatchRequest.getConsumeQueueOffset() + <span class="number">1</span>,</span><br><span class="line">                                               dispatchRequest.getTagsCode(), dispatchRequest.getStoreTimestamp(),</span><br><span class="line">                                               dispatchRequest.getBitMap(), dispatchRequest.getPropertiesMap());</span><br><span class="line">                                   &#125;</span><br><span class="line"></span><br><span class="line">                                   <span class="comment">//更新reputFromOffset下次构建从新的地方开始，readSize也增加</span></span><br><span class="line">                                   <span class="keyword">this</span>.reputFromOffset += size;</span><br><span class="line">                                   readSize += size;</span><br><span class="line">                                   ......</span><br><span class="line">                               &#125; <span class="keyword">else</span> <span class="keyword">if</span> (size == <span class="number">0</span>) &#123;</span><br><span class="line">                                   <span class="comment">//见checkMessageAndReturnSize有可能遇到(msgLen + END_FILE_MIN_BLANK_LENGTH) &gt; maxBlank)这种情况所以返回0</span></span><br><span class="line">                                   <span class="comment">//这里reputFromOffset重置并且指定到下个文件</span></span><br><span class="line">                                   <span class="keyword">this</span>.reputFromOffset = DefaultMessageStore.<span class="keyword">this</span>.commitLog.rollNextFile(<span class="keyword">this</span>.reputFromOffset);</span><br><span class="line">                                   readSize = result.getSize();</span><br><span class="line">                               &#125;</span><br><span class="line">                           &#125; <span class="keyword">else</span> <span class="keyword">if</span> (!dispatchRequest.isSuccess()) &#123;</span><br><span class="line">                             ......</span><br><span class="line">                           &#125;</span><br><span class="line">                       &#125;</span><br><span class="line">                   &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                       result.release();</span><br><span class="line">                   &#125;</span><br><span class="line">               &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                   doNext = <span class="keyword">false</span>;</span><br><span class="line">               &#125;</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+<p>CommitLog#checkMessageAndReturnSize校验消息返回message的校验结果</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * check the message and returns the message size</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> 0 Come the end of the file // &gt;0 Normal messages // -1 Message checksum failure</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> DispatchRequest <span class="title">checkMessageAndReturnSize</span><span class="params">(java.nio.ByteBuffer byteBuffer, <span class="keyword">final</span> <span class="keyword">boolean</span> checkCRC,</span></span></span><br><span class="line"><span class="function"><span class="params">                                                 <span class="keyword">final</span> <span class="keyword">boolean</span> readBody)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 1 TOTAL SIZE</span></span><br><span class="line">        <span class="keyword">int</span> totalSize = byteBuffer.getInt();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 2 MAGIC CODE</span></span><br><span class="line">        <span class="keyword">int</span> magicCode = byteBuffer.getInt();</span><br><span class="line">        <span class="keyword">switch</span> (magicCode) &#123;</span><br><span class="line">            <span class="keyword">case</span> MESSAGE_MAGIC_CODE:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> BLANK_MAGIC_CODE:</span><br><span class="line">                <span class="comment">//当存储消息的时候发现剩余空间不足一条消息时候就会触发这个结果</span></span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">new</span> DispatchRequest(<span class="number">0</span>, <span class="keyword">true</span> <span class="comment">/* success */</span>);</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                log.warn(<span class="string">"found a illegal magic code 0x"</span> + Integer.toHexString(magicCode));</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">new</span> DispatchRequest(-<span class="number">1</span>, <span class="keyword">false</span> <span class="comment">/* success */</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// ......</span></span><br><span class="line">        <span class="keyword">int</span> bodyLen = byteBuffer.getInt();</span><br><span class="line">        <span class="keyword">if</span> (bodyLen &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (readBody) &#123;</span><br><span class="line">                <span class="comment">//......省略body校验</span></span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                byteBuffer.position(byteBuffer.position() + bodyLen);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        ......</span><br><span class="line">        String topic = <span class="keyword">new</span> String(bytesContent, <span class="number">0</span>, topicLen, MessageDecoder.CHARSET_UTF8);</span><br><span class="line"></span><br><span class="line">        ......</span><br><span class="line"></span><br><span class="line">        <span class="comment">//read properties</span></span><br><span class="line">        ......</span><br><span class="line">        Map&lt;String, String&gt; propertiesMap = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">if</span> (propertiesLength &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            ......</span><br><span class="line"></span><br><span class="line">            propertiesMap = MessageDecoder.string2messageProperties(properties);</span><br><span class="line"></span><br><span class="line">            keys = propertiesMap.get(MessageConst.PROPERTY_KEYS);</span><br><span class="line"></span><br><span class="line">            uniqKey = propertiesMap.get(MessageConst.PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX);</span><br><span class="line"></span><br><span class="line">            String tags = propertiesMap.get(MessageConst.PROPERTY_TAGS);</span><br><span class="line">            <span class="keyword">if</span> (tags != <span class="keyword">null</span> &amp;&amp; tags.length() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                tagsCode = MessageExtBrokerInner.tagsString2tagsCode(MessageExt.parseTopicFilterType(sysFlag), tags);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">// Timing message processing</span></span><br><span class="line">            &#123;</span><br><span class="line">                 <span class="comment">// 延时消息将tagsCode设置为时间戳，为什么tagsCode要设置为时间戳后续讲延时消息的时候会分析</span></span><br><span class="line">                String t = propertiesMap.get(MessageConst.PROPERTY_DELAY_TIME_LEVEL);</span><br><span class="line">                <span class="keyword">if</span> (ScheduleMessageService.SCHEDULE_TOPIC.equals(topic) &amp;&amp; t != <span class="keyword">null</span>) &#123;</span><br><span class="line">                    <span class="keyword">int</span> delayLevel = Integer.parseInt(t);</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">if</span> (delayLevel &gt; <span class="keyword">this</span>.defaultMessageStore.getScheduleMessageService().getMaxDelayLevel()) &#123;</span><br><span class="line">                        delayLevel = <span class="keyword">this</span>.defaultMessageStore.getScheduleMessageService().getMaxDelayLevel();</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">if</span> (delayLevel &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                        tagsCode = <span class="keyword">this</span>.defaultMessageStore.getScheduleMessageService().computeDeliverTimestamp(delayLevel,</span><br><span class="line">                                storeTimestamp);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">int</span> readLength = calMsgLength(bodyLen, topicLen, propertiesLength);</span><br><span class="line">        <span class="keyword">if</span> (totalSize != readLength) &#123;</span><br><span class="line">            doNothingForDeadCode(reconsumeTimes);</span><br><span class="line">            doNothingForDeadCode(flag);</span><br><span class="line">            doNothingForDeadCode(bornTimeStamp);</span><br><span class="line">            doNothingForDeadCode(byteBuffer1);</span><br><span class="line">            doNothingForDeadCode(byteBuffer2);</span><br><span class="line">            log.error(</span><br><span class="line">                    <span class="string">"[BUG]read total count not equals msg total size. totalSize=&#123;&#125;, readTotalCount=&#123;&#125;, bodyLen=&#123;&#125;, topicLen=&#123;&#125;, propertiesLength=&#123;&#125;"</span>,</span><br><span class="line">                    totalSize, readLength, bodyLen, topicLen, propertiesLength);</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> DispatchRequest(totalSize, <span class="keyword">false</span><span class="comment">/* success */</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> DispatchRequest(</span><br><span class="line">                topic,<span class="comment">//</span></span><br><span class="line">                queueId,<span class="comment">//这条消息的queueId</span></span><br><span class="line">                physicOffset,</span><br><span class="line">                totalSize,</span><br><span class="line">                tagsCode,</span><br><span class="line">                storeTimestamp,</span><br><span class="line">                queueOffset,</span><br><span class="line">                keys,</span><br><span class="line">                uniqKey,</span><br><span class="line">                sysFlag,</span><br><span class="line">                preparedTransactionOffset,</span><br><span class="line">                propertiesMap</span><br><span class="line">        );</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> DispatchRequest(-<span class="number">1</span>, <span class="keyword">false</span> <span class="comment">/* success */</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>回到DefaultMessageStore.this.doDispatch(dispatchRequest)方法，会调用CommitLogDispatcher#dispatch</p>
+<p>这里分别是CommitLogDispatcherBuildConsumeQueue和CommitLogDispatcherBuildIndex</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CommitLogDispatcherBuildConsumeQueue</span> <span class="keyword">implements</span> <span class="title">CommitLogDispatcher</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">dispatch</span><span class="params">(DispatchRequest request)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> <span class="keyword">int</span> tranType = MessageSysFlag.getTransactionValue(request.getSysFlag());</span><br><span class="line">        <span class="keyword">switch</span> (tranType) &#123;</span><br><span class="line">            <span class="keyword">case</span> MessageSysFlag.TRANSACTION_NOT_TYPE:</span><br><span class="line">            <span class="keyword">case</span> MessageSysFlag.TRANSACTION_COMMIT_TYPE:</span><br><span class="line">                DefaultMessageStore.<span class="keyword">this</span>.putMessagePositionInfo(request);</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> MessageSysFlag.TRANSACTION_PREPARED_TYPE:</span><br><span class="line">            <span class="keyword">case</span> MessageSysFlag.TRANSACTION_ROLLBACK_TYPE:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//以后讲indexFile时候会讲。大致就是支持随机访问为了性能所以需要IndexFile</span></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">CommitLogDispatcherBuildIndex</span> <span class="keyword">implements</span> <span class="title">CommitLogDispatcher</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">dispatch</span><span class="params">(DispatchRequest request)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (DefaultMessageStore.<span class="keyword">this</span>.messageStoreConfig.isMessageIndexEnable()) &#123;</span><br><span class="line">            DefaultMessageStore.<span class="keyword">this</span>.indexService.buildIndex(request);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在CommitLogDispatcherBuildConsumeQueue中主要方法是putMessagePostionInfo</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">putMessagePositionInfo</span><span class="params">(DispatchRequest dispatchRequest)</span> </span>&#123;</span><br><span class="line">    ConsumeQueue cq = <span class="keyword">this</span>.findConsumeQueue(dispatchRequest.getTopic(), dispatchRequest.getQueueId());</span><br><span class="line">    cq.putMessagePositionInfoWrapper(dispatchRequest);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>ConsumeQueue#putMessagePositionInfoWrapper中将这条消息的索引持久化到consumeQueue中</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">putMessagePositionInfoWrapper</span><span class="params">(DispatchRequest request)</span> </span>&#123;</span><br><span class="line">    ......</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; maxRetries &amp;&amp; canWrite; i++) &#123;</span><br><span class="line">        ......</span><br><span class="line">        <span class="comment">//关键代码</span></span><br><span class="line">        <span class="keyword">boolean</span> result = <span class="keyword">this</span>.putMessagePositionInfo(request.getCommitLogOffset(),</span><br><span class="line">                request.getMsgSize(), tagsCode, request.getConsumeQueueOffset());</span><br><span class="line"></span><br><span class="line">        ......处理结果</span><br><span class="line">    &#125;</span><br><span class="line">    ......</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">boolean</span> <span class="title">putMessagePositionInfo</span><span class="params">(<span class="keyword">final</span> <span class="keyword">long</span> offset, <span class="keyword">final</span> <span class="keyword">int</span> size, <span class="keyword">final</span> <span class="keyword">long</span> tagsCode,</span></span></span><br><span class="line"><span class="function"><span class="params">                                       <span class="keyword">final</span> <span class="keyword">long</span> cqOffset)</span> </span>&#123;</span><br><span class="line">    <span class="comment">//校验</span></span><br><span class="line">    <span class="keyword">if</span> (offset &lt;= <span class="keyword">this</span>.maxPhysicOffset) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//将这条消息的offset size tag写到consumeQueue文件中</span></span><br><span class="line">    <span class="keyword">this</span>.byteBufferIndex.flip();</span><br><span class="line">    <span class="keyword">this</span>.byteBufferIndex.limit(CQ_STORE_UNIT_SIZE);</span><br><span class="line">    <span class="keyword">this</span>.byteBufferIndex.putLong(offset);</span><br><span class="line">    <span class="keyword">this</span>.byteBufferIndex.putInt(size);</span><br><span class="line">    <span class="keyword">this</span>.byteBufferIndex.putLong(tagsCode);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">long</span> expectLogicOffset = cqOffset * CQ_STORE_UNIT_SIZE;</span><br><span class="line"></span><br><span class="line">    MappedFile mappedFile = <span class="keyword">this</span>.mappedFileQueue.getLastMappedFile(expectLogicOffset);</span><br><span class="line">    <span class="keyword">if</span> (mappedFile != <span class="keyword">null</span>) &#123;</span><br><span class="line">        ......</span><br><span class="line">        <span class="keyword">return</span> mappedFile.appendMessage(<span class="keyword">this</span>.byteBufferIndex.array());</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"># java</a>
+          
+            <a href="/tags/消息队列/" rel="tag"># 消息队列</a>
+          
+            <a href="/tags/rocketmq/" rel="tag"># rocketmq</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/RoketMq源码学习-五-消息的消费-上/" rel="next" title="RoketMq源码学习-五-消息的消费-上">
+                <i class="fa fa-chevron-left"></i> RoketMq源码学习-五-消息的消费-上
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/RoketMq源码学习-六-Offset的存储/" rel="prev" title="RoketMq源码学习-六-Offset的存储">
+                RoketMq源码学习-六-Offset的存储 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Liu hao</p>
+              <p class="site-description motion-element" itemprop="description">励志当好厨子的程序员</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">222</span>
+                    <span class="site-state-item-name">posts</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/categories/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">54</span>
+                    <span class="site-state-item-name">categories</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">81</span>
+                    <span class="site-state-item-name">tags</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="https://github.com/liuhao163" title="GitHub &rarr; https://github.com/liuhao163" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:liu67224657@qq.com" title="E-Mail &rarr; mailto:liu67224657@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#ConsumeQueue"><span class="nav-number">1.</span> <span class="nav-text">ConsumeQueue</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#代码解析"><span class="nav-number">2.</span> <span class="nav-text">代码解析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Broker处理PULL-MESSAGE请求"><span class="nav-number">2.1.</span> <span class="nav-text">Broker处理PULL_MESSAGE请求</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ReputService"><span class="nav-number">3.</span> <span class="nav-text">ReputService</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2022</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Liu hao</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> v7.0.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/src/utils.js?v=7.0.0"></script>
+
+  <script src="/js/src/motion.js?v=7.0.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/src/affix.js?v=7.0.0"></script>
+
+  <script src="/js/src/schemes/pisces.js?v=7.0.0"></script>
+
+
+
+  
+  <script src="/js/src/scrollspy.js?v=7.0.0"></script>
+<script src="/js/src/post-details.js?v=7.0.0"></script>
+
+
+
+  
+
+
+  <script src="/js/src/bootstrap.js?v=7.0.0"></script>
+
+
+  
+  
+
+
+  
+
+
+  
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

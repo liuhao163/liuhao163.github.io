@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2">
+
+<link rel="stylesheet" href="/css/main.css?v=7.0.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.0.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.0.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.0.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false,"dimmer":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="原理使用场景一个模型：多阶段决策最优解模型，三个特征：最优解子结构，无后效性，重复子为题。  多阶段决策最优解模型：即一个问题分为多个阶段，每个阶段的决策对应一组状态，我们根据这些状态寻找一组决策序列，最中获取决策序列的最优解。 三个特征： 最优解子结构：问题的最优解，包含子问题的最优解。也就是能通过子问题最优解找到问题的最优解 无后效性：后续的问题解决方案只依赖于前一个问题的状态，而不关心他是如">
+<meta name="keywords" content="算法">
+<meta property="og:type" content="article">
+<meta property="og:title" content="数据结构与算法-算法思想-动态规划">
+<meta property="og:url" content="https://liuhao163.github.io/数据结构与算法-算法思想-动态规划/index.html">
+<meta property="og:site_name" content="liuhao163.github.io">
+<meta property="og:description" content="原理使用场景一个模型：多阶段决策最优解模型，三个特征：最优解子结构，无后效性，重复子为题。  多阶段决策最优解模型：即一个问题分为多个阶段，每个阶段的决策对应一组状态，我们根据这些状态寻找一组决策序列，最中获取决策序列的最优解。 三个特征： 最优解子结构：问题的最优解，包含子问题的最优解。也就是能通过子问题最优解找到问题的最优解 无后效性：后续的问题解决方案只依赖于前一个问题的状态，而不关心他是如">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://liuhao163.github.io/数据结构与算法-算法思想-动态规划/dp_2_timu.jpg">
+<meta property="og:image" content="https://liuhao163.github.io/数据结构与算法-算法思想-动态规划/dp_2_jiefa.jpg">
+<meta property="og:image" content="https://liuhao163.github.io/数据结构与算法-算法思想-动态规划/dp_1.jpg">
+<meta property="og:updated_time" content="2022-09-21T15:03:02.264Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="数据结构与算法-算法思想-动态规划">
+<meta name="twitter:description" content="原理使用场景一个模型：多阶段决策最优解模型，三个特征：最优解子结构，无后效性，重复子为题。  多阶段决策最优解模型：即一个问题分为多个阶段，每个阶段的决策对应一组状态，我们根据这些状态寻找一组决策序列，最中获取决策序列的最优解。 三个特征： 最优解子结构：问题的最优解，包含子问题的最优解。也就是能通过子问题最优解找到问题的最优解 无后效性：后续的问题解决方案只依赖于前一个问题的状态，而不关心他是如">
+<meta name="twitter:image" content="https://liuhao163.github.io/数据结构与算法-算法思想-动态规划/dp_2_timu.jpg">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="liuhao163.github.io" type="application/atom+xml">
+
+
+
+
+  <link rel="canonical" href="https://liuhao163.github.io/数据结构与算法-算法思想-动态规划/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>数据结构与算法-算法思想-动态规划 | liuhao163.github.io</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">liuhao163.github.io</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <p class="site-subtitle">杂七杂八</p>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-sitemap">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/sitemap.xml" rel="section"><i class="menu-item-icon fa fa-fw fa-sitemap"></i> <br>Sitemap</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/数据结构与算法-算法思想-动态规划/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">数据结构与算法-算法思想-动态规划
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-07-29 15:05:01" itemprop="dateCreated datePublished" datetime="2019-07-29T15:05:01Z">2019-07-29</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/" itemprop="url" rel="index"><span itemprop="name">数据结构与算法</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/数据结构与算法/算法/" itemprop="url" rel="index"><span itemprop="name">算法</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><h3 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景"></a>使用场景</h3><p>一个模型：多阶段决策最优解模型，三个特征：最优解子结构，无后效性，重复子为题。</p>
+<ul>
+<li>多阶段决策最优解模型：即一个问题分为多个阶段，每个阶段的决策对应一组状态，我们根据这些状态寻找一组决策序列，最中获取决策序列的最优解。</li>
+<li>三个特征：<ul>
+<li>最优解子结构：问题的最优解，包含子问题的最优解。也就是能通过子问题最优解找到问题的最优解</li>
+<li>无后效性：后续的问题解决方案只依赖于前一个问题的状态，而不关心他是如何推导出来的。</li>
+<li>重复子问题：不同的决策序列到达相同阶段会产生重复的状态。</li>
+</ul>
+</li>
+</ul>
+<h3 id="空间、时间复杂度"><a href="#空间、时间复杂度" class="headerlink" title="空间、时间复杂度"></a>空间、时间复杂度</h3><p>  能用动态规划解决的问题往往都是能通过回溯算法解决的，只是回溯算法的时间复杂度往往很高是指数级的O(2^n)。用动态规划这种算法往往能很大的降低是复杂度具体会变为O(n<em>w)<br>  空间复杂度：冬天规划因为借住了一个2维数组states[n][w+1]，所以空间复杂度是O(n</em>w)。实际上动态规划是拿时间换空间的一个思想。</p>
+<h3 id="几种算法模型的区别"><a href="#几种算法模型的区别" class="headerlink" title="几种算法模型的区别"></a>几种算法模型的区别</h3><ul>
+<li>分治：不能抽象成多阶段决策模型，而是将一个模型分成不同的部分一次解决。</li>
+<li>贪心：是动态规划的一个特殊方法，通过局部最优解推导出全局最优解，解决问题更加高效，但是也更加受限，最优子结构，无后效性，贪心选择。</li>
+<li>回溯：能用贪心、动态规划算法解决的问题几乎都能用回溯算法解决，主要是用递归方法解决问题，通过穷举所有的可能，在经过对比获取最优解，由于复杂度是指数级，试用于小数据量</li>
+<li>动态规划：上述所属多阶段决策最优解模型，有重复的子问题，无后效性，有重复子问题。</li>
+</ul>
+<h2 id="解题思路"><a href="#解题思路" class="headerlink" title="解题思路"></a>解题思路</h2><h3 id="状态转移表法"><a href="#状态转移表法" class="headerlink" title="状态转移表法"></a>状态转移表法</h3><p>  一般我们会采用二维数组来保存每一步决策的状态，如果状态较多可以采用三维四维数组，因为状态太多所以不太适合用这个方法。</p>
+<p>  方法如下：（代码和题目在下面，纪念下根据方法手撕出来的呦~）</p>
+<p>  <img src="/数据结构与算法-算法思想-动态规划/dp_2_timu.jpg" alt="avator"></p>
+<ol>
+<li>先用回溯方法实现算法</li>
+<li>画出递归树，找到重复子问题</li>
+<li>画一个状态表，往往是一个二维数组，这个二维数组分为行、列、数值。</li>
+<li><p>我们根据题目要求，模拟递推我们的决策过程，来填写状态表表，这个递推的过程翻译成代码就是动态规划的过程，即状态转移表法。</p>
+<p>思考过程：<br><img src="/数据结构与算法-算法思想-动态规划/dp_2_jiefa.jpg" alt="avator"></p>
+</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MinDist</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">int</span>[][] metrix = <span class="keyword">new</span> <span class="keyword">int</span>[][]&#123;&#123;<span class="number">1</span>, <span class="number">3</span>, <span class="number">5</span>, <span class="number">9</span>&#125;, &#123;<span class="number">2</span>, <span class="number">1</span>, <span class="number">3</span>, <span class="number">4</span>&#125;, &#123;<span class="number">5</span>, <span class="number">2</span>, <span class="number">6</span>, <span class="number">7</span>&#125;, &#123;<span class="number">6</span>, <span class="number">8</span>, <span class="number">4</span>, <span class="number">3</span>&#125;&#125;;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 示例中的动态表法：</span></span><br><span class="line"><span class="comment">     * 1.我们先初始化第一行和第一列的值</span></span><br><span class="line"><span class="comment">     * 2.根据stats[i-1][j]向下走和stats[i][j-1]向右走，找到最短距离，其他的值丢弃</span></span><br><span class="line"><span class="comment">     * 3.遍历stats[n-1],即最后一行找到最短距离</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> metrix 是矩阵，</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">minDist</span><span class="params">(<span class="keyword">int</span>[][] metrix)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> w = metrix.length;</span><br><span class="line">        <span class="keyword">int</span> h = metrix.length;</span><br><span class="line">        <span class="keyword">int</span>[][] stats = <span class="keyword">new</span> <span class="keyword">int</span>[w][h];</span><br><span class="line"></span><br><span class="line">        <span class="comment">//初始化第一行和第一列</span></span><br><span class="line">        <span class="comment">//第一行1，1+3，1+3+5，1+3+5+9</span></span><br><span class="line">        <span class="comment">//第一列1，1+2，1+2+5，1+2+5+6</span></span><br><span class="line">        stats[<span class="number">0</span>][<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt; w; i++) &#123;</span><br><span class="line">            stats[i][<span class="number">0</span>] += stats[i - <span class="number">1</span>][<span class="number">0</span>] + metrix[i][<span class="number">0</span>];</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">1</span>; j &lt; h; j++) &#123;</span><br><span class="line">            stats[<span class="number">0</span>][j] += stats[<span class="number">0</span>][j - <span class="number">1</span>] + metrix[<span class="number">0</span>][j];</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//推导状态转移</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt; w; i++) &#123;</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">1</span>; j &lt; metrix[i].length; j++) &#123;</span><br><span class="line">                <span class="comment">//stats[i-1][j]向下走--&gt;stats[i - 1][j]+ metrix[i][j]</span></span><br><span class="line">                <span class="keyword">int</span> down = Integer.MAX_VALUE;</span><br><span class="line">                <span class="keyword">if</span> (stats[i - <span class="number">1</span>][j] &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                    down = stats[i - <span class="number">1</span>][j] + metrix[i][j];</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="comment">//stats[i][j-1]向右走--&gt;stats[i][j - 1]+ metrix[i][j]</span></span><br><span class="line">                <span class="keyword">int</span> right = Integer.MAX_VALUE;</span><br><span class="line">                <span class="keyword">if</span> (stats[i][j - <span class="number">1</span>] &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                    right = stats[i][j - <span class="number">1</span>] + metrix[i][j];</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="comment">//找最小值</span></span><br><span class="line">                <span class="keyword">int</span> min = right &lt; down ? right : down;</span><br><span class="line">                <span class="keyword">if</span> (min != Integer.MAX_VALUE) &#123;</span><br><span class="line">                    stats[i][j] = min;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">int</span> min = Integer.MAX_VALUE;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; stats[w - <span class="number">1</span>].length; i++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (stats[w - <span class="number">1</span>][i] &gt; <span class="number">0</span> &amp;&amp; stats[w - <span class="number">1</span>][i] &lt; min) &#123;</span><br><span class="line">                min = stats[w - <span class="number">1</span>][i];</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (min != Integer.MAX_VALUE) &#123;</span><br><span class="line">            <span class="keyword">return</span> min;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> -<span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        System.out.println(MinDist.minDist(metrix));</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="状态转移方程"><a href="#状态转移方程" class="headerlink" title="状态转移方程"></a>状态转移方程</h3><p>完成状态转移方程，然后将状态转移方程翻译成代码。例如上面例子，状态转移方程是</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">min_dist(i, j) = w[i][j] + min(min_dist(i, j-<span class="number">1</span>), min_dist(i-<span class="number">1</span>, j))</span><br></pre></td></tr></table></figure>
+<h2 id="示例"><a href="#示例" class="headerlink" title="示例"></a>示例</h2><h3 id="0-1背包问题"><a href="#0-1背包问题" class="headerlink" title="0-1背包问题"></a>0-1背包问题</h3><figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">背包0-1问题升级版，</span></span><br><span class="line"><span class="comment">求解一组物体，pkg代表重量，它的价值是value，装n个物体，在w的限制下，如何使价值最大</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Knapsack</span><span class="params">(pkg []<span class="keyword">int</span>, value []<span class="keyword">int</span>, n <span class="keyword">int</span>, w <span class="keyword">int</span>)</span> <span class="title">int</span></span> &#123;</span><br><span class="line">    <span class="comment">//初始化state数组长队[n][w+1]</span></span><br><span class="line">    state := <span class="built_in">make</span>([][]<span class="keyword">int</span>, n)</span><br><span class="line">    <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; n; i++ &#123;</span><br><span class="line">        state[i] = <span class="built_in">make</span>([]<span class="keyword">int</span>, w+<span class="number">1</span>)</span><br><span class="line">        <span class="keyword">for</span> j := <span class="keyword">range</span> state[i] &#123;</span><br><span class="line">            state[i][j] = <span class="number">-1</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//0元素特殊处理</span></span><br><span class="line">    state[<span class="number">0</span>][<span class="number">0</span>] = <span class="number">0</span></span><br><span class="line">    <span class="keyword">if</span> pkg[<span class="number">0</span>] &lt;= w &#123;</span><br><span class="line">        state[<span class="number">0</span>][pkg[<span class="number">0</span>]] = value[<span class="number">0</span>]</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//从第一个物体开始考察，开始状态转移</span></span><br><span class="line">    <span class="keyword">for</span> i := <span class="number">1</span>; i &lt; n; i++ &#123;</span><br><span class="line">        <span class="comment">//不放进背包中，i个物体是i-1个物体的重量j,value是state[i][j]值</span></span><br><span class="line">        <span class="keyword">for</span> j := <span class="number">0</span>; j &lt; w; j++ &#123;</span><br><span class="line">            <span class="comment">//如果上一个物体有值</span></span><br><span class="line">            <span class="keyword">if</span> state[i<span class="number">-1</span>][j] &gt; <span class="number">-1</span> &#123;</span><br><span class="line">                state[i][j] = state[i<span class="number">-1</span>][j]</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//放进背包中，i个物体是i-1个物体的重量j+pkg[i],value是state[i-1][j] + value[i]</span></span><br><span class="line">        <span class="comment">//这里求解的是最优解，所以d当v大于当前重量的时候保留v。</span></span><br><span class="line">        <span class="keyword">for</span> j := <span class="number">0</span>; j &lt; w-pkg[i]; j++ &#123;</span><br><span class="line">            <span class="keyword">if</span> state[i<span class="number">-1</span>][j] &gt; <span class="number">-1</span> &#123;</span><br><span class="line">                v := state[i<span class="number">-1</span>][j] + value[i]</span><br><span class="line">                cw := j + pkg[i]</span><br><span class="line">                <span class="keyword">if</span> v &gt; state[i][cw] &#123;</span><br><span class="line">                    state[i][cw] = v</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//遍历获取最大值</span></span><br><span class="line">    max := <span class="number">-1</span></span><br><span class="line">    <span class="keyword">for</span> j := <span class="number">0</span>; j &lt;= w; j++ &#123;</span><br><span class="line">        <span class="keyword">if</span> state[n<span class="number">-1</span>][j] &gt; max &#123;</span><br><span class="line">            max = state[n<span class="number">-1</span>][j]</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> max</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="最短路径问题"><a href="#最短路径问题" class="headerlink" title="最短路径问题"></a>最短路径问题</h3><p>如图：</p>
+<p><img src="/数据结构与算法-算法思想-动态规划/dp_1.jpg" alt="avator"></p>
+<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> dp</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> Triangle = [][]<span class="keyword">int</span>&#123;&#123;<span class="number">5</span>&#125;, &#123;<span class="number">7</span>, <span class="number">8</span>&#125;, &#123;<span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>&#125;, &#123;<span class="number">4</span>, <span class="number">9</span>, <span class="number">6</span>, <span class="number">1</span>&#125;, &#123;<span class="number">2</span>, <span class="number">7</span>, <span class="number">9</span>, <span class="number">4</span>, <span class="number">5</span>&#125;&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">坐标，只能往做或者往右走，左[i-1][j]--&gt;[i][j],右[i-1][j]--&gt;[i][j+1]</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">ShortDir</span><span class="params">(arr [][]<span class="keyword">int</span>)</span> <span class="title">int</span></span> &#123;</span><br><span class="line">    state := <span class="built_in">make</span>([][]<span class="keyword">int</span>, <span class="built_in">len</span>(arr))</span><br><span class="line">    <span class="keyword">for</span> i := <span class="keyword">range</span> arr &#123;</span><br><span class="line">        state[i] = <span class="built_in">make</span>([]<span class="keyword">int</span>, <span class="built_in">len</span>(arr))</span><br><span class="line">        <span class="keyword">for</span> j := <span class="keyword">range</span> state[i] &#123;</span><br><span class="line">            state[i][j] = <span class="number">-1</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    n := <span class="built_in">len</span>(arr)</span><br><span class="line">    state[<span class="number">0</span>][<span class="number">0</span>] = arr[<span class="number">0</span>][<span class="number">0</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i := <span class="number">1</span>; i &lt; n; i++ &#123;</span><br><span class="line">        <span class="keyword">for</span> j := <span class="number">0</span>; j &lt; <span class="built_in">len</span>(arr[i])<span class="number">-1</span>; j++ &#123;</span><br><span class="line">            <span class="keyword">if</span> state[i<span class="number">-1</span>][j] &gt; <span class="number">0</span> &#123;</span><br><span class="line">                <span class="comment">//左走</span></span><br><span class="line">                state[i][j] = arr[i][j] + state[i<span class="number">-1</span>][j]</span><br><span class="line">                <span class="comment">//右走</span></span><br><span class="line">                state[i][j+<span class="number">1</span>] = arr[i][j+<span class="number">1</span>] + state[i<span class="number">-1</span>][j]</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    min := <span class="keyword">int</span>(^<span class="keyword">uint</span>(<span class="number">0</span>) &gt;&gt; <span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> j := <span class="number">0</span>; j &lt; <span class="built_in">len</span>(arr); j++ &#123;</span><br><span class="line">        <span class="keyword">if</span> state[n<span class="number">-1</span>][j] != <span class="number">-1</span> &amp;&amp; state[n<span class="number">-1</span>][j] &lt; min &#123;</span><br><span class="line">            min = state[n<span class="number">-1</span>][j]</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> min == <span class="keyword">int</span>(^<span class="keyword">uint</span>(<span class="number">0</span>)&gt;&gt;<span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> min</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="找零问题"><a href="#找零问题" class="headerlink" title="找零问题"></a>找零问题</h3><figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//纸币找零动态规划求解</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">ChargeDP</span><span class="params">(money []<span class="keyword">int</span>, sum <span class="keyword">int</span>)</span> <span class="title">int</span></span> &#123;</span><br><span class="line">    <span class="comment">//初始化状态数组 state[i][j]，纸币数，最多是sum，j是当前状态的金额</span></span><br><span class="line">    state := <span class="built_in">make</span>([][]<span class="keyword">bool</span>, sum)</span><br><span class="line">    <span class="keyword">for</span> i := <span class="keyword">range</span> state &#123;</span><br><span class="line">        state[i] = <span class="built_in">make</span>([]<span class="keyword">bool</span>, sum+<span class="number">1</span>)</span><br><span class="line">        <span class="keyword">for</span> j := <span class="keyword">range</span> state[i] &#123;</span><br><span class="line">            state[i][j] = <span class="literal">false</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    state[<span class="number">0</span>][<span class="number">0</span>] = <span class="literal">true</span></span><br><span class="line">    <span class="comment">//min_charge(i,j)=state[i][j+max(money[0] money[1],mongey[2]])==sum--&gt;i</span></span><br><span class="line">    <span class="keyword">for</span> i := <span class="number">1</span>; i &lt; sum; i++ &#123;</span><br><span class="line">        <span class="keyword">for</span> j := <span class="number">0</span>; j &lt; sum; j++ &#123;</span><br><span class="line">            <span class="comment">//从上一次状态开始推导，当前这次最大的面额然后给纸币数+1</span></span><br><span class="line">            <span class="keyword">if</span> state[i<span class="number">-1</span>][j] &#123;</span><br><span class="line">                max := <span class="number">-100</span></span><br><span class="line">                <span class="keyword">for</span> k := <span class="number">0</span>; k &lt; <span class="built_in">len</span>(money); k++ &#123;</span><br><span class="line">                    <span class="comment">//小于等于总和，然后取最大值</span></span><br><span class="line">                    <span class="keyword">if</span> j+money[k] &lt;= sum &amp;&amp; max &lt; j+money[k] &#123;</span><br><span class="line">                        max = j + money[k]</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">//state[i][max]最大值获取最优解</span></span><br><span class="line">                state[i][max] = state[i<span class="number">-1</span>][j]</span><br><span class="line">                <span class="keyword">if</span> max == sum &#123;</span><br><span class="line">                    <span class="keyword">return</span> i</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="查找莱温斯坦距离和最大共有子串长度"><a href="#查找莱温斯坦距离和最大共有子串长度" class="headerlink" title="查找莱温斯坦距离和最大共有子串长度"></a>查找莱温斯坦距离和最大共有子串长度</h3><p>todo</p>
+<h3 id="查找数组递增子序列"><a href="#查找数组递增子序列" class="headerlink" title="查找数组递增子序列"></a>查找数组递增子序列</h3><p>  动态转移公式：<br>  如果：array[i] &lt; array[j]==&gt;state[i][j] = state[i - 1][j - 1] + 1;<br>  state[i][j] =Math.max(state[i][j - 1],state[i-1][j - 1]);</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">getAscDP</span><span class="params">(<span class="keyword">int</span>[] array)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> state[][] = <span class="keyword">new</span> <span class="keyword">int</span>[array.length][array.length];</span><br><span class="line">    state[<span class="number">0</span>][<span class="number">0</span>] = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> j=<span class="number">1</span>;j&lt;array.length;j++)&#123;</span><br><span class="line">        <span class="keyword">if</span>(array[<span class="number">0</span>]&lt;array[j])&#123;</span><br><span class="line">            state[<span class="number">0</span>][j]=<span class="number">2</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        state[<span class="number">0</span>][j]=<span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">1</span>;i&lt;array.length;i++)&#123;</span><br><span class="line">        <span class="keyword">if</span>(array[i]&lt;array[<span class="number">0</span>])&#123;</span><br><span class="line">            state[i][<span class="number">0</span>]=<span class="number">2</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        state[i][<span class="number">0</span>]=<span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">1</span>; i &lt; array.length; i++) &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">1</span>; j &lt; array.length; j++) &#123;</span><br><span class="line">            <span class="keyword">if</span> (array[i] &lt; array[j]) &#123;</span><br><span class="line">                state[i][j] = state[i - <span class="number">1</span>][j - <span class="number">1</span>] + <span class="number">1</span>;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                state[i][j] =Math.max(state[i][j - <span class="number">1</span>],state[i-<span class="number">1</span>][j - <span class="number">1</span>]) ;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> state[array.length-<span class="number">1</span>][array.length-<span class="number">1</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/算法/" rel="tag"># 算法</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/数据结构与算法-算法思想-分治算法/" rel="next" title="数据结构与算法-分治算法">
+                <i class="fa fa-chevron-left"></i> 数据结构与算法-分治算法
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/RoketMq源码学习-可用性研究/" rel="prev" title="RoketMq源码学习-可用性研究">
+                RoketMq源码学习-可用性研究 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Liu hao</p>
+              <p class="site-description motion-element" itemprop="description">励志当好厨子的程序员</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">222</span>
+                    <span class="site-state-item-name">posts</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/categories/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">54</span>
+                    <span class="site-state-item-name">categories</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">81</span>
+                    <span class="site-state-item-name">tags</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="https://github.com/liuhao163" title="GitHub &rarr; https://github.com/liuhao163" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:liu67224657@qq.com" title="E-Mail &rarr; mailto:liu67224657@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#原理"><span class="nav-number">1.</span> <span class="nav-text">原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#使用场景"><span class="nav-number">1.1.</span> <span class="nav-text">使用场景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#空间、时间复杂度"><span class="nav-number">1.2.</span> <span class="nav-text">空间、时间复杂度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#几种算法模型的区别"><span class="nav-number">1.3.</span> <span class="nav-text">几种算法模型的区别</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#解题思路"><span class="nav-number">2.</span> <span class="nav-text">解题思路</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#状态转移表法"><span class="nav-number">2.1.</span> <span class="nav-text">状态转移表法</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#状态转移方程"><span class="nav-number">2.2.</span> <span class="nav-text">状态转移方程</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#示例"><span class="nav-number">3.</span> <span class="nav-text">示例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#0-1背包问题"><span class="nav-number">3.1.</span> <span class="nav-text">0-1背包问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#最短路径问题"><span class="nav-number">3.2.</span> <span class="nav-text">最短路径问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#找零问题"><span class="nav-number">3.3.</span> <span class="nav-text">找零问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#查找莱温斯坦距离和最大共有子串长度"><span class="nav-number">3.4.</span> <span class="nav-text">查找莱温斯坦距离和最大共有子串长度</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#查找数组递增子序列"><span class="nav-number">3.5.</span> <span class="nav-text">查找数组递增子序列</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2022</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Liu hao</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> v7.0.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/src/utils.js?v=7.0.0"></script>
+
+  <script src="/js/src/motion.js?v=7.0.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/src/affix.js?v=7.0.0"></script>
+
+  <script src="/js/src/schemes/pisces.js?v=7.0.0"></script>
+
+
+
+  
+  <script src="/js/src/scrollspy.js?v=7.0.0"></script>
+<script src="/js/src/post-details.js?v=7.0.0"></script>
+
+
+
+  
+
+
+  <script src="/js/src/bootstrap.js?v=7.0.0"></script>
+
+
+  
+  
+
+
+  
+
+
+  
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

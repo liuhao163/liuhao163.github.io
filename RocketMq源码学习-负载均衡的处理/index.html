@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2">
+
+<link rel="stylesheet" href="/css/main.css?v=7.0.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.0.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.0.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.0.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false,"dimmer":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="rocketmq对负载均衡的处理 注册broker发起123456789101112131415161718192021222324252627282930private void doRegisterBrokerAll(boolean checkOrderConfig, boolean oneway,    TopicConfigSerializeWrapper topicConfigWrapp">
+<meta name="keywords" content="java,消息队列,rocketmq">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RocketMq源码学习-负载均衡的处理">
+<meta property="og:url" content="https://liuhao163.github.io/RocketMq源码学习-负载均衡的处理/index.html">
+<meta property="og:site_name" content="liuhao163.github.io">
+<meta property="og:description" content="rocketmq对负载均衡的处理 注册broker发起123456789101112131415161718192021222324252627282930private void doRegisterBrokerAll(boolean checkOrderConfig, boolean oneway,    TopicConfigSerializeWrapper topicConfigWrapp">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2022-09-21T15:03:02.171Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="RocketMq源码学习-负载均衡的处理">
+<meta name="twitter:description" content="rocketmq对负载均衡的处理 注册broker发起123456789101112131415161718192021222324252627282930private void doRegisterBrokerAll(boolean checkOrderConfig, boolean oneway,    TopicConfigSerializeWrapper topicConfigWrapp">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="liuhao163.github.io" type="application/atom+xml">
+
+
+
+
+  <link rel="canonical" href="https://liuhao163.github.io/RocketMq源码学习-负载均衡的处理/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>RocketMq源码学习-负载均衡的处理 | liuhao163.github.io</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">liuhao163.github.io</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <p class="site-subtitle">杂七杂八</p>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-sitemap">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/sitemap.xml" rel="section"><i class="menu-item-icon fa fa-fw fa-sitemap"></i> <br>Sitemap</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/RocketMq源码学习-负载均衡的处理/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">RocketMq源码学习-负载均衡的处理
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-08-02 01:00:00" itemprop="dateCreated datePublished" datetime="2019-08-02T01:00:00Z">2019-08-02</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/" itemprop="url" rel="index"><span itemprop="name">消息队列</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/" itemprop="url" rel="index"><span itemprop="name">rocketmq</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/源码学习/" itemprop="url" rel="index"><span itemprop="name">源码学习</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>rocketmq对负载均衡的处理</p>
+<h2 id="注册"><a href="#注册" class="headerlink" title="注册"></a>注册</h2><h3 id="broker发起"><a href="#broker发起" class="headerlink" title="broker发起"></a>broker发起</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">doRegisterBrokerAll</span><span class="params">(<span class="keyword">boolean</span> checkOrderConfig, <span class="keyword">boolean</span> oneway,</span></span></span><br><span class="line"><span class="function"><span class="params">    TopicConfigSerializeWrapper topicConfigWrapper)</span> </span>&#123;</span><br><span class="line">    List&lt;RegisterBrokerResult&gt; registerBrokerResultList = <span class="keyword">this</span>.brokerOuterAPI.registerBrokerAll(</span><br><span class="line">        <span class="keyword">this</span>.brokerConfig.getBrokerClusterName(),</span><br><span class="line">        <span class="keyword">this</span>.getBrokerAddr(),</span><br><span class="line">        <span class="keyword">this</span>.brokerConfig.getBrokerName(),</span><br><span class="line">        <span class="keyword">this</span>.brokerConfig.getBrokerId(),</span><br><span class="line">        <span class="keyword">this</span>.getHAServerAddr(),</span><br><span class="line">        topicConfigWrapper,</span><br><span class="line">        <span class="keyword">this</span>.filterServerManager.buildNewFilterServerList(),</span><br><span class="line">        oneway,</span><br><span class="line">        <span class="keyword">this</span>.brokerConfig.getRegisterBrokerTimeoutMills(),</span><br><span class="line">        <span class="keyword">this</span>.brokerConfig.isCompressedRegister());</span><br><span class="line"></span><br><span class="line">    <span class="comment">//同步方法</span></span><br><span class="line">    <span class="keyword">if</span> (registerBrokerResultList.size() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        RegisterBrokerResult registerBrokerResult = registerBrokerResultList.get(<span class="number">0</span>);</span><br><span class="line">        <span class="keyword">if</span> (registerBrokerResult != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">this</span>.updateMasterHAServerAddrPeriodically &amp;&amp; registerBrokerResult.getHaServerAddr() != <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">this</span>.messageStore.updateHaMasterAddress(registerBrokerResult.getHaServerAddr());</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">this</span>.slaveSynchronize.setMasterAddr(registerBrokerResult.getMasterAddr());</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (checkOrderConfig) &#123;</span><br><span class="line">                <span class="keyword">this</span>.getTopicConfigManager().updateOrderTopicConfig(registerBrokerResult.getKvTable());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>调用brokerOutApi的registerBrokerAll方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> List&lt;RegisterBrokerResult&gt; <span class="title">registerBrokerAll</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">final</span> String clusterName,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">final</span> String brokerAddr,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">final</span> String brokerName,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">final</span> <span class="keyword">long</span> brokerId,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">final</span> String haServerAddr,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">final</span> TopicConfigSerializeWrapper topicConfigWrapper,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">final</span> List&lt;String&gt; filterServerList,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">final</span> <span class="keyword">boolean</span> oneway,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">final</span> <span class="keyword">int</span> timeoutMills,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">final</span> <span class="keyword">boolean</span> compressed)</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">final</span> List&lt;RegisterBrokerResult&gt; registerBrokerResultList = Lists.newArrayList();</span><br><span class="line">    List&lt;String&gt; nameServerAddressList = <span class="keyword">this</span>.remotingClient.getNameServerAddressList();</span><br><span class="line">    <span class="keyword">if</span> (nameServerAddressList != <span class="keyword">null</span> &amp;&amp; nameServerAddressList.size() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="comment">//关键向nameServer发送RegisterBrokerRequestHeader请求</span></span><br><span class="line">        <span class="keyword">final</span> RegisterBrokerRequestHeader requestHeader = <span class="keyword">new</span> RegisterBrokerRequestHeader();</span><br><span class="line">        requestHeader.setBrokerAddr(brokerAddr);</span><br><span class="line">        requestHeader.setBrokerId(brokerId);</span><br><span class="line">        requestHeader.setBrokerName(brokerName);</span><br><span class="line">        requestHeader.setClusterName(clusterName);</span><br><span class="line">        requestHeader.setHaServerAddr(haServerAddr);</span><br><span class="line">        requestHeader.setCompressed(compressed);</span><br><span class="line"></span><br><span class="line">        RegisterBrokerBody requestBody = <span class="keyword">new</span> RegisterBrokerBody();</span><br><span class="line">        requestBody.setTopicConfigSerializeWrapper(topicConfigWrapper);</span><br><span class="line">        requestBody.setFilterServerList(filterServerList);</span><br><span class="line">        <span class="keyword">final</span> <span class="keyword">byte</span>[] body = requestBody.encode(compressed);</span><br><span class="line">        <span class="keyword">final</span> <span class="keyword">int</span> bodyCrc32 = UtilAll.crc32(body);</span><br><span class="line">        requestHeader.setBodyCrc32(bodyCrc32);</span><br><span class="line">        <span class="keyword">final</span> CountDownLatch countDownLatch = <span class="keyword">new</span> CountDownLatch(nameServerAddressList.size());</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">final</span> String namesrvAddr : nameServerAddressList) &#123;</span><br><span class="line">            brokerOuterExecutor.execute(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        <span class="comment">//封装发送逻辑--&gt;这里向nameServer发送</span></span><br><span class="line">                        RegisterBrokerResult result = registerBroker(namesrvAddr,oneway, timeoutMills,requestHeader,body);</span><br><span class="line">                        <span class="comment">//更新注册结果</span></span><br><span class="line">                        <span class="keyword">if</span> (result != <span class="keyword">null</span>) &#123;</span><br><span class="line">                            registerBrokerResultList.add(result);</span><br><span class="line">                        &#125;</span><br><span class="line"></span><br><span class="line">                        log.info(<span class="string">"register broker to name server &#123;&#125; OK"</span>, namesrvAddr);</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                        log.warn(<span class="string">"registerBroker Exception, &#123;&#125;"</span>, namesrvAddr, e);</span><br><span class="line">                    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                        countDownLatch.countDown();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            countDownLatch.await(timeoutMills, TimeUnit.MILLISECONDS);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> registerBrokerResultList;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="NameServ的处理"><a href="#NameServ的处理" class="headerlink" title="NameServ的处理"></a>NameServ的处理</h3><p>在DefaultRequestProcessor中processRequest方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">......</span><br><span class="line">            <span class="keyword">case</span> RequestCode.REGISTER_BROKER:</span><br><span class="line">                Version brokerVersion = MQVersion.value2Version(request.getVersion());</span><br><span class="line">                <span class="keyword">if</span> (brokerVersion.ordinal() &gt;= MQVersion.Version.V3_0_11.ordinal()) &#123;</span><br><span class="line">                    <span class="keyword">return</span> <span class="keyword">this</span>.registerBrokerWithFilterServer(ctx, request);</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="keyword">return</span> <span class="keyword">this</span>.registerBroker(ctx, request);</span><br><span class="line">                &#125;</span><br><span class="line">......</span><br></pre></td></tr></table></figure>
+<p>registerBoker方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> RemotingCommand <span class="title">registerBroker</span><span class="params">(ChannelHandlerContext ctx,</span></span></span><br><span class="line"><span class="function"><span class="params">    RemotingCommand request)</span> <span class="keyword">throws</span> RemotingCommandException </span>&#123;</span><br><span class="line">    <span class="comment">//</span></span><br><span class="line">    <span class="keyword">final</span> RemotingCommand response = RemotingCommand.createResponseCommand(RegisterBrokerResponseHeader.class);</span><br><span class="line">    <span class="keyword">final</span> RegisterBrokerResponseHeader responseHeader = (RegisterBrokerResponseHeader) response.readCustomHeader();</span><br><span class="line">    <span class="keyword">final</span> RegisterBrokerRequestHeader requestHeader =</span><br><span class="line">        (RegisterBrokerRequestHeader) request.decodeCommandCustomHeader(RegisterBrokerRequestHeader.class);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//得到TopicConfigSerializeWrapper</span></span><br><span class="line">    TopicConfigSerializeWrapper topicConfigWrapper;</span><br><span class="line">    <span class="keyword">if</span> (request.getBody() != <span class="keyword">null</span>) &#123;</span><br><span class="line">        topicConfigWrapper = TopicConfigSerializeWrapper.decode(request.getBody(), TopicConfigSerializeWrapper.class);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        topicConfigWrapper = <span class="keyword">new</span> TopicConfigSerializeWrapper();</span><br><span class="line">        topicConfigWrapper.getDataVersion().setCounter(<span class="keyword">new</span> AtomicLong(<span class="number">0</span>));</span><br><span class="line">        topicConfigWrapper.getDataVersion().setTimestamp(<span class="number">0</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//关键方法</span></span><br><span class="line">    RegisterBrokerResult result = <span class="keyword">this</span>.namesrvController.getRouteInfoManager().registerBroker(</span><br><span class="line">        requestHeader.getClusterName(),</span><br><span class="line">        requestHeader.getBrokerAddr(),</span><br><span class="line">        requestHeader.getBrokerName(),</span><br><span class="line">        requestHeader.getBrokerId(),</span><br><span class="line">        requestHeader.getHaServerAddr(),</span><br><span class="line">        topicConfigWrapper,</span><br><span class="line">        <span class="keyword">null</span>,</span><br><span class="line">        ctx.channel()</span><br><span class="line">    );</span><br><span class="line"></span><br><span class="line">    <span class="comment">//封装response结构</span></span><br><span class="line">    responseHeader.setHaServerAddr(result.getHaServerAddr());</span><br><span class="line">    responseHeader.setMasterAddr(result.getMasterAddr());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">byte</span>[] jsonValue = <span class="keyword">this</span>.namesrvController.getKvConfigManager().getKVListByNamespace(NamesrvUtil.NAMESPACE_ORDER_TOPIC_CONFIG);</span><br><span class="line">    response.setBody(jsonValue);</span><br><span class="line">    response.setCode(ResponseCode.SUCCESS);</span><br><span class="line">    response.setRemark(<span class="keyword">null</span>);</span><br><span class="line">    <span class="keyword">return</span> response;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="RouteInfoManager"><a href="#RouteInfoManager" class="headerlink" title="RouteInfoManager"></a>RouteInfoManager</h3><p>broker和topic的路由信息管理者,重要属性如下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ReadWriteLock lock = <span class="keyword">new</span> ReentrantReadWriteLock();</span><br><span class="line">    <span class="comment">//每个topic对应【Master】Broker的队列信息读队列、写队列、名称信息</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> HashMap&lt;String<span class="comment">/* topic */</span>, List&lt;QueueData&gt;&gt; topicQueueTable;</span><br><span class="line">    <span class="comment">//Broker的信息，包含了borker的id,地址等，</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> HashMap&lt;String<span class="comment">/* brokerName */</span>, BrokerData&gt; brokerAddrTable;</span><br><span class="line">    <span class="comment">//集群和broker的对应关系</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> HashMap&lt;String<span class="comment">/* clusterName */</span>, Set&lt;String<span class="comment">/* brokerName */</span>&gt;&gt; clusterAddrTable;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> HashMap&lt;String<span class="comment">/* brokerAddr */</span>, BrokerLiveInfo&gt; brokerLiveTable;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> HashMap&lt;String<span class="comment">/* brokerAddr */</span>, List&lt;String&gt;<span class="comment">/* Filter Server */</span>&gt; filterServerTable;</span><br><span class="line">`</span><br></pre></td></tr></table></figure>
+<p>调用RouteInfoManager的registerBroker</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> RegisterBrokerResult <span class="title">registerBroker</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> String clusterName,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> String brokerAddr,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> String brokerName,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> <span class="keyword">long</span> brokerId,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> String haServerAddr,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> TopicConfigSerializeWrapper topicConfigWrapper,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> List&lt;String&gt; filterServerList,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> Channel channel)</span> </span>&#123;</span><br><span class="line">    RegisterBrokerResult result = <span class="keyword">new</span> RegisterBrokerResult();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">this</span>.lock.writeLock().lockInterruptibly();</span><br><span class="line"></span><br><span class="line">            <span class="comment">//更新本地的Cluster--&gt;brokerNames</span></span><br><span class="line">            Set&lt;String&gt; brokerNames = <span class="keyword">this</span>.clusterAddrTable.get(clusterName);</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">null</span> == brokerNames) &#123;</span><br><span class="line">                brokerNames = <span class="keyword">new</span> HashSet&lt;String&gt;();</span><br><span class="line">                <span class="keyword">this</span>.clusterAddrTable.put(clusterName, brokerNames);</span><br><span class="line">            &#125;</span><br><span class="line">            brokerNames.add(brokerName);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">boolean</span> registerFirst = <span class="keyword">false</span>;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//更新rokerData（brokerName--&gt;brokerData）</span></span><br><span class="line">            BrokerData brokerData = <span class="keyword">this</span>.brokerAddrTable.get(brokerName);</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">null</span> == brokerData) &#123;</span><br><span class="line">                registerFirst = <span class="keyword">true</span>;</span><br><span class="line">                brokerData = <span class="keyword">new</span> BrokerData(clusterName, brokerName, <span class="keyword">new</span> HashMap&lt;Long, String&gt;());</span><br><span class="line">                <span class="keyword">this</span>.brokerAddrTable.put(brokerName, brokerData);</span><br><span class="line">            &#125;</span><br><span class="line">            String oldAddr = brokerData.getBrokerAddrs().put(brokerId, brokerAddr);</span><br><span class="line">            registerFirst = registerFirst || (<span class="keyword">null</span> == oldAddr);</span><br><span class="line"></span><br><span class="line">            <span class="comment">//Broker是Master更新topicQueueTable</span></span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">null</span> != topicConfigWrapper</span><br><span class="line">                    &amp;&amp; MixAll.MASTER_ID == brokerId) &#123;</span><br><span class="line">                <span class="comment">//有变化或者是第一次注册</span></span><br><span class="line">                <span class="keyword">if</span> (<span class="keyword">this</span>.isBrokerTopicConfigChanged(brokerAddr, topicConfigWrapper.getDataVersion())</span><br><span class="line">                        || registerFirst) &#123;</span><br><span class="line">                    ConcurrentMap&lt;String, TopicConfig&gt; tcTable =</span><br><span class="line">                            topicConfigWrapper.getTopicConfigTable();</span><br><span class="line">                    <span class="keyword">if</span> (tcTable != <span class="keyword">null</span>) &#123;</span><br><span class="line">                        <span class="keyword">for</span> (Map.Entry&lt;String, TopicConfig&gt; entry : tcTable.entrySet()) &#123;</span><br><span class="line">                            <span class="keyword">this</span>.createAndUpdateQueueData(brokerName, entry.getValue());</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//同步和过滤</span></span><br><span class="line">            BrokerLiveInfo prevBrokerLiveInfo = <span class="keyword">this</span>.brokerLiveTable.put(brokerAddr,</span><br><span class="line">                    <span class="keyword">new</span> BrokerLiveInfo(</span><br><span class="line">                            System.currentTimeMillis(),</span><br><span class="line">                            topicConfigWrapper.getDataVersion(),</span><br><span class="line">                            channel,</span><br><span class="line">                            haServerAddr));</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">null</span> == prevBrokerLiveInfo) &#123;</span><br><span class="line">                log.info(<span class="string">"new broker registered, &#123;&#125; HAServer: &#123;&#125;"</span>, brokerAddr, haServerAddr);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (filterServerList != <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">if</span> (filterServerList.isEmpty()) &#123;</span><br><span class="line">                    <span class="keyword">this</span>.filterServerTable.remove(brokerAddr);</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="keyword">this</span>.filterServerTable.put(brokerAddr, filterServerList);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (MixAll.MASTER_ID != brokerId) &#123;</span><br><span class="line">                String masterAddr = brokerData.getBrokerAddrs().get(MixAll.MASTER_ID);</span><br><span class="line">                <span class="keyword">if</span> (masterAddr != <span class="keyword">null</span>) &#123;</span><br><span class="line">                    BrokerLiveInfo brokerLiveInfo = <span class="keyword">this</span>.brokerLiveTable.get(masterAddr);</span><br><span class="line">                    <span class="keyword">if</span> (brokerLiveInfo != <span class="keyword">null</span>) &#123;</span><br><span class="line">                        result.setHaServerAddr(brokerLiveInfo.getHaServerAddr());</span><br><span class="line">                        result.setMasterAddr(masterAddr);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="keyword">this</span>.lock.writeLock().unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">"registerBroker Exception"</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>关键方法：createAndUpdateQueueData</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//注册Broker时候</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">createAndUpdateQueueData</span><span class="params">(<span class="keyword">final</span> String brokerName, <span class="keyword">final</span> TopicConfig topicConfig)</span> </span>&#123;</span><br><span class="line">    <span class="comment">//生成队列信息，对于统一个topic来说每个msterbroker对应一个QueueData</span></span><br><span class="line">    QueueData queueData = <span class="keyword">new</span> QueueData();</span><br><span class="line">    queueData.setBrokerName(brokerName);</span><br><span class="line">    queueData.setWriteQueueNums(topicConfig.getWriteQueueNums());</span><br><span class="line">    queueData.setReadQueueNums(topicConfig.getReadQueueNums());</span><br><span class="line">    queueData.setPerm(topicConfig.getPerm());</span><br><span class="line">    queueData.setTopicSynFlag(topicConfig.getTopicSysFlag());</span><br><span class="line"></span><br><span class="line">    <span class="comment">//topic--&gt;多个Broker,所以有多个QueueData</span></span><br><span class="line">    List&lt;QueueData&gt; queueDataList = <span class="keyword">this</span>.topicQueueTable.get(topicConfig.getTopicName());</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">null</span> == queueDataList) &#123;</span><br><span class="line">        queueDataList = <span class="keyword">new</span> LinkedList&lt;QueueData&gt;();</span><br><span class="line">        queueDataList.add(queueData);</span><br><span class="line">        <span class="keyword">this</span>.topicQueueTable.put(topicConfig.getTopicName(), queueDataList);</span><br><span class="line">        log.info(<span class="string">"new topic registered, &#123;&#125; &#123;&#125;"</span>, topicConfig.getTopicName(), queueData);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">boolean</span> addNewOne = <span class="keyword">true</span>;</span><br><span class="line"></span><br><span class="line">        Iterator&lt;QueueData&gt; it = queueDataList.iterator();</span><br><span class="line">        <span class="keyword">while</span> (it.hasNext()) &#123;</span><br><span class="line">            QueueData qd = it.next();</span><br><span class="line">            <span class="keyword">if</span> (qd.getBrokerName().equals(brokerName)) &#123;</span><br><span class="line">                <span class="keyword">if</span> (qd.equals(queueData)) &#123;</span><br><span class="line">                    addNewOne = <span class="keyword">false</span>;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    log.info(<span class="string">"topic changed, &#123;&#125; OLD: &#123;&#125; NEW: &#123;&#125;"</span>, topicConfig.getTopicName(), qd,</span><br><span class="line">                            queueData);</span><br><span class="line">                    it.remove();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (addNewOne) &#123;</span><br><span class="line">            queueDataList.add(queueData);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Producer负载均衡"><a href="#Producer负载均衡" class="headerlink" title="Producer负载均衡"></a>Producer负载均衡</h2><h3 id="DefaultMQProducerImpl"><a href="#DefaultMQProducerImpl" class="headerlink" title="DefaultMQProducerImpl"></a>DefaultMQProducerImpl</h3><p>发送消息和负载均衡相关的逻辑是：</p>
+<p>  先通过topicPublishInfo选择一个MessageQueue；<br>  调用DefaultMQProducerImpl#sendKernelImpl，在之前发送消息前会调用findBrokerAddressInPublish方法根据mq.getBrokerName来从本地内存获取brokerAddr，见下面代码，如果不存在会调用，tryToFindTopicPublishInfo方法来重新加载brokerAddrTable和topicPublishInfo</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> SendResult <span class="title">sendKernelImpl</span><span class="params">(<span class="keyword">final</span> Message msg,</span></span></span><br><span class="line"><span class="function"><span class="params">                                  <span class="keyword">final</span> MessageQueue mq,</span></span></span><br><span class="line"><span class="function"><span class="params">                                  <span class="keyword">final</span> CommunicationMode communicationMode,</span></span></span><br><span class="line"><span class="function"><span class="params">                                  <span class="keyword">final</span> SendCallback sendCallback,</span></span></span><br><span class="line"><span class="function"><span class="params">                                  <span class="keyword">final</span> TopicPublishInfo topicPublishInfo,</span></span></span><br><span class="line"><span class="function"><span class="params">                                  <span class="keyword">final</span> <span class="keyword">long</span> timeout)</span> <span class="keyword">throws</span> MQClientException, RemotingException, MQBrokerException, InterruptedException </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> beginStartTime = System.currentTimeMillis();</span><br><span class="line">    <span class="comment">//得到BrokerAddr，没有在更新topic</span></span><br><span class="line">    String brokerAddr = <span class="keyword">this</span>.mQClientFactory.findBrokerAddressInPublish(mq.getBrokerName());</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">null</span> == brokerAddr) &#123;</span><br><span class="line">        tryToFindTopicPublishInfo(mq.getTopic());</span><br><span class="line">        brokerAddr = <span class="keyword">this</span>.mQClientFactory.findBrokerAddressInPublish(mq.getBrokerName());</span><br><span class="line">    &#125;</span><br><span class="line">    ......</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>tryToFindTopicPublishInfo方法获取TopicPublishInfo，</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> TopicPublishInfo <span class="title">tryToFindTopicPublishInfo</span><span class="params">(<span class="keyword">final</span> String topic)</span> </span>&#123;</span><br><span class="line">    TopicPublishInfo topicPublishInfo = <span class="keyword">this</span>.topicPublishInfoTable.get(topic);</span><br><span class="line">    <span class="comment">//没有或者messageQueueList为空去nameserv获取</span></span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">null</span> == topicPublishInfo || !topicPublishInfo.ok()) &#123;</span><br><span class="line">        <span class="keyword">this</span>.topicPublishInfoTable.putIfAbsent(topic, <span class="keyword">new</span> TopicPublishInfo());</span><br><span class="line">        <span class="keyword">this</span>.mQClientFactory.updateTopicRouteInfoFromNameServer(topic);</span><br><span class="line">        topicPublishInfo = <span class="keyword">this</span>.topicPublishInfoTable.get(topic);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (topicPublishInfo.isHaveTopicRouterInfo() || topicPublishInfo.ok()) &#123;</span><br><span class="line">        <span class="keyword">return</span> topicPublishInfo;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">this</span>.mQClientFactory.updateTopicRouteInfoFromNameServer(topic, <span class="keyword">true</span>, <span class="keyword">this</span>.defaultMQProducer);</span><br><span class="line">        topicPublishInfo = <span class="keyword">this</span>.topicPublishInfoTable.get(topic);</span><br><span class="line">        <span class="keyword">return</span> topicPublishInfo;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>updateTopicRouteInfoFromNameServer方法中去nameServ获取TopicRouteData，并且将TopicRouteData转成TopicPublishInfo</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">updateTopicRouteInfoFromNameServer</span><span class="params">(<span class="keyword">final</span> String topic, <span class="keyword">boolean</span> isDefault,</span></span></span><br><span class="line"><span class="function"><span class="params">                                                  DefaultMQProducer defaultMQProducer)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">this</span>.lockNamesrv.tryLock(LOCK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="comment">//获取路由信息</span></span><br><span class="line">                TopicRouteData topicRouteData;</span><br><span class="line">                <span class="keyword">if</span> (isDefault &amp;&amp; defaultMQProducer != <span class="keyword">null</span>) &#123;</span><br><span class="line">                    <span class="comment">//发送RequestCode为GET_ROUTEINTO_BY_TOPIC的请求获取topicRouteData</span></span><br><span class="line">                    topicRouteData = <span class="keyword">this</span>.mQClientAPIImpl.getDefaultTopicRouteInfoFromNameServer(defaultMQProducer.getCreateTopicKey(),</span><br><span class="line">                            <span class="number">1000</span> * <span class="number">3</span>);</span><br><span class="line">                    <span class="keyword">if</span> (topicRouteData != <span class="keyword">null</span>) &#123;</span><br><span class="line">                        <span class="keyword">for</span> (QueueData data : topicRouteData.getQueueDatas()) &#123;</span><br><span class="line">                            <span class="keyword">int</span> queueNums = Math.min(defaultMQProducer.getDefaultTopicQueueNums(), data.getReadQueueNums());</span><br><span class="line">                            data.setReadQueueNums(queueNums);</span><br><span class="line">                            data.setWriteQueueNums(queueNums);</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    topicRouteData = <span class="keyword">this</span>.mQClientAPIImpl.getTopicRouteInfoFromNameServer(topic, <span class="number">1000</span> * <span class="number">3</span>);</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> (topicRouteData != <span class="keyword">null</span>) &#123;</span><br><span class="line">                    ......</span><br><span class="line">                    <span class="comment">//如果发生改变将TopicRouteData转成TopicPublishInfo 和 subscribeInfo 更新</span></span><br><span class="line">                    <span class="keyword">if</span> (changed) &#123;</span><br><span class="line">                        TopicRouteData cloneTopicRouteData = topicRouteData.cloneTopicRouteData();</span><br><span class="line">                        <span class="comment">//重点 本地维护BorkerName--&gt;bd.getBrokerAddrs()</span></span><br><span class="line">                        <span class="keyword">for</span> (BrokerData bd : topicRouteData.getBrokerDatas()) &#123;</span><br><span class="line">                            <span class="keyword">this</span>.brokerAddrTable.put(bd.getBrokerName(), bd.getBrokerAddrs());</span><br><span class="line">                        &#125;</span><br><span class="line">                        <span class="comment">// Update Pub info</span></span><br><span class="line">                        &#123;</span><br><span class="line">                            <span class="comment">//转换</span></span><br><span class="line">                            TopicPublishInfo publishInfo = topicRouteData2TopicPublishInfo(topic, topicRouteData);</span><br><span class="line">                            publishInfo.setHaveTopicRouterInfo(<span class="keyword">true</span>);</span><br><span class="line">                            Iterator&lt;Entry&lt;String, MQProducerInner&gt;&gt; it = <span class="keyword">this</span>.producerTable.entrySet().iterator();</span><br><span class="line">                            <span class="keyword">while</span> (it.hasNext()) &#123;</span><br><span class="line">                                Entry&lt;String, MQProducerInner&gt; entry = it.next();</span><br><span class="line">                                MQProducerInner impl = entry.getValue();</span><br><span class="line">                                <span class="keyword">if</span> (impl != <span class="keyword">null</span>) &#123;</span><br><span class="line">                                    impl.updateTopicPublishInfo(topic, publishInfo);</span><br><span class="line">                                &#125;</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;</span><br><span class="line"></span><br><span class="line">                        <span class="comment">// Update sub info</span></span><br><span class="line">                        &#123;</span><br><span class="line">                            Set&lt;MessageQueue&gt; subscribeInfo = topicRouteData2TopicSubscribeInfo(topic, topicRouteData);</span><br><span class="line">                            Iterator&lt;Entry&lt;String, MQConsumerInner&gt;&gt; it = <span class="keyword">this</span>.consumerTable.entrySet().iterator();</span><br><span class="line">                            <span class="keyword">while</span> (it.hasNext()) &#123;</span><br><span class="line">                                Entry&lt;String, MQConsumerInner&gt; entry = it.next();</span><br><span class="line">                                MQConsumerInner impl = entry.getValue();</span><br><span class="line">                                <span class="keyword">if</span> (impl != <span class="keyword">null</span>) &#123;</span><br><span class="line">                                    impl.updateTopicSubscribeInfo(topic, subscribeInfo);</span><br><span class="line">                                &#125;</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;</span><br><span class="line">                        <span class="keyword">this</span>.topicRouteTable.put(topic, cloneTopicRouteData);</span><br><span class="line">                        <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    log.warn(<span class="string">"updateTopicRouteInfoFromNameServer, getTopicRouteInfoFromNameServer return null, Topic: &#123;&#125;"</span>, topic);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                <span class="keyword">if</span> (!topic.startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX) &amp;&amp; !topic.equals(MixAll.AUTO_CREATE_TOPIC_KEY_TOPIC)) &#123;</span><br><span class="line">                    log.warn(<span class="string">"updateTopicRouteInfoFromNameServer Exception"</span>, e);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                <span class="keyword">this</span>.lockNamesrv.unlock();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            log.warn(<span class="string">"updateTopicRouteInfoFromNameServer tryLock timeout &#123;&#125;ms"</span>, LOCK_TIMEOUT_MILLIS);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">        log.warn(<span class="string">"updateTopicRouteInfoFromNameServer Exception"</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="NameServer收到GET-ROUTEINTO-BY-TOPIC请求的处理"><a href="#NameServer收到GET-ROUTEINTO-BY-TOPIC请求的处理" class="headerlink" title="NameServer收到GET_ROUTEINTO_BY_TOPIC请求的处理"></a>NameServer收到GET_ROUTEINTO_BY_TOPIC请求的处理</h3><p>DefaultRequestProcessor中的</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> RequestCode.GET_ROUTEINTO_BY_TOPIC:</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">this</span>.getRouteInfoByTopic(ctx, request);</span><br><span class="line"></span><br><span class="line"><span class="comment">//</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> RemotingCommand <span class="title">getRouteInfoByTopic</span><span class="params">(ChannelHandlerContext ctx,</span></span></span><br><span class="line"><span class="function"><span class="params">        RemotingCommand request)</span> <span class="keyword">throws</span> RemotingCommandException </span>&#123;</span><br><span class="line">        <span class="keyword">final</span> RemotingCommand response = RemotingCommand.createResponseCommand(<span class="keyword">null</span>);</span><br><span class="line">        <span class="keyword">final</span> GetRouteInfoRequestHeader requestHeader =</span><br><span class="line">            (GetRouteInfoRequestHeader) request.decodeCommandCustomHeader(GetRouteInfoRequestHeader.class);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//关键代码</span></span><br><span class="line">        TopicRouteData topicRouteData = <span class="keyword">this</span>.namesrvController.getRouteInfoManager().pickupTopicRouteData(requestHeader.getTopic());</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (topicRouteData != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">this</span>.namesrvController.getNamesrvConfig().isOrderMessageEnable()) &#123;</span><br><span class="line">                String orderTopicConf =</span><br><span class="line">                    <span class="keyword">this</span>.namesrvController.getKvConfigManager().getKVConfig(NamesrvUtil.NAMESPACE_ORDER_TOPIC_CONFIG,</span><br><span class="line">                        requestHeader.getTopic());</span><br><span class="line">                topicRouteData.setOrderTopicConf(orderTopicConf);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">byte</span>[] content = topicRouteData.encode();</span><br><span class="line">            response.setBody(content);</span><br><span class="line">            response.setCode(ResponseCode.SUCCESS);</span><br><span class="line">            response.setRemark(<span class="keyword">null</span>);</span><br><span class="line">            <span class="keyword">return</span> response;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        response.setCode(ResponseCode.TOPIC_NOT_EXIST);</span><br><span class="line">        response.setRemark(<span class="string">"No topic route info in name server for the topic: "</span> + requestHeader.getTopic()</span><br><span class="line">            + FAQUrl.suggestTodo(FAQUrl.APPLY_TOPIC_URL));</span><br><span class="line">        <span class="keyword">return</span> response;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<h3 id="RouteInfoManager-pickupTopicRouteData"><a href="#RouteInfoManager-pickupTopicRouteData" class="headerlink" title="RouteInfoManager#pickupTopicRouteData"></a>RouteInfoManager#pickupTopicRouteData</h3><p>关键方法pickupTopicRouteData，通过上述broker的注册</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> TopicRouteData <span class="title">pickupTopicRouteData</span><span class="params">(<span class="keyword">final</span> String topic)</span> </span>&#123;</span><br><span class="line">     TopicRouteData topicRouteData = <span class="keyword">new</span> TopicRouteData();</span><br><span class="line">     <span class="keyword">boolean</span> foundQueueData = <span class="keyword">false</span>;</span><br><span class="line">     <span class="keyword">boolean</span> foundBrokerData = <span class="keyword">false</span>;</span><br><span class="line">     Set&lt;String&gt; brokerNameSet = <span class="keyword">new</span> HashSet&lt;String&gt;();</span><br><span class="line">     List&lt;BrokerData&gt; brokerDataList = <span class="keyword">new</span> LinkedList&lt;BrokerData&gt;();</span><br><span class="line">     topicRouteData.setBrokerDatas(brokerDataList);</span><br><span class="line"></span><br><span class="line">     HashMap&lt;String, List&lt;String&gt;&gt; filterServerMap = <span class="keyword">new</span> HashMap&lt;String, List&lt;String&gt;&gt;();</span><br><span class="line">     topicRouteData.setFilterServerTable(filterServerMap);</span><br><span class="line"></span><br><span class="line">     <span class="keyword">try</span> &#123;</span><br><span class="line">         <span class="keyword">try</span> &#123;</span><br><span class="line">             <span class="keyword">this</span>.lock.readLock().lockInterruptibly();</span><br><span class="line">             <span class="comment">//从topicQueueTable获取的queueDataList（注册broker时候每个topic的Master的Broker对应一个QueueData）</span></span><br><span class="line">             List&lt;QueueData&gt; queueDataList = <span class="keyword">this</span>.topicQueueTable.get(topic);</span><br><span class="line">             <span class="keyword">if</span> (queueDataList != <span class="keyword">null</span>) &#123;</span><br><span class="line">                 topicRouteData.setQueueDatas(queueDataList);</span><br><span class="line">                 foundQueueData = <span class="keyword">true</span>;</span><br><span class="line"></span><br><span class="line">                 Iterator&lt;QueueData&gt; it = queueDataList.iterator();</span><br><span class="line">                 <span class="comment">//遍历queuData，生成brokerNameSet</span></span><br><span class="line">                 <span class="keyword">while</span> (it.hasNext()) &#123;</span><br><span class="line">                     QueueData qd = it.next();</span><br><span class="line">                     brokerNameSet.add(qd.getBrokerName());</span><br><span class="line">                 &#125;</span><br><span class="line"></span><br><span class="line">                 <span class="comment">//遍历 组装brokerDataList</span></span><br><span class="line">                 <span class="keyword">for</span> (String brokerName : brokerNameSet) &#123;</span><br><span class="line">                     BrokerData brokerData = <span class="keyword">this</span>.brokerAddrTable.get(brokerName);</span><br><span class="line">                     <span class="keyword">if</span> (<span class="keyword">null</span> != brokerData) &#123;</span><br><span class="line">                         BrokerData brokerDataClone = <span class="keyword">new</span> BrokerData(brokerData.getCluster(), brokerData.getBrokerName(), (HashMap&lt;Long, String&gt;) brokerData</span><br><span class="line">                                 .getBrokerAddrs().clone());</span><br><span class="line">                         brokerDataList.add(brokerDataClone);</span><br><span class="line">                         foundBrokerData = <span class="keyword">true</span>;</span><br><span class="line">                         <span class="keyword">for</span> (<span class="keyword">final</span> String brokerAddr : brokerDataClone.getBrokerAddrs().values()) &#123;</span><br><span class="line">                             List&lt;String&gt; filterServerList = <span class="keyword">this</span>.filterServerTable.get(brokerAddr);</span><br><span class="line">                             filterServerMap.put(brokerAddr, filterServerList);</span><br><span class="line">                         &#125;</span><br><span class="line">                     &#125;</span><br><span class="line">                 &#125;</span><br><span class="line">             &#125;</span><br><span class="line">         &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">             <span class="keyword">this</span>.lock.readLock().unlock();</span><br><span class="line">         &#125;</span><br><span class="line">     &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">         log.error(<span class="string">"pickupTopicRouteData Exception"</span>, e);</span><br><span class="line">     &#125;</span><br><span class="line"></span><br><span class="line">     log.debug(<span class="string">"pickupTopicRouteData &#123;&#125; &#123;&#125;"</span>, topic, topicRouteData);</span><br><span class="line"></span><br><span class="line">     <span class="keyword">if</span> (foundBrokerData &amp;&amp; foundQueueData) &#123;</span><br><span class="line">         <span class="keyword">return</span> topicRouteData;</span><br><span class="line">     &#125;</span><br><span class="line"></span><br><span class="line">     <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+<h2 id="consumer"><a href="#consumer" class="headerlink" title="consumer"></a>consumer</h2><p>todo</p>
+<h2 id="TopicPublishInfo和TopicRouteData"><a href="#TopicPublishInfo和TopicRouteData" class="headerlink" title="TopicPublishInfo和TopicRouteData"></a>TopicPublishInfo和TopicRouteData</h2><p>todo 补充consumer</p>
+<p>TopicRouteData保存整个broker的路由信息，通过TopicRouteData转换成TopicPublishInfo。重要属性如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * topic排序的配置</span></span><br><span class="line"><span class="comment"> * 和"ORDER_TOPIC_CONFIG"这个NameSpace有关</span></span><br><span class="line"><span class="comment"> * 参照DefaultRequestProcessor#getRouteInfoByTopic</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> String orderTopicConf;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 一个topic对应存储的位置,可参照RouteInfoManager.topicQueueTable</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> List&lt;QueueData&gt; queueDatas;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 一个topic对应的brokerDatas集合(可以根据queueDatas得到，参照RouteInfoManager#pickupTopicRouteData)</span></span><br><span class="line"><span class="comment"> * brokerDatas来源于queueDatas</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> List&lt;BrokerData&gt; brokerDatas;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 每个brokerAddr对应的过滤Server地址</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">private</span> HashMap&lt;String<span class="comment">/* brokerAddr */</span>, List&lt;String&gt;<span class="comment">/* Filter Server */</span>&gt; filterServerTable;</span><br></pre></td></tr></table></figure>
+<p>TopicPublishInfo保存了Producer的队列信息，用于发送消息的负载均衡即选择MessageQueue。重要属性如下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//messageQueues</span></span><br><span class="line"><span class="keyword">private</span> List&lt;MessageQueue&gt; messageQueueList = <span class="keyword">new</span> ArrayList&lt;MessageQueue&gt;();</span><br><span class="line"><span class="comment">//用于选择队列用</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">volatile</span> ThreadLocalIndex sendWhichQueue = <span class="keyword">new</span> ThreadLocalIndex();</span><br><span class="line"></span><br><span class="line"><span class="comment">//nameserver中的topicRouteData</span></span><br><span class="line"><span class="keyword">private</span> TopicRouteData topicRouteData;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"># java</a>
+          
+            <a href="/tags/消息队列/" rel="tag"># 消息队列</a>
+          
+            <a href="/tags/rocketmq/" rel="tag"># rocketmq</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/数据结构与算法-拓扑排序/" rel="next" title="数据结构与算法-拓扑排序">
+                <i class="fa fa-chevron-left"></i> 数据结构与算法-拓扑排序
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/数据结构与算法-todo/" rel="prev" title="数据结构与算法-todo">
+                数据结构与算法-todo <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Liu hao</p>
+              <p class="site-description motion-element" itemprop="description">励志当好厨子的程序员</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">222</span>
+                    <span class="site-state-item-name">posts</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/categories/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">54</span>
+                    <span class="site-state-item-name">categories</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">81</span>
+                    <span class="site-state-item-name">tags</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="https://github.com/liuhao163" title="GitHub &rarr; https://github.com/liuhao163" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:liu67224657@qq.com" title="E-Mail &rarr; mailto:liu67224657@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#注册"><span class="nav-number">1.</span> <span class="nav-text">注册</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#broker发起"><span class="nav-number">1.1.</span> <span class="nav-text">broker发起</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#NameServ的处理"><span class="nav-number">1.2.</span> <span class="nav-text">NameServ的处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RouteInfoManager"><span class="nav-number">1.3.</span> <span class="nav-text">RouteInfoManager</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Producer负载均衡"><span class="nav-number">2.</span> <span class="nav-text">Producer负载均衡</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#DefaultMQProducerImpl"><span class="nav-number">2.1.</span> <span class="nav-text">DefaultMQProducerImpl</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#NameServer收到GET-ROUTEINTO-BY-TOPIC请求的处理"><span class="nav-number">2.2.</span> <span class="nav-text">NameServer收到GET_ROUTEINTO_BY_TOPIC请求的处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RouteInfoManager-pickupTopicRouteData"><span class="nav-number">2.3.</span> <span class="nav-text">RouteInfoManager#pickupTopicRouteData</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#consumer"><span class="nav-number">3.</span> <span class="nav-text">consumer</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TopicPublishInfo和TopicRouteData"><span class="nav-number">4.</span> <span class="nav-text">TopicPublishInfo和TopicRouteData</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2022</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Liu hao</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> v7.0.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/src/utils.js?v=7.0.0"></script>
+
+  <script src="/js/src/motion.js?v=7.0.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/src/affix.js?v=7.0.0"></script>
+
+  <script src="/js/src/schemes/pisces.js?v=7.0.0"></script>
+
+
+
+  
+  <script src="/js/src/scrollspy.js?v=7.0.0"></script>
+<script src="/js/src/post-details.js?v=7.0.0"></script>
+
+
+
+  
+
+
+  <script src="/js/src/bootstrap.js?v=7.0.0"></script>
+
+
+  
+  
+
+
+  
+
+
+  
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2">
+
+<link rel="stylesheet" href="/css/main.css?v=7.0.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.0.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.0.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.0.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false,"dimmer":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="线程池中可以通过Future模式实现对异步任务的状态的监控和获取异步任务的结果，具体见ExecutorService下的3个方法 获取异步任务的结果123456// 提交 Runnable 任务Future&amp;lt;?&amp;gt; submit(Runnable task)// 提交 Callable 任务&amp;lt;T&amp;gt; Future&amp;lt;T&amp;gt; submit(Callable&amp;lt;T&amp;gt">
+<meta name="keywords" content="java,并发">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Future：如何用多线程实现最优的“烧水泡茶”程序？">
+<meta property="og:url" content="https://liuhao163.github.io/Future：如何用多线程实现最优的“烧水泡茶”程序？/index.html">
+<meta property="og:site_name" content="liuhao163.github.io">
+<meta property="og:description" content="线程池中可以通过Future模式实现对异步任务的状态的监控和获取异步任务的结果，具体见ExecutorService下的3个方法 获取异步任务的结果123456// 提交 Runnable 任务Future&amp;lt;?&amp;gt; submit(Runnable task)// 提交 Callable 任务&amp;lt;T&amp;gt; Future&amp;lt;T&amp;gt; submit(Callable&amp;lt;T&amp;gt">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2022-09-21T15:03:02.084Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Future：如何用多线程实现最优的“烧水泡茶”程序？">
+<meta name="twitter:description" content="线程池中可以通过Future模式实现对异步任务的状态的监控和获取异步任务的结果，具体见ExecutorService下的3个方法 获取异步任务的结果123456// 提交 Runnable 任务Future&amp;lt;?&amp;gt; submit(Runnable task)// 提交 Callable 任务&amp;lt;T&amp;gt; Future&amp;lt;T&amp;gt; submit(Callable&amp;lt;T&amp;gt">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="liuhao163.github.io" type="application/atom+xml">
+
+
+
+
+  <link rel="canonical" href="https://liuhao163.github.io/Future：如何用多线程实现最优的“烧水泡茶”程序？/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>Future：如何用多线程实现最优的“烧水泡茶”程序？ | liuhao163.github.io</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">liuhao163.github.io</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <p class="site-subtitle">杂七杂八</p>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-sitemap">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/sitemap.xml" rel="section"><i class="menu-item-icon fa fa-fw fa-sitemap"></i> <br>Sitemap</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Future：如何用多线程实现最优的“烧水泡茶”程序？/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">Future：如何用多线程实现最优的“烧水泡茶”程序？
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-04-28 20:26:01" itemprop="dateCreated datePublished" datetime="2019-04-28T20:26:01Z">2019-04-28</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>线程池中可以通过Future模式实现对异步任务的状态的监控和获取异步任务的结果，具体见ExecutorService下的3个方法</p>
+<h2 id="获取异步任务的结果"><a href="#获取异步任务的结果" class="headerlink" title="获取异步任务的结果"></a>获取异步任务的结果</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 提交 Runnable 任务</span></span><br><span class="line">Future&lt;?&gt; submit(Runnable task)</span><br><span class="line"><span class="comment">// 提交 Callable 任务</span></span><br><span class="line">&lt;T&gt; <span class="function">Future&lt;T&gt; <span class="title">submit</span><span class="params">(Callable&lt;T&gt; task)</span></span>;</span><br><span class="line"><span class="comment">// 提交 Runnable 任务及结果引用  </span></span><br><span class="line">&lt;T&gt; <span class="function">Future&lt;T&gt; <span class="title">submit</span><span class="params">(Runnable task, T result)</span></span>;</span><br></pre></td></tr></table></figure>
+<p>第一个方法是无返回值很类似join方法<br>第二个方法是可以获取task的返回值<br>第三个方法是可以通过T result来实现俩个线程之间的交互。如下</p>
+<h2 id="FutreTask"><a href="#FutreTask" class="headerlink" title="FutreTask"></a>FutreTask</h2><p>和Furtre很类似但是它继承自Furture和Runable可以作为对象传递给线程池或者线程。然后通过get来获取执行结果。如下代码，开水泡茶问题</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">FutureTest</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> ExecutorService executor = Executors.newFixedThreadPool(<span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> ExecutionException, InterruptedException </span>&#123;</span><br><span class="line">        FutureTask&lt;String&gt; ft2 = <span class="keyword">new</span> FutureTask&lt;&gt;(() -&gt; &#123;</span><br><span class="line">            System.out.println(<span class="string">"洗茶杯"</span>);</span><br><span class="line">            Thread.sleep(<span class="number">1000L</span>);</span><br><span class="line"></span><br><span class="line">            System.out.println(<span class="string">"找茶叶"</span>);</span><br><span class="line">            Thread.sleep(<span class="number">1000L</span>);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">return</span> <span class="string">"龙井"</span>;</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        FutureTask&lt;String&gt; ft1 = <span class="keyword">new</span> FutureTask&lt;&gt;(() -&gt; &#123;</span><br><span class="line">            System.out.println(<span class="string">"洗茶壶"</span>);</span><br><span class="line">            Thread.sleep(<span class="number">1000L</span>);</span><br><span class="line"></span><br><span class="line">            System.out.println(<span class="string">"烧水"</span>);</span><br><span class="line">            Thread.sleep(<span class="number">10000L</span>);</span><br><span class="line">            System.out.println(<span class="string">"水开了"</span>);</span><br><span class="line">            String ret = ft2.get();</span><br><span class="line">            <span class="keyword">return</span> <span class="string">"上茶"</span>+ret;</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        executor.submit(ft1);</span><br><span class="line">        executor.submit(ft2);</span><br><span class="line">        System.out.println(ft1.get());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>近期的使用场景：<br>  比如一个很大的列表查询，你可以拆分成10个线程同时查询然后在查询完后合并成一个结果集。</p>
+<h2 id="CompletableFuture"><a href="#CompletableFuture" class="headerlink" title="CompletableFuture"></a>CompletableFuture</h2><p>简化Future的线程调度难度。构造函数是4个静态方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 使用默认线程池</span></span><br><span class="line"><span class="function"><span class="keyword">static</span> CompletableFuture&lt;Void&gt; <span class="title">runAsync</span><span class="params">(Runnable runnable)</span></span></span><br><span class="line"><span class="function"><span class="keyword">static</span> &lt;U&gt; CompletableFuture&lt;U&gt; <span class="title">supplyAsync</span><span class="params">(Supplier&lt;U&gt; supplier)</span></span></span><br><span class="line"><span class="function"><span class="comment">// 可以指定线程池  对于IO这种消耗线程的方式强烈推荐</span></span></span><br><span class="line"><span class="function"><span class="keyword">static</span> CompletableFuture&lt;Void&gt; <span class="title">runAsync</span><span class="params">(Runnable runnable, Executor executor)</span></span></span><br><span class="line"><span class="function"><span class="keyword">static</span> &lt;U&gt; CompletableFuture&lt;U&gt; <span class="title">supplyAsync</span><span class="params">(Supplier&lt;U&gt; supplier, Executor executor)</span></span></span><br></pre></td></tr></table></figure>
+<p>ft1完成后执行的操作</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"># Function对象有参数有返回值</span><br><span class="line"><span class="function">CompletionStage&lt;R&gt; <span class="title">thenApply</span><span class="params">(fn)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;R&gt; <span class="title">thenApplyAsync</span><span class="params">(fn)</span></span>;</span><br><span class="line"></span><br><span class="line"># Consumer对象有参数无返回值</span><br><span class="line"><span class="function">CompletionStage&lt;Void&gt; <span class="title">thenAccept</span><span class="params">(consumer)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;Void&gt; <span class="title">thenAcceptAsync</span><span class="params">(consumer)</span></span>;</span><br><span class="line"></span><br><span class="line"># Runnable对象无参数无返回值</span><br><span class="line"><span class="function">CompletionStage&lt;Void&gt; <span class="title">thenRun</span><span class="params">(action)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;Void&gt; <span class="title">thenRunAsync</span><span class="params">(action)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="function">CompletionStage&lt;R&gt; <span class="title">thenCompose</span><span class="params">(fn)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;R&gt; <span class="title">thenComposeAsync</span><span class="params">(fn)</span></span>;</span><br></pre></td></tr></table></figure>
+<h3 id="And合并关系"><a href="#And合并关系" class="headerlink" title="And合并关系"></a>And合并关系</h3><p>ft1、ft2都结束后做一些操作，类似join。方法区别如上</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">CompletionStage&lt;R&gt; <span class="title">thenCombine</span><span class="params">(other, fn)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;R&gt; <span class="title">thenCombineAsync</span><span class="params">(other, fn)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;Void&gt; <span class="title">thenAcceptBoth</span><span class="params">(other, consumer)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;Void&gt; <span class="title">thenAcceptBothAsync</span><span class="params">(other, consumer)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;Void&gt; <span class="title">runAfterBoth</span><span class="params">(other, action)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;Void&gt; <span class="title">runAfterBothAsync</span><span class="params">(other, action)</span></span>;</span><br></pre></td></tr></table></figure>
+<h3 id="OR或者关系"><a href="#OR或者关系" class="headerlink" title="OR或者关系"></a>OR或者关系</h3><p>ft1、ft2有一个完成</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">CompletionStage <span class="title">applyToEither</span><span class="params">(other, fn)</span></span>;</span><br><span class="line"><span class="function">CompletionStage <span class="title">applyToEitherAsync</span><span class="params">(other, fn)</span></span>;</span><br><span class="line"><span class="function">CompletionStage <span class="title">acceptEither</span><span class="params">(other, consumer)</span></span>;</span><br><span class="line"><span class="function">CompletionStage <span class="title">acceptEitherAsync</span><span class="params">(other, consumer)</span></span>;</span><br><span class="line"><span class="function">CompletionStage <span class="title">runAfterEither</span><span class="params">(other, action)</span></span>;</span><br><span class="line"><span class="function">CompletionStage <span class="title">runAfterEitherAsync</span><span class="params">(other, action)</span></span>;</span><br></pre></td></tr></table></figure>
+<h3 id="异常处理"><a href="#异常处理" class="headerlink" title="异常处理"></a>异常处理</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">CompletionStage <span class="title">exceptionally</span><span class="params">(fn)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;R&gt; <span class="title">whenComplete</span><span class="params">(consumer)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;R&gt; <span class="title">whenCompleteAsync</span><span class="params">(consumer)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;R&gt; <span class="title">handle</span><span class="params">(fn)</span></span>;</span><br><span class="line"><span class="function">CompletionStage&lt;R&gt; <span class="title">handleAsync</span><span class="params">(fn)</span></span>;</span><br></pre></td></tr></table></figure>
+<h2 id="CompletionService"><a href="#CompletionService" class="headerlink" title="CompletionService"></a>CompletionService</h2><p>我们用ThreadPool和Future优化了步编程中协作的部分，取代了线程的join。但是我们在实际使用中往往会碰到下面的问题，具体见代码</p>
+<ol>
+<li>运行了3个异步任务，分别用了15s,10s,5s。</li>
+<li>之后会在另一个线程池对这些任务的结果进行计算。这时候在计算的线程池中会变成串行，由于1任务过久，所以任务2，3即便先完成了前面的步骤也要等1完成后在执行</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> ExecutionException, InterruptedException </span>&#123;</span><br><span class="line">    ExecutorService threadPool = Executors.newFixedThreadPool(<span class="number">3</span>);</span><br><span class="line"></span><br><span class="line">    Future&lt;Integer&gt; ft1 = threadPool.submit(() -&gt; &#123;</span><br><span class="line">        Thread.sleep(<span class="number">15000</span>);</span><br><span class="line">        System.out.println(<span class="string">"ft1 sleep 15s return 1"</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    Future&lt;Integer&gt; ft2 = threadPool.submit(() -&gt; &#123;</span><br><span class="line">        Thread.sleep(<span class="number">10000</span>);</span><br><span class="line">        System.out.println(<span class="string">"ft2 sleep 10s return 2"</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">2</span>;</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    Future&lt;Integer&gt; ft3 = threadPool.submit(() -&gt; &#123;</span><br><span class="line">        Thread.sleep(<span class="number">5000</span>);</span><br><span class="line">        System.out.println(<span class="string">"ft3 sleep 5s return 3"</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">3</span>;</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    ExecutorService calT=Executors.newSingleThreadExecutor();</span><br><span class="line">    Future ftRes=calT.submit(()-&gt;&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            System.out.println(<span class="string">"save:"</span>+ft1.get());</span><br><span class="line">            System.out.println(<span class="string">"save:"</span>+ft2.get());</span><br><span class="line">            System.out.println(<span class="string">"save:"</span>+ft3.get());</span><br><span class="line">            <span class="comment">//todo 比较大小</span></span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (ExecutionException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    ftRes.get();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>如果对这段代码进一步优化呢我们可以采用增加阻塞队列的方式。许多人加个阻塞队列就好了。异步执行的结果加入到阻塞队列中，最终通过阻塞队列后去方法。如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">BlockingQueue&lt;Integer&gt; queue=<span class="keyword">new</span> ArrayBlockingQueue&lt;Integer&gt;(<span class="number">3</span>);</span><br><span class="line">ExecutorService calT=Executors.newFixedThreadPool(<span class="number">3</span>);</span><br><span class="line">calT.execute(()-&gt; &#123;</span><br><span class="line">        queue.put(ft1.get());</span><br><span class="line">&#125;);</span><br><span class="line">calT.execute(()-&gt; &#123;</span><br><span class="line">    queue.put(ft2.get());</span><br><span class="line">&#125;);</span><br><span class="line">calT.execute(()-&gt; &#123;</span><br><span class="line">    queue.put(ft3.get());</span><br><span class="line">&#125;);</span><br><span class="line"><span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;<span class="number">3</span>;i++)&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">"save:"</span>+  queue.take());</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">System.out.println(<span class="string">"all finish"</span>);</span><br></pre></td></tr></table></figure>
+<p>确实能解决上述的问题，JAVA8之后为我们提供了更方便的写法（实现原理相同）,即：CompletionService,有另种狗仔方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">new</span> ExecutorCompletionService(Executor executor); <span class="comment">//LinkedBlockingQueue 默认使用</span></span><br><span class="line"><span class="keyword">new</span> ExecutorCompletionService(Executor executor,BlockingQueue&lt;Future&lt;V&gt;&gt; completionQueue)</span><br></pre></td></tr></table></figure>
+<p>上面的程序可以简写为这样</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">ExecutorCompletionService&lt;Integer&gt; ecs=<span class="keyword">new</span> ExecutorCompletionService(threadPool,queue);</span><br><span class="line">       ecs.submit(callable1);</span><br><span class="line">       ecs.submit(callable2);</span><br><span class="line">       ecs.submit(callable3);</span><br><span class="line">       <span class="keyword">for</span>(<span class="keyword">int</span> i=<span class="number">0</span>;i&lt;<span class="number">3</span>;i++)&#123;</span><br><span class="line">           <span class="keyword">try</span> &#123;</span><br><span class="line">               System.out.println(<span class="string">"save:"</span>+   ecs.take().get());</span><br><span class="line">           &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">               e.printStackTrace();</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br></pre></td></tr></table></figure>
+<p>关于take()和pool()区别。take()在队列为空会阻塞线程，poll如果队列为空会返回null，</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">Future&lt;V&gt; <span class="title">submit</span><span class="params">(Callable&lt;V&gt; task)</span></span>;</span><br><span class="line"><span class="function">Future&lt;V&gt; <span class="title">submit</span><span class="params">(Runnable task, V result)</span></span>;</span><br><span class="line"><span class="function">Future&lt;V&gt; <span class="title">take</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException</span>;</span><br><span class="line"><span class="function">Future&lt;V&gt; <span class="title">poll</span><span class="params">()</span></span>;</span><br><span class="line"><span class="function">Future&lt;V&gt; <span class="title">poll</span><span class="params">(<span class="keyword">long</span> timeout, TimeUnit unit)</span> <span class="keyword">throws</span> InterruptedException</span>;<span class="comment">//会等待一段时间。</span></span><br></pre></td></tr></table></figure>
+<h3 id="使用场景"><a href="#使用场景" class="headerlink" title="使用场景"></a>使用场景</h3><p>Dubbo的Forking Cluster模式,对于实时性较高的操作，consumer端会同时并行调用俩个请求，哪个现有结果优先返回，代码如下，不过缺点是比较浪费资源</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">  *</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> fork 并行度是2</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> timeOutMills 超时时间</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> callable 逻辑方法</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@param</span> &lt;T&gt; 返回值，多个方法返回第一个返回的</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"> <span class="keyword">public</span> &lt;T&gt; <span class="function">T <span class="title">forkCluster</span><span class="params">(<span class="keyword">int</span> fork, <span class="keyword">int</span> timeOutMills, Callable&lt;T&gt; callable)</span> </span>&#123;</span><br><span class="line">     ExecutorCompletionService&lt;T&gt; forkService = <span class="keyword">new</span> ExecutorCompletionService(Executors.newFixedThreadPool(fork), <span class="keyword">new</span> ArrayBlockingQueue&lt;&gt;(fork));</span><br><span class="line">     List&lt;Future&lt;T&gt;&gt; ftContainer=<span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">     <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">2</span>; i++) &#123;</span><br><span class="line">         ftContainer.add(forkService.submit(callable));</span><br><span class="line">     &#125;</span><br><span class="line"></span><br><span class="line">     <span class="keyword">try</span> &#123;</span><br><span class="line">         T result = forkService.poll(timeOutMills, TimeUnit.MILLISECONDS).get();</span><br><span class="line">         <span class="keyword">if</span> (result == <span class="keyword">null</span>) &#123;</span><br><span class="line">             <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">"返回结果为空抛异常"</span>);</span><br><span class="line">         &#125;</span><br><span class="line">         <span class="keyword">return</span> result;</span><br><span class="line">     &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">         e.printStackTrace();</span><br><span class="line">         <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">"返回结果为空抛异常"</span>);</span><br><span class="line">     &#125; <span class="keyword">catch</span> (ExecutionException e) &#123;</span><br><span class="line">         e.printStackTrace();</span><br><span class="line">         <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">"返回结果为空抛异常"</span>);</span><br><span class="line">     &#125;<span class="keyword">finally</span> &#123;</span><br><span class="line">         ftContainer.forEach(ft-&gt;&#123;</span><br><span class="line">             ft.cancel(<span class="keyword">true</span>);</span><br><span class="line">         &#125;);</span><br><span class="line">     &#125;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+<h2 id="Fork-join用分治思想加速我们的递归"><a href="#Fork-join用分治思想加速我们的递归" class="headerlink" title="Fork/join用分治思想加速我们的递归"></a>Fork/join用分治思想加速我们的递归</h2><p>待完善</p>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"># java</a>
+          
+            <a href="/tags/并发/" rel="tag"># 并发</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/原子类-无锁工具类的典范/" rel="next" title="原子类:无锁工具类的典范">
+                <i class="fa fa-chevron-left"></i> 原子类:无锁工具类的典范
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/Immutability模式：如何利用不变性解决并发问题？/" rel="prev" title="Immutability模式：如何利用不变性解决并发问题？">
+                Immutability模式：如何利用不变性解决并发问题？ <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Liu hao</p>
+              <p class="site-description motion-element" itemprop="description">励志当好厨子的程序员</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">222</span>
+                    <span class="site-state-item-name">posts</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/categories/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">54</span>
+                    <span class="site-state-item-name">categories</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">81</span>
+                    <span class="site-state-item-name">tags</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="https://github.com/liuhao163" title="GitHub &rarr; https://github.com/liuhao163" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:liu67224657@qq.com" title="E-Mail &rarr; mailto:liu67224657@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#获取异步任务的结果"><span class="nav-number">1.</span> <span class="nav-text">获取异步任务的结果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#FutreTask"><span class="nav-number">2.</span> <span class="nav-text">FutreTask</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CompletableFuture"><span class="nav-number">3.</span> <span class="nav-text">CompletableFuture</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#And合并关系"><span class="nav-number">3.1.</span> <span class="nav-text">And合并关系</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#OR或者关系"><span class="nav-number">3.2.</span> <span class="nav-text">OR或者关系</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#异常处理"><span class="nav-number">3.3.</span> <span class="nav-text">异常处理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CompletionService"><span class="nav-number">4.</span> <span class="nav-text">CompletionService</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#使用场景"><span class="nav-number">4.1.</span> <span class="nav-text">使用场景</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Fork-join用分治思想加速我们的递归"><span class="nav-number">5.</span> <span class="nav-text">Fork/join用分治思想加速我们的递归</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2022</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Liu hao</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> v7.0.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/src/utils.js?v=7.0.0"></script>
+
+  <script src="/js/src/motion.js?v=7.0.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/src/affix.js?v=7.0.0"></script>
+
+  <script src="/js/src/schemes/pisces.js?v=7.0.0"></script>
+
+
+
+  
+  <script src="/js/src/scrollspy.js?v=7.0.0"></script>
+<script src="/js/src/post-details.js?v=7.0.0"></script>
+
+
+
+  
+
+
+  <script src="/js/src/bootstrap.js?v=7.0.0"></script>
+
+
+  
+  
+
+
+  
+
+
+  
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

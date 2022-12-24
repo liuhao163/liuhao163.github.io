@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2">
+
+<link rel="stylesheet" href="/css/main.css?v=7.0.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.0.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.0.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.0.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false,"dimmer":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="关于消息的消费分为consumer和broker俩个模块，会分为俩篇文章阐述   消费者按照消费方式的不同分为:  MQPushConsumer实现类是：DefaultMQPushConsumer,由broker推送消息给consumer MQPullConsumer实现类是：DefaultMQPullConsumer,定期去borker拉取消息 消费消息的逻辑通过接口MessageListe">
+<meta name="keywords" content="java,消息队列,rocketmq">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RoketMq源码学习-五-消息的消费-上">
+<meta property="og:url" content="https://liuhao163.github.io/RoketMq源码学习-五-消息的消费-上/index.html">
+<meta property="og:site_name" content="liuhao163.github.io">
+<meta property="og:description" content="关于消息的消费分为consumer和broker俩个模块，会分为俩篇文章阐述   消费者按照消费方式的不同分为:  MQPushConsumer实现类是：DefaultMQPushConsumer,由broker推送消息给consumer MQPullConsumer实现类是：DefaultMQPullConsumer,定期去borker拉取消息 消费消息的逻辑通过接口MessageListe">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://liuhao163.github.io/RoketMq源码学习-五-消息的消费/DefaultMQPushConsumer.jpg">
+<meta property="og:updated_time" content="2022-09-21T15:03:02.172Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="RoketMq源码学习-五-消息的消费-上">
+<meta name="twitter:description" content="关于消息的消费分为consumer和broker俩个模块，会分为俩篇文章阐述   消费者按照消费方式的不同分为:  MQPushConsumer实现类是：DefaultMQPushConsumer,由broker推送消息给consumer MQPullConsumer实现类是：DefaultMQPullConsumer,定期去borker拉取消息 消费消息的逻辑通过接口MessageListe">
+<meta name="twitter:image" content="https://liuhao163.github.io/RoketMq源码学习-五-消息的消费/DefaultMQPushConsumer.jpg">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="liuhao163.github.io" type="application/atom+xml">
+
+
+
+
+  <link rel="canonical" href="https://liuhao163.github.io/RoketMq源码学习-五-消息的消费-上/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>RoketMq源码学习-五-消息的消费-上 | liuhao163.github.io</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">liuhao163.github.io</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <p class="site-subtitle">杂七杂八</p>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-sitemap">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/sitemap.xml" rel="section"><i class="menu-item-icon fa fa-fw fa-sitemap"></i> <br>Sitemap</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/RoketMq源码学习-五-消息的消费-上/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">RoketMq源码学习-五-消息的消费-上
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-09-15 01:00:00" itemprop="dateCreated datePublished" datetime="2019-09-15T01:00:00Z">2019-09-15</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/" itemprop="url" rel="index"><span itemprop="name">消息队列</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/" itemprop="url" rel="index"><span itemprop="name">rocketmq</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/源码学习/" itemprop="url" rel="index"><span itemprop="name">源码学习</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>  关于消息的消费分为consumer和broker俩个模块，会分为俩篇文章阐述</p>
+<p>  消费者按照消费方式的不同分为:</p>
+<ul>
+<li>MQPushConsumer实现类是：DefaultMQPushConsumer,由broker推送消息给consumer</li>
+<li><p>MQPullConsumer实现类是：DefaultMQPullConsumer,定期去borker拉取消息</p>
+<p>消费消息的逻辑通过接口MessageListener，它有俩个实现接口</p>
+</li>
+<li><p>MessageListenerConcurrently：并发的消费</p>
+</li>
+<li><p>MessageListenerOrderly：保序消费，</p>
+<p>消费分为俩种模式MessageModel，即：</p>
+</li>
+<li><p>CLUSTERING:集群，默认</p>
+</li>
+<li>BROADCASTING:广播</li>
+</ul>
+<h2 id="DefaultMQPushConsumer"><a href="#DefaultMQPushConsumer" class="headerlink" title="DefaultMQPushConsumer"></a>DefaultMQPushConsumer</h2><p>类图：</p>
+<p><img src="/RoketMq源码学习-五-消息的消费/DefaultMQPushConsumer.jpg" alt="avator"></p>
+<p>整个流程如下：new DefaultMQPushConsumer()–&gt;subscribe–&gt;start()</p>
+<h3 id="create以及重要属性"><a href="#create以及重要属性" class="headerlink" title="create以及重要属性"></a>create以及重要属性</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Constructor specifying namespace, consumer group, RPC hook and message queue allocating algorithm.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> namespace Namespace for this MQ Producer instance.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> consumerGroup Consume queue.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> rpcHook RPC hook to execute before each remoting command.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> allocateMessageQueueStrategy Message queue allocating algorithm.消费端实现的队列选择器</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">DefaultMQPushConsumer</span><span class="params">(<span class="keyword">final</span> String namespace, <span class="keyword">final</span> String consumerGroup, RPCHook rpcHook,</span></span></span><br><span class="line"><span class="function"><span class="params">    AllocateMessageQueueStrategy allocateMessageQueueStrategy)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.consumerGroup = consumerGroup;</span><br><span class="line">    <span class="keyword">this</span>.namespace = namespace;</span><br><span class="line">    <span class="keyword">this</span>.allocateMessageQueueStrategy = allocateMessageQueueStrategy;</span><br><span class="line">    defaultMQPushConsumerImpl = <span class="keyword">new</span> DefaultMQPushConsumerImpl(<span class="keyword">this</span>, rpcHook);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>主要属性</p>
+<ul>
+<li>defaultMQPushConsumerImpl：内部实现</li>
+<li>consumerGroup：消费组</li>
+<li>messageModel：消费方式默认是CLUSTERING、BROADCASTING:广播</li>
+<li>consumeFromWhere,消费者启动前要设置ConsumeFromWhere，他们的含义是<ul>
+<li>ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET：新消费第一次启动时候从最开始的Offset开始消费</li>
+<li>ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET：新消费第一次启动时候从最近的Offset开始消费</li>
+<li>ConsumeFromWhere.CONSUME_FROM_TIMESTAMP：：新消费第一次启动时候从最时间戳开始消费</li>
+</ul>
+</li>
+<li>consumeTimestamp：默认半小时前和CONSUME_FROM_TIMESTAMP配合使用</li>
+<li>allocateMessageQueueStrategy：消费者端的队列选择器，消费者从特定的queue消费消息’</li>
+<li>subscription：tag的过滤器</li>
+<li>messageListener：负责消息的消费</li>
+<li>offsetStore：负责存储offset</li>
+<li>consumeThreadMin和consumeThreadMax：消费消息启动的最小、最大线程数</li>
+<li>adjustThreadPoolNumsThreshold：当消息堆积到该阈值时候会动态的调整消费线程数</li>
+<li>consumeConcurrentlyMaxSpan：当队列允许的最大offset的跨度，到达后触发限流。只对并发消费（ConsumeMessageConcurrentlyService）有效</li>
+<li>pullThresholdForQueue：每条consume queue的消息拉取下来后会缓存到本地，消费结束会删除。当累积达到一个阈值后，会触发该consumerqueue限流</li>
+<li>pullThresholdForTopic：同上只是这个是针对topic的</li>
+<li>pullThresholdSizeForQueue和pullThresholdSizeForTopic：限制消息缓存的大小单位是MiB，默认无限制</li>
+<li>pullInterval：拉取消息队列的间隔，默认是0</li>
+<li>consumeMessageBatchMaxSize：批量消费消息的条数，messageListener的方法中是个List[&lt;]MessageExt[&gt;] msgs，这个值就是控制msgs的的数量</li>
+<li>pullBatchSize：去broker拉取消息一次多少条，和上面的属性关系一次拉取pullBatchSize条，分成pullBatchSize/consumeMessageBatchMaxSize个任务去消费 ？？</li>
+<li>postSubscriptionWhenPull:每次拉取的时候是否更新订阅关系</li>
+<li>unitMode:</li>
+<li>maxReconsumeTimes:重试次数，达到会进入到私信队列，默认是是-1<ul>
+<li>并行：16次</li>
+<li>串行：无限次。一直等到消费成功后才会笑一次</li>
+</ul>
+</li>
+<li>suspendCurrentQueueTimeMillis：串行消费重试的建个</li>
+<li>consumeTimeout：消费过期时间</li>
+</ul>
+<h3 id="subscribe-订阅"><a href="#subscribe-订阅" class="headerlink" title="subscribe-订阅"></a>subscribe-订阅</h3><p>通过调用DefaultMQPushConsumerImpl#subscribe方法实现订阅</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">subscribe</span><span class="params">(String topic, String subExpression)</span> <span class="keyword">throws</span> MQClientException </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        SubscriptionData subscriptionData = FilterAPI.buildSubscriptionData(<span class="keyword">this</span>.defaultMQPushConsumer.getConsumerGroup(),</span><br><span class="line">            topic, subExpression);</span><br><span class="line">        <span class="keyword">this</span>.rebalanceImpl.getSubscriptionInner().put(topic, subscriptionData);</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">this</span>.mQClientFactory != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">this</span>.mQClientFactory.sendHeartbeatToAllBrokerWithLock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> MQClientException(<span class="string">"subscription exception"</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="start"><a href="#start" class="headerlink" title="start"></a>start</h3><p>DefaultMQPushConsumer#start()会调用DefaultMQPushConsumerImpl#start(),即：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> <span class="keyword">throws</span> MQClientException </span>&#123;</span><br><span class="line">    <span class="keyword">switch</span> (<span class="keyword">this</span>.serviceState) &#123;</span><br><span class="line">        <span class="keyword">case</span> CREATE_JUST:</span><br><span class="line">            log.info(<span class="string">"the consumer [&#123;&#125;] start beginning. messageModel=&#123;&#125;, isUnitMode=&#123;&#125;"</span>, <span class="keyword">this</span>.defaultMQPushConsumer.getConsumerGroup(),</span><br><span class="line">                    <span class="keyword">this</span>.defaultMQPushConsumer.getMessageModel(), <span class="keyword">this</span>.defaultMQPushConsumer.isUnitMode());</span><br><span class="line">            <span class="comment">//防止重复启动先改状态</span></span><br><span class="line">            <span class="keyword">this</span>.serviceState = ServiceState.START_FAILED;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//消费者的配置校验</span></span><br><span class="line">            <span class="keyword">this</span>.checkConfig();</span><br><span class="line"></span><br><span class="line">            <span class="comment">//处理subcription和messageListenerInner</span></span><br><span class="line">            <span class="keyword">this</span>.copySubscription();</span><br><span class="line"></span><br><span class="line">            <span class="comment">//defaultMQPushConsumer的InstanceName改为PID</span></span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">this</span>.defaultMQPushConsumer.getMessageModel() == MessageModel.CLUSTERING) &#123;</span><br><span class="line">                <span class="keyword">this</span>.defaultMQPushConsumer.changeInstanceNameToPID();</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//创建MQClient和生产者共用一个类</span></span><br><span class="line">            <span class="keyword">this</span>.mQClientFactory = MQClientManager.getInstance().getAndCreateMQClientInstance(<span class="keyword">this</span>.defaultMQPushConsumer, <span class="keyword">this</span>.rpcHook);</span><br><span class="line"></span><br><span class="line">            <span class="comment">//</span></span><br><span class="line">            <span class="keyword">this</span>.rebalanceImpl.setConsumerGroup(<span class="keyword">this</span>.defaultMQPushConsumer.getConsumerGroup());</span><br><span class="line">            <span class="keyword">this</span>.rebalanceImpl.setMessageModel(<span class="keyword">this</span>.defaultMQPushConsumer.getMessageModel());</span><br><span class="line">            <span class="comment">//默认是AllocateMessageQueueAveragely</span></span><br><span class="line">            <span class="keyword">this</span>.rebalanceImpl.setAllocateMessageQueueStrategy(<span class="keyword">this</span>.defaultMQPushConsumer.getAllocateMessageQueueStrategy());</span><br><span class="line">            <span class="keyword">this</span>.rebalanceImpl.setmQClientFactory(<span class="keyword">this</span>.mQClientFactory);</span><br><span class="line"></span><br><span class="line">            <span class="comment">//初始化拉取消息的Api封装类</span></span><br><span class="line">            <span class="keyword">this</span>.pullAPIWrapper = <span class="keyword">new</span> PullAPIWrapper(</span><br><span class="line">                    mQClientFactory,</span><br><span class="line">                    <span class="keyword">this</span>.defaultMQPushConsumer.getConsumerGroup(), isUnitMode());</span><br><span class="line">            <span class="keyword">this</span>.pullAPIWrapper.registerFilterMessageHook(filterMessageHookList);</span><br><span class="line"></span><br><span class="line">            <span class="comment">//初始化OffsetStore，根据消息类型，如果是广播LocalFileOffsetStore，如果是集群消息需要RemoteBrokerOffsetStore</span></span><br><span class="line">            <span class="comment">//RemoteBrokerOffsetStore 从broker获取topic的</span></span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">this</span>.defaultMQPushConsumer.getOffsetStore() != <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">this</span>.offsetStore = <span class="keyword">this</span>.defaultMQPushConsumer.getOffsetStore();</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">switch</span> (<span class="keyword">this</span>.defaultMQPushConsumer.getMessageModel()) &#123;</span><br><span class="line">                    <span class="keyword">case</span> BROADCASTING:</span><br><span class="line">                        <span class="keyword">this</span>.offsetStore = <span class="keyword">new</span> LocalFileOffsetStore(<span class="keyword">this</span>.mQClientFactory, <span class="keyword">this</span>.defaultMQPushConsumer.getConsumerGroup());</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> CLUSTERING:</span><br><span class="line">                        <span class="keyword">this</span>.offsetStore = <span class="keyword">new</span> RemoteBrokerOffsetStore(<span class="keyword">this</span>.mQClientFactory, <span class="keyword">this</span>.defaultMQPushConsumer.getConsumerGroup());</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">default</span>:</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">this</span>.defaultMQPushConsumer.setOffsetStore(<span class="keyword">this</span>.offsetStore);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//加载offset</span></span><br><span class="line">            <span class="keyword">this</span>.offsetStore.load();</span><br><span class="line"></span><br><span class="line">            <span class="comment">//根据消费方式初始化并且启动consumeMessageService todo 重点看</span></span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">this</span>.getMessageListenerInner() <span class="keyword">instanceof</span> MessageListenerOrderly) &#123;</span><br><span class="line">                <span class="keyword">this</span>.consumeOrderly = <span class="keyword">true</span>;</span><br><span class="line">                <span class="keyword">this</span>.consumeMessageService =</span><br><span class="line">                        <span class="keyword">new</span> ConsumeMessageOrderlyService(<span class="keyword">this</span>, (MessageListenerOrderly) <span class="keyword">this</span>.getMessageListenerInner());</span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> (<span class="keyword">this</span>.getMessageListenerInner() <span class="keyword">instanceof</span> MessageListenerConcurrently) &#123;</span><br><span class="line">                <span class="keyword">this</span>.consumeOrderly = <span class="keyword">false</span>;</span><br><span class="line">                <span class="keyword">this</span>.consumeMessageService =</span><br><span class="line">                        <span class="keyword">new</span> ConsumeMessageConcurrentlyService(<span class="keyword">this</span>, (MessageListenerConcurrently) <span class="keyword">this</span>.getMessageListenerInner());</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">this</span>.consumeMessageService.start();</span><br><span class="line"></span><br><span class="line">            <span class="comment">//mqClinetInstance注册消费者到内存中</span></span><br><span class="line">            <span class="keyword">boolean</span> registerOK = mQClientFactory.registerConsumer(<span class="keyword">this</span>.defaultMQPushConsumer.getConsumerGroup(), <span class="keyword">this</span>);</span><br><span class="line">            <span class="keyword">if</span> (!registerOK) &#123;</span><br><span class="line">                <span class="keyword">this</span>.serviceState = ServiceState.CREATE_JUST;</span><br><span class="line">                <span class="keyword">this</span>.consumeMessageService.shutdown();</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> MQClientException(<span class="string">"The consumer group["</span> + <span class="keyword">this</span>.defaultMQPushConsumer.getConsumerGroup()</span><br><span class="line">                        + <span class="string">"] has been created before, specify another name please."</span> + FAQUrl.suggestTodo(FAQUrl.GROUP_NAME_DUPLICATE_URL),</span><br><span class="line">                        <span class="keyword">null</span>);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            mQClientFactory.start();</span><br><span class="line">            log.info(<span class="string">"the consumer [&#123;&#125;] start OK."</span>, <span class="keyword">this</span>.defaultMQPushConsumer.getConsumerGroup());</span><br><span class="line">            <span class="keyword">this</span>.serviceState = ServiceState.RUNNING;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> RUNNING:</span><br><span class="line">        <span class="keyword">case</span> START_FAILED:</span><br><span class="line">        <span class="keyword">case</span> SHUTDOWN_ALREADY:</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> MQClientException(<span class="string">"The PushConsumer service state not OK, maybe started once, "</span></span><br><span class="line">                    + <span class="keyword">this</span>.serviceState</span><br><span class="line">                    + FAQUrl.suggestTodo(FAQUrl.CLIENT_SERVICE_NOT_OK),</span><br><span class="line">                    <span class="keyword">null</span>);</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 如果订阅关系存在通过ReblanceImpl获取订阅关系rebalanceImpl#getSubscriptionInner,获取订阅关系</span></span><br><span class="line"><span class="comment">     * 如果订阅关系不为空。通过NameServer获取TopicRouteInfo并且更新rebalanceImpl中的topicSubscribeInfoTable</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">this</span>.updateTopicSubscribeInfoWhenSubscriptionChanged();</span><br><span class="line">    <span class="comment">//去broker校验Consumer状态，包括consumer的substring的有孝心等</span></span><br><span class="line">    <span class="keyword">this</span>.mQClientFactory.checkClientInBroker();</span><br><span class="line">    <span class="comment">//给所有的Broker发送心跳包(code是HEART_BEAT)，包括遍历每个消费者生成Consumer信息包括，消费这的类型、消息模式、FromWhere、订阅信息等,</span></span><br><span class="line">    <span class="comment">// broker发送HEAT_BEAT请求，完成消费者的注册等工作</span></span><br><span class="line">    <span class="keyword">this</span>.mQClientFactory.sendHeartbeatToAllBrokerWithLock();</span><br><span class="line">    <span class="comment">// 1.mQClientFactory#rebalanceImmediately唤醒RebalanceService</span></span><br><span class="line">    <span class="comment">// 2.RebalanceService#run调用mQClientFactory#doRebalance</span></span><br><span class="line">    <span class="comment">// 3.mQClientFactory#doRebalance遍历ConsumerTable（上面registerConsumer方法put的consumer），调用DefaultMQPushConsumerImpl#doRebalance</span></span><br><span class="line">    <span class="comment">// 4.DefaultMQPushConsumerImpl#doRebalance调用RebalanceImpl.doRebalance进行遍历</span></span><br><span class="line">    <span class="comment">// 5.**还有个重要的目的通过dorebalnce激活pullmessageService的run方法，在死循环中向broker发送pullMessage的消息</span></span><br><span class="line">    <span class="keyword">this</span>.mQClientFactory.rebalanceImmediately();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>broker在收到HEAT_BEAT的请求后，会调用heatbeat方法，该方法同时处理prodcuer和consumer的注册，其中consumer的注册是调用this.brokerController#getConsumerManager#registerConsumer的方法，代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> RemotingCommand <span class="title">heartBeat</span><span class="params">(ChannelHandlerContext ctx, RemotingCommand request)</span> </span>&#123;</span><br><span class="line">        ...... <span class="comment">//解析协议</span></span><br><span class="line">        <span class="keyword">boolean</span> isNotifyConsumerIdsChangedEnable = <span class="keyword">true</span>;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">null</span> != subscriptionGroupConfig) &#123;</span><br><span class="line">            isNotifyConsumerIdsChangedEnable = subscriptionGroupConfig.isNotifyConsumerIdsChangedEnable();</span><br><span class="line">            <span class="keyword">int</span> topicSysFlag = <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">if</span> (data.isUnitMode()) &#123;</span><br><span class="line">                topicSysFlag = TopicSysFlag.buildSysFlag(<span class="keyword">false</span>, <span class="keyword">true</span>);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//创建RetryTopic：%RETRY%ConsumerGroup，给所有的broker发送信息注册这个topic</span></span><br><span class="line">            String newTopic = MixAll.getRetryTopic(data.getGroupName());</span><br><span class="line">            <span class="keyword">this</span>.brokerController.getTopicConfigManager().createTopicInSendMessageBackMethod(</span><br><span class="line">                newTopic,</span><br><span class="line">                subscriptionGroupConfig.getRetryQueueNums(),<span class="comment">//默认是1</span></span><br><span class="line">                PermName.PERM_WRITE | PermName.PERM_READ, topicSysFlag);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//broker通过consumerManager注册消费者</span></span><br><span class="line">        <span class="keyword">boolean</span> changed = <span class="keyword">this</span>.brokerController.getConsumerManager().registerConsumer(</span><br><span class="line">            data.getGroupName(),</span><br><span class="line">            clientChannelInfo,</span><br><span class="line">            data.getConsumeType(),</span><br><span class="line">            data.getMessageModel(),</span><br><span class="line">            data.getConsumeFromWhere(),</span><br><span class="line">            data.getSubscriptionDataSet(),</span><br><span class="line">            isNotifyConsumerIdsChangedEnable</span><br><span class="line">        );</span><br><span class="line">        ......</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 注册消费者</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> group                            消费组</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> clientChannelInfo                客户端链接的信息</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> consumeType                      消费类型 push or pull</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> messageModel                     消息类型</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> consumeFromWhere                 fromWhere</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> subList                          订阅关系的列表，每个consumer的RebalanceImpl#subscriptionInner在注册时候put进去的信息</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> isNotifyConsumerIdsChangedEnable 是否通知客户端的开关</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">registerConsumer</span><span class="params">(<span class="keyword">final</span> String group, <span class="keyword">final</span> ClientChannelInfo clientChannelInfo,</span></span></span><br><span class="line"><span class="function"><span class="params">                                ConsumeType consumeType, MessageModel messageModel, ConsumeFromWhere consumeFromWhere,</span></span></span><br><span class="line"><span class="function"><span class="params">                                <span class="keyword">final</span> Set&lt;SubscriptionData&gt; subList, <span class="keyword">boolean</span> isNotifyConsumerIdsChangedEnable)</span> </span>&#123;</span><br><span class="line">    <span class="comment">//get or create ConsumerGroupInfo</span></span><br><span class="line">    ConsumerGroupInfo consumerGroupInfo = <span class="keyword">this</span>.consumerTable.get(group);</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">null</span> == consumerGroupInfo) &#123;</span><br><span class="line">        ConsumerGroupInfo tmp = <span class="keyword">new</span> ConsumerGroupInfo(group, consumeType, messageModel, consumeFromWhere);</span><br><span class="line">        ConsumerGroupInfo prev = <span class="keyword">this</span>.consumerTable.putIfAbsent(group, tmp);</span><br><span class="line">        consumerGroupInfo = prev != <span class="keyword">null</span> ? prev : tmp;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//更新clientChannelInfo</span></span><br><span class="line">    <span class="keyword">boolean</span> r1 =</span><br><span class="line">            consumerGroupInfo.updateChannel(clientChannelInfo, consumeType, messageModel,</span><br><span class="line">                    consumeFromWhere);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//更新SubscriptionData，将remote的更新到本地，并且清理掉已经不存在的SubscriptionData</span></span><br><span class="line">    <span class="keyword">boolean</span> r2 = consumerGroupInfo.updateSubscription(subList);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (r1 || r2) &#123;</span><br><span class="line">        <span class="keyword">if</span> (isNotifyConsumerIdsChangedEnable) &#123;</span><br><span class="line">            <span class="comment">//通知所有的消费者，该group订阅关系发送变化 发送NOTIFY_CONSUMER_IDS_CHANGED事件，所有该group下的consumer会立刻做doBalance操作</span></span><br><span class="line">            <span class="keyword">this</span>.consumerIdsChangeListener.handle(ConsumerGroupEvent.CHANGE, group, consumerGroupInfo.getAllChannel());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//consumerIdsChangeListener处理注册事件，调用getConsumerFilterManager().register todo mark 待看</span></span><br><span class="line">    <span class="keyword">this</span>.consumerIdsChangeListener.handle(ConsumerGroupEvent.REGISTER, group, subList);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> r1 || r2;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>遗留问题：this.consumerIdsChangeListener.handle(ConsumerGroupEvent.REGISTER, group, subList);</p>
+<h3 id="SubscriptionData"><a href="#SubscriptionData" class="headerlink" title="SubscriptionData"></a>SubscriptionData</h3><h3 id="rebalanceImpl"><a href="#rebalanceImpl" class="headerlink" title="rebalanceImpl"></a>rebalanceImpl</h3><h2 id="消息的消费"><a href="#消息的消费" class="headerlink" title="消息的消费"></a>消息的消费</h2><p>  虽然叫做DefaultMQPushConusmerImpl,但是消息的消费实际上是一个pull的过程，那么消息是如何保证实时性的呢？</p>
+<p>  消息的消费分为拉取消息和消费消息里俩步，拉取消息是PullMessageService类来负责，消费消息ConsumeMessageService来负责</p>
+<p>  在PullMessageService中是一个用阻塞队列实现的典型的生产者消费者模式实现的。见代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">executePullRequestImmediately</span><span class="params">(<span class="keyword">final</span> PullRequest pullRequest)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">this</span>.pullRequestQueue.put(pullRequest);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">        log.error(<span class="string">"executePullRequestImmediately pullRequestQueue.put"</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    log.info(<span class="keyword">this</span>.getServiceName() + <span class="string">" service started"</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//死循环，从队列中拉取消息</span></span><br><span class="line">    <span class="keyword">while</span> (!<span class="keyword">this</span>.isStopped()) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            PullRequest pullRequest = <span class="keyword">this</span>.pullRequestQueue.take();</span><br><span class="line">            <span class="keyword">this</span>.pullMessage(pullRequest);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException ignored) &#123;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            log.error(<span class="string">"Pull Message Service Run Method exception"</span>, e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    log.info(<span class="keyword">this</span>.getServiceName() + <span class="string">" service end"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中executePullRequestImmediately就是触发PullRequest的。</p>
+<ol>
+<li>当我们的消费者start()之后会调用mQClientFactory.rebalanceImmediately()，在跟进该方法的过程中发现updateProcessQueueTableInRebalance方法，最终会调用dispatchPullRequest该方法会调用executePullRequestImmediately实际上就触发了消息的拉取</li>
+<li>run会调用DefaultMQPushConsumerImpl的pullMessage方法在改方法中通过pullAPIWrapper.pullKernelImpl去broker拉取消息。</li>
+<li>在拉取之后并且在pullCallback中调用ConsumeMessageService消费消息。并且重新调用executePullRequestImmediately重复上述2。</li>
+</ol>
+<p>综上，rocketmq就是用这种不停的take–&gt;pull–&gt;add来保证消息的实时性的</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">pullMessage</span><span class="params">(<span class="keyword">final</span> PullRequest pullRequest)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> ProcessQueue processQueue = pullRequest.getProcessQueue();</span><br><span class="line">    <span class="comment">//省略校验操作</span></span><br><span class="line">    ......</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">long</span> beginTimestamp = System.currentTimeMillis();</span><br><span class="line">    PullCallback pullCallback = <span class="keyword">new</span> PullCallback() &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onSuccess</span><span class="params">(PullResult pullResult)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">if</span> (pullResult != <span class="keyword">null</span>) &#123;</span><br><span class="line">                pullResult = DefaultMQPushConsumerImpl.<span class="keyword">this</span>.pullAPIWrapper.processPullResult(pullRequest.getMessageQueue(), pullResult,</span><br><span class="line">                        subscriptionData);</span><br><span class="line"></span><br><span class="line">                <span class="comment">//FOUND NO_NEW_MSG NO_MATCHED_MSG OFFSET_ILLEGAL都会将pullRequest重新放入到pullRequestQueue对列中，</span></span><br><span class="line">                <span class="comment">//然后PullMessageService的run()方法在进行下一次的拉取。</span></span><br><span class="line">                <span class="comment">//PullMessageService的run方法是个死循环，通过pullRequestQueue.take来保证实时性。</span></span><br><span class="line">                <span class="keyword">switch</span> (pullResult.getPullStatus()) &#123;</span><br><span class="line">                    <span class="keyword">case</span> FOUND:</span><br><span class="line">                        <span class="keyword">long</span> prevRequestOffset = pullRequest.getNextOffset();</span><br><span class="line">                        pullRequest.setNextOffset(pullResult.getNextBeginOffset());</span><br><span class="line">                        <span class="keyword">long</span> pullRT = System.currentTimeMillis() - beginTimestamp;</span><br><span class="line">                        DefaultMQPushConsumerImpl.<span class="keyword">this</span>.getConsumerStatsManager().incPullRT(pullRequest.getConsumerGroup(),</span><br><span class="line">                                pullRequest.getMessageQueue().getTopic(), pullRT);</span><br><span class="line"></span><br><span class="line">                        <span class="keyword">long</span> firstMsgOffset = Long.MAX_VALUE;</span><br><span class="line">                        <span class="comment">//如果msgFoundList为空</span></span><br><span class="line">                        <span class="keyword">if</span> (pullResult.getMsgFoundList() == <span class="keyword">null</span> || pullResult.getMsgFoundList().isEmpty()) &#123;</span><br><span class="line">                            <span class="comment">//</span></span><br><span class="line">                            DefaultMQPushConsumerImpl.<span class="keyword">this</span>.executePullRequestImmediately(pullRequest);</span><br><span class="line">                        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                            firstMsgOffset = pullResult.getMsgFoundList().get(<span class="number">0</span>).getQueueOffset();</span><br><span class="line"></span><br><span class="line">                            DefaultMQPushConsumerImpl.<span class="keyword">this</span>.getConsumerStatsManager().incPullTPS(pullRequest.getConsumerGroup(),</span><br><span class="line">                                    pullRequest.getMessageQueue().getTopic(), pullResult.getMsgFoundList().size());</span><br><span class="line"></span><br><span class="line">                            <span class="keyword">boolean</span> dispatchToConsume = processQueue.putMessage(pullResult.getMsgFoundList());</span><br><span class="line">                            <span class="comment">//消息的消费逻辑</span></span><br><span class="line">                            DefaultMQPushConsumerImpl.<span class="keyword">this</span>.consumeMessageService.submitConsumeRequest(</span><br><span class="line">                                    pullResult.getMsgFoundList(),</span><br><span class="line">                                    processQueue,</span><br><span class="line">                                    pullRequest.getMessageQueue(),</span><br><span class="line">                                    dispatchToConsume);</span><br><span class="line"></span><br><span class="line">                            <span class="comment">//根据设置进行下一次的拉取任务</span></span><br><span class="line">                            <span class="keyword">if</span> (DefaultMQPushConsumerImpl.<span class="keyword">this</span>.defaultMQPushConsumer.getPullInterval() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                                DefaultMQPushConsumerImpl.<span class="keyword">this</span>.executePullRequestLater(pullRequest,</span><br><span class="line">                                        DefaultMQPushConsumerImpl.<span class="keyword">this</span>.defaultMQPushConsumer.getPullInterval());</span><br><span class="line">                            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                                DefaultMQPushConsumerImpl.<span class="keyword">this</span>.executePullRequestImmediately(pullRequest);</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;</span><br><span class="line"></span><br><span class="line">                        <span class="keyword">if</span> (pullResult.getNextBeginOffset() &lt; prevRequestOffset</span><br><span class="line">                                || firstMsgOffset &lt; prevRequestOffset) &#123;</span><br><span class="line">                            log.warn(</span><br><span class="line">                                    <span class="string">"[BUG] pull message result maybe data wrong, nextBeginOffset: &#123;&#125; firstMsgOffset: &#123;&#125; prevRequestOffset: &#123;&#125;"</span>,</span><br><span class="line">                                    pullResult.getNextBeginOffset(),</span><br><span class="line">                                    firstMsgOffset,</span><br><span class="line">                                    prevRequestOffset);</span><br><span class="line">                        &#125;</span><br><span class="line"></span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> NO_NEW_MSG:</span><br><span class="line">                        pullRequest.setNextOffset(pullResult.getNextBeginOffset());</span><br><span class="line"></span><br><span class="line">                        DefaultMQPushConsumerImpl.<span class="keyword">this</span>.correctTagsOffset(pullRequest);</span><br><span class="line"></span><br><span class="line">                        <span class="comment">//</span></span><br><span class="line">                        DefaultMQPushConsumerImpl.<span class="keyword">this</span>.executePullRequestImmediately(pullRequest);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> NO_MATCHED_MSG:</span><br><span class="line">                        pullRequest.setNextOffset(pullResult.getNextBeginOffset());</span><br><span class="line"></span><br><span class="line">                        DefaultMQPushConsumerImpl.<span class="keyword">this</span>.correctTagsOffset(pullRequest);</span><br><span class="line"></span><br><span class="line">                        <span class="comment">//</span></span><br><span class="line">                        DefaultMQPushConsumerImpl.<span class="keyword">this</span>.executePullRequestImmediately(pullRequest);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">case</span> OFFSET_ILLEGAL:</span><br><span class="line"></span><br><span class="line">                        log.warn(<span class="string">"the pull request offset illegal, &#123;&#125; &#123;&#125;"</span>,</span><br><span class="line">                                pullRequest.toString(), pullResult.toString());</span><br><span class="line">                        pullRequest.setNextOffset(pullResult.getNextBeginOffset());</span><br><span class="line"></span><br><span class="line">                        pullRequest.getProcessQueue().setDropped(<span class="keyword">true</span>);</span><br><span class="line">                        <span class="comment">//OFFSET_ILLEGAL 在10s后会通过rebalanceImpl#removeProcessQueue摘除messageQueue</span></span><br><span class="line">                        DefaultMQPushConsumerImpl.<span class="keyword">this</span>.executeTaskLater(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line"></span><br><span class="line">                            <span class="meta">@Override</span></span><br><span class="line">                            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                                <span class="keyword">try</span> &#123;</span><br><span class="line">                                    DefaultMQPushConsumerImpl.<span class="keyword">this</span>.offsetStore.updateOffset(pullRequest.getMessageQueue(),</span><br><span class="line">                                            pullRequest.getNextOffset(), <span class="keyword">false</span>);</span><br><span class="line"></span><br><span class="line">                                    DefaultMQPushConsumerImpl.<span class="keyword">this</span>.offsetStore.persist(pullRequest.getMessageQueue());</span><br><span class="line"></span><br><span class="line">                                    DefaultMQPushConsumerImpl.<span class="keyword">this</span>.rebalanceImpl.removeProcessQueue(pullRequest.getMessageQueue());</span><br><span class="line"></span><br><span class="line">                                    log.warn(<span class="string">"fix the pull request offset, &#123;&#125;"</span>, pullRequest);</span><br><span class="line">                                &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">                                    log.error(<span class="string">"executeTaskLater Exception"</span>, e);</span><br><span class="line">                                &#125;</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;, <span class="number">10000</span>);</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                    <span class="keyword">default</span>:</span><br><span class="line">                        <span class="keyword">break</span>;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">onException</span><span class="params">(Throwable e)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">if</span> (!pullRequest.getMessageQueue().getTopic().startsWith(MixAll.RETRY_GROUP_TOPIC_PREFIX)) &#123;</span><br><span class="line">                log.warn(<span class="string">"execute the pull request exception"</span>, e);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            DefaultMQPushConsumerImpl.<span class="keyword">this</span>.executePullRequestLater(pullRequest, PULL_TIME_DELAY_MILLS_WHEN_EXCEPTION);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">boolean</span> commitOffsetEnable = <span class="keyword">false</span>;</span><br><span class="line">    <span class="keyword">long</span> commitOffsetValue = <span class="number">0L</span>;</span><br><span class="line">    <span class="keyword">if</span> (MessageModel.CLUSTERING == <span class="keyword">this</span>.defaultMQPushConsumer.getMessageModel()) &#123;</span><br><span class="line">        commitOffsetValue = <span class="keyword">this</span>.offsetStore.readOffset(pullRequest.getMessageQueue(), ReadOffsetType.READ_FROM_MEMORY);</span><br><span class="line">        <span class="keyword">if</span> (commitOffsetValue &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            commitOffsetEnable = <span class="keyword">true</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    String subExpression = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">boolean</span> classFilter = <span class="keyword">false</span>;</span><br><span class="line">    SubscriptionData sd = <span class="keyword">this</span>.rebalanceImpl.getSubscriptionInner().get(pullRequest.getMessageQueue().getTopic());</span><br><span class="line">    <span class="keyword">if</span> (sd != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">this</span>.defaultMQPushConsumer.isPostSubscriptionWhenPull() &amp;&amp; !sd.isClassFilterMode()) &#123;</span><br><span class="line">            subExpression = sd.getSubString();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        classFilter = sd.isClassFilterMode();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> sysFlag = PullSysFlag.buildSysFlag(</span><br><span class="line">            commitOffsetEnable, <span class="comment">// commitOffset</span></span><br><span class="line">            <span class="keyword">true</span>, <span class="comment">// suspend</span></span><br><span class="line">            subExpression != <span class="keyword">null</span>, <span class="comment">// subscription</span></span><br><span class="line">            classFilter <span class="comment">// class filter</span></span><br><span class="line">    );</span><br><span class="line"></span><br><span class="line">    <span class="comment">//重点:想broker发送PULL_MESSAGE的请求拉取消息，拉取后将response转成PullResultExt然后经过pullCallback处理拉取结果</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">this</span>.pullAPIWrapper.pullKernelImpl(</span><br><span class="line">                pullRequest.getMessageQueue(),</span><br><span class="line">                subExpression,</span><br><span class="line">                subscriptionData.getExpressionType(),</span><br><span class="line">                subscriptionData.getSubVersion(),</span><br><span class="line">                pullRequest.getNextOffset(),</span><br><span class="line">                <span class="keyword">this</span>.defaultMQPushConsumer.getPullBatchSize(),</span><br><span class="line">                sysFlag,</span><br><span class="line">                commitOffsetValue,</span><br><span class="line">                BROKER_SUSPEND_MAX_TIME_MILLIS,</span><br><span class="line">                CONSUMER_TIMEOUT_MILLIS_WHEN_SUSPEND,</span><br><span class="line">                CommunicationMode.ASYNC,</span><br><span class="line">                pullCallback</span><br><span class="line">        );</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">"pullKernelImpl exception"</span>, e);</span><br><span class="line">        <span class="keyword">this</span>.executePullRequestLater(pullRequest, PULL_TIME_DELAY_MILLS_WHEN_EXCEPTION);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="拉取消息在consumer测的过程"><a href="#拉取消息在consumer测的过程" class="headerlink" title="拉取消息在consumer测的过程"></a>拉取消息在consumer测的过程</h3><ol>
+<li>pullAPIWrapper.pullKernelImpl会调用MQClientAPIImpl#pullMessage方法给broker发送RequestCode.PULL_MESSAGE请求</li>
+<li>发送方式默认是ASYNC,所以在pullMessageAsync方法中会处理将response转成PullResultExt对象，这时候MsgList是空。<ul>
+<li>通过调用  processPullResponse()方法来转换</li>
+</ul>
+</li>
+<li>之后在InvokeCallback回调中调用pullCallback完成消费</li>
+</ol>
+<p>pullMessageAsync具体代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">pullMessageAsync</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> String addr,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> RemotingCommand request,//pullmessage请求</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> <span class="keyword">long</span> timeoutMillis,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> PullCallback pullCallback</span></span></span><br><span class="line"><span class="function"><span class="params">)</span> <span class="keyword">throws</span> RemotingException, InterruptedException </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.remotingClient.invokeAsync(addr, request, timeoutMillis, <span class="keyword">new</span> InvokeCallback() &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">operationComplete</span><span class="params">(ResponseFuture responseFuture)</span> </span>&#123;</span><br><span class="line">            RemotingCommand response = responseFuture.getResponseCommand();</span><br><span class="line">            <span class="keyword">if</span> (response != <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    PullResult pullResult = MQClientAPIImpl.<span class="keyword">this</span>.processPullResponse(response);</span><br><span class="line">                    <span class="keyword">assert</span> pullResult != <span class="keyword">null</span>;</span><br><span class="line">                    pullCallback.onSuccess(pullResult);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                    pullCallback.onException(e);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">//pullCallback.onException...省略</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>processPullResponse具体代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> PullResult <span class="title">processPullResponse</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> RemotingCommand response)</span> <span class="keyword">throws</span> MQBrokerException, RemotingCommandException </span>&#123;</span><br><span class="line">    PullStatus pullStatus = PullStatus.NO_NEW_MSG;</span><br><span class="line">    <span class="comment">//根据repsonse转换code</span></span><br><span class="line">    <span class="keyword">switch</span> (response.getCode()) &#123;</span><br><span class="line">        <span class="keyword">case</span> ResponseCode.SUCCESS:</span><br><span class="line">            pullStatus = PullStatus.FOUND;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> ResponseCode.PULL_NOT_FOUND:</span><br><span class="line">            pullStatus = PullStatus.NO_NEW_MSG;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> ResponseCode.PULL_RETRY_IMMEDIATELY:</span><br><span class="line">            pullStatus = PullStatus.NO_MATCHED_MSG;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> ResponseCode.PULL_OFFSET_MOVED:</span><br><span class="line">            pullStatus = PullStatus.OFFSET_ILLEGAL;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> MQBrokerException(response.getCode(), response.getRemark());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    PullMessageResponseHeader responseHeader =</span><br><span class="line">            (PullMessageResponseHeader) response.decodeCommandCustomHeader(PullMessageResponseHeader.class);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">new</span> PullResultExt(pullStatus, responseHeader.getNextBeginOffset(), responseHeader.getMinOffset(),</span><br><span class="line">            responseHeader.getMaxOffset(), <span class="keyword">null</span>, responseHeader.getSuggestWhichBrokerId(), response.getBody());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="consumer消费消息"><a href="#consumer消费消息" class="headerlink" title="consumer消费消息"></a>consumer消费消息</h3><p>拉取到消息后，在PullCallBack中会调用consumeMessageService.submitConsumeRequest来消费消息，实际上是封装成ConsumeRequest在线程池中批量消费消息，具体见下面：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ConsumeRequest</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">final</span> List&lt;MessageExt&gt; msgs;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">final</span> ProcessQueue processQueue;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">final</span> MessageQueue messageQueue;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="title">ConsumeRequest</span><span class="params">(List&lt;MessageExt&gt; msgs, ProcessQueue processQueue, MessageQueue messageQueue)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">this</span>.msgs = msgs;</span><br><span class="line">            <span class="keyword">this</span>.processQueue = processQueue;</span><br><span class="line">            <span class="keyword">this</span>.messageQueue = messageQueue;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> List&lt;MessageExt&gt; <span class="title">getMsgs</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">return</span> msgs;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> ProcessQueue <span class="title">getProcessQueue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">return</span> processQueue;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">this</span>.processQueue.isDropped()) &#123;</span><br><span class="line">                log.info(<span class="string">"the message queue not be able to consume, because it's dropped. group=&#123;&#125; &#123;&#125;"</span>, ConsumeMessageConcurrentlyService.<span class="keyword">this</span>.consumerGroup, <span class="keyword">this</span>.messageQueue);</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            MessageListenerConcurrently listener = ConsumeMessageConcurrentlyService.<span class="keyword">this</span>.messageListener;</span><br><span class="line">            ConsumeConcurrentlyContext context = <span class="keyword">new</span> ConsumeConcurrentlyContext(messageQueue);</span><br><span class="line">            ConsumeConcurrentlyStatus status = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">            ConsumeMessageContext consumeMessageContext = <span class="keyword">null</span>;</span><br><span class="line">            <span class="keyword">if</span> (ConsumeMessageConcurrentlyService.<span class="keyword">this</span>.defaultMQPushConsumerImpl.hasHook()) &#123;</span><br><span class="line">                consumeMessageContext = <span class="keyword">new</span> ConsumeMessageContext();</span><br><span class="line">                consumeMessageContext.setConsumerGroup(defaultMQPushConsumer.getConsumerGroup());</span><br><span class="line">                consumeMessageContext.setProps(<span class="keyword">new</span> HashMap&lt;String, String&gt;());</span><br><span class="line">                consumeMessageContext.setMq(messageQueue);</span><br><span class="line">                consumeMessageContext.setMsgList(msgs);</span><br><span class="line">                consumeMessageContext.setSuccess(<span class="keyword">false</span>);</span><br><span class="line">                ConsumeMessageConcurrentlyService.<span class="keyword">this</span>.defaultMQPushConsumerImpl.executeHookBefore(consumeMessageContext);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">long</span> beginTimestamp = System.currentTimeMillis();</span><br><span class="line">            <span class="keyword">boolean</span> hasException = <span class="keyword">false</span>;</span><br><span class="line">            ConsumeReturnType returnType = ConsumeReturnType.SUCCESS;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                ConsumeMessageConcurrentlyService.<span class="keyword">this</span>.resetRetryTopic(msgs);</span><br><span class="line">                <span class="keyword">if</span> (msgs != <span class="keyword">null</span> &amp;&amp; !msgs.isEmpty()) &#123;</span><br><span class="line">                    <span class="keyword">for</span> (MessageExt msg : msgs) &#123;</span><br><span class="line">                        MessageAccessor.setConsumeStartTimeStamp(msg, String.valueOf(System.currentTimeMillis()));</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="comment">//自定义的消费逻辑</span></span><br><span class="line">                status = listener.consumeMessage(Collections.unmodifiableList(msgs), context);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">                log.warn(<span class="string">"consumeMessage exception: &#123;&#125; Group: &#123;&#125; Msgs: &#123;&#125; MQ: &#123;&#125;"</span>,</span><br><span class="line">                    RemotingHelper.exceptionSimpleDesc(e),</span><br><span class="line">                    ConsumeMessageConcurrentlyService.<span class="keyword">this</span>.consumerGroup,</span><br><span class="line">                    msgs,</span><br><span class="line">                    messageQueue);</span><br><span class="line">                hasException = <span class="keyword">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//执行consumer的hook</span></span><br><span class="line">            <span class="keyword">long</span> consumeRT = System.currentTimeMillis() - beginTimestamp;</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">null</span> == status) &#123;</span><br><span class="line">                <span class="keyword">if</span> (hasException) &#123;</span><br><span class="line">                    returnType = ConsumeReturnType.EXCEPTION;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    returnType = ConsumeReturnType.RETURNNULL;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> (consumeRT &gt;= defaultMQPushConsumer.getConsumeTimeout() * <span class="number">60</span> * <span class="number">1000</span>) &#123;</span><br><span class="line">                returnType = ConsumeReturnType.TIME_OUT;</span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> (ConsumeConcurrentlyStatus.RECONSUME_LATER == status) &#123;</span><br><span class="line">                returnType = ConsumeReturnType.FAILED;</span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> (ConsumeConcurrentlyStatus.CONSUME_SUCCESS == status) &#123;</span><br><span class="line">                returnType = ConsumeReturnType.SUCCESS;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (ConsumeMessageConcurrentlyService.<span class="keyword">this</span>.defaultMQPushConsumerImpl.hasHook()) &#123;</span><br><span class="line">                consumeMessageContext.getProps().put(MixAll.CONSUME_CONTEXT_TYPE, returnType.name());</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">null</span> == status) &#123;</span><br><span class="line">                log.warn(<span class="string">"consumeMessage return null, Group: &#123;&#125; Msgs: &#123;&#125; MQ: &#123;&#125;"</span>,</span><br><span class="line">                    ConsumeMessageConcurrentlyService.<span class="keyword">this</span>.consumerGroup,</span><br><span class="line">                    msgs,</span><br><span class="line">                    messageQueue);</span><br><span class="line">                status = ConsumeConcurrentlyStatus.RECONSUME_LATER;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (ConsumeMessageConcurrentlyService.<span class="keyword">this</span>.defaultMQPushConsumerImpl.hasHook()) &#123;</span><br><span class="line">                consumeMessageContext.setStatus(status.toString());</span><br><span class="line">                consumeMessageContext.setSuccess(ConsumeConcurrentlyStatus.CONSUME_SUCCESS == status);</span><br><span class="line">                ConsumeMessageConcurrentlyService.<span class="keyword">this</span>.defaultMQPushConsumerImpl.executeHookAfter(consumeMessageContext);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            ConsumeMessageConcurrentlyService.<span class="keyword">this</span>.getConsumerStatsManager()</span><br><span class="line">                .incConsumeRT(ConsumeMessageConcurrentlyService.<span class="keyword">this</span>.consumerGroup, messageQueue.getTopic(), consumeRT);</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (!processQueue.isDropped()) &#123;</span><br><span class="line">                <span class="comment">//处理消费结果</span></span><br><span class="line">                ConsumeMessageConcurrentlyService.<span class="keyword">this</span>.processConsumeResult(status, context, <span class="keyword">this</span>);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                log.warn(<span class="string">"processQueue is dropped without process consume result. messageQueue=&#123;&#125;, msgs=&#123;&#125;"</span>, messageQueue, msgs);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">public</span> MessageQueue <span class="title">getMessageQueue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">return</span> messageQueue;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<h3 id="顺序消费"><a href="#顺序消费" class="headerlink" title="顺序消费"></a>顺序消费</h3><p>  和Currently类似，不过首先对消息进行排序，首先将消息放入到processQueue的红黑树中，另外在消费时候先加锁，所粒度是MessageQueue，保证每个MessageQueue的顺序是一致的。如代码：</p>
+<p>  由于consumer只能做到单messageQueue消息有序，我们在producer侧生产消息时候应该按照我们的保序字段selectQueue才行，保证相同id的都打到一个messageQueue中</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">ConsumeRequest</span> <span class="keyword">implements</span> <span class="title">Runnable</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ProcessQueue processQueue;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> MessageQueue messageQueue;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//ConsumeRequest只是面向processQueue和messageQueue的</span></span><br><span class="line">    <span class="comment">//这里设计的很不错，由于顺序消费针对MessageQueue所以单Queue的消费是线性的，为了提高吞吐，采用了ProcessQueue镜像队列，用红黑树的思想对消息offset排序然后压进队列，ConsumeRequest不停的消费ProcessQueue里弹出来的消息</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ConsumeRequest</span><span class="params">(ProcessQueue processQueue, MessageQueue messageQueue)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.processQueue = processQueue;</span><br><span class="line">        <span class="keyword">this</span>.messageQueue = messageQueue;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> ProcessQueue <span class="title">getProcessQueue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> processQueue;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> MessageQueue <span class="title">getMessageQueue</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> messageQueue;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">//......</span></span><br><span class="line"></span><br><span class="line">        <span class="comment">//关键代码锁机制，锁粒度是messageQueue，一个MessageQueue对应一个锁，也就是单一的messageQueue消费有序，需要发送时候选择messageQueue</span></span><br><span class="line">        <span class="keyword">final</span> Object objLock = messageQueueLock.fetchLockObject(<span class="keyword">this</span>.messageQueue);</span><br><span class="line">        <span class="keyword">synchronized</span> (objLock) &#123;</span><br><span class="line">            <span class="keyword">if</span> (MessageModel.BROADCASTING.equals(ConsumeMessageOrderlyService.<span class="keyword">this</span>.defaultMQPushConsumerImpl.messageModel())</span><br><span class="line">                || (<span class="keyword">this</span>.processQueue.isLocked() &amp;&amp; !<span class="keyword">this</span>.processQueue.isLockExpired())) &#123;</span><br><span class="line">                <span class="keyword">final</span> <span class="keyword">long</span> beginTime = System.currentTimeMillis();</span><br><span class="line">                <span class="comment">//todo 大哥你用个while不行么！！！一直从processQueue中弹出来BatchSize个消息，进行消费知道空为止</span></span><br><span class="line">                <span class="comment">//因为，不同的pullMessage会不停的给processQueue中压值知道满足阈值为止。</span></span><br><span class="line">                <span class="keyword">for</span> (<span class="keyword">boolean</span> continueConsume = <span class="keyword">true</span>; continueConsume; ) &#123;</span><br><span class="line">                    <span class="comment">//....省略校验逻辑</span></span><br><span class="line"></span><br><span class="line">                    <span class="keyword">final</span> <span class="keyword">int</span> consumeBatchSize =</span><br><span class="line">                        ConsumeMessageOrderlyService.<span class="keyword">this</span>.defaultMQPushConsumer.getConsumeMessageBatchMaxSize();</span><br><span class="line"></span><br><span class="line">                    <span class="comment">//从processQueue的红黑树按照顺序take出consumeBatchSize个消息</span></span><br><span class="line">                    List&lt;MessageExt&gt; msgs = <span class="keyword">this</span>.processQueue.takeMessags(consumeBatchSize);</span><br><span class="line">                    <span class="keyword">if</span> (!msgs.isEmpty()) &#123;</span><br><span class="line">                        <span class="keyword">final</span> ConsumeOrderlyContext context = <span class="keyword">new</span> ConsumeOrderlyContext(<span class="keyword">this</span>.messageQueue);</span><br><span class="line"></span><br><span class="line">                        ConsumeOrderlyStatus status = <span class="keyword">null</span>;</span><br><span class="line"></span><br><span class="line">                        ConsumeMessageContext consumeMessageContext = <span class="keyword">null</span>;</span><br><span class="line">                        <span class="keyword">if</span> (ConsumeMessageOrderlyService.<span class="keyword">this</span>.defaultMQPushConsumerImpl.hasHook()) &#123;</span><br><span class="line">                            consumeMessageContext = <span class="keyword">new</span> ConsumeMessageContext();</span><br><span class="line">                            consumeMessageContext</span><br><span class="line">                                .setConsumerGroup(ConsumeMessageOrderlyService.<span class="keyword">this</span>.defaultMQPushConsumer.getConsumerGroup());</span><br><span class="line">                            consumeMessageContext.setMq(messageQueue);</span><br><span class="line">                            consumeMessageContext.setMsgList(msgs);</span><br><span class="line">                            consumeMessageContext.setSuccess(<span class="keyword">false</span>);</span><br><span class="line">                            <span class="comment">// init the consume context type</span></span><br><span class="line">                            consumeMessageContext.setProps(<span class="keyword">new</span> HashMap&lt;String, String&gt;());</span><br><span class="line">                            ConsumeMessageOrderlyService.<span class="keyword">this</span>.defaultMQPushConsumerImpl.executeHookBefore(consumeMessageContext);</span><br><span class="line">                        &#125;</span><br><span class="line"></span><br><span class="line">                        <span class="keyword">long</span> beginTimestamp = System.currentTimeMillis();</span><br><span class="line">                        ConsumeReturnType returnType = ConsumeReturnType.SUCCESS;</span><br><span class="line">                        <span class="keyword">boolean</span> hasException = <span class="keyword">false</span>;</span><br><span class="line">                        <span class="keyword">try</span> &#123;</span><br><span class="line">                            <span class="comment">//保证线程安全，保证每个消息消费的线程安全</span></span><br><span class="line">                            <span class="keyword">this</span>.processQueue.getLockConsume().lock();</span><br><span class="line">                            <span class="comment">//.....</span></span><br><span class="line">                            <span class="comment">//消费逻辑</span></span><br><span class="line">                            status = messageListener.consumeMessage(Collections.unmodifiableList(msgs), context);</span><br><span class="line">                        &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">                            <span class="comment">//......</span></span><br><span class="line">                            hasException = <span class="keyword">true</span>;</span><br><span class="line">                        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                            <span class="comment">//解锁</span></span><br><span class="line">                            <span class="keyword">this</span>.processQueue.getLockConsume().unlock();</span><br><span class="line">                        &#125;</span><br><span class="line"></span><br><span class="line">                        <span class="comment">// 处理消费结果</span></span><br><span class="line">                        continueConsume = ConsumeMessageOrderlyService.<span class="keyword">this</span>.processConsumeResult(msgs, status, context, <span class="keyword">this</span>);</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        continueConsume = <span class="keyword">false</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="comment">// ......</span></span><br><span class="line">                ConsumeMessageOrderlyService.<span class="keyword">this</span>.tryLockLaterAndReconsume(<span class="keyword">this</span>.messageQueue, <span class="keyword">this</span>.processQueue, <span class="number">100</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  由于顺序消费为每个MessageQueue要加锁，为了创建大量的无用线程，在processQueue#putMessage方法会判断consuming的状态，如果当前processQueue已经在消费中了，消息只是放入红黑树但是不会启动线程去消费。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 将Messages放到红黑树中</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> msgs message信息</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> 如果msgTreeMap不为空，且当前不在消费返回true，为true启动线程开始消费,如果消费中就不在启动线程了防止高并发情况下大量的异步线程将线程池打满</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">putMessage</span><span class="params">(<span class="keyword">final</span> List&lt;MessageExt&gt; msgs)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">boolean</span> dispatchToConsume = <span class="keyword">false</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">//锁因为msgTreeMap不是线程安全的</span></span><br><span class="line">        <span class="keyword">this</span>.lockTreeMap.writeLock().lockInterruptibly();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">int</span> validMsgCnt = <span class="number">0</span>;</span><br><span class="line">            <span class="keyword">for</span> (MessageExt msg : msgs) &#123;</span><br><span class="line">                MessageExt old = msgTreeMap.put(msg.getQueueOffset(), msg);</span><br><span class="line">                <span class="keyword">if</span> (<span class="keyword">null</span> == old) &#123;</span><br><span class="line">                    validMsgCnt++;</span><br><span class="line">                    <span class="keyword">this</span>.queueOffsetMax = msg.getQueueOffset();</span><br><span class="line">                    msgSize.addAndGet(msg.getBody().length);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            msgCount.addAndGet(validMsgCnt);</span><br><span class="line"></span><br><span class="line">            <span class="comment">//message不为空，并且当前没有consuming.</span></span><br><span class="line">            <span class="comment">// 因为顺序消费是启动一个线程一直processQueue中弹Message到processQueue为空</span></span><br><span class="line">            <span class="comment">// 所以当前红黑树不为空，并且不在消费中返回true，起线程开始消费,如果消费中就不在启动线程了防止高并发情况下大量的异步线程将线程池打满</span></span><br><span class="line">            <span class="keyword">if</span> (!msgTreeMap.isEmpty() &amp;&amp; !<span class="keyword">this</span>.consuming) &#123;</span><br><span class="line">                dispatchToConsume = <span class="keyword">true</span>;</span><br><span class="line">                <span class="keyword">this</span>.consuming = <span class="keyword">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">if</span> (!msgs.isEmpty()) &#123;</span><br><span class="line">                MessageExt messageExt = msgs.get(msgs.size() - <span class="number">1</span>);</span><br><span class="line">                String property = messageExt.getProperty(MessageConst.PROPERTY_MAX_OFFSET);</span><br><span class="line">                <span class="keyword">if</span> (property != <span class="keyword">null</span>) &#123;</span><br><span class="line">                    <span class="keyword">long</span> accTotal = Long.parseLong(property) - messageExt.getQueueOffset();</span><br><span class="line">                    <span class="keyword">if</span> (accTotal &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                        <span class="keyword">this</span>.msgAccCnt = accTotal;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">            <span class="keyword">this</span>.lockTreeMap.writeLock().unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">        log.error(<span class="string">"putMessage exception"</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> dispatchToConsume;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="处理消费请求"><a href="#处理消费请求" class="headerlink" title="处理消费请求"></a>处理消费请求</h2><p>ConsumeMessageConcurrentlyService</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">processConsumeResult</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">final</span> ConsumeConcurrentlyStatus status,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">final</span> ConsumeConcurrentlyContext context,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">final</span> ConsumeRequest consumeRequest</span></span></span><br><span class="line"><span class="function"><span class="params">)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> ackIndex = context.getAckIndex();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (consumeRequest.getMsgs().isEmpty())</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">switch</span> (status) &#123;</span><br><span class="line">        <span class="keyword">case</span> CONSUME_SUCCESS:</span><br><span class="line">            <span class="comment">//ackIndex取consumeRequest.getMsgs()最后的一个元素小表</span></span><br><span class="line">            <span class="keyword">if</span> (ackIndex &gt;= consumeRequest.getMsgs().size()) &#123;</span><br><span class="line">                ackIndex = consumeRequest.getMsgs().size() - <span class="number">1</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">int</span> ok = ackIndex + <span class="number">1</span>;<span class="comment">//size</span></span><br><span class="line">            <span class="keyword">int</span> failed = consumeRequest.getMsgs().size() - ok;<span class="comment">//0</span></span><br><span class="line">            <span class="comment">//统计</span></span><br><span class="line">            <span class="keyword">this</span>.getConsumerStatsManager().incConsumeOKTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(), ok);</span><br><span class="line">            <span class="keyword">this</span>.getConsumerStatsManager().incConsumeFailedTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(), failed);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> RECONSUME_LATER:</span><br><span class="line">            ackIndex = -<span class="number">1</span>;</span><br><span class="line">            <span class="keyword">this</span>.getConsumerStatsManager().incConsumeFailedTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(),</span><br><span class="line">                consumeRequest.getMsgs().size());</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">switch</span> (<span class="keyword">this</span>.defaultMQPushConsumer.getMessageModel()) &#123;</span><br><span class="line">        <span class="keyword">case</span> BROADCASTING:</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = ackIndex + <span class="number">1</span>; i &lt; consumeRequest.getMsgs().size(); i++) &#123;</span><br><span class="line">                MessageExt msg = consumeRequest.getMsgs().get(i);</span><br><span class="line">                log.warn(<span class="string">"BROADCASTING, the message consume failed, drop it, &#123;&#125;"</span>, msg.toString());</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> CLUSTERING:</span><br><span class="line">            <span class="comment">//遍历message列表，发送RequestCode.CONSUMER_SEND_MSG_BACK请求给broker，如果有异常，加入到msgBackFailed</span></span><br><span class="line">            List&lt;MessageExt&gt; msgBackFailed = <span class="keyword">new</span> ArrayList&lt;MessageExt&gt;(consumeRequest.getMsgs().size());</span><br><span class="line">            <span class="keyword">for</span> (<span class="keyword">int</span> i = ackIndex + <span class="number">1</span>; i &lt; consumeRequest.getMsgs().size(); i++) &#123;</span><br><span class="line">                MessageExt msg = consumeRequest.getMsgs().get(i);</span><br><span class="line">                <span class="keyword">boolean</span> result = <span class="keyword">this</span>.sendMessageBack(msg, context);</span><br><span class="line">                <span class="keyword">if</span> (!result) &#123;</span><br><span class="line">                    msg.setReconsumeTimes(msg.getReconsumeTimes() + <span class="number">1</span>);</span><br><span class="line">                    msgBackFailed.add(msg);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//消费请求中去掉发送CONSUMER_SEND_MSG_BACK的消息，然后对这些发送msgBack失败的消息在消费一遍。</span></span><br><span class="line">            <span class="comment">//这里就是为什么我们程序要做幂等行的判断</span></span><br><span class="line">            <span class="keyword">if</span> (!msgBackFailed.isEmpty()) &#123;</span><br><span class="line">                consumeRequest.getMsgs().removeAll(msgBackFailed);</span><br><span class="line"></span><br><span class="line">                <span class="keyword">this</span>.submitConsumeRequestLater(msgBackFailed, consumeRequest.getProcessQueue(), consumeRequest.getMessageQueue());</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//更新内存中的offset</span></span><br><span class="line">    <span class="keyword">long</span> offset = consumeRequest.getProcessQueue().removeMessage(consumeRequest.getMsgs());</span><br><span class="line">    <span class="keyword">if</span> (offset &gt;= <span class="number">0</span> &amp;&amp; !consumeRequest.getProcessQueue().isDropped()) &#123;</span><br><span class="line">        <span class="keyword">this</span>.defaultMQPushConsumerImpl.getOffsetStore().updateOffset(consumeRequest.getMessageQueue(), offset, <span class="keyword">true</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>orderly和上述类似不过有一个提交过程</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">processConsumeResult</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">final</span> List&lt;MessageExt&gt; msgs,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">final</span> ConsumeOrderlyStatus status,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">final</span> ConsumeOrderlyContext context,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">final</span> ConsumeRequest consumeRequest</span></span></span><br><span class="line"><span class="function"><span class="params">)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">boolean</span> continueConsume = <span class="keyword">true</span>;</span><br><span class="line">    <span class="keyword">long</span> commitOffset = -<span class="number">1L</span>;</span><br><span class="line">    <span class="keyword">if</span> (context.isAutoCommit()) &#123;</span><br><span class="line">        <span class="keyword">switch</span> (status) &#123;</span><br><span class="line">            <span class="keyword">case</span> COMMIT:</span><br><span class="line">            <span class="keyword">case</span> ROLLBACK:</span><br><span class="line">                log.warn(<span class="string">"the message queue consume result is illegal, we think you want to ack these message &#123;&#125;"</span>,</span><br><span class="line">                    consumeRequest.getMessageQueue());</span><br><span class="line">            <span class="keyword">case</span> SUCCESS:</span><br><span class="line">                <span class="comment">//提交</span></span><br><span class="line">                commitOffset = consumeRequest.getProcessQueue().commit();</span><br><span class="line">                <span class="keyword">this</span>.getConsumerStatsManager().incConsumeOKTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(), msgs.size());</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> SUSPEND_CURRENT_QUEUE_A_MOMENT:</span><br><span class="line">                <span class="keyword">this</span>.getConsumerStatsManager().incConsumeFailedTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(), msgs.size());</span><br><span class="line">                <span class="keyword">if</span> (checkReconsumeTimes(msgs)) &#123;</span><br><span class="line">                    consumeRequest.getProcessQueue().makeMessageToCosumeAgain(msgs);</span><br><span class="line">                    <span class="keyword">this</span>.submitConsumeRequestLater(</span><br><span class="line">                        consumeRequest.getProcessQueue(),</span><br><span class="line">                        consumeRequest.getMessageQueue(),</span><br><span class="line">                        context.getSuspendCurrentQueueTimeMillis());</span><br><span class="line">                    continueConsume = <span class="keyword">false</span>;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    commitOffset = consumeRequest.getProcessQueue().commit();</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">switch</span> (status) &#123;</span><br><span class="line">            <span class="keyword">case</span> SUCCESS:</span><br><span class="line">                <span class="keyword">this</span>.getConsumerStatsManager().incConsumeOKTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(), msgs.size());</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> COMMIT:</span><br><span class="line">                commitOffset = consumeRequest.getProcessQueue().commit();</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> ROLLBACK:</span><br><span class="line">                consumeRequest.getProcessQueue().rollback();</span><br><span class="line">                <span class="keyword">this</span>.submitConsumeRequestLater(</span><br><span class="line">                    consumeRequest.getProcessQueue(),</span><br><span class="line">                    consumeRequest.getMessageQueue(),</span><br><span class="line">                    context.getSuspendCurrentQueueTimeMillis());</span><br><span class="line">                continueConsume = <span class="keyword">false</span>;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">case</span> SUSPEND_CURRENT_QUEUE_A_MOMENT:</span><br><span class="line">                <span class="keyword">this</span>.getConsumerStatsManager().incConsumeFailedTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(), msgs.size());</span><br><span class="line">                <span class="keyword">if</span> (checkReconsumeTimes(msgs)) &#123;</span><br><span class="line">                    consumeRequest.getProcessQueue().makeMessageToCosumeAgain(msgs);</span><br><span class="line">                    <span class="keyword">this</span>.submitConsumeRequestLater(</span><br><span class="line">                        consumeRequest.getProcessQueue(),</span><br><span class="line">                        consumeRequest.getMessageQueue(),</span><br><span class="line">                        context.getSuspendCurrentQueueTimeMillis());</span><br><span class="line">                    continueConsume = <span class="keyword">false</span>;</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            <span class="keyword">default</span>:</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (commitOffset &gt;= <span class="number">0</span> &amp;&amp; !consumeRequest.getProcessQueue().isDropped()) &#123;</span><br><span class="line">        <span class="keyword">this</span>.defaultMQPushConsumerImpl.getOffsetStore().updateOffset(consumeRequest.getMessageQueue(), commitOffset, <span class="keyword">false</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> continueConsume;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"># java</a>
+          
+            <a href="/tags/消息队列/" rel="tag"># 消息队列</a>
+          
+            <a href="/tags/rocketmq/" rel="tag"># rocketmq</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/RocketMq-源码学习-四-消息的发送/" rel="next" title="RocketMq-源码学习-四-消息的发送">
+                <i class="fa fa-chevron-left"></i> RocketMq-源码学习-四-消息的发送
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/RoketMq源码学习-五-消息的消费-下/" rel="prev" title="RoketMq源码学习-五-消息的消费-下">
+                RoketMq源码学习-五-消息的消费-下 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Liu hao</p>
+              <p class="site-description motion-element" itemprop="description">励志当好厨子的程序员</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">222</span>
+                    <span class="site-state-item-name">posts</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/categories/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">54</span>
+                    <span class="site-state-item-name">categories</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">81</span>
+                    <span class="site-state-item-name">tags</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="https://github.com/liuhao163" title="GitHub &rarr; https://github.com/liuhao163" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:liu67224657@qq.com" title="E-Mail &rarr; mailto:liu67224657@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#DefaultMQPushConsumer"><span class="nav-number">1.</span> <span class="nav-text">DefaultMQPushConsumer</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#create以及重要属性"><span class="nav-number">1.1.</span> <span class="nav-text">create以及重要属性</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#subscribe-订阅"><span class="nav-number">1.2.</span> <span class="nav-text">subscribe-订阅</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#start"><span class="nav-number">1.3.</span> <span class="nav-text">start</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#SubscriptionData"><span class="nav-number">1.4.</span> <span class="nav-text">SubscriptionData</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#rebalanceImpl"><span class="nav-number">1.5.</span> <span class="nav-text">rebalanceImpl</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#消息的消费"><span class="nav-number">2.</span> <span class="nav-text">消息的消费</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#拉取消息在consumer测的过程"><span class="nav-number">2.1.</span> <span class="nav-text">拉取消息在consumer测的过程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#consumer消费消息"><span class="nav-number">2.2.</span> <span class="nav-text">consumer消费消息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#顺序消费"><span class="nav-number">2.3.</span> <span class="nav-text">顺序消费</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#处理消费请求"><span class="nav-number">3.</span> <span class="nav-text">处理消费请求</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2022</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Liu hao</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> v7.0.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/src/utils.js?v=7.0.0"></script>
+
+  <script src="/js/src/motion.js?v=7.0.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/src/affix.js?v=7.0.0"></script>
+
+  <script src="/js/src/schemes/pisces.js?v=7.0.0"></script>
+
+
+
+  
+  <script src="/js/src/scrollspy.js?v=7.0.0"></script>
+<script src="/js/src/post-details.js?v=7.0.0"></script>
+
+
+
+  
+
+
+  <script src="/js/src/bootstrap.js?v=7.0.0"></script>
+
+
+  
+  
+
+
+  
+
+
+  
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

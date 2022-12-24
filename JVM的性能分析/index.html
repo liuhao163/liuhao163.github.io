@@ -1,0 +1,1183 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2">
+
+<link rel="stylesheet" href="/css/main.css?v=7.0.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.0.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.0.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.0.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false,"dimmer":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="jvm的常用工具jps  作用：监视java进程状态的工具   命令格式：jps [option][hostid]   参数：-m：输出启动时传给main函数的方法-l：输出主类全名如果是jar包，输出路径-v：输出虚拟机启动时Jvm的参数 jstat  作用：监视java进程各种运行状态的信息   命令格式：jstat[option] vmid [interval][s|ms][count]]">
+<meta name="keywords" content="java,jvm">
+<meta property="og:type" content="article">
+<meta property="og:title" content="JVM的性能分析">
+<meta property="og:url" content="https://liuhao163.github.io/JVM的性能分析/index.html">
+<meta property="og:site_name" content="liuhao163.github.io">
+<meta property="og:description" content="jvm的常用工具jps  作用：监视java进程状态的工具   命令格式：jps [option][hostid]   参数：-m：输出启动时传给main函数的方法-l：输出主类全名如果是jar包，输出路径-v：输出虚拟机启动时Jvm的参数 jstat  作用：监视java进程各种运行状态的信息   命令格式：jstat[option] vmid [interval][s|ms][count]]">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2022-09-21T15:03:02.142Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="JVM的性能分析">
+<meta name="twitter:description" content="jvm的常用工具jps  作用：监视java进程状态的工具   命令格式：jps [option][hostid]   参数：-m：输出启动时传给main函数的方法-l：输出主类全名如果是jar包，输出路径-v：输出虚拟机启动时Jvm的参数 jstat  作用：监视java进程各种运行状态的信息   命令格式：jstat[option] vmid [interval][s|ms][count]]">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="liuhao163.github.io" type="application/atom+xml">
+
+
+
+
+  <link rel="canonical" href="https://liuhao163.github.io/JVM的性能分析/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>JVM的性能分析 | liuhao163.github.io</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">liuhao163.github.io</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <p class="site-subtitle">杂七杂八</p>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-sitemap">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/sitemap.xml" rel="section"><i class="menu-item-icon fa fa-fw fa-sitemap"></i> <br>Sitemap</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JVM的性能分析/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">JVM的性能分析
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-10-25 16:58:05" itemprop="dateCreated datePublished" datetime="2019-10-25T16:58:05Z">2019-10-25</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/" itemprop="url" rel="index"><span itemprop="name">jvm</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="jvm的常用工具"><a href="#jvm的常用工具" class="headerlink" title="jvm的常用工具"></a>jvm的常用工具</h2><h3 id="jps"><a href="#jps" class="headerlink" title="jps"></a>jps</h3><p>  作用：监视java进程状态的工具</p>
+<p>  命令格式：jps [option][hostid]</p>
+<p>  参数：<br>-m：输出启动时传给main函数的方法<br>-l：输出主类全名如果是jar包，输出路径<br>-v：输出虚拟机启动时Jvm的参数</p>
+<h3 id="jstat"><a href="#jstat" class="headerlink" title="jstat"></a>jstat</h3><p>  作用：监视java进程各种运行状态的信息</p>
+<p>  命令格式：jstat[option] vmid [interval][s|ms][count]]</p>
+<p>  参数：主要分三类、类装在、垃圾收集、运行期编译状况</p>
+<p>-class<br>-gc<br>-gccapacity<br>-gcutil<br>-gccaise<br>-gcnew<br>-gcnewcapacity<br>-gcold<br>-gcoldcapacity<br>-gcpermcapacity<br>-complier<br>-printcompilation</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">S0 S1 E O P YGC YGCT FGC FGCT GCT</span><br><span class="line"><span class="number">0.00</span> <span class="number">0.00</span> <span class="number">6.20</span> <span class="number">41.42</span> <span class="number">47.20</span> <span class="number">16</span> <span class="number">0.105</span> <span class="number">3</span> <span class="number">0.472</span> <span class="number">0.577</span></span><br><span class="line"></span><br><span class="line">  s0、s1:survivor</span><br><span class="line">  E:eden区</span><br><span class="line">  O:old区</span><br><span class="line">  M:metaspace</span><br><span class="line">  YGC:minorGc的次数</span><br><span class="line">  YGCT:minorGc的时间</span><br><span class="line">  FGC:FullGC的次数</span><br><span class="line">  FGCT:FullGc的时间</span><br><span class="line">  GCT:的时间</span><br></pre></td></tr></table></figure>
+<h3 id="jinfo"><a href="#jinfo" class="headerlink" title="jinfo"></a>jinfo</h3><p>  作用：查看、修改虚拟机的配置。</p>
+<p>  命令格式：jinfo [option] pid</p>
+<p>  参数：<br>  -flag &lt;name&gt;         to print the value of the named VM flag<br>  -flag [+|-]&lt;name&gt;    to enable or disable the named VM flag<br>  -flag &lt;name&gt;=&lt;value&gt; to set the named VM flag to the given value<br>  -flags               to print VM flags<br>  -sysprops            to print Java system properties</p>
+<h3 id="jmap"><a href="#jmap" class="headerlink" title="jmap"></a>jmap</h3><p>  作用：java内存映射工具,可以查询finalize执行队列、java堆和永久代的详细信息、如空间使用率、当前采用的收集器等</p>
+<p>  命令格式： jmap [option] &lt;pid&gt;</p>
+<p>  参数：<br>    -heap                打印java堆详细的信息<br>    -histo[:live]        打印堆中对象统计信息，Live只统计存活的信息<br>    -clstats             打印Classloder的信息<br>    -finalizerinfo       显示F-Queue中等待Finalizer线程执行finalizer方法的对象<br>    -dump:&lt;dump-options&gt; 生成java堆快照：live只打印存活的对象，如果不指定打印所有对象，format=b二进制格式的文件，file=&lt;file&gt;打印到某个&lt;file&gt;中。eg: jmap -dump:live,format=b,file=heap.bin &lt;pid&gt;<br>    -F                   force. Use with -dump:&lt;dump-options&gt; &lt;pid&gt; or -histo<br>                         to force a heap dump or histogram when &lt;pid&gt; does not<br>                         respond. The “live” suboption is not supported<br>                         in this mode.<br>    -J&lt;flag&gt;             to pass &lt;flag&gt; directly to the runtime system</p>
+<h3 id="jhat"><a href="#jhat" class="headerlink" title="jhat"></a>jhat</h3><p>  作用：配合jmap分析dump出来的jmap文件，不建议在应用服务器上使用，因为dump文件很大，并且很耗性能，建议在单独的服务器上执行<br>  命令格式：jhat /dumpfile<br>  使用方法：打开浏览器，访问jhat所在服务器的7000端口。查看内存泄漏用OQL工具和Heap Historygram功能</p>
+<h3 id="jstack"><a href="#jstack" class="headerlink" title="jstack"></a>jstack</h3><p>  作用：java堆栈跟踪工具，定位java每一个线程当前时刻的执行快照，可以定位到线程运行的状况是否死锁等。</p>
+<p>  命令格式： jmap [option] &lt;pid&gt;</p>
+<p>  参数：<br>    -F 当正常输出不被响应时候，强制输出程序堆栈<br>    -l 显示关于锁的相关信息<br>    -m 如果调用的是本地方法显示C/C++堆栈</p>
+<h3 id="HSDIS"><a href="#HSDIS" class="headerlink" title="HSDIS"></a>HSDIS</h3><p>  作用：jit生成码反汇编插件，通过jvm设置的参数-XX PrintAssmbly把动态生成的代码还原成汇编代码</p>
+<p>  命令格式： jmap [option] &lt;pid&gt;</p>
+<p>  参数：<br>    -F 当正常输出不被响应时候，强制输出程序堆栈<br>    -l 显示关于锁的相关信息<br>    -m 如果调用的是本地方法显示C/C++堆栈</p>
+<h3 id="可视化工具"><a href="#可视化工具" class="headerlink" title="可视化工具"></a>可视化工具</h3><ul>
+<li><p>JConsole</p>
+</li>
+<li><p>VisualVM</p>
+<p>综上，我们可以用jps jstat jinfo查看jvm的信息。jmap、jhat查看堆信息。jstack查看栈信息。我们可以用可视化工具来方便查看上面的信息推荐VisualVM</p>
+<p>下载地址： <a href="http://visualvm.java.net/download.html" target="_blank" rel="noopener">http://visualvm.java.net/download.html</a><br>idea可以通过pulgins安装通过简单配置即可实现动态的VisualVM功能</p>
+</li>
+</ul>
+<h2 id="具体案例分析"><a href="#具体案例分析" class="headerlink" title="具体案例分析"></a>具体案例分析</h2><h3 id="高性能硬件的场景"><a href="#高性能硬件的场景" class="headerlink" title="高性能硬件的场景"></a>高性能硬件的场景</h3><p>  如果硬件性能较高，我们一般采用俩种方式</p>
+<ol>
+<li>采用64位虚拟机，设置很大的堆内存</li>
+<li><p>采用32位虚拟机，虽然堆内存最大设置4（还受限于平台对进程最大使用内存的限制有可能只有2g，windows平台）我们可以给一台服务器设置多个进程+前端反向代理的方法。</p>
+<p>第一种方案我们要注意64位虚拟机往往比32位虚拟机要慢（指针膨胀、内存补齐等需求），另外由于堆内存很大，我们一定要注意大对象导致频繁GC的问题，因为一次fullGC有可能需要停顿10几秒，对于交互多的服务体验会很差</p>
+</li>
+</ol>
+<h3 id="共享缓存导致oom"><a href="#共享缓存导致oom" class="headerlink" title="共享缓存导致oom"></a>共享缓存导致oom</h3><p>  由于共享缓存频繁的写入导致内存oom。需要检查缓存的使用率。</p>
+<h3 id="对外内存导致的oom"><a href="#对外内存导致的oom" class="headerlink" title="对外内存导致的oom"></a>对外内存导致的oom</h3><p>  有以下几种对外内存</p>
+<p>  DirectMemory:主要用于nio场景，比如内存环境是2G。我们给堆内存分配了1.6G。那么堆外内存最多只能有0.4G不到，如果这时候大量请求过来会导致oom</p>
+<p>  线程堆栈：会出现StackOverflowError或者StackOutOfMemoryError</p>
+<p>  JNI的调用：由于是native方法所以也是堆外内存</p>
+<p>  Socket的读写Buffer：receive和send都有一个buffer分别是37kb和25kb。如果超出了会出现open many file的错误。</p>
+<p>  系统线程和gc线程</p>
+<h3 id="外部命令导致系统变缓慢"><a href="#外部命令导致系统变缓慢" class="headerlink" title="外部命令导致系统变缓慢"></a>外部命令导致系统变缓慢</h3><p>  比如调用Runtime.getRuntime.exec()执行shell。java是fork了个进程，这个指令很重如果调用的频繁系统的负载会很重，建议采用api的方式。</p>
+<h3 id="外部接口超时导致系统崩溃"><a href="#外部接口超时导致系统崩溃" class="headerlink" title="外部接口超时导致系统崩溃"></a>外部接口超时导致系统崩溃</h3><p>  调用远程接口响应较慢导致连接大量被占用，同时对连接没做限制导致了虚拟机崩溃。需要设置超时时间，或者采用生产者消费者异步的方式。</p>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"># java</a>
+          
+            <a href="/tags/jvm/" rel="tag"># jvm</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/JVM的垃圾回收机制/" rel="next" title="JVM的垃圾回收机制">
+                <i class="fa fa-chevron-left"></i> JVM的垃圾回收机制
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/JAVA类文件结构/" rel="prev" title="JAVA类文件结构">
+                JAVA类文件结构 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Liu hao</p>
+              <p class="site-description motion-element" itemprop="description">励志当好厨子的程序员</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">222</span>
+                    <span class="site-state-item-name">posts</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/categories/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">54</span>
+                    <span class="site-state-item-name">categories</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">81</span>
+                    <span class="site-state-item-name">tags</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="https://github.com/liuhao163" title="GitHub &rarr; https://github.com/liuhao163" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:liu67224657@qq.com" title="E-Mail &rarr; mailto:liu67224657@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#jvm的常用工具"><span class="nav-number">1.</span> <span class="nav-text">jvm的常用工具</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#jps"><span class="nav-number">1.1.</span> <span class="nav-text">jps</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#jstat"><span class="nav-number">1.2.</span> <span class="nav-text">jstat</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#jinfo"><span class="nav-number">1.3.</span> <span class="nav-text">jinfo</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#jmap"><span class="nav-number">1.4.</span> <span class="nav-text">jmap</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#jhat"><span class="nav-number">1.5.</span> <span class="nav-text">jhat</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#jstack"><span class="nav-number">1.6.</span> <span class="nav-text">jstack</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#HSDIS"><span class="nav-number">1.7.</span> <span class="nav-text">HSDIS</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#可视化工具"><span class="nav-number">1.8.</span> <span class="nav-text">可视化工具</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#具体案例分析"><span class="nav-number">2.</span> <span class="nav-text">具体案例分析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#高性能硬件的场景"><span class="nav-number">2.1.</span> <span class="nav-text">高性能硬件的场景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#共享缓存导致oom"><span class="nav-number">2.2.</span> <span class="nav-text">共享缓存导致oom</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#对外内存导致的oom"><span class="nav-number">2.3.</span> <span class="nav-text">对外内存导致的oom</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#外部命令导致系统变缓慢"><span class="nav-number">2.4.</span> <span class="nav-text">外部命令导致系统变缓慢</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#外部接口超时导致系统崩溃"><span class="nav-number">2.5.</span> <span class="nav-text">外部接口超时导致系统崩溃</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2022</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Liu hao</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> v7.0.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/src/utils.js?v=7.0.0"></script>
+
+  <script src="/js/src/motion.js?v=7.0.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/src/affix.js?v=7.0.0"></script>
+
+  <script src="/js/src/schemes/pisces.js?v=7.0.0"></script>
+
+
+
+  
+  <script src="/js/src/scrollspy.js?v=7.0.0"></script>
+<script src="/js/src/post-details.js?v=7.0.0"></script>
+
+
+
+  
+
+
+  <script src="/js/src/bootstrap.js?v=7.0.0"></script>
+
+
+  
+  
+
+
+  
+
+
+  
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

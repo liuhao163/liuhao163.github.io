@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2">
+
+<link rel="stylesheet" href="/css/main.css?v=7.0.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.0.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.0.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.0.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false,"dimmer":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="前面我们讲了CPU、内存、磁盘IO，下面我们来看网络这部分，网络处理的流程最复杂，跟我们前面讲到的进程调度、中断处理、内存管理以及 I/O 等都密不可分。   OSI的网络七层模型，以及TCP/IP的四层or五层模型,如下：    TCP/IP网络栈  有了linux根据tcp/ip模型，我们的网络栈的收发数据实际上就是按照这4层模型对数据层层进行处理，对上层发送发送来的数据进行分析，然后将本">
+<meta name="keywords" content="linux,性能优化,网络">
+<meta property="og:type" content="article">
+<meta property="og:title" content="系统优化-网络-基础概念以及指标">
+<meta property="og:url" content="https://liuhao163.github.io/系统优化-网络-基础概念以及指标/index.html">
+<meta property="og:site_name" content="liuhao163.github.io">
+<meta property="og:description" content="前面我们讲了CPU、内存、磁盘IO，下面我们来看网络这部分，网络处理的流程最复杂，跟我们前面讲到的进程调度、中断处理、内存管理以及 I/O 等都密不可分。   OSI的网络七层模型，以及TCP/IP的四层or五层模型,如下：    TCP/IP网络栈  有了linux根据tcp/ip模型，我们的网络栈的收发数据实际上就是按照这4层模型对数据层层进行处理，对上层发送发送来的数据进行分析，然后将本">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:image" content="https://liuhao163.github.io/系统优化-网络-基础概念以及指标/img0.png">
+<meta property="og:image" content="https://liuhao163.github.io/系统优化-网络-基础概念以及指标/img1.png">
+<meta property="og:image" content="https://liuhao163.github.io/系统优化-网络-基础概念以及指标/img2.png">
+<meta property="og:updated_time" content="2022-09-21T15:03:02.353Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="系统优化-网络-基础概念以及指标">
+<meta name="twitter:description" content="前面我们讲了CPU、内存、磁盘IO，下面我们来看网络这部分，网络处理的流程最复杂，跟我们前面讲到的进程调度、中断处理、内存管理以及 I/O 等都密不可分。   OSI的网络七层模型，以及TCP/IP的四层or五层模型,如下：    TCP/IP网络栈  有了linux根据tcp/ip模型，我们的网络栈的收发数据实际上就是按照这4层模型对数据层层进行处理，对上层发送发送来的数据进行分析，然后将本">
+<meta name="twitter:image" content="https://liuhao163.github.io/系统优化-网络-基础概念以及指标/img0.png">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="liuhao163.github.io" type="application/atom+xml">
+
+
+
+
+  <link rel="canonical" href="https://liuhao163.github.io/系统优化-网络-基础概念以及指标/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>系统优化-网络-基础概念以及指标 | liuhao163.github.io</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">liuhao163.github.io</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <p class="site-subtitle">杂七杂八</p>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-sitemap">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/sitemap.xml" rel="section"><i class="menu-item-icon fa fa-fw fa-sitemap"></i> <br>Sitemap</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/系统优化-网络-基础概念以及指标/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">系统优化-网络-基础概念以及指标
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-05-19 20:36:32" itemprop="dateCreated datePublished" datetime="2020-05-19T20:36:32Z">2020-05-19</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/性能优化/" itemprop="url" rel="index"><span itemprop="name">性能优化</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/性能优化/网络/" itemprop="url" rel="index"><span itemprop="name">网络</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>  前面我们讲了CPU、内存、磁盘IO，下面我们来看网络这部分，网络处理的流程最复杂，跟我们前面讲到的进程调度、中断处理、内存管理以及 I/O 等都密不可分。</p>
+<p>  OSI的网络七层模型，以及TCP/IP的四层or五层模型,如下：</p>
+<p>  <img src="/系统优化-网络-基础概念以及指标/img0.png" alt="avator"></p>
+<h2 id="TCP-IP网络栈"><a href="#TCP-IP网络栈" class="headerlink" title="TCP/IP网络栈"></a>TCP/IP网络栈</h2><p>  有了linux根据tcp/ip模型，我们的网络栈的收发数据实际上就是按照这4层模型对数据层层进行处理，对上层发送发送来的数据进行分析，然后将本层的数据进行封装发给下层</p>
+<ul>
+<li>应用层–&gt;数据</li>
+<li>传输层–&gt;TCP头+数据</li>
+<li>网络层–&gt;IP头+TCP头+数据</li>
+<li><p>网络接口层–&gt;根据MTU切分数据包 and 帧头+IP头+TCP头+数据+栈帧</p>
+<p>下图是整个网络栈<br><img src="/系统优化-网络-基础概念以及指标/img1.png" alt="avator"></p>
+</li>
+</ul>
+<h2 id="TCP-IP的手法"><a href="#TCP-IP的手法" class="headerlink" title="TCP/IP的手法"></a>TCP/IP的手法</h2><h3 id="接收网络包"><a href="#接收网络包" class="headerlink" title="接收网络包"></a>接收网络包</h3><ol>
+<li>网卡通过DMA获取网络数据，放到待接收队列</li>
+<li>系统的硬中断程序通知系统接收网络数据，并且申请sk_buff，并且将数据放入到sk_buff中</li>
+<li>通过系统的软中断开始处理网络数据</li>
+<li>网络接口层校验包完整性，去掉帧头和帧尾，数据传递给网络层</li>
+<li>网络层根据IP信息确定吓一跳是本机还是转发，如果是本机，数据传递给传输层</li>
+<li>传输层解析TCP头，找到4元祖通过套接字发送给程序</li>
+</ol>
+<h3 id="发送网络包"><a href="#发送网络包" class="headerlink" title="发送网络包"></a>发送网络包</h3><p>和接收相反</p>
+<ol>
+<li>程序通过系统内核调用套接字的sendMsg发送网络包</li>
+<li>传输层封装TCP头信息，发送给IP层</li>
+<li>IP层根据IP找到吓一跳的地址封装IP头，传递给网络接口层</li>
+<li>网络接口层根据MTU对包进行切分，添加帧头、帧尾等信息</li>
+<li>拆分好的包进行物理寻址找到对应的MAC地址，之后将自己添加到待发送队列</li>
+<li>系统的软中断通知系统有网络包待发送</li>
+<li>之后网卡驱动会通过DMA，将待发送队列的数据通过网卡发送出去</li>
+</ol>
+<p>如图：<br>  <img src="/系统优化-网络-基础概念以及指标/img2.png" alt="avator"></p>
+<h2 id="查看网络情况的基础指标和工具"><a href="#查看网络情况的基础指标和工具" class="headerlink" title="查看网络情况的基础指标和工具"></a>查看网络情况的基础指标和工具</h2><h3 id="查看网卡信息"><a href="#查看网卡信息" class="headerlink" title="查看网卡信息"></a>查看网卡信息</h3><p>ifconfig or ip</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">$ ifconfig eth0</span><br><span class="line">eth0: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt; mtu 1500</span><br><span class="line">      inet 10.240.0.30 netmask 255.240.0.0 broadcast 10.255.255.255</span><br><span class="line">      inet6 fe80::20d:3aff:fe07:cf2a prefixlen 64 scopeid 0x20&lt;link&gt;</span><br><span class="line">      ether 78:0d:3a:07:cf:3a txqueuelen 1000 (Ethernet)</span><br><span class="line">      RX packets 40809142 bytes 9542369803 (9.5 GB)</span><br><span class="line">      RX errors 0 dropped 0 overruns 0 frame 0</span><br><span class="line">      TX packets 32637401 bytes 4815573306 (4.8 GB)</span><br><span class="line">      TX errors 0 dropped 0 overruns 0 carrier 0 collisions 0</span><br><span class="line">​</span><br><span class="line">$ ip -s addr show dev eth0</span><br><span class="line">2: eth0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc mq state UP group default qlen 1000</span><br><span class="line">  link/ether 78:0d:3a:07:cf:3a brd ff:ff:ff:ff:ff:ff</span><br><span class="line">  inet 10.240.0.30/12 brd 10.255.255.255 scope global eth0</span><br><span class="line">      valid_lft forever preferred_lft forever</span><br><span class="line">  inet6 fe80::20d:3aff:fe07:cf2a/64 scope link</span><br><span class="line">      valid_lft forever preferred_lft forever</span><br><span class="line">  RX: bytes packets errors dropped overrun mcast</span><br><span class="line">   9542432350 40809397 0       0       0       193</span><br><span class="line">  TX: bytes packets errors dropped carrier collsns</span><br><span class="line">   4815625265 32637658 0       0       0       0</span><br></pre></td></tr></table></figure>
+<ol>
+<li>网络接口的状态标志。ifconfig 输出中的 RUNNING ，或 ip 输出中的 LOWER_UP ，都表示物理网络是连通的，即网卡已经连接到了交换机或者路由器中。如果你看不到它们，通常表示网线被拔掉了。</li>
+<li>MTU 的大小。MTU 默认大小是 1500，根据网络架构的不同（比如是否使用了 VXLAN 等叠加网络），你可能需要调大或者调小 MTU 的数值。</li>
+<li>网络接口的 IP 地址、子网以及 MAC 地址。这些都是保障网络功能正常工作所必需的，你需要确保配置正确。</li>
+<li>网络收发的字节数、包数、错误数以及丢包情况，特别是 TX 和 RX 部分的 errors、dropped、overruns、carrier 以及 collisions 等指标不为 0 时，通常表示出现了网络 I/O 问题。其中：<ul>
+<li>errors 表示发生错误的数据包数，比如校验错误、帧同步错误等；</li>
+<li>dropped 表示丢弃的数据包数，即数据包已经收到了 Ring Buffer，但因为内存不足等原因丢包；</li>
+<li>overruns 表示超限数据包数，即网络 I/O 速度过快，导致 Ring Buffer 中的数据包来不及处理（队列满）而导致的丢包；</li>
+<li>carrier 表示发生 carrirer 错误的数据包数，比如双工模式不匹配、物理电缆出现问题等；</li>
+<li>collisions 表示碰撞数据包数。</li>
+</ul>
+</li>
+</ol>
+<h3 id="查看套接字信息"><a href="#查看套接字信息" class="headerlink" title="查看套接字信息"></a>查看套接字信息</h3><p>netstat or ss</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment"># head -n 3 表示只显示前面3行</span></span><br><span class="line"><span class="comment"># -l 表示只显示监听套接字</span></span><br><span class="line"><span class="comment"># -n 表示显示数字地址和端口(而不是名字)</span></span><br><span class="line"><span class="comment"># -p 表示显示进程信息</span></span><br><span class="line">$ netstat -nlp | head -n 3</span><br><span class="line">Active Internet connections (only servers)</span><br><span class="line">Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name</span><br><span class="line">tcp        0      0 127.0.0.53:53           0.0.0.0:*               LISTEN      840/systemd-resolve</span><br><span class="line"></span><br><span class="line"><span class="comment"># -l 表示只显示监听套接字</span></span><br><span class="line"><span class="comment"># -t 表示只显示 TCP 套接字</span></span><br><span class="line"><span class="comment"># -n 表示显示数字地址和端口(而不是名字)</span></span><br><span class="line"><span class="comment"># -p 表示显示进程信息</span></span><br><span class="line">$ ss -ltnp | head -n 3</span><br><span class="line">State    Recv-Q    Send-Q        Local Address:Port        Peer Address:Port</span><br><span class="line">LISTEN   0         128           127.0.0.53%lo:53               0.0.0.0:*        users:((<span class="string">"systemd-resolve"</span>,pid=840,fd=13))</span><br><span class="line">LISTEN   0         128                 0.0.0.0:22               0.0.0.0:*        users:((<span class="string">"sshd"</span>,pid=1459,fd=3))</span><br></pre></td></tr></table></figure>
+<ul>
+<li>当套接字处于连接状态（Established）时，<ul>
+<li>Recv-Q 表示套接字缓冲还没有被应用程序取走的字节数（即接收队列长度）。</li>
+<li>Send-Q 表示还没有被远端主机确认的字节数（即发送队列长度）。</li>
+</ul>
+</li>
+<li>当套接字处于监听状态（Listening）时，<ul>
+<li>Recv-Q 表示全连接队列的长度。</li>
+<li>Send-Q 表示全连接队列的最大长度。</li>
+</ul>
+</li>
+</ul>
+<h3 id="统计协议栈信息"><a href="#统计协议栈信息" class="headerlink" title="统计协议栈信息"></a>统计协议栈信息</h3><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ netstat -s</span><br><span class="line">...</span><br><span class="line">Tcp:</span><br><span class="line">    3244906 active connection openings</span><br><span class="line">    23143 passive connection openings</span><br><span class="line">    115732 failed connection attempts</span><br><span class="line">    2964 connection resets received</span><br><span class="line">    1 connections established</span><br><span class="line">    13025010 segments received</span><br><span class="line">    17606946 segments sent out</span><br><span class="line">    44438 segments retransmitted</span><br><span class="line">    42 bad segments received</span><br><span class="line">    5315 resets sent</span><br><span class="line">    InCsumErrors: 42</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">$ ss -s</span><br><span class="line">Total: 186 (kernel 1446)</span><br><span class="line">TCP:   4 (estab 1, closed 0, orphaned 0, synrecv 0, timewait 0/0), ports 0</span><br><span class="line"></span><br><span class="line">Transport Total     IP        IPv6</span><br><span class="line">*    1446      -         -</span><br><span class="line">RAW    2         1         1</span><br><span class="line">UDP    2         2         0</span><br><span class="line">TCP    4         3         1</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<h3 id="查看网络的吞吐等指标"><a href="#查看网络的吞吐等指标" class="headerlink" title="查看网络的吞吐等指标"></a>查看网络的吞吐等指标</h3><p>sar</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 数字1表示每隔1秒输出一组数据</span></span><br><span class="line">$ sar -n DEV 1</span><br><span class="line">Linux 4.15.0-1035-azure (ubuntu)   01/06/19   _x86_64_  (2 CPU)</span><br><span class="line"></span><br><span class="line">13:21:40        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s   %ifutil</span><br><span class="line">13:21:41         eth0     18.00     20.00      5.79      4.25      0.00      0.00      0.00      0.00</span><br><span class="line">13:21:41      docker0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">13:21:41           lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br></pre></td></tr></table></figure>
+<h3 id="连通性和RTT"><a href="#连通性和RTT" class="headerlink" title="连通性和RTT"></a>连通性和RTT</h3><p>ping</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"># -c3表示发送三次ICMP包后停止</span><br><span class="line">$ ping -c3 114.114.114.114</span><br><span class="line">PING 114.114.114.114 (114.114.114.114) 56(84) bytes of data.</span><br><span class="line">64 bytes from 114.114.114.114: icmp_seq=1 ttl=54 time=244 ms</span><br><span class="line">64 bytes from 114.114.114.114: icmp_seq=2 ttl=47 time=244 ms</span><br><span class="line">64 bytes from 114.114.114.114: icmp_seq=3 ttl=67 time=244 ms</span><br><span class="line"></span><br><span class="line">--- 114.114.114.114 ping statistics ---</span><br><span class="line">3 packets transmitted, 3 received, 0% packet loss, time 2001ms</span><br><span class="line">rtt min/avg/max/mdev = 244.023/244.070/244.105/0.034 ms</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/linux/" rel="tag"># linux</a>
+          
+            <a href="/tags/性能优化/" rel="tag"># 性能优化</a>
+          
+            <a href="/tags/网络/" rel="tag"># 网络</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/系统优化-IO-优化套路/" rel="next" title="系统优化-IO-优化套路">
+                <i class="fa fa-chevron-left"></i> 系统优化-IO-优化套路
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/系统优化-网络-C10K和C1000K回顾-系统调优方案/" rel="prev" title="系统优化-网络-C10K和C1000K回顾-系统调优方案">
+                系统优化-网络-C10K和C1000K回顾-系统调优方案 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Liu hao</p>
+              <p class="site-description motion-element" itemprop="description">励志当好厨子的程序员</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">222</span>
+                    <span class="site-state-item-name">posts</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/categories/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">54</span>
+                    <span class="site-state-item-name">categories</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">81</span>
+                    <span class="site-state-item-name">tags</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="https://github.com/liuhao163" title="GitHub &rarr; https://github.com/liuhao163" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:liu67224657@qq.com" title="E-Mail &rarr; mailto:liu67224657@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP-IP网络栈"><span class="nav-number">1.</span> <span class="nav-text">TCP/IP网络栈</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#TCP-IP的手法"><span class="nav-number">2.</span> <span class="nav-text">TCP/IP的手法</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#接收网络包"><span class="nav-number">2.1.</span> <span class="nav-text">接收网络包</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#发送网络包"><span class="nav-number">2.2.</span> <span class="nav-text">发送网络包</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#查看网络情况的基础指标和工具"><span class="nav-number">3.</span> <span class="nav-text">查看网络情况的基础指标和工具</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#查看网卡信息"><span class="nav-number">3.1.</span> <span class="nav-text">查看网卡信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#查看套接字信息"><span class="nav-number">3.2.</span> <span class="nav-text">查看套接字信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#统计协议栈信息"><span class="nav-number">3.3.</span> <span class="nav-text">统计协议栈信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#查看网络的吞吐等指标"><span class="nav-number">3.4.</span> <span class="nav-text">查看网络的吞吐等指标</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#连通性和RTT"><span class="nav-number">3.5.</span> <span class="nav-text">连通性和RTT</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2022</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Liu hao</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> v7.0.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/src/utils.js?v=7.0.0"></script>
+
+  <script src="/js/src/motion.js?v=7.0.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/src/affix.js?v=7.0.0"></script>
+
+  <script src="/js/src/schemes/pisces.js?v=7.0.0"></script>
+
+
+
+  
+  <script src="/js/src/scrollspy.js?v=7.0.0"></script>
+<script src="/js/src/post-details.js?v=7.0.0"></script>
+
+
+
+  
+
+
+  <script src="/js/src/bootstrap.js?v=7.0.0"></script>
+
+
+  
+  
+
+
+  
+
+
+  
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

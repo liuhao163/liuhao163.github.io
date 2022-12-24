@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-Hans">
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2">
+
+<link rel="stylesheet" href="/css/main.css?v=7.0.0">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.0.0">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.0.0">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.0.0" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.0.0',
+    sidebar: {"position":"left","display":"post","offset":12,"b2t":false,"scrollpercent":false,"onmobile":false,"dimmer":false},
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="RocketMq分布式事务采用的是XA协议。其中的TransactionManager由Broker担任。 原理 producer发送half-Message(prepare)给broker。 发送成功后，producer侧开始执行本地事务，sendResult会包含transactionId和本地事务进行绑定，之后broker反查消息需通过这个ID来处理事物。（用户实现） 本地事务执行成功后，发">
+<meta name="keywords" content="java,消息队列,rocketmq,分布式事务">
+<meta property="og:type" content="article">
+<meta property="og:title" content="RoketMq源码学习-七-事务的实现">
+<meta property="og:url" content="https://liuhao163.github.io/RoketMq源码学习-七-事务的实现/index.html">
+<meta property="og:site_name" content="liuhao163.github.io">
+<meta property="og:description" content="RocketMq分布式事务采用的是XA协议。其中的TransactionManager由Broker担任。 原理 producer发送half-Message(prepare)给broker。 发送成功后，producer侧开始执行本地事务，sendResult会包含transactionId和本地事务进行绑定，之后broker反查消息需通过这个ID来处理事物。（用户实现） 本地事务执行成功后，发">
+<meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2022-09-21T15:03:02.171Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="RoketMq源码学习-七-事务的实现">
+<meta name="twitter:description" content="RocketMq分布式事务采用的是XA协议。其中的TransactionManager由Broker担任。 原理 producer发送half-Message(prepare)给broker。 发送成功后，producer侧开始执行本地事务，sendResult会包含transactionId和本地事务进行绑定，之后broker反查消息需通过这个ID来处理事物。（用户实现） 本地事务执行成功后，发">
+
+
+
+  <link rel="alternate" href="/atom.xml" title="liuhao163.github.io" type="application/atom+xml">
+
+
+
+
+  <link rel="canonical" href="https://liuhao163.github.io/RoketMq源码学习-七-事务的实现/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>RoketMq源码学习-七-事务的实现 | liuhao163.github.io</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">liuhao163.github.io</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <p class="site-subtitle">杂七杂八</p>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="Toggle navigation bar">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-home"></i> <br>Home</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-categories">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/categories/" rel="section"><i class="menu-item-icon fa fa-fw fa-th"></i> <br>Categories</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-tags">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/tags/" rel="section"><i class="menu-item-icon fa fa-fw fa-tags"></i> <br>Tags</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>Archives</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-sitemap">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/sitemap.xml" rel="section"><i class="menu-item-icon fa fa-fw fa-sitemap"></i> <br>Sitemap</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/RoketMq源码学习-七-事务的实现/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">RoketMq源码学习-七-事务的实现
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-09-22 22:34:26" itemprop="dateCreated datePublished" datetime="2019-09-22T22:34:26Z">2019-09-22</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/" itemprop="url" rel="index"><span itemprop="name">消息队列</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/" itemprop="url" rel="index"><span itemprop="name">rocketmq</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/源码学习/" itemprop="url" rel="index"><span itemprop="name">源码学习</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>RocketMq分布式事务采用的是XA协议。其中的TransactionManager由Broker担任。</p>
+<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><ol>
+<li>producer发送half-Message(prepare)给broker。</li>
+<li>发送成功后，producer侧开始执行本地事务，sendResult会包含transactionId和本地事务进行绑定，之后broker反查消息需通过这个ID来处理事物。（用户实现）</li>
+<li>本地事务执行成功后，发送commit或者rollback状态给broker。</li>
+<li>Broker确认是否收到了Producer发送的commit或者rollback的消息<ol>
+<li>Broker收到消息<ol>
+<li>如果收到的是commit，认为事务提交成功，交由consumer处理</li>
+<li>如果收到的是rollback，认为事务回滚，consumer看不到本条消息。broker删除half-Message。(rocketmq会先将消息发送到一个事务专用的topic中QueueId为0，然后如果commit成功会将消息移到real_topic中,消费者订阅的是real_topic这时候就能看到消息了，如果rollback是不会移动的消费者就看不到这条消息)</li>
+</ol>
+</li>
+<li>Broker没收到消息<ol>
+<li>borker定时回查本地事务，如果本地事务已经执行返回commit；如果本地事务未执行rollback；（用户实现）<ol>
+<li>commit:返回commit，说明事务已经提交，consumer进行执行</li>
+<li>rollback:回滚：</li>
+<li>unknown:一直会差到成功为止</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+</li>
+<li>事务的消费，和传统消息消费没什么区别，不过要注意，rocketmq的消费者侧的本地事务如果失败了，需要自行解决数据一致性，毕竟rocketmq整体事务回滚代价太大了</li>
+</ol>
+<h2 id="官方Demo"><a href="#官方Demo" class="headerlink" title="官方Demo"></a>官方Demo</h2><p>发送的方式</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TransactionProducer</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> MQClientException, InterruptedException </span>&#123;</span><br><span class="line">        <span class="comment">//事务的监听器，本地事务在这里进行</span></span><br><span class="line">        TransactionListener transactionListener = <span class="keyword">new</span> TransactionListenerImpl();</span><br><span class="line"></span><br><span class="line">        <span class="comment">//生产者采用TransactionMQProducer</span></span><br><span class="line">        TransactionMQProducer producer = <span class="keyword">new</span> TransactionMQProducer(<span class="string">"please_rename_unique_group_name"</span>);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//处理broker会查本地事务的线程池</span></span><br><span class="line">        <span class="comment">//producer接到broker发送的RequestCode.CHECK_TRANSACTION_STATE，异步来会差处理本地事务的状态，并且返回给borker</span></span><br><span class="line">        ExecutorService executorService = <span class="keyword">new</span> ThreadPoolExecutor(<span class="number">2</span>, <span class="number">5</span>, <span class="number">100</span>, TimeUnit.SECONDS, <span class="keyword">new</span> ArrayBlockingQueue&lt;Runnable&gt;(<span class="number">2000</span>), <span class="keyword">new</span> ThreadFactory() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> Thread <span class="title">newThread</span><span class="params">(Runnable r)</span> </span>&#123;</span><br><span class="line">                Thread thread = <span class="keyword">new</span> Thread(r);</span><br><span class="line">                thread.setName(<span class="string">"client-transaction-msg-check-thread"</span>);</span><br><span class="line">                <span class="keyword">return</span> thread;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">        producer.setExecutorService(executorService);</span><br><span class="line">        producer.setTransactionListener(transactionListener);</span><br><span class="line">        producer.start();</span><br><span class="line"></span><br><span class="line">        String[] tags = <span class="keyword">new</span> String[] &#123;<span class="string">"TagA"</span>, <span class="string">"TagB"</span>, <span class="string">"TagC"</span>, <span class="string">"TagD"</span>, <span class="string">"TagE"</span>&#125;;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                Message msg =</span><br><span class="line">                    <span class="keyword">new</span> Message(<span class="string">"TopicTest1234"</span>, tags[i % tags.length], <span class="string">"KEY"</span> + i,</span><br><span class="line">                        (<span class="string">"Hello RocketMQ "</span> + i).getBytes(RemotingHelper.DEFAULT_CHARSET));</span><br><span class="line">                <span class="comment">//send half message给broker</span></span><br><span class="line">                <span class="comment">//如果sendResult是sendOk会开始执行transactionListener.executeLocalTransaction逻辑,即本地事务。</span></span><br><span class="line">                <span class="comment">//然后根据localTransactionState发送请求给RequestCode.END_TRANSACTION，broker来选择事务是否完成</span></span><br><span class="line">                SendResult sendResult = producer.sendMessageInTransaction(msg, <span class="keyword">null</span>);</span><br><span class="line"></span><br><span class="line">                Thread.sleep(<span class="number">10</span>);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (MQClientException | UnsupportedEncodingException e) &#123;</span><br><span class="line">                e.printStackTrace();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">100000</span>; i++) &#123;</span><br><span class="line">            Thread.sleep(<span class="number">1000</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        producer.shutdown();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="源码解析"><a href="#源码解析" class="headerlink" title="源码解析"></a>源码解析</h2><h3 id="Producer"><a href="#Producer" class="headerlink" title="Producer"></a>Producer</h3><p>TransactionMQProducer关键代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TransactionMQProducer</span> <span class="keyword">extends</span> <span class="title">DefaultMQProducer</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//用于borker回查事务消息用</span></span><br><span class="line">    <span class="keyword">private</span> ExecutorService executorService;</span><br><span class="line">    <span class="comment">//监听器</span></span><br><span class="line">    <span class="keyword">private</span> TransactionListener transactionListener;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> <span class="keyword">throws</span> MQClientException </span>&#123;</span><br><span class="line">        <span class="comment">//初始化事务相关的环境具体见小面代码</span></span><br><span class="line">        <span class="keyword">this</span>.defaultMQProducerImpl.initTransactionEnv();</span><br><span class="line">        <span class="keyword">super</span>.start();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">shutdown</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="keyword">super</span>.shutdown();</span><br><span class="line">        <span class="comment">//停止事务</span></span><br><span class="line">        <span class="keyword">this</span>.defaultMQProducerImpl.destroyTransactionEnv();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> TransactionSendResult <span class="title">sendMessageInTransaction</span><span class="params">(<span class="keyword">final</span> Message msg,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> Object arg)</span> <span class="keyword">throws</span> MQClientException </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">null</span> == <span class="keyword">this</span>.transactionListener) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> MQClientException(<span class="string">"TransactionListener is null"</span>, <span class="keyword">null</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">//发送事务类型的消息</span></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">this</span>.defaultMQProducerImpl.sendMessageInTransaction(msg, <span class="keyword">null</span>, arg);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>defaultMQProducerImpl的相关代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">initTransactionEnv</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">//TransactionMQProducer中的defaultMQProducerImpl持有的对象只可能是TransactionMQProducer</span></span><br><span class="line">    TransactionMQProducer producer = (TransactionMQProducer) <span class="keyword">this</span>.defaultMQProducer;</span><br><span class="line">    <span class="keyword">if</span> (producer.getExecutorService() != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">this</span>.checkExecutor = producer.getExecutorService();</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">this</span>.checkRequestQueue = <span class="keyword">new</span> LinkedBlockingQueue&lt;Runnable&gt;(producer.getCheckRequestHoldMax());</span><br><span class="line">        <span class="keyword">this</span>.checkExecutor = <span class="keyword">new</span> ThreadPoolExecutor(</span><br><span class="line">                producer.getCheckThreadPoolMinSize(),</span><br><span class="line">                producer.getCheckThreadPoolMaxSize(),</span><br><span class="line">                <span class="number">1000</span> * <span class="number">60</span>,</span><br><span class="line">                TimeUnit.MILLISECONDS,</span><br><span class="line">                <span class="keyword">this</span>.checkRequestQueue);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">destroyTransactionEnv</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">this</span>.checkExecutor != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="keyword">this</span>.checkExecutor.shutdown();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 1.发送half-message消息sendOk执行本地任务</span></span><br><span class="line"><span class="comment"> * 2.执行完本地事务通过endTransaction消息通知borker事务结果</span></span><br><span class="line"><span class="comment"> * 3.封装TransactionSendResult返回</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> msg half message</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> localTransactionExecuter 已经不在需要了传空就好了，5.0.0会用producer的transactionListener替代</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> arg 消息参数</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> TransactionSendResult 返回执行结果</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> MQClientException 异常</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> TransactionSendResult <span class="title">sendMessageInTransaction</span><span class="params">(<span class="keyword">final</span> Message msg,</span></span></span><br><span class="line"><span class="function"><span class="params">                                                      <span class="keyword">final</span> LocalTransactionExecuter localTransactionExecuter, <span class="keyword">final</span> Object arg)</span></span></span><br><span class="line"><span class="function">        <span class="keyword">throws</span> MQClientException </span>&#123;</span><br><span class="line">    TransactionListener transactionListener = getCheckListener();</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">null</span> == localTransactionExecuter &amp;&amp; <span class="keyword">null</span> == transactionListener) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> MQClientException(<span class="string">"tranExecutor is null"</span>, <span class="keyword">null</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    Validators.checkMessage(msg, <span class="keyword">this</span>.defaultMQProducer);</span><br><span class="line"></span><br><span class="line">    SendResult sendResult = <span class="keyword">null</span>;</span><br><span class="line">    <span class="comment">//为Message设置相关Tranaction的属性，根据PROPERTY_TRANSACTION_PREPARED属性broker知道是half-message</span></span><br><span class="line">    MessageAccessor.putProperty(msg, MessageConst.PROPERTY_TRANSACTION_PREPARED, <span class="string">"true"</span>);</span><br><span class="line">    MessageAccessor.putProperty(msg, MessageConst.PROPERTY_PRODUCER_GROUP, <span class="keyword">this</span>.defaultMQProducer.getProducerGroup());</span><br><span class="line">    <span class="comment">//发送half-message</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        sendResult = <span class="keyword">this</span>.send(msg);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> MQClientException(<span class="string">"send message Exception"</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    LocalTransactionState localTransactionState = LocalTransactionState.UNKNOW;</span><br><span class="line">    Throwable localException = <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">switch</span> (sendResult.getSendStatus()) &#123;</span><br><span class="line">        <span class="keyword">case</span> SEND_OK: &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="comment">//发送结果返回了transactionId，将结果写入到Property。暂时没用到感觉，而且sendResult.getTransactionId为空</span></span><br><span class="line">                <span class="keyword">if</span> (sendResult.getTransactionId() != <span class="keyword">null</span>) &#123;</span><br><span class="line">                    msg.putUserProperty(<span class="string">"__transactionId__"</span>, sendResult.getTransactionId());</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="comment">//发送消息调用setUniqID时候生成的唯一ID作为事务ID:业务方通过这个事务ID和本地事务绑定处理反差逻辑</span></span><br><span class="line">                String transactionId = msg.getProperty(MessageConst.PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX);</span><br><span class="line">                <span class="keyword">if</span> (<span class="keyword">null</span> != transactionId &amp;&amp; !<span class="string">""</span>.equals(transactionId)) &#123;</span><br><span class="line">                    msg.setTransactionId(transactionId);</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="comment">//不用关心5.0.0会删掉</span></span><br><span class="line">                <span class="keyword">if</span> (<span class="keyword">null</span> != localTransactionExecuter) &#123;</span><br><span class="line">                    localTransactionState = localTransactionExecuter.executeLocalTransactionBranch(msg, arg);</span><br><span class="line">                &#125; <span class="keyword">else</span> <span class="keyword">if</span> (transactionListener != <span class="keyword">null</span>) &#123;</span><br><span class="line">                    log.debug(<span class="string">"Used new transaction API"</span>);</span><br><span class="line">                    <span class="comment">//处理本地事物返回localTransactionState</span></span><br><span class="line">                    localTransactionState = transactionListener.executeLocalTransaction(msg, arg);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">if</span> (<span class="keyword">null</span> == localTransactionState) &#123;</span><br><span class="line">                    localTransactionState = LocalTransactionState.UNKNOW;</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="keyword">if</span> (localTransactionState != LocalTransactionState.COMMIT_MESSAGE) &#123;</span><br><span class="line">                    log.info(<span class="string">"executeLocalTransactionBranch return &#123;&#125;"</span>, localTransactionState);</span><br><span class="line">                    log.info(msg.toString());</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">                log.info(<span class="string">"executeLocalTransactionBranch exception"</span>, e);</span><br><span class="line">                log.info(msg.toString());</span><br><span class="line">                localException = e;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> FLUSH_DISK_TIMEOUT:</span><br><span class="line">        <span class="keyword">case</span> FLUSH_SLAVE_TIMEOUT:</span><br><span class="line">        <span class="keyword">case</span> SLAVE_NOT_AVAILABLE:</span><br><span class="line">            localTransactionState = LocalTransactionState.ROLLBACK_MESSAGE;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//给borker发送本地事物结束的request</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">this</span>.endTransaction(sendResult, localTransactionState, localException);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.warn(<span class="string">"local transaction execute "</span> + localTransactionState + <span class="string">", but end broker transaction failed"</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    TransactionSendResult transactionSendResult = <span class="keyword">new</span> TransactionSendResult();</span><br><span class="line">    transactionSendResult.setSendStatus(sendResult.getSendStatus());</span><br><span class="line">    transactionSendResult.setMessageQueue(sendResult.getMessageQueue());</span><br><span class="line">    transactionSendResult.setMsgId(sendResult.getMsgId());</span><br><span class="line">    transactionSendResult.setQueueOffset(sendResult.getQueueOffset());</span><br><span class="line">    transactionSendResult.setTransactionId(sendResult.getTransactionId());</span><br><span class="line">    transactionSendResult.setLocalTransactionState(localTransactionState);</span><br><span class="line">    <span class="keyword">return</span> transactionSendResult;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">endTransaction</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> SendResult sendResult,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> LocalTransactionState localTransactionState,</span></span></span><br><span class="line"><span class="function"><span class="params">        <span class="keyword">final</span> Throwable localException)</span> <span class="keyword">throws</span> RemotingException, MQBrokerException, InterruptedException, UnknownHostException </span>&#123;</span><br><span class="line">    <span class="comment">//通过half-message获取MessageId,优先取OffsetMsgId:消息追加到磁盘时候生成的ID16byte，包含【来源地址+msg在文件中的偏移量】）</span></span><br><span class="line">    <span class="keyword">final</span> MessageId id;</span><br><span class="line">    <span class="keyword">if</span> (sendResult.getOffsetMsgId() != <span class="keyword">null</span>) &#123;</span><br><span class="line">        id = MessageDecoder.decodeMessageId(sendResult.getOffsetMsgId());</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        id = MessageDecoder.decodeMessageId(sendResult.getMsgId());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//为空</span></span><br><span class="line">    String transactionId = sendResult.getTransactionId();</span><br><span class="line">    <span class="comment">//查找borker地址</span></span><br><span class="line">    <span class="keyword">final</span> String brokerAddr = <span class="keyword">this</span>.mQClientFactory.findBrokerAddressInPublish(sendResult.getMessageQueue().getBrokerName());</span><br><span class="line"></span><br><span class="line">    <span class="comment">//构建EndTransactionRequest请求</span></span><br><span class="line">    EndTransactionRequestHeader requestHeader = <span class="keyword">new</span> EndTransactionRequestHeader();</span><br><span class="line">    requestHeader.setTransactionId(transactionId);</span><br><span class="line">    requestHeader.setCommitLogOffset(id.getOffset());</span><br><span class="line">    <span class="comment">//设置Message的标记是回滚还是commit</span></span><br><span class="line">    <span class="keyword">switch</span> (localTransactionState) &#123;</span><br><span class="line">        <span class="keyword">case</span> COMMIT_MESSAGE:</span><br><span class="line">            requestHeader.setCommitOrRollback(MessageSysFlag.TRANSACTION_COMMIT_TYPE);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> ROLLBACK_MESSAGE:</span><br><span class="line">            requestHeader.setCommitOrRollback(MessageSysFlag.TRANSACTION_ROLLBACK_TYPE);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">case</span> UNKNOW:</span><br><span class="line">            requestHeader.setCommitOrRollback(MessageSysFlag.TRANSACTION_NOT_TYPE);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        <span class="keyword">default</span>:</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    requestHeader.setProducerGroup(<span class="keyword">this</span>.defaultMQProducer.getProducerGroup());</span><br><span class="line">    requestHeader.setTranStateTableOffset(sendResult.getQueueOffset());</span><br><span class="line">    requestHeader.setMsgId(sendResult.getMsgId());</span><br><span class="line">    String remark = localException != <span class="keyword">null</span> ? (<span class="string">"executeLocalTransactionBranch exception: "</span> + localException.toString()) : <span class="keyword">null</span>;</span><br><span class="line">    <span class="keyword">this</span>.mQClientFactory.getMQClientAPIImpl().endTransactionOneway(brokerAddr, requestHeader, remark,</span><br><span class="line">            <span class="keyword">this</span>.defaultMQProducer.getSendMsgTimeout());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="broker"><a href="#broker" class="headerlink" title="broker"></a>broker</h3><p>主要有3个部分</p>
+<h4 id="接收半消息消息"><a href="#接收半消息消息" class="headerlink" title="接收半消息消息"></a>接收半消息消息</h4><p>  处理half-message的入口在SendMessageProcessor.processRequest()方法中，前面介绍消息发送时候介绍过这里不在过多赘述，最终我们跟到SendMessageProcessor.sendMessage方法中，这里在处理发送的事件时候会判断消息的PROPERTY_TRANSACTION_PREPARED标记是否为true如果为true。会调用brokerController.getTransactionalMessageService().prepareMessage，具体如下代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">private</span> RemotingCommand <span class="title">sendMessage</span><span class="params">(<span class="keyword">final</span> ChannelHandlerContext ctx,</span></span></span><br><span class="line"><span class="function"><span class="params">                                        <span class="keyword">final</span> RemotingCommand request,</span></span></span><br><span class="line"><span class="function"><span class="params">                                        <span class="keyword">final</span> SendMessageContext sendMessageContext,</span></span></span><br><span class="line"><span class="function"><span class="params">                                        <span class="keyword">final</span> SendMessageRequestHeader requestHeader)</span> <span class="keyword">throws</span> RemotingCommandException </span>&#123;</span><br><span class="line">                                            ......</span><br><span class="line">String traFlag = oriProps.get(MessageConst.PROPERTY_TRANSACTION_PREPARED);</span><br><span class="line">        <span class="keyword">if</span> (traFlag != <span class="keyword">null</span> &amp;&amp; Boolean.parseBoolean(traFlag)) &#123;</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">this</span>.brokerController.getBrokerConfig().isRejectTransactionMessage()) &#123;</span><br><span class="line">                response.setCode(ResponseCode.NO_PERMISSION);</span><br><span class="line">                response.setRemark(</span><br><span class="line">                        <span class="string">"the broker["</span> + <span class="keyword">this</span>.brokerController.getBrokerConfig().getBrokerIP1()</span><br><span class="line">                                + <span class="string">"] sending transaction message is forbidden"</span>);</span><br><span class="line">                <span class="keyword">return</span> response;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//这里就是重点</span></span><br><span class="line">            putMessageResult = <span class="keyword">this</span>.brokerController.getTransactionalMessageService().prepareMessage(msgInner);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            ......</span><br><span class="line">        &#125;</span><br><span class="line">        ....</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>继续跟下去：brokerController.getTransactionalMessageService中TransactionalMessageService的实现类TransactionalMessageServiceImpl的prepareMessage方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> PutMessageResult <span class="title">prepareMessage</span><span class="params">(MessageExtBrokerInner messageInner)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> transactionalMessageBridge.putHalfMessage(messageInner);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>继续：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> PutMessageResult <span class="title">putHalfMessage</span><span class="params">(MessageExtBrokerInner messageInner)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">return</span> store.putMessage(parseHalfMessageInner(messageInner));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//处理preparedMessage</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> MessageExtBrokerInner <span class="title">parseHalfMessageInner</span><span class="params">(MessageExtBrokerInner msgInner)</span> </span>&#123;</span><br><span class="line">    MessageAccessor.putProperty(msgInner, MessageConst.PROPERTY_REAL_TOPIC, msgInner.getTopic());</span><br><span class="line">    MessageAccessor.putProperty(msgInner, MessageConst.PROPERTY_REAL_QUEUE_ID,</span><br><span class="line">        String.valueOf(msgInner.getQueueId()));</span><br><span class="line">    msgInner.setSysFlag(</span><br><span class="line">        MessageSysFlag.resetTransactionValue(msgInner.getSysFlag(), MessageSysFlag.TRANSACTION_NOT_TYPE));</span><br><span class="line">    <span class="comment">//RMQ_SYS_TRANS_HALF_TOPIC,queueId始终为0</span></span><br><span class="line">    msgInner.setTopic(TransactionalMessageUtil.buildHalfTopic());</span><br><span class="line">    msgInner.setQueueId(<span class="number">0</span>);</span><br><span class="line">    msgInner.setPropertiesString(MessageDecoder.messageProperties2String(msgInner.getProperties()));</span><br><span class="line">    <span class="keyword">return</span> msgInner;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="回查half-message"><a href="#回查half-message" class="headerlink" title="回查half-message"></a>回查half-message</h4><p>  brokerController在启动时候，会启动一个检查线程定期林旭RMQ_SYS_TRANS_HALF_TOPIC这个Topic中是否有过期的half-message，然后对这个half-message的producer发送RequestCode.CHECK_TRANSACTION_STATE的请求</p>
+<p>过程和代码如下：</p>
+<ol>
+<li>brokerController在initialTransaction初始化TransactionalMessageCheckService</li>
+<li>brokerController在start时候调用TransactionalMessageCheckService的start方法启动线程</li>
+<li>TransactionalMessageCheckService每隔1分钟轮询一次RMQ_SYS_TRANS_HALF_TOPIC这个topic，发现过期half-message后通知producer。</li>
+</ol>
+<p>TransactionalMessageCheckService关键代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">onWaitEnd</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> timeout = brokerController.getBrokerConfig().getTransactionTimeOut();</span><br><span class="line">    <span class="keyword">int</span> checkMax = brokerController.getBrokerConfig().getTransactionCheckMax();</span><br><span class="line">    <span class="keyword">long</span> begin = System.currentTimeMillis();</span><br><span class="line">    log.info(<span class="string">"Begin to check prepare message, begin time:&#123;&#125;"</span>, begin);</span><br><span class="line">    <span class="comment">//检查过期事务</span></span><br><span class="line">    <span class="keyword">this</span>.brokerController.getTransactionalMessageService().check(timeout, checkMax, <span class="keyword">this</span>.brokerController.getTransactionalMessageCheckListener());</span><br><span class="line">    log.info(<span class="string">"End to check prepare message, consumed time:&#123;&#125;"</span>, System.currentTimeMillis() - begin);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>继续跟TransactionalMessageServiceImpl.check</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">check</span><span class="params">(<span class="keyword">long</span> transactionTimeout, <span class="keyword">int</span> transactionCheckMax,</span></span></span><br><span class="line"><span class="function"><span class="params">    AbstractTransactionalMessageCheckListener listener)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">//Half-message topic</span></span><br><span class="line">        String topic = MixAll.RMQ_SYS_TRANS_HALF_TOPIC;</span><br><span class="line">        Set&lt;MessageQueue&gt; msgQueues = transactionalMessageBridge.fetchMessageQueues(topic);</span><br><span class="line">        <span class="keyword">if</span> (msgQueues == <span class="keyword">null</span> || msgQueues.size() == <span class="number">0</span>) &#123;</span><br><span class="line">            log.warn(<span class="string">"The queue of topic is empty :"</span> + topic);</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        log.info(<span class="string">"Check topic=&#123;&#125;, queues=&#123;&#125;"</span>, topic, msgQueues);</span><br><span class="line">        <span class="comment">//有Half-message,检查如果有消息过期默认是6sec,省略大部分校验过程</span></span><br><span class="line">        <span class="keyword">for</span> (MessageQueue messageQueue : msgQueues) &#123;</span><br><span class="line">            <span class="keyword">long</span> startTime = System.currentTimeMillis();</span><br><span class="line">            MessageQueue opQueue = getOpQueue(messageQueue);</span><br><span class="line">            <span class="keyword">long</span> halfOffset = transactionalMessageBridge.fetchConsumeOffset(messageQueue);</span><br><span class="line">            <span class="keyword">long</span> opOffset = transactionalMessageBridge.fetchConsumeOffset(opQueue);</span><br><span class="line">            ......</span><br><span class="line"></span><br><span class="line">            List&lt;Long&gt; doneOpOffset = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">            HashMap&lt;Long, Long&gt; removeMap = <span class="keyword">new</span> HashMap&lt;&gt;();</span><br><span class="line">            <span class="comment">//</span></span><br><span class="line">            PullResult pullResult = fillOpRemoveMap(removeMap, opQueue, opOffset, halfOffset, doneOpOffset);</span><br><span class="line">            ......</span><br><span class="line">            <span class="comment">// single thread</span></span><br><span class="line">            <span class="keyword">int</span> getMessageNullCount = <span class="number">1</span>;</span><br><span class="line">            <span class="keyword">long</span> newOffset = halfOffset;</span><br><span class="line">            <span class="keyword">long</span> i = halfOffset;</span><br><span class="line">            <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                ......</span><br><span class="line">                <span class="keyword">if</span> (removeMap.containsKey(i)) &#123;</span><br><span class="line">                    ......</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">//读取</span></span><br><span class="line">                    GetResult getResult = getHalfMsg(messageQueue, i);</span><br><span class="line">                    MessageExt msgExt = getResult.getMsg();</span><br><span class="line">                    <span class="keyword">if</span> (msgExt == <span class="keyword">null</span>) &#123;</span><br><span class="line">                        .....</span><br><span class="line">                    &#125;</span><br><span class="line">                    List&lt;MessageExt&gt; opMsg = pullResult.getMsgFoundList();</span><br><span class="line">                    <span class="keyword">boolean</span> isNeedCheck = (opMsg == <span class="keyword">null</span> &amp;&amp; valueOfCurrentMinusBorn &gt; checkImmunityTime)</span><br><span class="line">                        || (opMsg != <span class="keyword">null</span> &amp;&amp; (opMsg.get(opMsg.size() - <span class="number">1</span>).getBornTimestamp() - startTime &gt; transactionTimeout))</span><br><span class="line">                        || (valueOfCurrentMinusBorn &lt;= -<span class="number">1</span>);</span><br><span class="line">                    <span class="keyword">if</span> (isNeedCheck) &#123;</span><br><span class="line">                        <span class="comment">//给msgExt赋值half-message的msgId等属性</span></span><br><span class="line">                        <span class="keyword">if</span> (!putBackHalfMsgQueue(msgExt, i)) &#123;</span><br><span class="line">                            <span class="keyword">continue</span>;</span><br><span class="line">                        &#125;</span><br><span class="line">                        <span class="comment">//处理half-message</span></span><br><span class="line">                        listener.resolveHalfMsg(msgExt);</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        ......</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                newOffset = i + <span class="number">1</span>;</span><br><span class="line">                i++;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            ......</span><br><span class="line">            <span class="keyword">if</span> (newOffset != halfOffset) &#123;</span><br><span class="line">                transactionalMessageBridge.updateConsumeOffset(messageQueue, newOffset);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">long</span> newOpOffset = calculateOpOffset(doneOpOffset, opOffset);</span><br><span class="line">            <span class="keyword">if</span> (newOpOffset != opOffset) &#123;</span><br><span class="line">                transactionalMessageBridge.updateConsumeOffset(opQueue, newOpOffset);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">        log.error(<span class="string">"Check error"</span>, e);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>继续跟进listener.resolveHalfMsg中去</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">resolveHalfMsg</span><span class="params">(<span class="keyword">final</span> MessageExt msgExt)</span> </span>&#123;</span><br><span class="line">    executorService.execute(<span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                sendCheckMessage(msgExt);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                LOGGER.error(<span class="string">"Send check message error!"</span>, e);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">sendCheckMessage</span><span class="params">(MessageExt msgExt)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    CheckTransactionStateRequestHeader checkTransactionStateRequestHeader = <span class="keyword">new</span> CheckTransactionStateRequestHeader();</span><br><span class="line">    checkTransactionStateRequestHeader.setCommitLogOffset(msgExt.getCommitLogOffset());</span><br><span class="line">    checkTransactionStateRequestHeader.setOffsetMsgId(msgExt.getMsgId());</span><br><span class="line">    <span class="comment">//注意下这个MsgId就是MessageConst.PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX，分布式任务开始时，发送half-message设置</span></span><br><span class="line">    checkTransactionStateRequestHeader.setMsgId(msgExt.getUserProperty(MessageConst.PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX));</span><br><span class="line">    checkTransactionStateRequestHeader.setTransactionId(checkTransactionStateRequestHeader.getMsgId());</span><br><span class="line"></span><br><span class="line">    checkTransactionStateRequestHeader.setTranStateTableOffset(msgExt.getQueueOffset());</span><br><span class="line">    msgExt.setTopic(msgExt.getUserProperty(MessageConst.PROPERTY_REAL_TOPIC));</span><br><span class="line">    msgExt.setQueueId(Integer.parseInt(msgExt.getUserProperty(MessageConst.PROPERTY_REAL_QUEUE_ID)));</span><br><span class="line">    msgExt.setStoreSize(<span class="number">0</span>);</span><br><span class="line">    String groupId = msgExt.getProperty(MessageConst.PROPERTY_PRODUCER_GROUP);</span><br><span class="line">    Channel channel = brokerController.getProducerManager().getAvaliableChannel(groupId);</span><br><span class="line">    <span class="keyword">if</span> (channel != <span class="keyword">null</span>) &#123;</span><br><span class="line">        brokerController.getBroker2Client().checkProducerTransactionState(groupId, channel, checkTransactionStateRequestHeader, msgExt);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        LOGGER.warn(<span class="string">"Check transaction failed, channel is null. groupId=&#123;&#125;"</span>, groupId);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>  prouder处理RequestCode.CHECK_TRANSACTION_STATE</p>
+<ol>
+<li>produer的ClientRemotingProcessor会调用 this.checkTransactionState(ctx, request);</li>
+<li>this.checkTransactionState(ctx, request);会调用producer.checkTransactionState(addr, messageExt, requestHeader);</li>
+<li>producer.checkTransactionState(addr, messageExt, requestHeader);处理事务的逻辑代码如下</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">checkTransactionState</span><span class="params">(<span class="keyword">final</span> String addr, <span class="keyword">final</span> MessageExt msg,</span></span></span><br><span class="line"><span class="function"><span class="params">                                  <span class="keyword">final</span> CheckTransactionStateRequestHeader header)</span> </span>&#123;</span><br><span class="line">    <span class="comment">//用线程池去处理</span></span><br><span class="line">    Runnable request = <span class="keyword">new</span> Runnable() &#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">final</span> String brokerAddr = addr;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">final</span> MessageExt message = msg;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">final</span> CheckTransactionStateRequestHeader checkRequestHeader = header;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">final</span> String group = DefaultMQProducerImpl.<span class="keyword">this</span>.defaultMQProducer.getProducerGroup();</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            ......</span><br><span class="line">            TransactionListener transactionListener = getCheckListener();</span><br><span class="line">            <span class="keyword">if</span> (transactionCheckListener != <span class="keyword">null</span> || transactionListener != <span class="keyword">null</span>) &#123;</span><br><span class="line">                LocalTransactionState localTransactionState = LocalTransactionState.UNKNOW;</span><br><span class="line">                Throwable exception = <span class="keyword">null</span>;</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    <span class="keyword">if</span> (transactionCheckListener != <span class="keyword">null</span>) &#123;</span><br><span class="line">                        ......</span><br><span class="line">                    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (transactionListener != <span class="keyword">null</span>) &#123;</span><br><span class="line">                        log.debug(<span class="string">"Used new check API in transaction message"</span>);</span><br><span class="line">                        <span class="comment">//...业务自己处理检查事务状态</span></span><br><span class="line">                        localTransactionState = transactionListener.checkLocalTransaction(message);</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        log.warn(<span class="string">"CheckTransactionState, pick transactionListener by group[&#123;&#125;] failed"</span>, group);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">                    log.error(<span class="string">"Broker call checkTransactionState, but checkLocalTransactionState exception"</span>, e);</span><br><span class="line">                    exception = e;</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="comment">//内部方法</span></span><br><span class="line">                <span class="keyword">this</span>.processTransactionState(</span><br><span class="line">                        localTransactionState,</span><br><span class="line">                        group,</span><br><span class="line">                        exception);</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                log.warn(<span class="string">"CheckTransactionState, pick transactionCheckListener by group[&#123;&#125;] failed"</span>, group);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">processTransactionState</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">                <span class="keyword">final</span> LocalTransactionState localTransactionState,</span></span></span><br><span class="line"><span class="function"><span class="params">                <span class="keyword">final</span> String producerGroup,</span></span></span><br><span class="line"><span class="function"><span class="params">                <span class="keyword">final</span> Throwable exception)</span> </span>&#123;</span><br><span class="line">            <span class="keyword">final</span> EndTransactionRequestHeader thisHeader = <span class="keyword">new</span> EndTransactionRequestHeader();</span><br><span class="line">            thisHeader.setCommitLogOffset(checkRequestHeader.getCommitLogOffset());</span><br><span class="line">            thisHeader.setProducerGroup(producerGroup);</span><br><span class="line">            thisHeader.setTranStateTableOffset(checkRequestHeader.getTranStateTableOffset());</span><br><span class="line">            thisHeader.setFromTransactionCheck(<span class="keyword">true</span>);</span><br><span class="line"></span><br><span class="line">            <span class="comment">//取消息的msgID，优先取事务中的MessageConst.PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX，如果为空会取，发送来的MsgId</span></span><br><span class="line">            String uniqueKey = message.getProperties().get(MessageConst.PROPERTY_UNIQ_CLIENT_MESSAGE_ID_KEYIDX);</span><br><span class="line">            <span class="keyword">if</span> (uniqueKey == <span class="keyword">null</span>) &#123;</span><br><span class="line">                uniqueKey = message.getMsgId();</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            thisHeader.setMsgId(uniqueKey);</span><br><span class="line">            <span class="comment">//这个值和最开始发送办消息的message是一样的见上面</span></span><br><span class="line">            thisHeader.setTransactionId(checkRequestHeader.getTransactionId());</span><br><span class="line">            <span class="keyword">switch</span> (localTransactionState) &#123;</span><br><span class="line">                <span class="keyword">case</span> COMMIT_MESSAGE:</span><br><span class="line">                    thisHeader.setCommitOrRollback(MessageSysFlag.TRANSACTION_COMMIT_TYPE);</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                <span class="keyword">case</span> ROLLBACK_MESSAGE:</span><br><span class="line">                    thisHeader.setCommitOrRollback(MessageSysFlag.TRANSACTION_ROLLBACK_TYPE);</span><br><span class="line">                    log.warn(<span class="string">"when broker check, client rollback this transaction, &#123;&#125;"</span>, thisHeader);</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                <span class="keyword">case</span> UNKNOW:</span><br><span class="line">                    thisHeader.setCommitOrRollback(MessageSysFlag.TRANSACTION_NOT_TYPE);</span><br><span class="line">                    log.warn(<span class="string">"when broker check, client does not know this transaction state, &#123;&#125;"</span>, thisHeader);</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                <span class="keyword">default</span>:</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            String remark = <span class="keyword">null</span>;</span><br><span class="line">            <span class="keyword">if</span> (exception != <span class="keyword">null</span>) &#123;</span><br><span class="line">                remark = <span class="string">"checkLocalTransactionState Exception: "</span> + RemotingHelper.exceptionSimpleDesc(exception);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                DefaultMQProducerImpl.<span class="keyword">this</span>.mQClientFactory.getMQClientAPIImpl().endTransactionOneway(brokerAddr, thisHeader, remark,</span><br><span class="line">                        <span class="number">3000</span>);</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                log.error(<span class="string">"endTransactionOneway exception"</span>, e);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">this</span>.checkExecutor.submit(request);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="处理EndTransaction"><a href="#处理EndTransaction" class="headerlink" title="处理EndTransaction"></a>处理EndTransaction</h4><p>  在本地事务完成或者检查后都需要给broker发送RequestCode.END_TRANSACTION信息，broker在接到请求流程是</p>
+<p>  EndTransactionProcessor的processRequest处理具体请求</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> RemotingCommand <span class="title">processRequest</span><span class="params">(ChannelHandlerContext ctx, RemotingCommand request)</span> <span class="keyword">throws</span></span></span><br><span class="line"><span class="function">    RemotingCommandException </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> RemotingCommand response = RemotingCommand.createResponseCommand(<span class="keyword">null</span>);</span><br><span class="line">    <span class="keyword">final</span> EndTransactionRequestHeader requestHeader =</span><br><span class="line">        (EndTransactionRequestHeader)request.decodeCommandCustomHeader(EndTransactionRequestHeader.class);</span><br><span class="line">    LOGGER.info(<span class="string">"Transaction request:&#123;&#125;"</span>, requestHeader);</span><br><span class="line">    <span class="keyword">if</span> (BrokerRole.SLAVE == brokerController.getMessageStoreConfig().getBrokerRole()) &#123;</span><br><span class="line">        response.setCode(ResponseCode.SLAVE_NOT_AVAILABLE);</span><br><span class="line">        LOGGER.warn(<span class="string">"Message store is slave mode, so end transaction is forbidden. "</span>);</span><br><span class="line">        <span class="keyword">return</span> response;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//请求来自于TransactionCheck，打印log</span></span><br><span class="line">    <span class="keyword">if</span> (requestHeader.getFromTransactionCheck()) &#123;</span><br><span class="line">        ......</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        ......</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    OperationResult result = <span class="keyword">new</span> OperationResult();</span><br><span class="line">    <span class="keyword">if</span> (MessageSysFlag.TRANSACTION_COMMIT_TYPE == requestHeader.getCommitOrRollback()) &#123;</span><br><span class="line">        <span class="comment">//提交事务</span></span><br><span class="line">        result = <span class="keyword">this</span>.brokerController.getTransactionalMessageService().commitMessage(requestHeader);</span><br><span class="line">        <span class="keyword">if</span> (result.getResponseCode() == ResponseCode.SUCCESS) &#123;</span><br><span class="line">            <span class="comment">//校验halfmessage的Offset和Produceguroup的信息等</span></span><br><span class="line">            RemotingCommand res = checkPrepareMessage(result.getPrepareMessage(), requestHeader);</span><br><span class="line">            <span class="keyword">if</span> (res.getCode() == ResponseCode.SUCCESS) &#123;</span><br><span class="line">                <span class="comment">//重点，将消息移到真实的Topic和QueueId，这样consumer才能看到</span></span><br><span class="line">                MessageExtBrokerInner msgInner = endMessageTransaction(result.getPrepareMessage());</span><br><span class="line">                <span class="comment">//重置标记等信息</span></span><br><span class="line">                msgInner.setSysFlag(MessageSysFlag.resetTransactionValue(msgInner.getSysFlag(), requestHeader.getCommitOrRollback()));</span><br><span class="line">                msgInner.setQueueOffset(requestHeader.getTranStateTableOffset());</span><br><span class="line">                msgInner.setPreparedTransactionOffset(requestHeader.getCommitLogOffset());</span><br><span class="line">                msgInner.setStoreTimestamp(result.getPrepareMessage().getStoreTimestamp());</span><br><span class="line">                RemotingCommand sendResult = sendFinalMessage(msgInner);</span><br><span class="line">                <span class="comment">//删除halfmessage</span></span><br><span class="line">                <span class="keyword">if</span> (sendResult.getCode() == ResponseCode.SUCCESS) &#123;</span><br><span class="line">                    <span class="keyword">this</span>.brokerController.getTransactionalMessageService().deletePrepareMessage(result.getPrepareMessage());</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">return</span> sendResult;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> res;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (MessageSysFlag.TRANSACTION_ROLLBACK_TYPE == requestHeader.getCommitOrRollback()) &#123;</span><br><span class="line">        <span class="comment">//回滚事务</span></span><br><span class="line">        result = <span class="keyword">this</span>.brokerController.getTransactionalMessageService().rollbackMessage(requestHeader);</span><br><span class="line">        <span class="keyword">if</span> (result.getResponseCode() == ResponseCode.SUCCESS) &#123;</span><br><span class="line">            RemotingCommand res = checkPrepareMessage(result.getPrepareMessage(), requestHeader);</span><br><span class="line">            <span class="keyword">if</span> (res.getCode() == ResponseCode.SUCCESS) &#123;</span><br><span class="line">                <span class="keyword">this</span>.brokerController.getTransactionalMessageService().deletePrepareMessage(result.getPrepareMessage());</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> res;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    response.setCode(result.getResponseCode());</span><br><span class="line">    response.setRemark(result.getResponseRemark());</span><br><span class="line">    <span class="keyword">return</span> response;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/java/" rel="tag"># java</a>
+          
+            <a href="/tags/消息队列/" rel="tag"># 消息队列</a>
+          
+            <a href="/tags/rocketmq/" rel="tag"># rocketmq</a>
+          
+            <a href="/tags/分布式事务/" rel="tag"># 分布式事务</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/JAVA-NIO-ByteBuffer/" rel="next" title="JAVA-NIO-ByteBuffer">
+                <i class="fa fa-chevron-left"></i> JAVA-NIO-ByteBuffer
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/Redis-基础数据结构/" rel="prev" title="Redis-基础数据结构">
+                Redis-基础数据结构 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            Table of Contents
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            Overview
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Liu hao</p>
+              <p class="site-description motion-element" itemprop="description">励志当好厨子的程序员</p>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">222</span>
+                    <span class="site-state-item-name">posts</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  <a href="/categories/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">54</span>
+                    <span class="site-state-item-name">categories</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  <a href="/tags/index.html">
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">81</span>
+                    <span class="site-state-item-name">tags</span>
+                  </a>
+                </div>
+              
+            </nav>
+          
+
+          
+            <div class="feed-link motion-element">
+              <a href="/atom.xml" rel="alternate">
+                <i class="fa fa-rss"></i>
+                RSS
+              </a>
+            </div>
+          
+
+          
+            <div class="links-of-author motion-element">
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="https://github.com/liuhao163" title="GitHub &rarr; https://github.com/liuhao163" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+                </span>
+              
+                <span class="links-of-author-item">
+                  
+                  
+                    
+                  
+                  
+                    
+                  
+                  <a href="mailto:liu67224657@qq.com" title="E-Mail &rarr; mailto:liu67224657@qq.com" rel="noopener" target="_blank"><i class="fa fa-fw fa-envelope"></i>E-Mail</a>
+                </span>
+              
+            </div>
+          
+
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#原理"><span class="nav-number">1.</span> <span class="nav-text">原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#官方Demo"><span class="nav-number">2.</span> <span class="nav-text">官方Demo</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#源码解析"><span class="nav-number">3.</span> <span class="nav-text">源码解析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Producer"><span class="nav-number">3.1.</span> <span class="nav-text">Producer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#broker"><span class="nav-number">3.2.</span> <span class="nav-text">broker</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#接收半消息消息"><span class="nav-number">3.2.1.</span> <span class="nav-text">接收半消息消息</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#回查half-message"><span class="nav-number">3.2.2.</span> <span class="nav-text">回查half-message</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#处理EndTransaction"><span class="nav-number">3.2.3.</span> <span class="nav-text">处理EndTransaction</span></a></li></ol></li></ol></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2022</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Liu hao</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">Powered by <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> v3.9.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">Theme – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> v7.0.0</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/src/utils.js?v=7.0.0"></script>
+
+  <script src="/js/src/motion.js?v=7.0.0"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/src/affix.js?v=7.0.0"></script>
+
+  <script src="/js/src/schemes/pisces.js?v=7.0.0"></script>
+
+
+
+  
+  <script src="/js/src/scrollspy.js?v=7.0.0"></script>
+<script src="/js/src/post-details.js?v=7.0.0"></script>
+
+
+
+  
+
+
+  <script src="/js/src/bootstrap.js?v=7.0.0"></script>
+
+
+  
+  
+
+
+  
+
+
+  
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>

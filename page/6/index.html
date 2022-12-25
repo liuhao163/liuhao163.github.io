@@ -345,6 +345,250 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/系统优化-网络-基础概念以及指标/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/系统优化-网络-基础概念以及指标/" class="post-title-link" itemprop="url">系统优化-网络-基础概念以及指标</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-05-19 20:36:32" itemprop="dateCreated datePublished" datetime="2020-05-19T20:36:32Z">2020-05-19</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/性能优化/" itemprop="url" rel="index"><span itemprop="name">性能优化</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/性能优化/网络/" itemprop="url" rel="index"><span itemprop="name">网络</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>  前面我们讲了CPU、内存、磁盘IO，下面我们来看网络这部分，网络处理的流程最复杂，跟我们前面讲到的进程调度、中断处理、内存管理以及 I/O 等都密不可分。</p>
+<p>  OSI的网络七层模型，以及TCP/IP的四层or五层模型,如下：</p>
+<p>  <img src="/系统优化-网络-基础概念以及指标/img0.png" alt="avator"></p>
+<h2 id="TCP-IP网络栈"><a href="#TCP-IP网络栈" class="headerlink" title="TCP/IP网络栈"></a>TCP/IP网络栈</h2><p>  有了linux根据tcp/ip模型，我们的网络栈的收发数据实际上就是按照这4层模型对数据层层进行处理，对上层发送发送来的数据进行分析，然后将本层的数据进行封装发给下层</p>
+<ul>
+<li>应用层–&gt;数据</li>
+<li>传输层–&gt;TCP头+数据</li>
+<li>网络层–&gt;IP头+TCP头+数据</li>
+<li><p>网络接口层–&gt;根据MTU切分数据包 and 帧头+IP头+TCP头+数据+栈帧</p>
+<p>下图是整个网络栈<br><img src="/系统优化-网络-基础概念以及指标/img1.png" alt="avator"></p>
+</li>
+</ul>
+<h2 id="TCP-IP的手法"><a href="#TCP-IP的手法" class="headerlink" title="TCP/IP的手法"></a>TCP/IP的手法</h2><h3 id="接收网络包"><a href="#接收网络包" class="headerlink" title="接收网络包"></a>接收网络包</h3><ol>
+<li>网卡通过DMA获取网络数据，放到待接收队列</li>
+<li>系统的硬中断程序通知系统接收网络数据，并且申请sk_buff，并且将数据放入到sk_buff中</li>
+<li>通过系统的软中断开始处理网络数据</li>
+<li>网络接口层校验包完整性，去掉帧头和帧尾，数据传递给网络层</li>
+<li>网络层根据IP信息确定吓一跳是本机还是转发，如果是本机，数据传递给传输层</li>
+<li>传输层解析TCP头，找到4元祖通过套接字发送给程序</li>
+</ol>
+<h3 id="发送网络包"><a href="#发送网络包" class="headerlink" title="发送网络包"></a>发送网络包</h3><p>和接收相反</p>
+<ol>
+<li>程序通过系统内核调用套接字的sendMsg发送网络包</li>
+<li>传输层封装TCP头信息，发送给IP层</li>
+<li>IP层根据IP找到吓一跳的地址封装IP头，传递给网络接口层</li>
+<li>网络接口层根据MTU对包进行切分，添加帧头、帧尾等信息</li>
+<li>拆分好的包进行物理寻址找到对应的MAC地址，之后将自己添加到待发送队列</li>
+<li>系统的软中断通知系统有网络包待发送</li>
+<li>之后网卡驱动会通过DMA，将待发送队列的数据通过网卡发送出去</li>
+</ol>
+<p>如图：<br>  <img src="/系统优化-网络-基础概念以及指标/img2.png" alt="avator"></p>
+<h2 id="查看网络情况的基础指标和工具"><a href="#查看网络情况的基础指标和工具" class="headerlink" title="查看网络情况的基础指标和工具"></a>查看网络情况的基础指标和工具</h2><h3 id="查看网卡信息"><a href="#查看网卡信息" class="headerlink" title="查看网卡信息"></a>查看网卡信息</h3><p>ifconfig or ip</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">$ ifconfig eth0</span><br><span class="line">eth0: flags=4163&lt;UP,BROADCAST,RUNNING,MULTICAST&gt; mtu 1500</span><br><span class="line">      inet 10.240.0.30 netmask 255.240.0.0 broadcast 10.255.255.255</span><br><span class="line">      inet6 fe80::20d:3aff:fe07:cf2a prefixlen 64 scopeid 0x20&lt;link&gt;</span><br><span class="line">      ether 78:0d:3a:07:cf:3a txqueuelen 1000 (Ethernet)</span><br><span class="line">      RX packets 40809142 bytes 9542369803 (9.5 GB)</span><br><span class="line">      RX errors 0 dropped 0 overruns 0 frame 0</span><br><span class="line">      TX packets 32637401 bytes 4815573306 (4.8 GB)</span><br><span class="line">      TX errors 0 dropped 0 overruns 0 carrier 0 collisions 0</span><br><span class="line">​</span><br><span class="line">$ ip -s addr show dev eth0</span><br><span class="line">2: eth0: &lt;BROADCAST,MULTICAST,UP,LOWER_UP&gt; mtu 1500 qdisc mq state UP group default qlen 1000</span><br><span class="line">  link/ether 78:0d:3a:07:cf:3a brd ff:ff:ff:ff:ff:ff</span><br><span class="line">  inet 10.240.0.30/12 brd 10.255.255.255 scope global eth0</span><br><span class="line">      valid_lft forever preferred_lft forever</span><br><span class="line">  inet6 fe80::20d:3aff:fe07:cf2a/64 scope link</span><br><span class="line">      valid_lft forever preferred_lft forever</span><br><span class="line">  RX: bytes packets errors dropped overrun mcast</span><br><span class="line">   9542432350 40809397 0       0       0       193</span><br><span class="line">  TX: bytes packets errors dropped carrier collsns</span><br><span class="line">   4815625265 32637658 0       0       0       0</span><br></pre></td></tr></table></figure>
+<ol>
+<li>网络接口的状态标志。ifconfig 输出中的 RUNNING ，或 ip 输出中的 LOWER_UP ，都表示物理网络是连通的，即网卡已经连接到了交换机或者路由器中。如果你看不到它们，通常表示网线被拔掉了。</li>
+<li>MTU 的大小。MTU 默认大小是 1500，根据网络架构的不同（比如是否使用了 VXLAN 等叠加网络），你可能需要调大或者调小 MTU 的数值。</li>
+<li>网络接口的 IP 地址、子网以及 MAC 地址。这些都是保障网络功能正常工作所必需的，你需要确保配置正确。</li>
+<li>网络收发的字节数、包数、错误数以及丢包情况，特别是 TX 和 RX 部分的 errors、dropped、overruns、carrier 以及 collisions 等指标不为 0 时，通常表示出现了网络 I/O 问题。其中：<ul>
+<li>errors 表示发生错误的数据包数，比如校验错误、帧同步错误等；</li>
+<li>dropped 表示丢弃的数据包数，即数据包已经收到了 Ring Buffer，但因为内存不足等原因丢包；</li>
+<li>overruns 表示超限数据包数，即网络 I/O 速度过快，导致 Ring Buffer 中的数据包来不及处理（队列满）而导致的丢包；</li>
+<li>carrier 表示发生 carrirer 错误的数据包数，比如双工模式不匹配、物理电缆出现问题等；</li>
+<li>collisions 表示碰撞数据包数。</li>
+</ul>
+</li>
+</ol>
+<h3 id="查看套接字信息"><a href="#查看套接字信息" class="headerlink" title="查看套接字信息"></a>查看套接字信息</h3><p>netstat or ss</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment"># head -n 3 表示只显示前面3行</span></span><br><span class="line"><span class="comment"># -l 表示只显示监听套接字</span></span><br><span class="line"><span class="comment"># -n 表示显示数字地址和端口(而不是名字)</span></span><br><span class="line"><span class="comment"># -p 表示显示进程信息</span></span><br><span class="line">$ netstat -nlp | head -n 3</span><br><span class="line">Active Internet connections (only servers)</span><br><span class="line">Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name</span><br><span class="line">tcp        0      0 127.0.0.53:53           0.0.0.0:*               LISTEN      840/systemd-resolve</span><br><span class="line"></span><br><span class="line"><span class="comment"># -l 表示只显示监听套接字</span></span><br><span class="line"><span class="comment"># -t 表示只显示 TCP 套接字</span></span><br><span class="line"><span class="comment"># -n 表示显示数字地址和端口(而不是名字)</span></span><br><span class="line"><span class="comment"># -p 表示显示进程信息</span></span><br><span class="line">$ ss -ltnp | head -n 3</span><br><span class="line">State    Recv-Q    Send-Q        Local Address:Port        Peer Address:Port</span><br><span class="line">LISTEN   0         128           127.0.0.53%lo:53               0.0.0.0:*        users:((<span class="string">"systemd-resolve"</span>,pid=840,fd=13))</span><br><span class="line">LISTEN   0         128                 0.0.0.0:22               0.0.0.0:*        users:((<span class="string">"sshd"</span>,pid=1459,fd=3))</span><br></pre></td></tr></table></figure>
+<ul>
+<li>当套接字处于连接状态（Established）时，<ul>
+<li>Recv-Q 表示套接字缓冲还没有被应用程序取走的字节数（即接收队列长度）。</li>
+<li>Send-Q 表示还没有被远端主机确认的字节数（即发送队列长度）。</li>
+</ul>
+</li>
+<li>当套接字处于监听状态（Listening）时，<ul>
+<li>Recv-Q 表示全连接队列的长度。</li>
+<li>Send-Q 表示全连接队列的最大长度。</li>
+</ul>
+</li>
+</ul>
+<h3 id="统计协议栈信息"><a href="#统计协议栈信息" class="headerlink" title="统计协议栈信息"></a>统计协议栈信息</h3><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ netstat -s</span><br><span class="line">...</span><br><span class="line">Tcp:</span><br><span class="line">    3244906 active connection openings</span><br><span class="line">    23143 passive connection openings</span><br><span class="line">    115732 failed connection attempts</span><br><span class="line">    2964 connection resets received</span><br><span class="line">    1 connections established</span><br><span class="line">    13025010 segments received</span><br><span class="line">    17606946 segments sent out</span><br><span class="line">    44438 segments retransmitted</span><br><span class="line">    42 bad segments received</span><br><span class="line">    5315 resets sent</span><br><span class="line">    InCsumErrors: 42</span><br><span class="line">...</span><br><span class="line"></span><br><span class="line">$ ss -s</span><br><span class="line">Total: 186 (kernel 1446)</span><br><span class="line">TCP:   4 (estab 1, closed 0, orphaned 0, synrecv 0, timewait 0/0), ports 0</span><br><span class="line"></span><br><span class="line">Transport Total     IP        IPv6</span><br><span class="line">*    1446      -         -</span><br><span class="line">RAW    2         1         1</span><br><span class="line">UDP    2         2         0</span><br><span class="line">TCP    4         3         1</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<h3 id="查看网络的吞吐等指标"><a href="#查看网络的吞吐等指标" class="headerlink" title="查看网络的吞吐等指标"></a>查看网络的吞吐等指标</h3><p>sar</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 数字1表示每隔1秒输出一组数据</span></span><br><span class="line">$ sar -n DEV 1</span><br><span class="line">Linux 4.15.0-1035-azure (ubuntu)   01/06/19   _x86_64_  (2 CPU)</span><br><span class="line"></span><br><span class="line">13:21:40        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s   %ifutil</span><br><span class="line">13:21:41         eth0     18.00     20.00      5.79      4.25      0.00      0.00      0.00      0.00</span><br><span class="line">13:21:41      docker0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br><span class="line">13:21:41           lo      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00</span><br></pre></td></tr></table></figure>
+<h3 id="连通性和RTT"><a href="#连通性和RTT" class="headerlink" title="连通性和RTT"></a>连通性和RTT</h3><p>ping</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"># -c3表示发送三次ICMP包后停止</span><br><span class="line">$ ping -c3 114.114.114.114</span><br><span class="line">PING 114.114.114.114 (114.114.114.114) 56(84) bytes of data.</span><br><span class="line">64 bytes from 114.114.114.114: icmp_seq=1 ttl=54 time=244 ms</span><br><span class="line">64 bytes from 114.114.114.114: icmp_seq=2 ttl=47 time=244 ms</span><br><span class="line">64 bytes from 114.114.114.114: icmp_seq=3 ttl=67 time=244 ms</span><br><span class="line"></span><br><span class="line">--- 114.114.114.114 ping statistics ---</span><br><span class="line">3 packets transmitted, 3 received, 0% packet loss, time 2001ms</span><br><span class="line">rtt min/avg/max/mdev = 244.023/244.070/244.105/0.034 ms</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/系统优化-IO-优化套路/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2228,209 +2472,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/系统优化-内存-常用的内存泄露的排查方案 copy/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/系统优化-内存-常用的内存泄露的排查方案 copy/" class="post-title-link" itemprop="url">系统优化-内存-常用的内存泄露的排查方案</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2020-05-02 16:32:56" itemprop="dateCreated datePublished" datetime="2020-05-02T16:32:56Z">2020-05-02</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/性能优化/" itemprop="url" rel="index"><span itemprop="name">性能优化</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/性能优化/内存/" itemprop="url" rel="index"><span itemprop="name">内存</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>linux动态分配内存经常会遇到俩个问题：</p>
-<ol>
-<li>内存没有及时回收，发生内存泄露</li>
-<li>访问的是已分配边界外的内存，造成内存越界</li>
-</ol>
-<p>这章我们来讲下内存泄露、以及排查内存泄露的方法</p>
-<h2 id="内存分配以及回收"><a href="#内存分配以及回收" class="headerlink" title="内存分配以及回收"></a>内存分配以及回收</h2><p>我们的内存主要分为以下部分、堆、栈、只读端、数据段、内存映射段。</p>
-<ul>
-<li>栈：主要存放局部变量，由系统统一管理，所以不需要主动回收内存，一旦程序的作用域超过局部变量，就需要在堆中动态分配内存，在栈中的内存不会导致内存泄露</li>
-<li>堆：程序通过malloc申请内存，除非程序退出否则申请的内存不会释放。这部分内存会导致内存泄露</li>
-<li>只读段：保存程序的代码和常量，由于不需要继续申请内存，这部分会导致引起内存泄露</li>
-<li>数据段：保存静态变量和全局变量，由于申请时候已经知道了大小所以也不需要释放，这部分会导致引起内存泄露</li>
-<li><p>内存映射段：保存动态链接库和共享内存，由于共享内存的存在，</p>
-<p>综上，堆、和内存映射段会导致内存泄露</p>
-<p>内存泄漏的危害非常大，这些忘记释放的内存，不仅应用程序自己不能访问，系统也不能把它们再次分配给其他应用。内存泄漏不断累积，甚至会耗尽系统内存。虽然oom会Kill程序，但是在kill程序前会有很多严重的问题</p>
-</li>
-</ul>
-<h2 id="如何定位内存泄露"><a href="#如何定位内存泄露" class="headerlink" title="如何定位内存泄露"></a>如何定位内存泄露</h2><p>我们可以使用bcc-tools下的memleak，如图下面就是一个简单的内存泄露场景，child会分配内存而且没有回收</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ docker cp app:/app /app</span><br><span class="line">$ /usr/share/bcc/tools/memleak -p $(pidof app) -a</span><br><span class="line">Attaching to pid 12512, Ctrl+C to quit.</span><br><span class="line">[03:00:41] Top 10 stacks with outstanding allocations:</span><br><span class="line">    addr = 7f8f70863220 size = 8192</span><br><span class="line">    addr = 7f8f70861210 size = 8192</span><br><span class="line">    addr = 7f8f7085b1e0 size = 8192</span><br><span class="line">    addr = 7f8f7085f200 size = 8192</span><br><span class="line">    addr = 7f8f7085d1f0 size = 8192</span><br><span class="line">    40960 bytes <span class="keyword">in</span> 5 allocations from stack</span><br><span class="line">        fibonacci+0x1f [app]</span><br><span class="line">        child+0x4f [app]</span><br><span class="line">        start_thread+0xdb [libpthread-2.27.so]</span><br></pre></td></tr></table></figure>
-<p>解决后的如下面所示</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 重新执行 memleak工具检查内存泄漏情况</span></span><br><span class="line">$ /usr/share/bcc/tools/memleak -a -p $(pidof app)</span><br><span class="line">Attaching to pid 18808, Ctrl+C to quit.</span><br><span class="line">[10:23:18] Top 10 stacks with outstanding allocations:</span><br><span class="line">[10:23:23] Top 10 stacks with outstanding allocations:</span><br></pre></td></tr></table></figure>
-<p>由mMemleak在centos中需要内核4.1以上支持，所以在老系统中我们用到valgrind的memcheck</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"> valgrind  --tool=memcheck --leak-check=summary ./xxx-api</span><br><span class="line"></span><br><span class="line"> ==20474==</span><br><span class="line">==20474== HEAP SUMMARY:</span><br><span class="line">==20474==     <span class="keyword">in</span> use at <span class="built_in">exit</span>: 4,064 bytes <span class="keyword">in</span> 8 blocks</span><br><span class="line">==20474==   total heap usage: 16 allocs, 8 frees, 4,288 bytes allocated</span><br><span class="line">==20474==</span><br><span class="line">==20474== LEAK SUMMARY:</span><br><span class="line">==20474==    definitely lost: 0 bytes <span class="keyword">in</span> 0 blocks</span><br><span class="line">==20474==    indirectly lost: 0 bytes <span class="keyword">in</span> 0 blocks</span><br><span class="line">==20474==      possibly lost: 4,032 bytes <span class="keyword">in</span> 7 blocks</span><br><span class="line">==20474==    still reachable: 32 bytes <span class="keyword">in</span> 1 blocks</span><br><span class="line">==20474==         suppressed: 0 bytes <span class="keyword">in</span> 0 blocks</span><br><span class="line">==20474== Rerun with --leak-check=full to see details of leaked memory</span><br><span class="line">==20474==</span><br><span class="line">==20474== For counts of detected and suppressed errors, rerun with: -v</span><br><span class="line">==20474== Use --track-origins=yes to see <span class="built_in">where</span> uninitialised values come from</span><br><span class="line">==20474== ERROR SUMMARY: 28 errors from 4 contexts (suppressed: 0 from 0)</span><br></pre></td></tr></table></figure>
-<p>上面的definitely lost代表必然的内存泄露，他包括indirectly【非直接】和directly【直接俩种， possibly lost是可能的内存泄露。我们只需要查看definitely lost即可</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2477,7 +2518,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">222</span>
+                    <span class="site-state-item-count">223</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

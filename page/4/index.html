@@ -345,6 +345,188 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/jvm启动参数NewRatio不生效/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/jvm启动参数NewRatio不生效/" class="post-title-link" itemprop="url">jvm启动参数NewRatio不生效</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-06-28 21:44:43" itemprop="dateCreated datePublished" datetime="2020-06-28T21:44:43Z">2020-06-28</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/经验积累/" itemprop="url" rel="index"><span itemprop="name">经验积累</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/经验积累/项目积累/" itemprop="url" rel="index"><span itemprop="name">项目积累</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>  现象：jvm启动参数的配置，由于-Xmn的值优先级更高，所以NewRatio会被-Xmn覆盖。见下面的测试：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 这里NewSize是20MB</span></span><br><span class="line">java -Xmn20M -XX:NewRatio=2 -Xms50M -XX:+PrintFlagsFinal -version | grep -E <span class="string">'(Old|New)Size'</span></span><br><span class="line">    uintx MaxNewSize                               := 20971520                            &#123;product&#125;</span><br><span class="line">    uintx NewSize                                  := 20971520                            &#123;product&#125;</span><br><span class="line">    uintx NewSizeThreadIncrease                     = 5320                                &#123;pd product&#125;</span><br><span class="line">    uintx OldSize                                  := 31457280                            &#123;product&#125;</span><br><span class="line">openjdk version <span class="string">"1.8.0_222"</span></span><br><span class="line">OpenJDK Runtime Environment (build 1.8.0_222-b10)</span><br><span class="line">OpenJDK 64-Bit Server VM (build 25.222-b10, mixed mode)                       &#123;product&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#这里是50MB的1/3，可见NewRatio生效了</span></span><br><span class="line">java -XX:NewRatio=2 -Xms50M -XX:+PrintFlagsFinal -version | grep -E <span class="string">'(Old|New)Size'</span></span><br><span class="line">    uintx MaxNewSize                               := 1073741824                          &#123;product&#125;</span><br><span class="line">    uintx NewSize                                  := 17301504                            &#123;product&#125;</span><br><span class="line">    uintx NewSizeThreadIncrease                     = 5320                                &#123;pd product&#125;</span><br><span class="line">    uintx OldSize                                  := 35127296                            &#123;product&#125;</span><br><span class="line">openjdk version <span class="string">"1.8.0_222"</span></span><br><span class="line">OpenJDK Runtime Environment (build 1.8.0_222-b10)</span><br><span class="line">OpenJDK 64-Bit Server VM (build 25.222-b10, mixed mode)</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/共享服务中心的建设之路/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2244,200 +2426,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/系统优化-方法论-如何建立监控体系/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/系统优化-方法论-如何建立监控体系/" class="post-title-link" itemprop="url">系统优化-方法论-如何建立监控体系</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2020-06-07 19:04:42" itemprop="dateCreated datePublished" datetime="2020-06-07T19:04:42Z">2020-06-07</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/计算机基础/" itemprop="url" rel="index"><span itemprop="name">计算机基础</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/计算机基础/方法论/" itemprop="url" rel="index"><span itemprop="name">方法论</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>我们如何建立有效的监控体系？我们可以从俩个维度来看，系统指标，应用指标。</p>
-<h2 id="系统指标"><a href="#系统指标" class="headerlink" title="系统指标"></a>系统指标</h2><p>在开始监控系统之前，你肯定最想知道，怎么才能用简洁的方法，来描述系统资源的使用情况。不过不要忘记，每种资源的性能指标可都有很多，使用过多指标本身耗时耗力不说，也不容易为你建立起系统整体的运行状况。在这里，我为你介绍一种专门用于性能监控的 USE（Utilization Saturation and Errors）法。USE 法把系统资源的性能指标，简化成了三个类别，即使用率、饱和度以及错误数。</p>
-<ul>
-<li>使用率，表示资源用于服务的时间或容量百分比。100% 的使用率，表示容量已经用尽或者全部时间都用于服务。</li>
-<li>饱和度，表示资源的繁忙程度，通常与等待队列的长度相关。100% 的饱和度，表示资源无法接受更多的请求。</li>
-<li>错误数表示发生错误的事件个数。错误数越多，表明系统的问题越严重。</li>
-</ul>
-<p><img src="/系统优化-方法论-如何建立监控体系/use.png" alt="avator"></p>
-<p>工具有:zabix，Prometheus等</p>
-<p><img src="/系统优化-方法论-如何建立监控体系/prometheus.png" alt="avator"></p>
-<h2 id="应用指标"><a href="#应用指标" class="headerlink" title="应用指标"></a>应用指标</h2><p>应用指标可以直观的反应出服务的运行状况，我们更关注，请求数，延迟，错误率等，分布式系统、微服务还需要把握整个请求链路。</p>
-<ul>
-<li>全链路分析：掌握整个请求链路的响应时间、成功率，有zipkin,还有各大公司的trace方案</li>
-<li>指标分析：还需要对重点的业务，逻辑字日志中大点进行监控，解决方案可以采用：elk或者efk。</li>
-</ul>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2484,7 +2472,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">222</span>
+                    <span class="site-state-item-count">223</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

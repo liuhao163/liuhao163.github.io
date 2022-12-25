@@ -345,6 +345,221 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Redis-基础数据结构/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/Redis-基础数据结构/" class="post-title-link" itemprop="url">Redis-基础数据结构</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-10-08 17:17:59" itemprop="dateCreated datePublished" datetime="2019-10-08T17:17:59Z">2019-10-08</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/redis/" itemprop="url" rel="index"><span itemprop="name">redis</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="string"><a href="#string" class="headerlink" title="string"></a>string</h2><p>  redis所有数据的基础，采用预分配进行数据的分配当数据小于1MB时候，成倍扩容，大于1MB每次扩容1倍。最大512MB。</p>
+<p>  int类型支持计数</p>
+<h2 id="list"><a href="#list" class="headerlink" title="list"></a>list</h2><p>  quicklist的数据结构（ziplist+双向链表）</p>
+<h2 id="hash"><a href="#hash" class="headerlink" title="hash"></a>hash</h2><p>  类似于Java的hashmap，采用数组+链表方式，数据量小采用ziplist。</p>
+<p>  rehash采用渐进式</p>
+<h2 id="set"><a href="#set" class="headerlink" title="set"></a>set</h2><p>  底层采用一个特殊的字典来维护，字典的值都为NULL</p>
+<h2 id="zset"><a href="#zset" class="headerlink" title="zset"></a>zset</h2><p>  (skiplist or ziplist)+hash</p>
+<h2 id="bitmap"><a href="#bitmap" class="headerlink" title="bitmap"></a>bitmap</h2><ul>
+<li><p>setbit key offset value【0 or 1】 set某一位的bit值</p>
+</li>
+<li><p>getbit key offset 返回当前位的值</p>
+</li>
+<li><p>bitcount key [start end] 返回start-end值为1的bit的数量。start-end必须是8的倍数</p>
+</li>
+<li><p>bitpos key [true false] 返回第一个true or false的值。</p>
+</li>
+</ul>
+<h2 id="hyperHyperLog"><a href="#hyperHyperLog" class="headerlink" title="hyperHyperLog"></a>hyperHyperLog</h2><ul>
+<li>pfadd key value 不同的才会加入到列表中</li>
+<li>pfcount key 查看key的值</li>
+</ul>
+<p>用于统计网站的uv，大小是12kb,缺点是有误差</p>
+<h2 id="bloomfilter"><a href="#bloomfilter" class="headerlink" title="bloomfilter"></a>bloomfilter</h2><p>redis4.0以后提供插件支持</p>
+<ul>
+<li>bf.add</li>
+<li>bf.exists</li>
+</ul>
+<p>重复并且存在误判。</p>
+<h2 id="Reids的限流–redis-cell"><a href="#Reids的限流–redis-cell" class="headerlink" title="Reids的限流–redis-cell"></a>Reids的限流–redis-cell</h2><p>redis4.0后提供的限流模块</p>
+<p>cl.throttle key capacity opsQuota opssec quota-pre-action</p>
+<p>返回值<br>0 or 1 –结果0允许，1不允许<br>capacity–漏斗容量<br>left_quota–剩余容量<br>next_gen_quota_sec–下一次产生多少令牌的事件<br>maxQuotaSec–令牌桶满，下一次capacity=left_quota的时间 单位：秒</p>
+<h2 id="Redis的位置服务-GeoHash"><a href="#Redis的位置服务-GeoHash" class="headerlink" title="Redis的位置服务-GeoHash"></a>Redis的位置服务-GeoHash</h2><p>  原理是，将地球变为一个平面，划分成一系列方格每个方格有一个唯一编号，方格越近编号越近，将坐标的经纬度映射为一维坐标，放在唯一的方格中，只需要查看俩个方格的距离即可。</p>
+<p>  坐标会变成一串整数编码越长越精确，这些整数编码能还原成坐标。getHash会对这个整数做一次base32。</p>
+<p>  redis的坐标编码是52位，且底层采用zset。value是key，score是哪个52位的编码，我们查询附近的坐标只需要按照score查询即可</p>
+<p>  命令</p>
+<ul>
+<li>geoadd key 精度 纬度 value  添加</li>
+<li>geodist key value1 value2 单位 查询value1和value2的距离</li>
+<li>geoops  key value 获取value的坐标</li>
+<li>geohash key value 获取hash值可以计算出经纬度</li>
+<li>georediusbymember key value 20 km [withcoord withdist withhash] count 3 asc 查找value半径20km的其他坐标【包括自己】 按照距离升序排列</li>
+<li>georedius key value x y 20 km  [withcoord withdist withhash] count 3 asc  查找坐标点【x、y】半径20km的其他坐标【包括自己】 按照距离升序排列</li>
+</ul>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/RoketMq源码学习-七-事务的实现/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2341,207 +2556,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/RocketMq-源码学习-零-提前的一些准备/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/RocketMq-源码学习-零-提前的一些准备/" class="post-title-link" itemprop="url">RocketMq-源码学习-零-提前的一些准备</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-09-01 08:28:13" itemprop="dateCreated datePublished" datetime="2019-09-01T08:28:13Z">2019-09-01</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/" itemprop="url" rel="index"><span itemprop="name">消息队列</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/" itemprop="url" rel="index"><span itemprop="name">rocketmq</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/源码学习/" itemprop="url" rel="index"><span itemprop="name">源码学习</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>看源码的一些准备工作，以下逻辑会出现多次。</p>
-<h2 id="RemotingServer"><a href="#RemotingServer" class="headerlink" title="RemotingServer"></a>RemotingServer</h2><p>rocketMq采用NettyRemotingServer来处理各个组件之间的网络通信。</p>
-<h3 id="处理消息的方式"><a href="#处理消息的方式" class="headerlink" title="处理消息的方式"></a>处理消息的方式</h3><p>NettyRemotingServer的channelRead0()–&gt;NettyServerHandler.processMessageReceived–&gt;NettyServerHandler.processRequestCommand的processorTable处理，其中processorTable的方法是通过下面的方式注册进去</p>
-<ul>
-<li>注册消息的：通过registerProcessor方法，每种消息根据requestcode，来制定消息处理方式。<ul>
-<li>维护了processorTable对象，HashMap&lt;Integer/<em> request code </em>/, Pair&lt;NettyRequestProcessor, ExecutorService&gt;&gt;</li>
-<li>每一种request指定一个ExecutorService和一个registerProcessor来处理</li>
-</ul>
-</li>
-<li>处理消息：通过调用processMessageReceived来处理。</li>
-</ul>
-<h2 id="NettyClient三种发送消息的方式"><a href="#NettyClient三种发送消息的方式" class="headerlink" title="NettyClient三种发送消息的方式"></a>NettyClient三种发送消息的方式</h2><p>见信息的发送</p>
-<h3 id="invokeOneway-单向发送无返回值"><a href="#invokeOneway-单向发送无返回值" class="headerlink" title="invokeOneway:单向发送无返回值"></a>invokeOneway:单向发送无返回值</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">invokeOneway</span><span class="params">(String addr, RemotingCommand request, <span class="keyword">long</span> timeoutMillis)</span> <span class="keyword">throws</span> InterruptedException,</span></span><br><span class="line"><span class="function">    RemotingConnectException, RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException </span>&#123;</span><br><span class="line">    <span class="comment">//get or create Channel</span></span><br><span class="line">    <span class="keyword">final</span> Channel channel = <span class="keyword">this</span>.getAndCreateChannel(addr);</span><br><span class="line">    <span class="keyword">if</span> (channel != <span class="keyword">null</span> &amp;&amp; channel.isActive()) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">this</span>.rpcHook != <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">this</span>.rpcHook.doBeforeRequest(addr, request);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">this</span>.invokeOnewayImpl(channel, request, timeoutMillis);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (RemotingSendRequestException e) &#123;</span><br><span class="line">            log.warn(<span class="string">"invokeOneway: send request exception, so close the channel[&#123;&#125;]"</span>, addr);</span><br><span class="line">            <span class="keyword">this</span>.closeChannel(addr, channel);</span><br><span class="line">            <span class="keyword">throw</span> e;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">this</span>.closeChannel(addr, channel);</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> RemotingConnectException(addr);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">invokeOnewayImpl</span><span class="params">(<span class="keyword">final</span> Channel channel, <span class="keyword">final</span> RemotingCommand request, <span class="keyword">final</span> <span class="keyword">long</span> timeoutMillis)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> InterruptedException, RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException </span>&#123;</span><br><span class="line">    request.markOnewayRPC();</span><br><span class="line">    <span class="comment">//限流</span></span><br><span class="line">    <span class="keyword">boolean</span> acquired = <span class="keyword">this</span>.semaphoreOneway.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS);</span><br><span class="line">    <span class="keyword">if</span> (acquired) &#123;</span><br><span class="line">        <span class="keyword">final</span> SemaphoreReleaseOnlyOnce once = <span class="keyword">new</span> SemaphoreReleaseOnlyOnce(<span class="keyword">this</span>.semaphoreOneway);</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            channel.writeAndFlush(request).addListener(<span class="keyword">new</span> ChannelFutureListener() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">operationComplete</span><span class="params">(ChannelFuture f)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">                    <span class="comment">//释放</span></span><br><span class="line">                    once.release();</span><br><span class="line">                    ......</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            ......</span><br><span class="line">            once.release();</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> RemotingSendRequestException(RemotingHelper.parseChannelRemoteAddr(channel), e);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (timeoutMillis &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> RemotingTooMuchRequestException(<span class="string">"invokeOnewayImpl invoke too fast"</span>);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            ......</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> RemotingTimeoutException(info);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="invokeAsync-异步发送方式，invokeCallback中处理返回值信息"><a href="#invokeAsync-异步发送方式，invokeCallback中处理返回值信息" class="headerlink" title="invokeAsync:异步发送方式，invokeCallback中处理返回值信息"></a>invokeAsync:异步发送方式，invokeCallback中处理返回值信息</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">invokeAsync</span><span class="params">(String addr, RemotingCommand request, <span class="keyword">long</span> timeoutMillis, InvokeCallback invokeCallback)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> InterruptedException, RemotingConnectException, RemotingTooMuchRequestException, RemotingTimeoutException,</span></span><br><span class="line"><span class="function">    RemotingSendRequestException </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> beginStartTime = System.currentTimeMillis();</span><br><span class="line">    <span class="keyword">final</span> Channel channel = <span class="keyword">this</span>.getAndCreateChannel(addr);</span><br><span class="line">    <span class="keyword">if</span> (channel != <span class="keyword">null</span> &amp;&amp; channel.isActive()) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">this</span>.rpcHook != <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">this</span>.rpcHook.doBeforeRequest(addr, request);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">long</span> costTime = System.currentTimeMillis() - beginStartTime;</span><br><span class="line">            <span class="keyword">if</span> (timeoutMillis &lt; costTime) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> RemotingTooMuchRequestException(<span class="string">"invokeAsync call timeout"</span>);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">this</span>.invokeAsyncImpl(channel, request, timeoutMillis - costTime, invokeCallback);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (RemotingSendRequestException e) &#123;</span><br><span class="line">            log.warn(<span class="string">"invokeAsync: send request exception, so close the channel[&#123;&#125;]"</span>, addr);</span><br><span class="line">            <span class="keyword">this</span>.closeChannel(addr, channel);</span><br><span class="line">            <span class="keyword">throw</span> e;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">this</span>.closeChannel(addr, channel);</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> RemotingConnectException(addr);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">invokeAsyncImpl</span><span class="params">(<span class="keyword">final</span> Channel channel, <span class="keyword">final</span> RemotingCommand request, <span class="keyword">final</span> <span class="keyword">long</span> timeoutMillis,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">final</span> InvokeCallback invokeCallback)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> InterruptedException, RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> beginStartTime = System.currentTimeMillis();</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span> opaque = request.getOpaque();</span><br><span class="line"></span><br><span class="line">    <span class="comment">//限流</span></span><br><span class="line">    <span class="keyword">boolean</span> acquired = <span class="keyword">this</span>.semaphoreAsync.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS);</span><br><span class="line">    <span class="keyword">if</span> (acquired) &#123;</span><br><span class="line">        <span class="keyword">final</span> SemaphoreReleaseOnlyOnce once = <span class="keyword">new</span> SemaphoreReleaseOnlyOnce(<span class="keyword">this</span>.semaphoreAsync);</span><br><span class="line">        <span class="keyword">long</span> costTime = System.currentTimeMillis() - beginStartTime;</span><br><span class="line">        <span class="keyword">if</span> (timeoutMillis &lt; costTime) &#123;</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> RemotingTooMuchRequestException(<span class="string">"invokeAsyncImpl call timeout"</span>);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//responseFuture每个请求创建一个responseFuture，在responseFuture调用invokeCallback</span></span><br><span class="line">        <span class="keyword">final</span> ResponseFuture responseFuture = <span class="keyword">new</span> ResponseFuture(channel, opaque, timeoutMillis - costTime, invokeCallback, once);</span><br><span class="line">        <span class="comment">/**</span></span><br><span class="line"><span class="comment">         * 标准的rpc异步处理流程</span></span><br><span class="line"><span class="comment">         * 1.这里是讲requestId--&gt;responseFuture放到responseTable</span></span><br><span class="line"><span class="comment">         * 2.当server处理完发送请求之后发送回客户端由processResponseCommand方法处理，responseTable通过repsonse的Id,取到对应的responseFuture</span></span><br><span class="line"><span class="comment">         * 3.invokeCallback来处理后续操作</span></span><br><span class="line"><span class="comment">         */</span></span><br><span class="line">        <span class="keyword">this</span>.responseTable.put(opaque, responseFuture);</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            channel.writeAndFlush(request).addListener(<span class="keyword">new</span> ChannelFutureListener() &#123;</span><br><span class="line">                <span class="meta">@Override</span></span><br><span class="line">                <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">operationComplete</span><span class="params">(ChannelFuture f)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">                    <span class="keyword">if</span> (f.isSuccess()) &#123;</span><br><span class="line">                        responseFuture.setSendRequestOK(<span class="keyword">true</span>);</span><br><span class="line">                        <span class="keyword">return</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="comment">//处理失败的请求</span></span><br><span class="line">                    requestFail(opaque);</span><br><span class="line">                    ......</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">            responseFuture.release();</span><br><span class="line">            ......</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        ......</span><br><span class="line">        异常处理</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="invokeSync-同步发送，等待返回值"><a href="#invokeSync-同步发送，等待返回值" class="headerlink" title="invokeSync:同步发送，等待返回值"></a>invokeSync:同步发送，等待返回值</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> RemotingCommand <span class="title">invokeSync</span><span class="params">(String addr, <span class="keyword">final</span> RemotingCommand request, <span class="keyword">long</span> timeoutMillis)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> InterruptedException, RemotingConnectException, RemotingSendRequestException, RemotingTimeoutException </span>&#123;</span><br><span class="line">    <span class="keyword">long</span> beginStartTime = System.currentTimeMillis();</span><br><span class="line">    <span class="keyword">final</span> Channel channel = <span class="keyword">this</span>.getAndCreateChannel(addr);</span><br><span class="line">    <span class="keyword">if</span> (channel != <span class="keyword">null</span> &amp;&amp; channel.isActive()) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">this</span>.rpcHook != <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">this</span>.rpcHook.doBeforeRequest(addr, request);</span><br><span class="line">            &#125;</span><br><span class="line">            ......超时</span><br><span class="line">            RemotingCommand response = <span class="keyword">this</span>.invokeSyncImpl(channel, request, timeoutMillis - costTime);</span><br><span class="line">            <span class="keyword">if</span> (<span class="keyword">this</span>.rpcHook != <span class="keyword">null</span>) &#123;</span><br><span class="line">                <span class="keyword">this</span>.rpcHook.doAfterResponse(RemotingHelper.parseChannelRemoteAddr(channel), request, response);</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">return</span> response;</span><br><span class="line">        &#125; <span class="keyword">catch</span> (RemotingSendRequestException e) &#123;</span><br><span class="line">            ......</span><br><span class="line">        &#125; <span class="keyword">catch</span> (RemotingTimeoutException e) &#123;</span><br><span class="line">            ......</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        ......</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> RemotingCommand <span class="title">invokeSyncImpl</span><span class="params">(<span class="keyword">final</span> Channel channel, <span class="keyword">final</span> RemotingCommand request,</span></span></span><br><span class="line"><span class="function"><span class="params">    <span class="keyword">final</span> <span class="keyword">long</span> timeoutMillis)</span></span></span><br><span class="line"><span class="function">    <span class="keyword">throws</span> InterruptedException, RemotingSendRequestException, RemotingTimeoutException </span>&#123;</span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span> opaque = request.getOpaque();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">final</span> ResponseFuture responseFuture = <span class="keyword">new</span> ResponseFuture(channel, opaque, timeoutMillis, <span class="keyword">null</span>, <span class="keyword">null</span>);</span><br><span class="line">        <span class="keyword">this</span>.responseTable.put(opaque, responseFuture);</span><br><span class="line">        <span class="keyword">final</span> SocketAddress addr = channel.remoteAddress();</span><br><span class="line">        channel.writeAndFlush(request).addListener(<span class="keyword">new</span> ChannelFutureListener() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">operationComplete</span><span class="params">(ChannelFuture f)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">                <span class="keyword">if</span> (f.isSuccess()) &#123;</span><br><span class="line">                    responseFuture.setSendRequestOK(<span class="keyword">true</span>);</span><br><span class="line">                    <span class="keyword">return</span>;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    responseFuture.setSendRequestOK(<span class="keyword">false</span>);</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                responseTable.remove(opaque);</span><br><span class="line">                responseFuture.setCause(f.cause());</span><br><span class="line">                <span class="comment">//发送消息成功到了通知responseFuture</span></span><br><span class="line">                responseFuture.putResponse(<span class="keyword">null</span>);</span><br><span class="line">                log.warn(<span class="string">"send a request command to channel &lt;"</span> + addr + <span class="string">"&gt; failed."</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        <span class="comment">//async是直接交给processResponseCommand就返回了,这里是同步转异步等待一定时间</span></span><br><span class="line">        <span class="comment">// 1.在processResponseCommand可以主动终止，发送ok</span></span><br><span class="line">        <span class="comment">// 2.ChannelFutureListener失败，可以主动终止，失败</span></span><br><span class="line">        <span class="comment">// 3.超时</span></span><br><span class="line">        RemotingCommand responseCommand = responseFuture.waitResponse(timeoutMillis);</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">null</span> == responseCommand) &#123;</span><br><span class="line">            <span class="keyword">if</span> (responseFuture.isSendRequestOK()) &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> RemotingTimeoutException(RemotingHelper.parseSocketAddressAddr(addr), timeoutMillis,</span><br><span class="line">                    responseFuture.getCause());</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">throw</span> <span class="keyword">new</span> RemotingSendRequestException(RemotingHelper.parseSocketAddressAddr(addr), responseFuture.getCause());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> responseCommand;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        <span class="keyword">this</span>.responseTable.remove(opaque);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2588,7 +2602,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">222</span>
+                    <span class="site-state-item-count">223</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

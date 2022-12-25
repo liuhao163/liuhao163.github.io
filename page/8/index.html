@@ -345,6 +345,212 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/系统优化-CPU-如何排查CPU使用率到100/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/系统优化-CPU-如何排查CPU使用率到100/" class="post-title-link" itemprop="url">系统优化-CPU-如何排查CPU使用率到100%</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-04-22 13:50:04" itemprop="dateCreated datePublished" datetime="2020-04-22T13:50:04Z">2020-04-22</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/性能优化/" itemprop="url" rel="index"><span itemprop="name">性能优化</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/性能优化/CPU/" itemprop="url" rel="index"><span itemprop="name">CPU</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>我们如何去查看CPU的使用率呢？CPU使用率中的几个重要指标分别代表什么？</p>
+<h2 id="CPU使用率相关的概念介绍"><a href="#CPU使用率相关的概念介绍" class="headerlink" title="CPU使用率相关的概念介绍"></a>CPU使用率相关的概念介绍</h2><p>  我们多核的CPU为了能“并行”运行我们的程序，我们需要为每个进程分配执行时间，执行时间到了我们会进行一次中断，中断的频率我们定义为hz，其中内核态的中断我们可以设置，一般是100，250，1000hz，表示秒中断多少次，我们的用户态是没法直接控制hz的。用户态则规定为100HZ，也就是10ms。我们查看CPU的指标的单位就是10ms。</p>
+<p>  我们可以通过查看/proc/cpu/stat来看cpu的指标。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">cat /proc/cpu/stat|grep ^cpu</span><br><span class="line"></span><br><span class="line">cpu 280580 7407 286084 172900810 83602 0 583 0 0 0</span><br><span class="line">cpu0 144745 4181 176701 86423902 52076 0 301 0 0 0</span><br><span class="line">cpu1 135834 3226 109383 86476907 31525 0 282 0 0 0</span><br><span class="line"></span><br><span class="line">man /proc/stat</span><br><span class="line"><span class="meta">#</span><span class="bash">kernel/system statistics.  Varies with architecture.  Common entries include:</span></span><br><span class="line"><span class="meta">#</span><span class="bash">                    The amount of time, measured <span class="keyword">in</span> units of USER_HZ (1/100ths of a second on most architectures, use sysconf(_SC_CLK_TCK) to obtain the right value), that the system spent <span class="keyword">in</span> various states:</span></span><br><span class="line"><span class="meta">#</span><span class="bash">                     Number of processes <span class="keyword">in</span> runnable state.  (Linux 2.5.45 onward.)</span></span><br></pre></td></tr></table></figure>
+<p>  其中几个重要指标</p>
+<ul>
+<li>user（通常缩写为 us），代表用户态 CPU 时间。注意，它不包括下面的 nice 时间，但包括了 guest 时间。</li>
+<li>nice（通常缩写为 ni），代表低优先级用户态 CPU 时间，也就是进程的 nice 值被调整为 1-19 之间时的 CPU 时间。这里注意，nice 可取值范围是 -20 到 19，数值越大，优先级反而越</li>
+<li>system（通常缩写为 sys），代表内核态 CPU 时间。</li>
+<li>idle（通常缩写为 id），代表空闲时间。注意，它不包括等待 I/O 的时间（iowait）。</li>
+<li>iowait（通常缩写为 wa），代表等待 I/O 的 CPU 时间。</li>
+<li>irq（通常缩写为 hi），代表处理硬中断的 CPU 时间。</li>
+<li>softirq（通常缩写为 si），代表处理软中断的 CPU 时间。</li>
+<li>steal（通常缩写为 st），代表当系统运行在虚拟机中的时候，被其他虚拟机占用的 CPU 时间。</li>
+<li>guest（通常缩写为 guest），代表通过虚拟化运行其他操作系统的时间，也就是运行虚拟机的 CPU 时间。</li>
+<li><p>guest_nice（通常缩写为 gnice），代表以低优先级运行虚拟机的时间。</p>
+<p>我们还可以通过/proc/$pid/stat看某个进程的cpu使用情况，但是这些都是开机到现在的历史时间。其实是没有参考价值的，我们应该看一段时间内的cpu使用情况，我们一般采用以下2个方法看</p>
+</li>
+</ul>
+<h2 id="top"><a href="#top" class="headerlink" title="top"></a>top</h2><p>按1查看每个cpu</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Cpu(s): 10.2%us,  5.8%sy,  0.0%ni, 83.2%id,  0.0%wa,  0.0%hi,  0.8%si,  0.0%st</span><br></pre></td></tr></table></figure>
+<h2 id="pidstat"><a href="#pidstat" class="headerlink" title="pidstat"></a>pidstat</h2><figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">pid -u 5 1</span><br><span class="line"></span><br><span class="line">Linux 3.10.0-514.16.1.es01.x86_64 (xxxxx.xxx)   04/22/2020      _x86_64_        (40 CPU)</span><br><span class="line"></span><br><span class="line">01:58:07 PM       PID    %usr %system  %guest    %CPU   CPU  Command</span><br><span class="line">01:58:12 PM       354    0.00    1.20    0.00    1.20    10  xxxxx</span><br><span class="line">01:58:12 PM       946    0.20    0.40    0.00    0.60    14  java</span><br></pre></td></tr></table></figure>
+<h2 id="CPU使用过高怎么办"><a href="#CPU使用过高怎么办" class="headerlink" title="CPU使用过高怎么办"></a>CPU使用过高怎么办</h2><p>我们前期可以采用perf,不用gdb的原因是gdb会阻塞进程影响线上应用</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">$</span><span class="bash"> perf top</span></span><br><span class="line">Samples: 833  of event 'cpu-clock', Event count (approx.): 97742399</span><br><span class="line">Overhead  Shared Object       Symbol</span><br><span class="line">   7.28%  perf                [.] 0x00000000001f78a4</span><br><span class="line">   4.72%  [kernel]            [k] vsnprintf</span><br><span class="line">   4.32%  [kernel]            [k] module_get_kallsym</span><br><span class="line">   3.65%  [kernel]            [k] _raw_spin_unlock_irqrestore</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>也可以采用perf record &amp;&amp; perf report来进行采样</p>
+<p>其中 perf 添加-g可以查看具体的调用链</p>
+<h2 id="案例的总结"><a href="#案例的总结" class="headerlink" title="案例的总结"></a>案例的总结</h2><p>user+nice过高说明程序的进程可优化<br>sys过高可能是内核调度服务出问题<br>iowait过高可能是磁盘io出问题<br>si+hi过高可能是内核中断出问题</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/系统优化-CPU-理解CPU的上下文切换/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2311,205 +2517,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Spring源码-Bean的生命周期/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/Spring源码-Bean的生命周期/" class="post-title-link" itemprop="url">Spring源码-Bean的生命周期</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-12-26 00:00:00" itemprop="dateCreated datePublished" datetime="2019-12-26T00:00:00Z">2019-12-26</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/" itemprop="url" rel="index"><span itemprop="name">spring</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/源码/" itemprop="url" rel="index"><span itemprop="name">源码</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>Spring容器中一个bean的生命周期如下：</p>
-<h2 id="Bean初始化前"><a href="#Bean初始化前" class="headerlink" title="Bean初始化前"></a>Bean初始化前</h2><p>  BeanFactoryPostProcessor–&gt;postProcessBeanFactory方法：针对的是BeanFactroy，在BeanFactroy的refresh方法中的invokeBeanFactoryPostProcessors中这一步。</p>
-<p>  作用：可以获取BeanDefiniton并且赋予一些属性初始值。</p>
-<h2 id="Bean初始化过程"><a href="#Bean初始化过程" class="headerlink" title="Bean初始化过程"></a>Bean初始化过程</h2><p>  构造方法</p>
-<p>  BeanNameAware–&gt;setBeanName方法:实现BeanNameAware接口，将BeanName传给Bean，在initializeBean过程中调用<br>  作用：Bean可以获取BeanName</p>
-<p>  ApplicationContextAware–&gt;setApplicationContext方法:实现ApplicationContextAware接口，将ApplicationContext传给Bean，在prepareBeanFactory过程中将ApplicationContextAwareProcessor加到beanFactory，在initializeBean方法中调用postProcessBeforeInitialization<br>  作用：Bean可以获取ApplicationContext</p>
-<p>  BeanPostProcessor–&gt;postProcessBeforeInitialization方法：不同于BeanFactoryPostProcessor的是，这里针对的是Bean对象本身，在initializeBean方法中的applyBeanPostProcessorsBeforeInitialization方法调用<br>  作用：针对特定的bean可以修改bean的属性等</p>
-<p>  @PostConstruct方法：通过注解@PostConstruct执行的方法，在构造函数后面执行。</p>
-<p>  InitializingBean–&gt;afterPropertiesSet方法：实现InitializingBean接口，在initializeBean方法中调用</p>
-<p> BeanPostProcessor–&gt;postProcessAfterInitialization方法：初始化Bean之后执行</p>
-<p> DisposableBean–&gt;destroy方法：bean的销毁方法，在容器被销毁时候回被调用<br> 作用：执行bean的清理工作等。</p>
-<p> 演示代码如下，请分别创建如下的文件。自行修改basePackages</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//测试类</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestObjImpl</span> <span class="keyword">implements</span> <span class="title">InitializingBean</span>, <span class="title">DisposableBean</span>, <span class="title">BeanNameAware</span>, <span class="title">ApplicationContextAware</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">private</span> String beanName=<span class="string">""</span>;</span><br><span class="line">  <span class="keyword">private</span> ApplicationContext applicationContext;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Autowired</span></span><br><span class="line">  <span class="keyword">private</span> TestObjImplWithOutAnnoation testObjImplWithOutAnnoation;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="title">TestObjImpl</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">"构造方法"</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@PostConstruct</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">init</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">"@PostConstruct方法"</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setBeanName</span><span class="params">(String name)</span> </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">"BeanNameAware--&gt;setBeanName 方法"</span>);</span><br><span class="line">    <span class="keyword">this</span>.beanName = name;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">afterPropertiesSet</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">"InitializingBean--&gt;afterPropertiesSet 方法"</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setApplicationContext</span><span class="params">(ApplicationContext applicationContext)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">"ApplicationContextAware--&gt;setApplicationContext  方法"</span>);</span><br><span class="line">    <span class="keyword">this</span>.applicationContext=applicationContext;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">destroy</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">"DisposableBean--&gt;destroy 方法"</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">hello</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    System.out.println(beanName+<span class="string">" say hello"</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//BeanPostProcessor</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MyBeanPostProcessor</span> <span class="keyword">implements</span> <span class="title">BeanPostProcessor</span> </span>&#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Object <span class="title">postProcessBeforeInitialization</span><span class="params">(Object bean, String beanName)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (bean <span class="keyword">instanceof</span> TestObjImpl) &#123;</span><br><span class="line">      System.out.println(<span class="string">"BeanPostProcessor--&gt;postProcessBeforeInitialization==="</span>+beanName);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> bean;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> Object <span class="title">postProcessAfterInitialization</span><span class="params">(Object bean, String beanName)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (bean <span class="keyword">instanceof</span> TestObjImpl) &#123;</span><br><span class="line">      System.out.println(<span class="string">"BeanPostProcessor--&gt;postProcessAfterInitialization ==="</span>+beanName);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> bean;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//BeanFactoryPostProcessor</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestBeanFactoryPostProcessor</span> <span class="keyword">implements</span> <span class="title">BeanFactoryPostProcessor</span> </span>&#123;</span><br><span class="line">  <span class="meta">@Override</span></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">postProcessBeanFactory</span><span class="params">(ConfigurableListableBeanFactory beanFactory)</span> <span class="keyword">throws</span> BeansException </span>&#123;</span><br><span class="line">    System.out.println(<span class="string">"BeanFactoryPostProcessor--&gt;postProcessBeanFactory 方法"</span>);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">//main</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">Starter</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">  <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">    AnnotationConfigApplicationContext applicationContext= <span class="keyword">new</span> AnnotationConfigApplicationContext(<span class="string">"basePackages 需要自行修改"</span>);</span><br><span class="line">    TestObj obj=applicationContext.getBean(TestObj.class);</span><br><span class="line">    obj.hello();</span><br><span class="line">    applicationContext.close();</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2556,7 +2563,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">222</span>
+                    <span class="site-state-item-count">223</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

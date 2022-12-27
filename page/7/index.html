@@ -345,7 +345,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/系统优化-内存-常用的内存泄露的排查方案/">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/系统优化-内存-Swap机制/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Liu hao">
@@ -365,7 +365,238 @@
           <h1 class="post-title" itemprop="name headline">
                 
                 
-                <a href="/系统优化-内存-常用的内存泄露的排查方案/" class="post-title-link" itemprop="url">系统优化-内存-常用的内存泄露的排查方案</a>
+                <a href="/系统优化-内存-Swap机制/" class="post-title-link" itemprop="url">系统优化-内存-Swap机制</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-05-03 13:13:14" itemprop="dateCreated datePublished" datetime="2020-05-03T13:13:14Z">2020-05-03</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/性能优化/" itemprop="url" rel="index"><span itemprop="name">性能优化</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/性能优化/内存/" itemprop="url" rel="index"><span itemprop="name">内存</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="内存回收"><a href="#内存回收" class="headerlink" title="内存回收"></a>内存回收</h2><p>  之前提到当linux的内存不足时候会通过oom机制来kill程序加速释放内存，除了这种方法，linux还可以在资源不足时候释放可以回收的内存。哪些是可回收的内存呢？</p>
+<ul>
+<li>buffer/cache：这些被成为文件页（File-backed Page）大部分文件页可以直接回收，需要了在从磁盘读取，如果系统只修改了内存还没有写入到磁盘，我们成为脏页，需要写回磁盘在就进行回收<ul>
+<li>可以在应用程序中，通过系统调用 fsync ，把脏页同步到磁盘中；</li>
+<li>也可以交给系统，由内核线程 pdflush 负责这些脏页的刷新；</li>
+</ul>
+</li>
+<li>应用程序动态分配的内存，我们称之为匿名页（Anonymous Page），会通过Swap换入/换出的方式将内存写入到磁盘中来释放内存。</li>
+</ul>
+<h2 id="Swap的机制介绍"><a href="#Swap的机制介绍" class="headerlink" title="Swap的机制介绍"></a>Swap的机制介绍</h2><p>  swap将补偿访问的内存通过换入将内存数据写到磁盘中，需要了再从磁盘读取这实际上是一种用时间换空间的思想。</p>
+<h3 id="回收方式"><a href="#回收方式" class="headerlink" title="回收方式"></a>回收方式</h3><ol>
+<li>直接回收：大部分动态分配的内存都可以直接回收</li>
+<li><p>kswapd0：一个专门的内核线程用来定期回收内存。为了衡量内存的使用情况，kswapd0定义了三个内存阈值（watermark，也称为水位），分别是页最小阈值（page min)，页最小阈值（pages_min）、页低阈值（pages_low）和页高阈值（pages_high）。剩余内存，则使用 pages_free 表示。这里，我画了一张图表示它们的关系。</p>
+<p><img src="/系统优化-内存-Swap机制/img0.png" alt="avator"></p>
+<p>kswapd0的运行机制如下：</p>
+<p>小于pages_min:内存页耗尽<br>小于pages_low:内存页不足，kswapd0 会执行内存回收，直到剩余内存大于高阈值为止<br>小于pages_high:内存资源还可以满足申请的需求<br>大于pages_high:内存资源充足</p>
+<p>我们可以通过修改/proc/sys/vm/min_free_kbytes来修改pages_min,其他的pages_low和pages_high都是通过pages_min计算出来的。</p>
+</li>
+</ol>
+<h3 id="NUMA-与-Swap"><a href="#NUMA-与-Swap" class="headerlink" title="NUMA 与 Swap"></a>NUMA 与 Swap</h3><p>  NUMBA是（Non-Uniform Memory Access），多个cpu会被划分到不通的node中，我们可以用numbactl看到如下的情况，只有一个node,对应了0，1俩个cpu,有7977MB的内存，空余内存是4416MB。</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ numactl --hardware</span><br><span class="line">available: 1 nodes (0)</span><br><span class="line">node 0 cpus: 0 1</span><br><span class="line">node 0 size: 7977 MB</span><br><span class="line">node 0 free: 4416 MB</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>实际上，前面提到的三个内存阈值（页最小阈值、页低阈值和页高阈值），都可以通过内存域在 proc 文件系统中的接口 /proc/zoneinfo 来查看。比如，下面就是一个 /proc/zoneinfo 文件的内容示例：</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ cat /proc/zoneinfo</span><br><span class="line">...</span><br><span class="line">Node 0, zone   Normal</span><br><span class="line"> pages free     227894</span><br><span class="line">       min      14896 <span class="comment">## 三个水位线</span></span><br><span class="line">       low      18620</span><br><span class="line">       high     22344</span><br><span class="line">...</span><br><span class="line">	 <span class="comment">##空闲page和上面的free对应</span></span><br><span class="line">     nr_free_pages 227894</span><br><span class="line">	 <span class="comment">##活跃和非活跃的匿名页数</span></span><br><span class="line">     nr_zone_inactive_anon 11082</span><br><span class="line">     nr_zone_active_anon 14024</span><br><span class="line">	 <span class="comment">##活跃和非活跃的文件页数</span></span><br><span class="line">     nr_zone_inactive_file 539024</span><br><span class="line">     nr_zone_active_file 923986</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+<p>  内存资源紧张时候,默认采用回收匿名页数以及文件页数的方式来回收内存,可以通过/proc/sys/vm/zone_reclaim_mode调整</p>
+<ul>
+<li>默认的 0 ，也就是刚刚提到的模式，表示既可以从其他 Node 寻找空闲内存，也可以从本地回收内存。</li>
+<li>1、2、4 都表示只回收本地内存，2 表示可以回写脏数据回收内存，4 表示可以用 Swap 方式回收内存。</li>
+</ul>
+<h3 id="swappiness"><a href="#swappiness" class="headerlink" title="swappiness"></a>swappiness</h3><p>  内存回收有俩种方式</p>
+<ol>
+<li>回收文件页：通过fsync将buffer和cache写入到磁盘来释放这一部分内存</li>
+<li><p>回收匿名页：通过swap来释放匿名页内存</p>
+<p>Linux 提供了一个 /proc/sys/vm/swappiness 选项，用来调整使用 Swap 的积极程度。范围是 0-100，数值越大，越积极使用 Swap，也就是更倾向于回收匿名页；数值越小，越消极使用 Swap，也就是更倾向于回收文件页。</p>
+<p>注意swappiness只是一个趋势。</p>
+</li>
+</ol>
+<h3 id="案例排查"><a href="#案例排查" class="headerlink" title="案例排查"></a>案例排查</h3><p>首先确认swap开启,通过free确认，如果没开启可用下面方法开启</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment"># 创建Swap文件</span></span><br><span class="line">$ fallocate -l 8G /mnt/swapfile</span><br><span class="line"><span class="comment"># 修改权限只有根用户可以访问</span></span><br><span class="line">$ chmod 600 /mnt/swapfile</span><br><span class="line"><span class="comment"># 配置Swap文件</span></span><br><span class="line">$ mkswap /mnt/swapfile</span><br><span class="line"><span class="comment"># 开启Swap</span></span><br><span class="line">$ swapon /mnt/swapfile</span><br></pre></td></tr></table></figure>
+<p>测试方案：用命令dd</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 写入空设备，实际上只有磁盘的读请求</span></span><br><span class="line">$ dd <span class="keyword">if</span>=/dev/sda1 of=/dev/null bs=1G count=2048</span><br></pre></td></tr></table></figure>
+<p>这时候我们用sar -r命令观察，我们发现kbmemfree值越来越少，%memused越来越大，且kbbuffers越来越大，因为dd直接和磁盘交互，符合预期。</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 间隔1秒输出一组数据</span></span><br><span class="line"><span class="comment"># -r表示显示内存使用情况，-S表示显示Swap使用情况</span></span><br><span class="line">$ sar -r -S 1</span><br><span class="line">04:39:56    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty</span><br><span class="line">04:39:57      6249676   6839824   1919632     23.50    740512     67316   1691736     10.22    815156    841868         4</span><br><span class="line"></span><br><span class="line">04:39:56    kbswpfree kbswpused  %swpused  kbswpcad   %swpcad</span><br><span class="line">04:39:57      8388604         0      0.00         0      0.00</span><br><span class="line"></span><br><span class="line">04:39:57    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty</span><br><span class="line">04:39:58      6184472   6807064   1984836     24.30    772768     67380   1691736     10.22    847932    874224        20</span><br><span class="line"></span><br><span class="line">04:39:57    kbswpfree kbswpused  %swpused  kbswpcad   %swpcad</span><br><span class="line">04:39:58      8388604         0      0.00         0      0.00</span><br><span class="line"></span><br><span class="line">…</span><br><span class="line"></span><br><span class="line">04:44:06    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty</span><br><span class="line">04:44:07       152780   6525716   8016528     98.13   6530440     51316   1691736     10.22    867124   6869332         0</span><br><span class="line"></span><br><span class="line">04:44:06    kbswpfree kbswpused  %swpused  kbswpcad   %swpcad</span><br><span class="line">04:44:07      8384508      4096      0.05        52      1.27</span><br></pre></td></tr></table></figure>
+<ul>
+<li>刚开始，剩余内存（kbmemfree）不断减少，而缓冲区（kbbuffers）则不断增大，由此可知，剩余内存不断分配给了缓冲区。</li>
+<li>一段时间后，剩余内存已经很小，而缓冲区占用了大部分内存。这时候，Swap 的使用开始逐渐增大，缓冲区和剩余内存则只在小范围内波动。</li>
+</ul>
+<p>为什么缓冲区只在小范围内波动？由哪些进程导致，这时候我们用cachetop进行进一步排查发现是dd导致的，他的READ_HIT只有50%命中率且Miss的page已经到了41022页，可见也符合我们猜测的预期。</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ cachetop 5</span><br><span class="line">12:28:28 Buffers MB: 6349 / Cached MB: 87 / Sort: HITS / Order: ascending</span><br><span class="line">PID      UID      CMD              HITS     MISSES   DIRTIES  READ_HIT%  WRITE_HIT%</span><br><span class="line">   18280 root     python                 22        0        0     100.0%       0.0%</span><br><span class="line">   18279 root     dd                  41088    41022        0      50.0%      50.0%</span><br></pre></td></tr></table></figure>
+<p>  为什么Swap开始升高了？不是应该释放buffer么？我们查看/proc/zoneinfo返现，内存小于low,内存就开始执行回收才做恢复到high附近，周而复始。</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment"># -d 表示高亮变化的字段</span></span><br><span class="line"><span class="comment"># -A 表示仅显示Normal行以及之后的15行输出</span></span><br><span class="line">$ watch -d grep -A 15 <span class="string">'Normal'</span> /proc/zoneinfo</span><br><span class="line">Node 0, zone   Normal</span><br><span class="line">  pages free     21328</span><br><span class="line">        min      14896</span><br><span class="line">        low      18620</span><br><span class="line">        high     22344</span><br><span class="line">        spanned  1835008</span><br><span class="line">        present  1835008</span><br><span class="line">        managed  1796710</span><br><span class="line">        protection: (0, 0, 0, 0, 0)</span><br><span class="line">      nr_free_pages 21328</span><br><span class="line">      nr_zone_inactive_anon 79776</span><br><span class="line">      nr_zone_active_anon 206854</span><br><span class="line">      nr_zone_inactive_file 918561</span><br><span class="line">      nr_zone_active_file 496695</span><br><span class="line">      nr_zone_unevictable 2251</span><br><span class="line">      nr_zone_write_pending 0</span><br></pre></td></tr></table></figure>
+<p>我们发现有时候释放的是未知页即直接内存有时候是文件页即buffer，这是由于我们swappiness配置导致的</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cat /proc/sys/vm/swappiness</span><br><span class="line">60</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/系统优化-内存-常用的内存泄露的排查方案 copy/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/系统优化-内存-常用的内存泄露的排查方案 copy/" class="post-title-link" itemprop="url">系统优化-内存-常用的内存泄露的排查方案</a>
               
             
           </h1>
@@ -548,7 +779,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/系统优化-内存-常用的内存泄露的排查方案 copy/">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/系统优化-内存-常用的内存泄露的排查方案/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Liu hao">
@@ -568,7 +799,7 @@
           <h1 class="post-title" itemprop="name headline">
                 
                 
-                <a href="/系统优化-内存-常用的内存泄露的排查方案 copy/" class="post-title-link" itemprop="url">系统优化-内存-常用的内存泄露的排查方案</a>
+                <a href="/系统优化-内存-常用的内存泄露的排查方案/" class="post-title-link" itemprop="url">系统优化-内存-常用的内存泄露的排查方案</a>
               
             
           </h1>
@@ -2163,245 +2394,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/一次堆外内存泄露的排查/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/一次堆外内存泄露的排查/" class="post-title-link" itemprop="url">一次堆外内存泄露的排查</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2020-04-22 16:49:52" itemprop="dateCreated datePublished" datetime="2020-04-22T16:49:52Z">2020-04-22</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/经验积累/" itemprop="url" rel="index"><span itemprop="name">经验积累</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/经验积累/项目积累/" itemprop="url" rel="index"><span itemprop="name">项目积累</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>我们的一个后端java服务，采用的jetty+spring，堆内存1个g,但是一运行很快内存会占到4个g，启动参数以及top见下图：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup java -Djava.awt.headless=true -Djava.net.preferIPv4Stack=true -DappName=uapi -server -Xms1g -Xmx1g -XX:SurvivorRatio=8 -Xss256k -XX:ReservedCodeCacheSize=64m -XX:+CMSParallelRemarkEnabled -XX:+UseCMSCompactAtFullCollection -XX:+CMSScavengeBeforeRemark -XX:+UseFastAccessorMethods -XX:+DisableExplicitGC -XX:+UseConcMarkSweepGC -XX:CMSInitiatingOccupancyFraction=80 -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintHeapAtGC -XX:+PrintTenuringDistribution -Xloggc:./gc.logs -jar xxx.jar &gt; nohup.txt 2&gt;&amp;1 &amp;</span><br></pre></td></tr></table></figure>
-<p><img src="/一次堆外内存泄露的排查/img1.png" alt="avator"></p>
-<h2 id="分析思路"><a href="#分析思路" class="headerlink" title="分析思路"></a>分析思路</h2><p>jmap分析结果如下，堆和新生代没有异常，排除法判断是堆外内存导致。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -heap $pid</span><br></pre></td></tr></table></figure>
-<p><img src="/一次堆外内存泄露的排查/img2.png" alt="avator"></p>
-<p>持续观察一段时间后,通过top发现RES没有继续升高整体稳定在4g左右，猜测不是内存泄露而是某些程序通过堆外内存生成了一些buffer。所以想看下内存都在干嘛。</p>
-<h3 id="排查问题步骤：观察内存"><a href="#排查问题步骤：观察内存" class="headerlink" title="排查问题步骤：观察内存"></a>排查问题步骤：观察内存</h3><p>  先用pmap查看内存情况，发现有很多奇怪的64MB的空间。结果和命令如下：</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pmap -x <span class="variable">$pid</span></span><br></pre></td></tr></table></figure>
-<p><img src="/一次堆外内存泄露的排查/img2-1.png" alt="avator"></p>
-<p>  问题预估：进过查看资料以及和同事沟通，怀疑是glibc组件的ptmalloc的arena机制导致的：</p>
-<ul>
-<li>当一个线程调用malloc申请内存时候,会先查看自己是否有一个分配去，如果有加锁，加锁失败，去环形链表找一个未加锁的分配区，如果没找到，malloc会开辟一个新的分配区加入环形链表并加锁，用它来分配内存。</li>
-<li>这种机制在多线程竞争锁激烈的场景下会带来一个问题：非主分配区开辟越来越多，因为它一旦开辟了就不会释放，一个分配区就是64MB。这样也会导致进程占用的内存越来越多（可能实际使用的并不多）。如果系统配置的ulimit进程最大虚拟内存值不是unlimited，那么当进程占用的内存达到ulimit值，就会core掉。这个情况也可以在pmap -p pid中看到里面有大量的64MB大小的anon内存块。这个问题可以通过设置MALLOC_ARENA_MAX环境变量来限制Arena的最大数量规避。</li>
-<li><p>经过后面的gperf排查发现我们的代码中有GZipInputStream在创建对象时候底层的Java_java_util_zip_Inflater_init方法确实是调用了mallloc。</p>
-<p>所以，这其实不是内存泄露而是内存空洞的现象，在我们的系统资源捉襟见肘时候就比较致命。</p>
-</li>
-</ul>
-<h3 id="排查问题步骤：dump内存"><a href="#排查问题步骤：dump内存" class="headerlink" title="排查问题步骤：dump内存"></a>排查问题步骤：dump内存</h3><p>  查看/proc/$pid/smaps 查看进程内存的使用情况发现进程大量申请了64MB的空间。【怀疑是glibc在2.10引入的arena引起的，需要后续深入研究】</p>
-<p>  通过gdb dump出内存来查看；【具体命令见下方】</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">gdb attach &lt;pid&gt;</span><br><span class="line">dump memory outfile.txt startAddreess endAddress</span><br><span class="line"><span class="meta">#</span><span class="bash">  其中startAddreess endAddress在上面的smaps中都有</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">查看内存</span></span><br><span class="line">strings outfile.txt</span><br></pre></td></tr></table></figure>
-<p>  注意：生产环境慎用，gdb会阻塞进程。</p>
-<p>  这些64MB的很多内存是空的，总共加起来差不多有2.5g，算上我们分配的堆内存空间差不多正好4个G，大概原因找到了：由于频繁的调用系统malloc:os申请内存没有回收。查阅文章，可以试着用tcmalloc来解决遂开始安装tcmalloc，并且用gperf分析具体的调用</p>
-<h3 id="排查问题步骤：安装tcmalloct和gperf"><a href="#排查问题步骤：安装tcmalloct和gperf" class="headerlink" title="排查问题步骤：安装tcmalloct和gperf"></a>排查问题步骤：安装tcmalloct和gperf</h3><h4 id="1-安装环境"><a href="#1-安装环境" class="headerlink" title="1.安装环境"></a>1.安装环境</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum -y install gcc gcc-c++</span><br></pre></td></tr></table></figure>
-<h4 id="2-安装libunwind"><a href="#2-安装libunwind" class="headerlink" title="2.安装libunwind"></a>2.安装libunwind</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">cd /usr/local/src</span><br><span class="line">wget  http://download.savannah.gnu.org/releases/libunwind/libunwind-0.99.tar.gz</span><br><span class="line">tar -xzvf libunwind-0.99.tar.gz</span><br><span class="line">cd libunwind-0.99</span><br><span class="line">./configure  --prefix=/usr/local/google-perftools/libunwind</span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
-<h4 id="3-安装gperftools"><a href="#3-安装gperftools" class="headerlink" title="3.安装gperftools"></a>3.安装gperftools</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">wget https://github.com/gperftools/gperftools/releases/download/gperftools-2.5/gperftools-2.5.tar.gz</span><br><span class="line">tar -xzvf gperftools-2.5.tar.gz</span><br><span class="line">cd gperftools-2.5</span><br><span class="line">./configure --prefix=/usr/local/google-perftools/</span><br><span class="line">make &amp;&amp; make install</span><br></pre></td></tr></table></figure>
-<h4 id="4-使配置生效"><a href="#4-使配置生效" class="headerlink" title="4.使配置生效"></a>4.使配置生效</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/ld.so.conf.d/usr_local_lib.conf</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">新增以下内容</span></span><br><span class="line">/usr/local/google-perftools/libunwind/lib</span><br><span class="line"><span class="meta">#</span><span class="bash"> 按esc再:wq! <span class="comment">#保存退出</span></span></span><br><span class="line"></span><br><span class="line">/sbin/ldconfig  #执行此命令，使libunwind生效。 需要sudo权限</span><br></pre></td></tr></table></figure>
-<h4 id="5-加入环境变量"><a href="#5-加入环境变量" class="headerlink" title="5.加入环境变量"></a>5.加入环境变量</h4><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">export LD_PRELOAD=/usr/local/google-perftools/lib/libtcmalloc.so</span><br><span class="line">export HEAPPROFILE=/usr/local/gperftools/tmp/gzip</span><br><span class="line"><span class="meta">#</span><span class="bash"><span class="comment">#注意 mkdir -p /usr/local/gperftools/tmp</span></span></span><br></pre></td></tr></table></figure>
-<h3 id="问题解决"><a href="#问题解决" class="headerlink" title="问题解决"></a>问题解决</h3><p>通过top查看进程</p>
-<p>之前的进程 top结果 RES 3.3g<br><img src="/一次堆外内存泄露的排查/img3.png" alt="avator"></p>
-<p>之后的进程 top结果 RES 1.8g<br><img src="/一次堆外内存泄露的排查/img3-1.png" alt="avator"></p>
-<p>我们这时候再用pmap去看进程，64MB的内存那块消失</p>
-<p><img src="/一次堆外内存泄露的排查/img3-2.png" alt="avator"></p>
-<h3 id="用pperf查看内存"><a href="#用pperf查看内存" class="headerlink" title="用pperf查看内存"></a>用pperf查看内存</h3><p>上面的环境变量生效后运行java就会生成heap的快照地址在见上面<strong>HEAPPROFILE</strong>的设置</p>
-<p>用下面的命令处理heap的快照</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">cd /usr/local/gperftools/tmp/</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">查看heap信息</span></span><br><span class="line">/usr/local/gperftools-2.5/bin/pprof --text $JAVA_HOME/bin/java /usr/local/gperftools/tmp/gzip_618.0057.heap</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">导出pdf</span></span><br><span class="line">/usr/local/gperftools-2.5/bin/pprof --pdf $JAVA_HOME/bin/java /usr/local/gperftools/tmp/gzip_618.0057.heap &gt;gzip_618.0057.pdf</span><br></pre></td></tr></table></figure>
-<p>pdf的文件如下</p>
-<p><img src="/一次堆外内存泄露的排查/img4.png" alt="avator"></p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
-<li>原因：glibc的ptmalloc的arana机制会在并发情况下额外申请很多64MB内存空间，这部分空间不会回收的会重复利用。因为服务的线程数一定所以一般来讲不会出现泄漏，而是内存空洞问题。系统资源不足进程就会被kill</li>
-<li>解决方案：<ul>
-<li>ptmalloc取代tcmalloc。</li>
-<li>减少堆大小。</li>
-</ul>
-</li>
-</ul>
-<h2 id="附录：压测记录"><a href="#附录：压测记录" class="headerlink" title="附录：压测记录"></a>附录：压测记录</h2><h3 id="方案"><a href="#方案" class="headerlink" title="方案"></a>方案</h3><p>  对服务进行压测，压倒系统出现瓶颈无法在继续给出压力为止，这时候观测系统的参数。*本次压测主要模拟在系统不通负载的运行中内存的使用情况，cpu的占用以及系统瓶颈仅作为参考</p>
-<h3 id="结果"><a href="#结果" class="headerlink" title="结果"></a>结果</h3><p>  下图是在aapi测试时候的监控图：</p>
-<p>  <img src="/一次堆外内存泄露的排查/yc-1.png" alt="avator"></p>
-<ul>
-<li>在100QPS下aapi系统出现瓶颈，已经无法继续增加压力，这时候，可以看出100QPS的场景下cpu的波动很大，但是内存增长在合理范围内。</li>
-<li>系统空转后java进程内存逐渐落回1.6G</li>
-</ul>
-<h4 id="docker内部"><a href="#docker内部" class="headerlink" title="docker内部"></a>docker内部</h4><p>top图</p>
-<p>  <img src="/一次堆外内存泄露的排查/yc-2.png" alt="avator"></p>
-<p>pidstat -w -p &lt;$pid&gt; 1，上下文切换始终正常</p>
-<p>  <img src="/一次堆外内存泄露的排查/yc-3.png" alt="avator"></p>
-<p>pidstat -u -p &lt;$pid&gt; 1 cpu的使用率</p>
-<p>  <img src="/一次堆外内存泄露的排查/yc-4.png" alt="avator"></p>
-<p>压力主要在user%和system%，代表程序和内核态的调度。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2448,7 +2440,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">223</span>
+                    <span class="site-state-item-count">224</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

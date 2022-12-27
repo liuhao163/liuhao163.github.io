@@ -345,6 +345,192 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/生产者消费者模式/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/生产者消费者模式/" class="post-title-link" itemprop="url">生产者消费者模式--解耦整个业务</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-06-02 22:01:09" itemprop="dateCreated datePublished" datetime="2019-06-02T22:01:09Z">2019-06-02</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="生产者消费者模式的使用场景和作用"><a href="#生产者消费者模式的使用场景和作用" class="headerlink" title="生产者消费者模式的使用场景和作用"></a>生产者消费者模式的使用场景和作用</h1><ol>
+<li>业务解耦：产者负责生产任务丢给队列，消费者负责从队列中获取任务做逻辑</li>
+<li>削峰：串行的业务往往会导致服务夯住，如果采用生产者消费者，消费者负责将业务丢给队列即可返回，消费者可独立扩容多个来负责消费任务</li>
+</ol>
+<h2 id="消费者模式的几种实现"><a href="#消费者模式的几种实现" class="headerlink" title="消费者模式的几种实现"></a>消费者模式的几种实现</h2><h3 id="批量消费"><a href="#批量消费" class="headerlink" title="批量消费"></a>批量消费</h3><p>我们可以从队列中一个个的消费任务，但是在某些场景下我们其实批量的执行任务会更提高效率，比如异步写入数据的逻辑，一条条会建很多链接，我们可以一次拉取N个任务一次执行，代码如下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">BatchQueue</span>&lt;<span class="title">T</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> LinkedBlockingQueue&lt;T&gt; queue = <span class="keyword">new</span> LinkedBlockingQueue&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> batchSize;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> BatchJob&lt;T&gt; job;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> ExecutorService pool;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">BatchQueue</span><span class="params">(BatchJob&lt;T&gt; job, <span class="keyword">int</span> batchSize, <span class="keyword">int</span> consumerSize)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.batchSize = batchSize;</span><br><span class="line">        <span class="keyword">this</span>.job = job;</span><br><span class="line">        pool = Executors.newFixedThreadPool(consumerSize);</span><br><span class="line">        pool.execute(() -&gt; &#123;</span><br><span class="line">            <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">                <span class="comment">//异步消费</span></span><br><span class="line">                List&lt;T&gt; tasks = pollTask();</span><br><span class="line">                job.run(tasks);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">addTask</span><span class="params">(T task)</span> </span>&#123;</span><br><span class="line">        queue.add(task);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> List&lt;T&gt; <span class="title">pollTask</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        List&lt;T&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">        T task = <span class="keyword">null</span>;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            task = queue.take();<span class="comment">//减少循环第一次先等待</span></span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> (task != <span class="keyword">null</span> &amp;&amp; list.size() &lt; batchSize) &#123;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//循环里用poll，满足batchSize或者为空返回</span></span><br><span class="line">            list.add(task);</span><br><span class="line">            task = queue.poll();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">return</span> list;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">abstract</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">BatchJob</span>&lt;<span class="title">T</span>&gt; </span>&#123;</span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">(List&lt;T&gt; task)</span></span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        BatchQueue&lt;Object&gt; queue = <span class="keyword">new</span> BatchQueue&lt;&gt;(<span class="keyword">new</span> BatchJob&lt;Object&gt;() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">(List&lt;Object&gt; task)</span> </span>&#123;</span><br><span class="line">                System.out.println(task.size());</span><br><span class="line">                System.out.println(task);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;, <span class="number">3</span>, <span class="number">10</span>);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; <span class="number">100</span>; i++) &#123;</span><br><span class="line">            queue.addTask(<span class="string">"i="</span> + i);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="俩阶段提交"><a href="#俩阶段提交" class="headerlink" title="俩阶段提交"></a>俩阶段提交</h3><p>之前讨论Mysql的时候，我们提到过Mysql脏页的俩阶段提交，我们也可以使用消费者模式来实现</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> LinkedBlockingQueue&lt;T&gt; queue = <span class="keyword">new</span> LinkedBlockingQueue&lt;&gt;();</span><br><span class="line"></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">int</span> index = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">private</span> <span class="keyword">long</span> ptf = System.currentTimeMillis();</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">addTask</span><span class="params">(T task)</span> </span>&#123;</span><br><span class="line">    queue.add(task);</span><br><span class="line">    </span><br><span class="line">    ExecutorService executorService=Executors.newFixedThreadPool(<span class="number">10</span>);</span><br><span class="line">    executorService.execute(()-&gt;&#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            consumer();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">consumer</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>&#123;</span><br><span class="line">    Object obj = queue.poll(<span class="number">5</span>, TimeUnit.SECONDS);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (obj != <span class="keyword">null</span>) &#123;</span><br><span class="line">            System.out.println(<span class="string">"write"</span>);</span><br><span class="line">            <span class="comment">//write to</span></span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (index &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">//级别等于Error or 500条 or &gt;=5秒</span></span><br><span class="line">        <span class="keyword">if</span> (index == <span class="number">500</span> || System.currentTimeMillis() - ptf &gt;= <span class="number">5000L</span>) &#123;</span><br><span class="line">            System.out.println(<span class="string">"flush"</span>);</span><br><span class="line">            index = <span class="number">0</span>;</span><br><span class="line">            ptf = <span class="number">0L</span>;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/优雅的终止线程-俩阶段终止/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2040,192 +2226,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/CountDownLatch和CyclicBarrier：如何让多线程步调一致-1/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/CountDownLatch和CyclicBarrier：如何让多线程步调一致-1/" class="post-title-link" itemprop="url">CountDownLatch和CyclicBarrier：如何让多线程步调一致?</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-04-28 20:03:37" itemprop="dateCreated datePublished" datetime="2019-04-28T20:03:37Z">2019-04-28</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/并发/" itemprop="url" rel="index"><span itemprop="name">并发</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>CountDownLatch和CyclicBarrier主要解决线程的调度问题。例如如下场景:订单的对账，订单系统完成的订单和已经派发的订单的对账，对于有异常的订单要修复。这里是3个操作，见下面伪代码</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Order order=getOrder();</span><br><span class="line"></span><br><span class="line">POrder porder=getPOder();</span><br><span class="line"></span><br><span class="line">checkAndFix(order,porder);</span><br></pre></td></tr></table></figure>
-<p>如果每天的订单量很大这就会很耗时，我们可以考虑串行的方法，可以用线程池的方法同时去查询俩个订单，然后在check这时候我们要解决线程调度的问题，CountDownLatch就排上了用场,代码如下</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">CountDownLatch countDownLatch = <span class="keyword">new</span> CountDownLatch(<span class="number">2</span>);</span><br><span class="line">ExecutorService pool = Executors.newFixedThreadPool(<span class="number">2</span>);</span><br><span class="line">AtomicReference&lt;Object&gt; order = <span class="keyword">new</span> AtomicReference&lt;&gt;();</span><br><span class="line">pool.execute(() -&gt; &#123;</span><br><span class="line">    order.set(getOrder());</span><br><span class="line">    countDownLatch.countDown();</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line">AtomicReference&lt;Object&gt; porder = <span class="keyword">new</span> AtomicReference&lt;&gt;();</span><br><span class="line">pool.execute(() -&gt; &#123;</span><br><span class="line">    porder.set(getPOrder());</span><br><span class="line">    countDownLatch.countDown();</span><br><span class="line">&#125;);</span><br><span class="line"></span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    countDownLatch.await();</span><br><span class="line">&#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">    e.printStackTrace();</span><br><span class="line">&#125;</span><br><span class="line">checkAndFix(order.get(),porder.get());</span><br></pre></td></tr></table></figure>
-<p>不过这里checkAndFix还是主线程串行的能否在进一步优化呢，答案是能这里用到CyclicBarrier</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">ExecutorService callBack = Executors.newFixedThreadPool(<span class="number">1</span>);</span><br><span class="line">        Vector&lt;Object&gt; orders=<span class="keyword">new</span> Vector&lt;&gt;();</span><br><span class="line">        Vector&lt;Object&gt; porders=<span class="keyword">new</span> Vector&lt;&gt;();</span><br><span class="line">        CyclicBarrier cyclicBarrier = <span class="keyword">new</span> CyclicBarrier(<span class="number">2</span>,()-&gt;&#123;</span><br><span class="line">            callBack.execute(()-&gt;&#123;</span><br><span class="line">                checkAndFix( orders.get(<span class="number">0</span>),porders.get(<span class="number">0</span>));</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span>(<span class="keyword">true</span>)&#123;</span><br><span class="line">            ExecutorService pool = Executors.newFixedThreadPool(<span class="number">2</span>);</span><br><span class="line">            pool.execute(() -&gt; &#123;</span><br><span class="line">                orders.add(getOrder());</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    cyclicBarrier.await();</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException | BrokenBarrierException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">            pool.execute(() -&gt; &#123;</span><br><span class="line">                porders.add(getPOrder());</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    cyclicBarrier.await();</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException | BrokenBarrierException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;</span><br></pre></td></tr></table></figure>
-<p>CyclicBarrier和CountDownLatch的区别是可重入的，当见到0还会从2开始。另外CyclicBarrier可以设置Callback</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2272,7 +2272,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">223</span>
+                    <span class="site-state-item-count">224</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

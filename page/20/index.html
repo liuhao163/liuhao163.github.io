@@ -345,6 +345,204 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/定时器的并发处理/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/定时器的并发处理/" class="post-title-link" itemprop="url">支持并发的定时器+数据归档解决查询效率</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-06 00:03:46" itemprop="dateCreated datePublished" datetime="2019-03-06T00:03:46Z">2019-03-06</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/经验积累/" itemprop="url" rel="index"><span itemprop="name">经验积累</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/经验积累/工具/" itemprop="url" rel="index"><span itemprop="name">工具</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="项目背景"><a href="#项目背景" class="headerlink" title="项目背景"></a>项目背景</h2><p>客户的数据量徒增，每天1QWPV，1个月1张表的话大约这一个客户有30亿数据，页面上一些接口的响应变慢。</p>
+<p>原因是：后端数据存在了ES中，ES特点是模糊查询很开，但是但是如果用到了一些叫复杂的聚合函数需要进行索引扫描，所以效率了堪忧。</p>
+<h2 id="优化方案"><a href="#优化方案" class="headerlink" title="优化方案"></a>优化方案</h2><ul>
+<li>每天，用定时器将客户网站数据归档，目前是采用mysql保存。</li>
+<li>前端查询采用缓存数据+当天数据的方式呈现给客户，当日的数据很小所以可以满足性能上的要求。</li>
+<li>考虑到将来会有很多客户，可能一个定时器执行效率慢，所以定时器要支持水平扩展。</li>
+</ul>
+<h2 id="具体执行"><a href="#具体执行" class="headerlink" title="具体执行"></a>具体执行</h2><ol>
+<li>将数据库中所有的网站ID放到redis的zset中，为什么用zset？有序-支持分页，排重；</li>
+<li>利用setNx做锁， 从zset取出一条数据锁住：setNx的key是：prefix:statslock:id:yyyyMMdd, ttl：1天；<ul>
+<li>因为采用的是RedisTemplate不支持setNx和expire排异常轻快无法解锁，所以锁是按天锁住数据</li>
+</ul>
+</li>
+<li>ES查询昨天的数据，归档</li>
+<li>前端查询ES当钱数据+归档数据返回，测试从10sec请求变为了600ms</li>
+</ol>
+<p>示例代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doWafDataArchiveByDate</span><span class="params">(LocalDateTime localDateTime)</span> </span>&#123;</span><br><span class="line">    String dateFormater = localDateTime.format(YYYYMMDD);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//分页</span></span><br><span class="line">    Long total = statsRedis.domainSize();</span><br><span class="line">    Long pageNo = (total - <span class="number">1L</span>) / ZSET_PAGE_SIZE + <span class="number">1</span>;</span><br><span class="line">    Long curPage = <span class="number">1L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        <span class="comment">//从redis获取数据</span></span><br><span class="line">        Long startIdx = (curPage - <span class="number">1L</span>) * ZSET_PAGE_SIZE;</span><br><span class="line">        Long endIdx = startIdx + ZSET_PAGE_SIZE - <span class="number">1L</span>;</span><br><span class="line">        Set&lt;String&gt; set = statsRedis.queryRange(startIdx, endIdx);</span><br><span class="line"></span><br><span class="line">        curPage++;</span><br><span class="line">        <span class="keyword">for</span> (String domainUuid : set) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="comment">//锁1天</span></span><br><span class="line">                <span class="keyword">if</span> (taskLock.lock(domainUuid, dateFormater)) &#123;</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        <span class="comment">//do logic</span></span><br><span class="line">                    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                        e.printStackTrace();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                taskLock.unlock(domainUuid,dateFormater);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">while</span> (curPage &lt;= pageNo);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="遗留的坑以及方案"><a href="#遗留的坑以及方案" class="headerlink" title="遗留的坑以及方案"></a>遗留的坑以及方案</h2><p>待补充</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/网络协议-TCP/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2265,216 +2463,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Mysql临时表/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/Mysql临时表/" class="post-title-link" itemprop="url">Mysql临时表的用法</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-26 20:32:30" itemprop="dateCreated datePublished" datetime="2019-02-26T20:32:30Z">2019-02-26</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="外部临时表"><a href="#外部临时表" class="headerlink" title="外部临时表"></a>外部临时表</h1><p>本问主要解决如下的问题：</p>
-<ol>
-<li>临时表为什么能重名</li>
-<li>什么情况下使用临时表</li>
-</ol>
-<h2 id="临时表和引擎是Mermory表的区别"><a href="#临时表和引擎是Mermory表的区别" class="headerlink" title="临时表和引擎是Mermory表的区别"></a>临时表和引擎是Mermory表的区别</h2><ul>
-<li>首先内存表的数据是保存到内存中的，当数据库关闭后数据会消失，只保留表结构。</li>
-<li>而临时表是可以指定任意表引擎的，且临时表和当前Mysql的htread现关，当一个session关闭后临时表会被删掉。</li>
-<li>不同session的临时表可以重名</li>
-</ul>
-<h2 id="为什么临时表能重名"><a href="#为什么临时表能重名" class="headerlink" title="为什么临时表能重名"></a>为什么临时表能重名</h2><p>临时表是和当前的线程相关：</p>
-<ul>
-<li>Mysql5.6包含5.6之前，Mysql会在临时文件目录下建立一个”前缀.ibd”的文件，用来存放数据文件</li>
-<li>Mysql5.7之后的版本，引入了一个临时表空间，专门用来存放练市文件，不需要在创建ibd文件了。</li>
-<li>前缀是：库名+表名+serverid名+线程id。</li>
-</ul>
-<p>Mysql每个名都有一个def_table_name，临时表的表明就是”库名+表名+serverid名+线程id”，所以不同线程之间的临时表是可以重名的。</p>
-<p>注：innodb类型的临时表会在临时文件目录下，文件名的是#sql{进程 id}+{线程 id}+序列号，语句如下：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">temporary</span> <span class="keyword">table</span> temp_t(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>)<span class="keyword">engine</span>=<span class="keyword">innodb</span>;</span><br></pre></td></tr></table></figure>
-<h2 id="如何使用临时表"><a href="#如何使用临时表" class="headerlink" title="如何使用临时表"></a>如何使用临时表</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">#建表语法是：</span></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">temporary</span> <span class="keyword">table</span> temp_t <span class="keyword">like</span> t1;</span><br><span class="line"></span><br><span class="line"><span class="comment">#查看临时表</span></span><br><span class="line"><span class="keyword">show</span> <span class="keyword">create</span> <span class="keyword">table</span> temp_t;</span><br><span class="line"></span><br><span class="line"><span class="comment">#对临时表操作</span></span><br><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> temp_t <span class="keyword">add</span> <span class="keyword">index</span>(b);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> temp_t <span class="keyword">select</span> * <span class="keyword">from</span> t2 <span class="keyword">where</span> b&gt;=<span class="number">1</span> <span class="keyword">and</span> b&lt;=<span class="number">2000</span>;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> t1 <span class="keyword">join</span> temp_t <span class="keyword">on</span> (t1.b=temp_t.b);</span><br></pre></td></tr></table></figure>
-<p>mysql每个库都维护一个表名的链表，临时表排在前面，查找表名时候会轮训链表，发现表名对应的表是临时表时候会优先使用临时表。</p>
-<h1 id="临时表的使用场景"><a href="#临时表的使用场景" class="headerlink" title="临时表的使用场景"></a>临时表的使用场景</h1><p>分库分表：比如我们按照字段对一个表进行分库分表，当有一个查询条件不是按照分表规则进行查询时候有俩种解决方法</p>
-<ol>
-<li>proxy来做聚合</li>
-<li>通过临时表聚合</li>
-</ol>
-<h1 id="临时表的主备库处理"><a href="#临时表的主备库处理" class="headerlink" title="临时表的主备库处理"></a>临时表的主备库处理</h1><ul>
-<li>当binlog格式是state时候，主从同步时候要把临时表涉及的binglo都同步过去</li>
-<li>如果是row格式则不用。</li>
-<li>另外删除临时表的binlog会在一条语句中完成，所以只有drop语句binlog会格式化，crud的语句statement会原封不懂的传递给从库</li>
-</ul>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2521,7 +2509,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">223</span>
+                    <span class="site-state-item-count">224</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

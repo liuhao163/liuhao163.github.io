@@ -345,6 +345,204 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Go语言源码学习-sync-Map/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/Go语言源码学习-sync-Map/" class="post-title-link" itemprop="url">golang源码学习-sync.Map</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2021-12-15 11:20:52" itemprop="dateCreated datePublished" datetime="2021-12-15T11:20:52Z">2021-12-15</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/golang/" itemprop="url" rel="index"><span itemprop="name">golang</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/golang/源码学习/" itemprop="url" rel="index"><span itemprop="name">源码学习</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="sync-Map"><a href="#sync-Map" class="headerlink" title="sync.Map"></a>sync.Map</h2><p>  位于sync包中，主要解决map的线程安全的问题，适用于读多写少的场景。</p>
+<h2 id="sync-Map的原理"><a href="#sync-Map的原理" class="headerlink" title="sync.Map的原理"></a>sync.Map的原理</h2><p>  内部持有俩个map，一个是read，类型是atomic.Value实际类型是【map[interface{}]<em>entry】，一个是dirty类型是map【[interface{}]</em>entry】。</p>
+<p>  其中read主要解决无数据竞争的情况下数据的快速访问，它通过cas进行快速的读写操作；一旦出现数据的竞争，就会用到dirty，dirty里面保存read里所有非nil的值【通过状态来表示unexpunged】，当出现竞争后数据会写到dirty而不是read中。</p>
+<p>  数据的访问路径大致是：</p>
+<ul>
+<li>读，先从read里找，read里没有，去dirty里找，如果miss过一定的阈值【dirty的长度】时候，将dirty和read交换，交换后dirty置为nil；</li>
+<li><p>写，先判断key是否存在，如果存在且不为expunaged，先通过cas写快速返回，否则有如下分支：</p>
+<ul>
+<li>如果key是expunaged，说明key之前被删除了，但是dirty没有，unexpunaged之后同步修改read和dirty</li>
+<li>如果key不存在于read，但是存在于dirty修改dirty</li>
+<li>如果key不存在与read和dirty，初始化dirty【如果需要】，数据写入dirty</li>
+</ul>
+<p>因为数据在并发写的时候一旦发生竞争还是会用到锁，并发写的时候的锁是不可避免的。所以sync.Map适用于读多写少数据冲突不那么复杂的场景</p>
+</li>
+</ul>
+<h2 id="sync-Map的源码分析"><a href="#sync-Map的源码分析" class="headerlink" title="sync.Map的源码分析"></a>sync.Map的源码分析</h2><h3 id="结构体分析"><a href="#结构体分析" class="headerlink" title="结构体分析"></a>结构体分析</h3><figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">type</span> Map <span class="keyword">struct</span> &#123;</span><br><span class="line">	mu Mutex <span class="comment">//锁 用来保护read、dirty的并发控制</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// read包含部分map的内容，他是atomic.Value类型的用来解决并发访问的安全的问题，在读的场景不需要加锁，而在写的场景需要mu的控制</span></span><br><span class="line">	read atomic.Value <span class="comment">// readOnly </span></span><br><span class="line"></span><br><span class="line">	<span class="comment">// dirty访问要在mu的保护下进行，他包含所有的readOnly里non-expunged的数据</span></span><br><span class="line">	<span class="comment">// 在read中标记为Expunged的entries不会被存储在dirt中，如果一个在read中存在的key被标记为expunged,他需要先unexpunged在保存在dirty中</span></span><br><span class="line">	<span class="comment">// 如果dirty是nil，当下一次修改map的时候需要初始化dirty，初始化的方式是将read的不为exunped的value都copy到dirty中</span></span><br><span class="line">	dirty <span class="keyword">map</span>[<span class="keyword">interface</span>&#123;&#125;]*entry</span><br><span class="line"></span><br><span class="line">	<span class="comment">// 计数器，当从read读取数据时候miss回增加该值，打到一定的阈值，即miss&gt;=len(dirty)的时候回触发dirty和read的互换</span></span><br><span class="line">	misses <span class="keyword">int</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// read中的值</span></span><br><span class="line"><span class="keyword">type</span> readOnly <span class="keyword">struct</span> &#123;</span><br><span class="line">	m       <span class="keyword">map</span>[<span class="keyword">interface</span>&#123;&#125;]*entry</span><br><span class="line">	amended <span class="keyword">bool</span> <span class="comment">// 一个标记为，默认是false，true说明readOnly的m和dirty已经同步过了，即dirty不为nil了，在Store操作中，dirtyLocked函数调用后会置为true</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">  </span><br><span class="line"><span class="keyword">type</span> entry <span class="keyword">struct</span> &#123;</span><br><span class="line">	<span class="comment">// 封装了指向value值的指针</span></span><br><span class="line">	<span class="comment">//</span></span><br><span class="line">	<span class="comment">// If p == nil, the entry has been deleted and m.dirty == nil.</span></span><br><span class="line">	<span class="comment">//</span></span><br><span class="line">	<span class="comment">// If p == expunged, the entry has been deleted, m.dirty != nil, and the entry</span></span><br><span class="line">	<span class="comment">// is missing from m.dirty.</span></span><br><span class="line">	<span class="comment">//</span></span><br><span class="line">	<span class="comment">// Otherwise, the entry is valid and recorded in m.read.m[key] and, if m.dirty</span></span><br><span class="line">	<span class="comment">// != nil, in m.dirty[key].</span></span><br><span class="line">	<span class="comment">//</span></span><br><span class="line">	<span class="comment">// An entry can be deleted by atomic replacement with nil: when m.dirty is</span></span><br><span class="line">	<span class="comment">// next created, it will atomically replace nil with expunged and leave</span></span><br><span class="line">	<span class="comment">// m.dirty[key] unset.</span></span><br><span class="line">	<span class="comment">//</span></span><br><span class="line">	<span class="comment">// An entry's associated value can be updated by atomic replacement, provided</span></span><br><span class="line">	<span class="comment">// p != expunged. If p == expunged, an entry's associated value can be updated</span></span><br><span class="line">	<span class="comment">// only after first setting m.dirty[key] = e so that lookups using the dirty</span></span><br><span class="line">	<span class="comment">// map find the entry.</span></span><br><span class="line">	p unsafe.Pointer <span class="comment">// *interface&#123;&#125;</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//标记位当entry.p=expunged说明，该对象在read中被删除，标记了expunged的key不会出现在dirty中。</span></span><br><span class="line"><span class="keyword">var</span> expunged = unsafe.Pointer(<span class="built_in">new</span>(<span class="keyword">interface</span>&#123;&#125;))</span><br></pre></td></tr></table></figure>
+<h3 id="Store"><a href="#Store" class="headerlink" title="Store"></a>Store</h3><figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(m *Map)</span> <span class="title">Store</span><span class="params">(key, value <span class="keyword">interface</span>&#123;&#125;)</span></span> &#123;</span><br><span class="line">	<span class="comment">//从read中获取readOnly，如果key存在，通过cas修改不为expunged的值，成功后快速返回</span></span><br><span class="line">	read, _ := m.read.Load().(readOnly)</span><br><span class="line">		<span class="keyword">if</span> e, ok := read.m[key]; ok &amp;&amp; e.tryStore(&amp;value) &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//修改失败通过锁进行鬓发保护</span></span><br><span class="line">	m.mu.Lock()</span><br><span class="line">	read, _ = m.read.Load().(readOnly)<span class="comment">//双重检查</span></span><br><span class="line">	<span class="keyword">if</span> e, ok := read.m[key]; ok &#123;</span><br><span class="line">		<span class="comment">//key存在于read但是状态是expunged，cas修改成nil，同步dirty和readOnly的值，</span></span><br><span class="line">		<span class="keyword">if</span> e.unexpungeLocked() &#123;</span><br><span class="line">				<span class="comment">//走到这里说明dirty已经被初始化了，见m.dirtyLocked()里e.tryExpungeLocked()这一步</span></span><br><span class="line">				m.dirty[key] = e</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">//cas保存value</span></span><br><span class="line">		e.storeLocked(&amp;value)</span><br><span class="line">	&#125; <span class="keyword">else</span> <span class="keyword">if</span> e, ok := m.dirty[key]; ok &#123;</span><br><span class="line">		<span class="comment">//key存在于dirty</span></span><br><span class="line">		e.storeLocked(&amp;value)</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="comment">//!read.amended说明dirty为空初始化dirty，将read中不为expunged值写入dirty，见下面</span></span><br><span class="line">		<span class="keyword">if</span> !read.amended &#123;</span><br><span class="line">			m.dirtyLocked()</span><br><span class="line">			m.read.Store(readOnly&#123;m: read.m, amended: <span class="literal">true</span>&#125;)</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">//修改dirty的值</span></span><br><span class="line">		m.dirty[key] = newEntry(value)</span><br><span class="line">	&#125;</span><br><span class="line">	m.mu.Unlock()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(m *Map)</span> <span class="title">dirtyLocked</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> m.dirty != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	read, _ := m.read.Load().(readOnly)</span><br><span class="line">	m.dirty = <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="keyword">interface</span>&#123;&#125;]*entry, <span class="built_in">len</span>(read.m))</span><br><span class="line">	<span class="keyword">for</span> k, e := <span class="keyword">range</span> read.m &#123;</span><br><span class="line">		<span class="keyword">if</span> !e.tryExpungeLocked() &#123;</span><br><span class="line">			m.dirty[k] = e</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(e *entry)</span> <span class="title">tryExpungeLocked</span><span class="params">()</span> <span class="params">(isExpunged <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line">	p := atomic.LoadPointer(&amp;e.p)</span><br><span class="line">	<span class="keyword">for</span> p == <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">if</span> atomic.CompareAndSwapPointer(&amp;e.p, <span class="literal">nil</span>, expunged) &#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">		&#125;</span><br><span class="line">		p = atomic.LoadPointer(&amp;e.p)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> p == expunged</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Load"><a href="#Load" class="headerlink" title="Load"></a>Load</h3><figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(m *Map)</span> <span class="title">Load</span><span class="params">(key <span class="keyword">interface</span>&#123;&#125;)</span> <span class="params">(value <span class="keyword">interface</span>&#123;&#125;, ok <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line">	read, _ := m.read.Load().(readOnly)</span><br><span class="line">	<span class="comment">//优先读取read</span></span><br><span class="line">	e, ok := read.m[key]</span><br><span class="line">	<span class="keyword">if</span> !ok &amp;&amp; read.amended &#123;</span><br><span class="line">		<span class="comment">//key不存在但是dirty已经初始化，这里需要锁来保护并发冲突</span></span><br><span class="line">		m.mu.Lock()</span><br><span class="line">		read, _ = m.read.Load().(readOnly)<span class="comment">//双重检查</span></span><br><span class="line">		e, ok = read.m[key]</span><br><span class="line">		<span class="keyword">if</span> !ok &amp;&amp; read.amended &#123;</span><br><span class="line">			<span class="comment">//从dirty里取</span></span><br><span class="line">			e, ok = m.dirty[key]</span><br><span class="line">			<span class="comment">//超过阈值交换dirty和read,并且dirty置为nil，见下面</span></span><br><span class="line">			m.missLocked()</span><br><span class="line">		&#125;</span><br><span class="line">		m.mu.Unlock()</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> !ok &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span>, <span class="literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//加载value</span></span><br><span class="line">	<span class="keyword">return</span> e.load()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(e *entry)</span> <span class="title">load</span><span class="params">()</span> <span class="params">(value <span class="keyword">interface</span>&#123;&#125;, ok <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line">	p := atomic.LoadPointer(&amp;e.p)</span><br><span class="line">	<span class="keyword">if</span> p == <span class="literal">nil</span> || p == expunged &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">nil</span>, <span class="literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> *(*<span class="keyword">interface</span>&#123;&#125;)(p), <span class="literal">true</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(m *Map)</span> <span class="title">missLocked</span><span class="params">()</span></span> &#123;</span><br><span class="line">	m.misses++</span><br><span class="line">	<span class="keyword">if</span> m.misses &lt; <span class="built_in">len</span>(m.dirty) &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	m.read.Store(readOnly&#123;m: m.dirty&#125;)</span><br><span class="line">	m.dirty = <span class="literal">nil</span></span><br><span class="line">	m.misses = <span class="number">0</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="Delete"><a href="#Delete" class="headerlink" title="Delete"></a>Delete</h3><figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(m *Map)</span> <span class="title">Delete</span><span class="params">(key <span class="keyword">interface</span>&#123;&#125;)</span></span> &#123;</span><br><span class="line">	read, _ := m.read.Load().(readOnly)</span><br><span class="line">	e, ok := read.m[key]</span><br><span class="line">	<span class="keyword">if</span> !ok &amp;&amp; read.amended &#123;</span><br><span class="line">		m.mu.Lock()</span><br><span class="line">		read, _ = m.read.Load().(readOnly)</span><br><span class="line">		e, ok = read.m[key]</span><br><span class="line">		<span class="keyword">if</span> !ok &amp;&amp; read.amended &#123;</span><br><span class="line">			<span class="built_in">delete</span>(m.dirty, key)</span><br><span class="line">		&#125;</span><br><span class="line">		m.mu.Unlock()</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> ok &#123;</span><br><span class="line">		e.<span class="built_in">delete</span>()</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(e *entry)</span> <span class="title">delete</span><span class="params">()</span> <span class="params">(hadValue <span class="keyword">bool</span>)</span></span> &#123;</span><br><span class="line">	<span class="keyword">for</span> &#123;</span><br><span class="line">		p := atomic.LoadPointer(&amp;e.p)</span><br><span class="line">		<span class="keyword">if</span> p == <span class="literal">nil</span> || p == expunged &#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">if</span> atomic.CompareAndSwapPointer(&amp;e.p, p, <span class="literal">nil</span>) &#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="string">`</span></span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/ThreadLocal如何在子线程传递/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1985,228 +2183,6 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/SpringMvc源码-RequestMappingHandlerMapping/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/SpringMvc源码-RequestMappingHandlerMapping/" class="post-title-link" itemprop="url">SpringMvc源码-RequestMappingHandlerMapping</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2020-10-13 20:44:13" itemprop="dateCreated datePublished" datetime="2020-10-13T20:44:13Z">2020-10-13</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/" itemprop="url" rel="index"><span itemprop="name">spring</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/mvc/" itemprop="url" rel="index"><span itemprop="name">mvc</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>RequestMappingHandlerMapping负责将RequestMapping注解的方法与url关联起来，并且返回HandlerExecutionChain</p>
-<h2 id="加载过程"><a href="#加载过程" class="headerlink" title="加载过程"></a>加载过程</h2><p>  DispatcherServlet.initStrategies的initHandlerMappings方法中会通过读取DispatchServerlet.proeprties对HandlerMapping进行初始化，这里重点看RequestMappingHandlerMapping类</p>
-<p>  DispatcherServlet.properties的值</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">org.springframework.web.servlet.HandlerMapping=org.springframework.web.servlet.handler.BeanNameUrlHandlerMapping,\</span><br><span class="line">	org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping,\</span><br><span class="line">	org.springframework.web.servlet.function.support.RouterFunctionMapping</span><br></pre></td></tr></table></figure>
-<h2 id="初始化HandlerMapping"><a href="#初始化HandlerMapping" class="headerlink" title="初始化HandlerMapping"></a>初始化HandlerMapping</h2><p>  HandlerMapping，封装了是request与他的处理类HandlerMethod的映射关系，他的职责主要是通过request找到对应的handlerMapping</p>
-<p>  AbstractHandlerMethodMapping实现了InitializingBean所以在afterPropertiesSet会进行初始化工作</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">afterPropertiesSet</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	<span class="comment">//调用initHandlerMethods</span></span><br><span class="line">	initHandlerMethods();</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"> <span class="comment">//从ApplicationContext扫描所有的bean, 找到并且将handler method注册到容器中【将url和handlerMethod关联】</span></span><br><span class="line"> <span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">initHandlerMethods</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	<span class="comment">//获取application中所有的bean</span></span><br><span class="line">	<span class="keyword">for</span> (String beanName : getCandidateBeanNames()) &#123;</span><br><span class="line">		<span class="keyword">if</span> (!beanName.startsWith(SCOPED_TARGET_NAME_PREFIX)) &#123;</span><br><span class="line">       		<span class="comment">//重点方法</span></span><br><span class="line">			processCandidateBean(beanName);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	handlerMethodsInitialized(getHandlerMethods());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="重点方法：processCandidateBean"><a href="#重点方法：processCandidateBean" class="headerlink" title="重点方法：processCandidateBean"></a>重点方法：processCandidateBean</h3><p>  根据bean找到method，封装成handlerMethod注册到容器中</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">processCandidateBean</span><span class="params">(String beanName)</span> </span>&#123;</span><br><span class="line">	Class&lt;?&gt; beanType = <span class="keyword">null</span>;</span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">		beanType = obtainApplicationContext().getType(beanName);</span><br><span class="line">	&#125; <span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">		<span class="comment">// An unresolvable bean type, probably from a lazy bean - let's ignore it.</span></span><br><span class="line">		<span class="keyword">if</span> (logger.isTraceEnabled()) &#123;</span><br><span class="line">			logger.trace(<span class="string">"Could not resolve type for bean '"</span> + beanName + <span class="string">"'"</span>, ex);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//这里isHandler判断beanType是否是一个Controller【判断是否有@Controller和@RequestMapping注解】</span></span><br><span class="line">	<span class="keyword">if</span> (beanType != <span class="keyword">null</span> &amp;&amp; isHandler(beanType)) &#123;</span><br><span class="line">     		<span class="comment">//重点方法</span></span><br><span class="line">		detectHandlerMethods(beanName);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="重点方法"><a href="#重点方法" class="headerlink" title="重点方法"></a>重点方法</h3><p>  detectHandlerMethods遍历bean的method方法</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">detectHandlerMethods</span><span class="params">(Object handler)</span> </span>&#123;</span><br><span class="line">		Class&lt;?&gt; handlerType = (handler <span class="keyword">instanceof</span> String ?</span><br><span class="line">				obtainApplicationContext().getType((String) handler) : handler.getClass());</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (handlerType != <span class="keyword">null</span>) &#123;</span><br><span class="line">			Class&lt;?&gt; userType = ClassUtils.getUserClass(handlerType);</span><br><span class="line">			<span class="comment">//遍历handler中的方法，通过getMappingForMethod返回RequestMappingInfo</span></span><br><span class="line">			<span class="comment">// 通过方法上的RequestMapping注解,生成RequestMappingInfo，并且和Method关联</span></span><br><span class="line">			Map&lt;Method, T&gt; methods = MethodIntrospector.selectMethods(userType,</span><br><span class="line">					(MethodIntrospector.MetadataLookup&lt;T&gt;) method -&gt; &#123;</span><br><span class="line">						<span class="keyword">try</span> &#123;</span><br><span class="line">							<span class="keyword">return</span> getMappingForMethod(method, userType);</span><br><span class="line">						&#125; <span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">							<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"Invalid mapping on handler class ["</span> +</span><br><span class="line">									userType.getName() + <span class="string">"]: "</span> + method, ex);</span><br><span class="line">						&#125;</span><br><span class="line">					&#125;);</span><br><span class="line">			<span class="keyword">if</span> (logger.isTraceEnabled()) &#123;</span><br><span class="line">				logger.trace(formatMappings(userType, methods));</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			<span class="comment">//遍历method--&gt;RequestMappingInfo 并且将method和mapping注册到 mappingRegistry中RequestMappingHandlerMapping对其进行了改写</span></span><br><span class="line">			methods.forEach((method, mapping) -&gt; &#123;</span><br><span class="line">				Method invocableMethod = AopUtils.selectInvocableMethod(method, userType);</span><br><span class="line">				registerHandlerMethod(handler, invocableMethod, mapping);</span><br><span class="line">			&#125;);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="重点方法：registerHandlerMethod-handler-invocableMethod-mapping"><a href="#重点方法：registerHandlerMethod-handler-invocableMethod-mapping" class="headerlink" title="重点方法：registerHandlerMethod(handler, invocableMethod, mapping)"></a>重点方法：registerHandlerMethod(handler, invocableMethod, mapping)</h3><p>  向容器注册HandlerMapping：registerHandlerMethod(handler, invocableMethod, mapping);<br>  这里的mappingRegistry 是AbstractHandlerMethodMapping的内部类MappingRegistry;</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">void</span> <span class="title">registerHandlerMethod</span><span class="params">(Object handler, Method method, T mapping)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">this</span>.mappingRegistry.register(mapping, handler, method);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">	<span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">register</span><span class="params">(T mapping, Object handler, Method method)</span> </span>&#123;</span><br><span class="line">		<span class="comment">// Assert that the handler method is not a suspending one.</span></span><br><span class="line">		<span class="keyword">if</span> (KotlinDetector.isKotlinType(method.getDeclaringClass()) &amp;&amp; KotlinDelegate.isSuspend(method)) &#123;</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(<span class="string">"Unsupported suspending handler method detected: "</span> + method);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">this</span>.readWriteLock.writeLock().lock();</span><br><span class="line">		<span class="keyword">try</span> &#123;</span><br><span class="line">			<span class="comment">//封装成HandlerMethod</span></span><br><span class="line">			HandlerMethod handlerMethod = createHandlerMethod(handler, method);</span><br><span class="line">			<span class="comment">//判断mapping是否已经存在，存在抛异常</span></span><br><span class="line">			validateMethodMapping(handlerMethod, mapping);</span><br><span class="line">			<span class="comment">//关联 mapping--&gt;handlerMethod</span></span><br><span class="line">			<span class="keyword">this</span>.mappingLookup.put(mapping, handlerMethod);</span><br><span class="line">			<span class="comment">//根据mapping获取url并且将Url和mapping关联起来</span></span><br><span class="line">			List&lt;String&gt; directUrls = getDirectUrls(mapping);</span><br><span class="line">			<span class="keyword">for</span> (String url : directUrls) &#123;</span><br><span class="line">				<span class="keyword">this</span>.urlLookup.add(url, mapping);</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			<span class="comment">//关联name【RequestMappingInfoHandlerMethodMappingNamingStrategy.getName】和handlerMethod</span></span><br><span class="line">			String name = <span class="keyword">null</span>;</span><br><span class="line">			<span class="keyword">if</span> (getNamingStrategy() != <span class="keyword">null</span>) &#123;</span><br><span class="line">				name = getNamingStrategy().getName(handlerMethod, mapping);</span><br><span class="line">				addMappingName(name, handlerMethod);</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			<span class="comment">//corsLookup绑定handlerMethod和corsConfig,注解或者方法上带CrossOrigin</span></span><br><span class="line">			CorsConfiguration corsConfig = initCorsConfiguration(handler, method, mapping);</span><br><span class="line">			<span class="keyword">if</span> (corsConfig != <span class="keyword">null</span>) &#123;</span><br><span class="line">				<span class="keyword">this</span>.corsLookup.put(handlerMethod, corsConfig);</span><br><span class="line">			&#125;</span><br><span class="line"></span><br><span class="line">			<span class="keyword">this</span>.registry.put(mapping, <span class="keyword">new</span> MappingRegistration&lt;&gt;(mapping, handlerMethod, directUrls, name));</span><br><span class="line">		&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">			<span class="keyword">this</span>.readWriteLock.writeLock().unlock();</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></figure>
-<p>  至此所有的RequestMapping都注册到容器中</p>
-<h2 id="doDipatch时候"><a href="#doDipatch时候" class="headerlink" title="doDipatch时候"></a>doDipatch时候</h2><p>  通过reqeust获取handler和拦截器封装成HandlerExecutionChain过程</p>
-<p>  找到在初始化时候注册的handlerMappings，调用它们的getHandler方法，具体实现在AbstraceHanlderMapping中</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">final</span> HandlerExecutionChain <span class="title">getHandler</span><span class="params">(HttpServletRequest request)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	<span class="comment">//根据request获取一个指定的handler，如果没找到返回null，类型是HandlerMethod，调用链路RequestMappingHandlerMapping.getHandlerInternal--&gt;AbstractHandlerMethodMapping.getgetHandlerInternal</span></span><br><span class="line">	</span><br><span class="line">	<span class="comment">//重点方法1 </span></span><br><span class="line">	Object handler = getHandlerInternal(request);</span><br><span class="line">	<span class="keyword">if</span> (handler == <span class="keyword">null</span>) &#123;</span><br><span class="line">		handler = getDefaultHandler();</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (handler == <span class="keyword">null</span>) &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">// Bean name or resolved handler?</span></span><br><span class="line">	<span class="keyword">if</span> (handler <span class="keyword">instanceof</span> String) &#123;</span><br><span class="line">		String handlerName = (String) handler;</span><br><span class="line">		handler = obtainApplicationContext().getBean(handlerName);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//重点方法2 返回HandlerExecutionChain【handler和拦截器】的封装</span></span><br><span class="line">	HandlerExecutionChain executionChain = getHandlerExecutionChain(handler, request);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (logger.isTraceEnabled()) &#123;</span><br><span class="line">		logger.trace(<span class="string">"Mapped to "</span> + handler);</span><br><span class="line">	&#125; <span class="keyword">else</span> <span class="keyword">if</span> (logger.isDebugEnabled() &amp;&amp; !request.getDispatcherType().equals(DispatcherType.ASYNC)) &#123;</span><br><span class="line">		logger.debug(<span class="string">"Mapped to "</span> + executionChain.getHandler());</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (hasCorsConfigurationSource(handler)) &#123;</span><br><span class="line">		CorsConfiguration config = (<span class="keyword">this</span>.corsConfigurationSource != <span class="keyword">null</span> ? <span class="keyword">this</span>.corsConfigurationSource.getCorsConfiguration(request) : <span class="keyword">null</span>);</span><br><span class="line">		CorsConfiguration handlerConfig = getCorsConfiguration(handler, request);</span><br><span class="line">		config = (config != <span class="keyword">null</span> ? config.combine(handlerConfig) : handlerConfig);</span><br><span class="line">		executionChain = getCorsHandlerExecutionChain(request, executionChain, config);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> executionChain;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="重点方法1-getHandlerInternal"><a href="#重点方法1-getHandlerInternal" class="headerlink" title="重点方法1 getHandlerInternal"></a>重点方法1 getHandlerInternal</h3><p>  这里的实现见：AbstractHandlerMethodMapping.getgetHandlerInternal</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> HandlerMethod <span class="title">getHandlerInternal</span><span class="params">(HttpServletRequest request)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	<span class="comment">//获取urlPath用于查找HandlerMethod</span></span><br><span class="line">	String lookupPath = getUrlPathHelper().getLookupPathForRequest(request);</span><br><span class="line">	request.setAttribute(LOOKUP_PATH, lookupPath);</span><br><span class="line">	<span class="keyword">this</span>.mappingRegistry.acquireReadLock();</span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">		<span class="comment">//查找HandlerMethod 优先通过Path找，没找到轮询mappingLookup，之后对找到的HandlerMethod排序找到最合适的HandlerMethod</span></span><br><span class="line">		HandlerMethod handlerMethod = lookupHandlerMethod(lookupPath, request);</span><br><span class="line">		<span class="comment">//re-create bean 享元模式防止请求修改HandlerMethod</span></span><br><span class="line">		<span class="keyword">return</span> (handlerMethod != <span class="keyword">null</span> ? handlerMethod.createWithResolvedBean() : <span class="keyword">null</span>);</span><br><span class="line">	&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">		<span class="keyword">this</span>.mappingRegistry.releaseReadLock();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">protected</span> HandlerMethod <span class="title">lookupHandlerMethod</span><span class="params">(String lookupPath, HttpServletRequest request)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	<span class="comment">//</span></span><br><span class="line">	List&lt;Match&gt; matches = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">	<span class="comment">//通过path查找到符合要求的RequestMappingInfo</span></span><br><span class="line">	List&lt;T&gt; directPathMatches = <span class="keyword">this</span>.mappingRegistry.getMappingsByUrl(lookupPath);</span><br><span class="line">	<span class="keyword">if</span> (directPathMatches != <span class="keyword">null</span>) &#123;</span><br><span class="line">		addMatchingMappings(directPathMatches, matches, request);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//如果通过path没找到去mappingLookup轮询一遍查找</span></span><br><span class="line">	<span class="keyword">if</span> (matches.isEmpty()) &#123;</span><br><span class="line">		<span class="comment">// No choice but to go through all mappings...</span></span><br><span class="line">		addMatchingMappings(<span class="keyword">this</span>.mappingRegistry.getMappings().keySet(), matches, request);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//不为空</span></span><br><span class="line">	<span class="keyword">if</span> (!matches.isEmpty()) &#123;</span><br><span class="line">		<span class="comment">//根据RequestMappingInfoHandlerMapping.getMappingComparator排序Match.mapping的Compare然后取第一个</span></span><br><span class="line">		<span class="comment">// todo 优先级未看</span></span><br><span class="line">		Comparator&lt;Match&gt; comparator = <span class="keyword">new</span> MatchComparator(getMappingComparator(request));</span><br><span class="line">		matches.sort(comparator);</span><br><span class="line">		<span class="comment">//排序后取第一个作为返回结果</span></span><br><span class="line">		Match bestMatch = matches.get(<span class="number">0</span>);</span><br><span class="line">		<span class="comment">//取出来俩个然后优先级一样直接抛出异常意思是Handler重复"多个优先级"</span></span><br><span class="line">		<span class="keyword">if</span> (matches.size() &gt; <span class="number">1</span>) &#123;</span><br><span class="line">			<span class="keyword">if</span> (logger.isTraceEnabled()) &#123;</span><br><span class="line">				logger.trace(matches.size() + <span class="string">" matching mappings: "</span> + matches);</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="keyword">if</span> (CorsUtils.isPreFlightRequest(request)) &#123;</span><br><span class="line">				<span class="keyword">return</span> PREFLIGHT_AMBIGUOUS_MATCH;</span><br><span class="line">			&#125;</span><br><span class="line">			Match secondBestMatch = matches.get(<span class="number">1</span>);</span><br><span class="line">			<span class="keyword">if</span> (comparator.compare(bestMatch, secondBestMatch) == <span class="number">0</span>) &#123;</span><br><span class="line">				Method m1 = bestMatch.handlerMethod.getMethod();</span><br><span class="line">				Method m2 = secondBestMatch.handlerMethod.getMethod();</span><br><span class="line">				String uri = request.getRequestURI();</span><br><span class="line">				<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(</span><br><span class="line">						<span class="string">"Ambiguous handler methods mapped for '"</span> + uri + <span class="string">"': &#123;"</span> + m1 + <span class="string">", "</span> + m2 + <span class="string">"&#125;"</span>);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		request.setAttribute(BEST_MATCHING_HANDLER_ATTRIBUTE, bestMatch.handlerMethod);</span><br><span class="line">		<span class="comment">//为request设置值：PATH_WITHIN_HANDLER_MAPPING_ATTRIBUTE，返回对应的handlerMethod</span></span><br><span class="line">		<span class="comment">//这里其实就是把mapping,和handler都返回只不过mapping放在了requst里</span></span><br><span class="line">		handleMatch(bestMatch.mapping, lookupPath, request);</span><br><span class="line">		<span class="keyword">return</span> bestMatch.handlerMethod;</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="comment">//都没匹配到调用该方法见RequestMappingInfoHandlerMapping，其中不符合RequestMappingInfo的会抛异常</span></span><br><span class="line">		<span class="keyword">return</span> handleNoMatch(<span class="keyword">this</span>.mappingRegistry.getMappings().keySet(), lookupPath, request);</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="重点方法2-getHandlerExecutionChain"><a href="#重点方法2-getHandlerExecutionChain" class="headerlink" title="重点方法2 getHandlerExecutionChain"></a>重点方法2 getHandlerExecutionChain</h3><p>  返回handler和拦截器的封装，注：springboot的WebMvcConfigurer.addInterceptors方法中添加的拦截器会转成MappedInterceptor添加到RRequestMappingHandlerMapping中代码可以从WebMvcAutoConfiguration中看</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> HandlerExecutionChain <span class="title">getHandlerExecutionChain</span><span class="params">(Object handler, HttpServletRequest request)</span> </span>&#123;</span><br><span class="line">	<span class="comment">//如果是一个存在的HandlerExecutionChain,直接返回，否则new一个HandlerExecutionChain</span></span><br><span class="line">	<span class="comment">//new HandlerExecutionChain(handler)在HandlerExecutionChain的构造方法里会再判断下Handler的类型，</span></span><br><span class="line">	<span class="comment">// 如果是HandlerExecutionChain进行merge</span></span><br><span class="line">	<span class="comment">// 如果是HandlerMethod会进行赋值具体见HandlerExecutionChain构造方法</span></span><br><span class="line">	HandlerExecutionChain chain = (handler <span class="keyword">instanceof</span> HandlerExecutionChain ?</span><br><span class="line">			(HandlerExecutionChain) handler : <span class="keyword">new</span> HandlerExecutionChain(handler));</span><br><span class="line"></span><br><span class="line">	String lookupPath = <span class="keyword">this</span>.urlPathHelper.getLookupPathForRequest(request, LOOKUP_PATH);</span><br><span class="line">	<span class="comment">//处理拦截器，</span></span><br><span class="line">	<span class="comment">// 如果是MappedInterceptor，判断lookupPath是否匹配如果匹配将拦截器加入到HandlerExecutionChain</span></span><br><span class="line">	<span class="comment">// 如果是HandlerInterceptor 或者WebRequestInterceptor直接将拦截器加入到HandlerExecutionChain</span></span><br><span class="line">	<span class="comment">// todo 注意：springboot 通过WebMvcConfigurer配置的interceptor最终都会转成MappedInterceptor，</span></span><br><span class="line">	<span class="comment">// 见InterceptorRegistration.getInterceptor(),入口在WebMvcAutoConfiguration.requestMappingHandlerMapping()方法</span></span><br><span class="line">	<span class="keyword">for</span> (HandlerInterceptor interceptor : <span class="keyword">this</span>.adaptedInterceptors) &#123;</span><br><span class="line">		<span class="keyword">if</span> (interceptor <span class="keyword">instanceof</span> MappedInterceptor) &#123;</span><br><span class="line">			MappedInterceptor mappedInterceptor = (MappedInterceptor) interceptor;</span><br><span class="line">			<span class="keyword">if</span> (mappedInterceptor.matches(lookupPath, <span class="keyword">this</span>.pathMatcher)) &#123;</span><br><span class="line">				chain.addInterceptor(mappedInterceptor.getInterceptor());</span><br><span class="line">			&#125;</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			chain.addInterceptor(interceptor);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> chain;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>返回了包含handler和interceptor的HandlerExecutionChain为下一步handlerAdapter执行做好准备</p>
-<h2 id="附录：MappingRegistry几个重要的容器"><a href="#附录：MappingRegistry几个重要的容器" class="headerlink" title="附录：MappingRegistry几个重要的容器"></a>附录：MappingRegistry几个重要的容器</h2><p>上面提到的register过程中涉及到了MappingRegistry类，它包含了几个重要容器用来缓存url,RequestMappingInfo HandlerMethod的对应关系</p>
-<ul>
-<li>urlLookup: url–&gt;List&lt;RequestMappingInfo&gt;</li>
-<li>mappingLookup:RequestMappingInfo–&gt;HandlerMethod</li>
-</ul>
-<h2 id="附录：-RequestMapping注解"><a href="#附录：-RequestMapping注解" class="headerlink" title="附录：@RequestMapping注解"></a>附录：@RequestMapping注解</h2><p>  RequestMapping是一个用来处理请求地址映射的注解，可用于类或方法上。用于类上，表示类中的所有响应请求的方法都是以该地址作为父路径。</p>
-<ul>
-<li>value：指定请求的实际地址，指定的地址可以是URI Template 模式（后面将会说明）；</li>
-<li>method：指定请求的method类型， GET、POST、PUT、DELETE等；</li>
-<li>consumes：指定处理请求的提交内容类型（Content-Type），例如application/json, text/html;</li>
-<li>produces：指定返回的内容类型，仅当request请求头中的(Accept)类型中包含该指定类型才返回；</li>
-<li>params：指定request中必须包含某些参数值是，才让该方法处理。</li>
-<li>headers：指定request中必须包含某些指定的header值，才能让该方法处理请求。</li>
-</ul>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/SpringMvc源码-RequestMappingHandlerAdapter/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2437,7 +2413,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">223</span>
+                    <span class="site-state-item-count">224</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

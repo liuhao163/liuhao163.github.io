@@ -345,6 +345,218 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/系统优化-网络-C10K和C1000K回顾-系统调优方案/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/系统优化-网络-C10K和C1000K回顾-系统调优方案/" class="post-title-link" itemprop="url">系统优化-网络-C10K和C1000K回顾-系统调优方案</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-05-23 13:35:06" itemprop="dateCreated datePublished" datetime="2020-05-23T13:35:06Z">2020-05-23</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/性能优化/" itemprop="url" rel="index"><span itemprop="name">性能优化</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/性能优化/网络/" itemprop="url" rel="index"><span itemprop="name">网络</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>C10K的C只的是client客户端的意思，意思是支持1W的客户端连接。C1000K则是指100W的客户端连接。为了达到C10K,我们就要对系统进行优化，一般会从俩方面考虑。</p>
+<h2 id="IO方面的优化"><a href="#IO方面的优化" class="headerlink" title="IO方面的优化"></a>IO方面的优化</h2><p>  因为传统的BIO一个线程只能同时处理一个IO请求效率比较低。为了增大并发处理的能力，我们往往会采用IO多路复用的思路去解决问题。I/O多路复用是什么意思呢？</p>
+<p>  我们先来普及俩个概念</p>
+<ul>
+<li>水平触发：只要文件描述符可以非阻塞地执行 I/O ，就会触发通知。也就是说，应用程序可以随时检查文件描述符的状态，然后再根据状态，进行 I/O 操作。</li>
+<li>边缘触发：只有在文件描述符的状态发生改变（也就是 I/O 请求达到）时，才发送一次通知。这时候，应用程序需要尽可能多地执行 I/O，直到无法继续读写，才可以停止。如果 I/O 没执行完，或者因为某种原因没来得及处理，那么这次通知也就丢失了。</li>
+</ul>
+<h3 id="select或者pool的水平触发"><a href="#select或者pool的水平触发" class="headerlink" title="select或者pool的水平触发"></a>select或者pool的水平触发</h3><p>  select 和 poll 需要从文件描述符列表中，找出哪些可以执行I/O ，然后进行真正的网络I/O读写。由于I/O是非阻塞的，<strong>一个线程中就可以同时监控一批套接字的文件描述符，这样就达到了单线程处理多请求的目的</strong>。【多路复用指的就是粗体部分】</p>
+<p>  缺点：</p>
+<ul>
+<li>select采用标量位，32位系统默认只能支持1024个描述符，且select的fd的状态位是也是用标量位来表示的，获取每个fd的状态需要轮询这个标量位。时间复杂度是o(n^2)</li>
+<li>pool采用了个无界数组，没有了1024的限制，时间复杂度是o(n)，但是他俩都需要将能读写的fd，从用户态转移到内核态修改状态每次都要进行切换会造成损耗</li>
+</ul>
+<h3 id="epool的边缘触发"><a href="#epool的边缘触发" class="headerlink" title="epool的边缘触发"></a>epool的边缘触发</h3><p>  epool采用红黑树管理fd，时间复杂度o(log2n)，epool在内核态管理fd没有切换的损耗。</p>
+<h2 id="系统并发度方面的优化"><a href="#系统并发度方面的优化" class="headerlink" title="系统并发度方面的优化"></a>系统并发度方面的优化</h2><p>  master+worker的方案，nginx或者我们的netty架构几乎都是这种方案master和worker可以是进程也可以是线程。这种情况要考虑避免惊群效应,即多个进程被同时唤醒，但实际上只有一个进程来响应这个事件，其他被唤醒的进程都会重新休眠、</p>
+<ul>
+<li>其中，accept() 的惊群问题，已经在 Linux 2.6 中解决了；</li>
+<li><p>而epoll的问题，到了 Linux 4.5 ，才通过EPOLLEXCLUSIVE解决。</p>
+<blockquote>
+<p>Nginx是如何避免惊群问题， Nginx在每个worker进程中，都增加一个了全局锁（accept_mutex）。这些worker进程需要首先竞争到锁，只有竞争到锁的进程，才会加入到epoll中，这样就确保只有一个worker子进程被唤醒。</p>
+</blockquote>
+<p>监听到相同端口的多进程模型。在这种方式下，所有的进程都监听相同的接口，并且开启 SO_REUSEPORT 选项，由内核负责将请求负载均衡到这些监听进程中去。这一过程如下图所示</p>
+<p><img src="/系统优化-网络-C10K和C1000K回顾-系统调优方案/img0.png" alt="avator"></p>
+<p>这由于内核确保了只有一个进程被唤醒，就不会出现惊群问题了。比如，Nginx在1.9.1中就已经支持了这种模式。</p>
+<p><img src="/系统优化-网络-C10K和C1000K回顾-系统调优方案/img1.png" alt="avator"></p>
+<p>我们从C10K-C100K都可以用这种方案+不断升级我们的硬件来解决。但是到了更高C1000K因为中断、网络包链路过长等等原因采取一些新的手段比如</p>
+</li>
+</ul>
+<h2 id="DKDP"><a href="#DKDP" class="headerlink" title="DKDP"></a>DKDP</h2><p>  允许我们在用户态直接处理请求包并且调用网卡发送出去，需要支持DKDP网卡</p>
+<p>  <img src="/系统优化-网络-C10K和C1000K回顾-系统调优方案/DKDP.png" alt="avator"></p>
+<h2 id="XDP"><a href="#XDP" class="headerlink" title="XDP"></a>XDP</h2><p>  允许我们在进入网络协议栈之前先处理网络包</p>
+<p>  <img src="/系统优化-网络-C10K和C1000K回顾-系统调优方案/XDP.png" alt="avator"></p>
+<p>但是：其实我们C10K就几乎够用了因为我们还要考虑业务等因素，我们还是推荐拆分到不同的服务器中。</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/系统优化-网络-基础概念以及指标/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2241,237 +2453,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/系统优化-内存-Swap机制/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/系统优化-内存-Swap机制/" class="post-title-link" itemprop="url">系统优化-内存-Swap机制</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2020-05-03 13:13:14" itemprop="dateCreated datePublished" datetime="2020-05-03T13:13:14Z">2020-05-03</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/性能优化/" itemprop="url" rel="index"><span itemprop="name">性能优化</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/性能优化/内存/" itemprop="url" rel="index"><span itemprop="name">内存</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="内存回收"><a href="#内存回收" class="headerlink" title="内存回收"></a>内存回收</h2><p>  之前提到当linux的内存不足时候会通过oom机制来kill程序加速释放内存，除了这种方法，linux还可以在资源不足时候释放可以回收的内存。哪些是可回收的内存呢？</p>
-<ul>
-<li>buffer/cache：这些被成为文件页（File-backed Page）大部分文件页可以直接回收，需要了在从磁盘读取，如果系统只修改了内存还没有写入到磁盘，我们成为脏页，需要写回磁盘在就进行回收<ul>
-<li>可以在应用程序中，通过系统调用 fsync ，把脏页同步到磁盘中；</li>
-<li>也可以交给系统，由内核线程 pdflush 负责这些脏页的刷新；</li>
-</ul>
-</li>
-<li>应用程序动态分配的内存，我们称之为匿名页（Anonymous Page），会通过Swap换入/换出的方式将内存写入到磁盘中来释放内存。</li>
-</ul>
-<h2 id="Swap的机制介绍"><a href="#Swap的机制介绍" class="headerlink" title="Swap的机制介绍"></a>Swap的机制介绍</h2><p>  swap将补偿访问的内存通过换入将内存数据写到磁盘中，需要了再从磁盘读取这实际上是一种用时间换空间的思想。</p>
-<h3 id="回收方式"><a href="#回收方式" class="headerlink" title="回收方式"></a>回收方式</h3><ol>
-<li>直接回收：大部分动态分配的内存都可以直接回收</li>
-<li><p>kswapd0：一个专门的内核线程用来定期回收内存。为了衡量内存的使用情况，kswapd0定义了三个内存阈值（watermark，也称为水位），分别是页最小阈值（page min)，页最小阈值（pages_min）、页低阈值（pages_low）和页高阈值（pages_high）。剩余内存，则使用 pages_free 表示。这里，我画了一张图表示它们的关系。</p>
-<p><img src="/系统优化-内存-Swap机制/img0.png" alt="avator"></p>
-<p>kswapd0的运行机制如下：</p>
-<p>小于pages_min:内存页耗尽<br>小于pages_low:内存页不足，kswapd0 会执行内存回收，直到剩余内存大于高阈值为止<br>小于pages_high:内存资源还可以满足申请的需求<br>大于pages_high:内存资源充足</p>
-<p>我们可以通过修改/proc/sys/vm/min_free_kbytes来修改pages_min,其他的pages_low和pages_high都是通过pages_min计算出来的。</p>
-</li>
-</ol>
-<h3 id="NUMA-与-Swap"><a href="#NUMA-与-Swap" class="headerlink" title="NUMA 与 Swap"></a>NUMA 与 Swap</h3><p>  NUMBA是（Non-Uniform Memory Access），多个cpu会被划分到不通的node中，我们可以用numbactl看到如下的情况，只有一个node,对应了0，1俩个cpu,有7977MB的内存，空余内存是4416MB。</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ numactl --hardware</span><br><span class="line">available: 1 nodes (0)</span><br><span class="line">node 0 cpus: 0 1</span><br><span class="line">node 0 size: 7977 MB</span><br><span class="line">node 0 free: 4416 MB</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
-<p>实际上，前面提到的三个内存阈值（页最小阈值、页低阈值和页高阈值），都可以通过内存域在 proc 文件系统中的接口 /proc/zoneinfo 来查看。比如，下面就是一个 /proc/zoneinfo 文件的内容示例：</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ cat /proc/zoneinfo</span><br><span class="line">...</span><br><span class="line">Node 0, zone   Normal</span><br><span class="line"> pages free     227894</span><br><span class="line">       min      14896 <span class="comment">## 三个水位线</span></span><br><span class="line">       low      18620</span><br><span class="line">       high     22344</span><br><span class="line">...</span><br><span class="line">	 <span class="comment">##空闲page和上面的free对应</span></span><br><span class="line">     nr_free_pages 227894</span><br><span class="line">	 <span class="comment">##活跃和非活跃的匿名页数</span></span><br><span class="line">     nr_zone_inactive_anon 11082</span><br><span class="line">     nr_zone_active_anon 14024</span><br><span class="line">	 <span class="comment">##活跃和非活跃的文件页数</span></span><br><span class="line">     nr_zone_inactive_file 539024</span><br><span class="line">     nr_zone_active_file 923986</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
-<p>  内存资源紧张时候,默认采用回收匿名页数以及文件页数的方式来回收内存,可以通过/proc/sys/vm/zone_reclaim_mode调整</p>
-<ul>
-<li>默认的 0 ，也就是刚刚提到的模式，表示既可以从其他 Node 寻找空闲内存，也可以从本地回收内存。</li>
-<li>1、2、4 都表示只回收本地内存，2 表示可以回写脏数据回收内存，4 表示可以用 Swap 方式回收内存。</li>
-</ul>
-<h3 id="swappiness"><a href="#swappiness" class="headerlink" title="swappiness"></a>swappiness</h3><p>  内存回收有俩种方式</p>
-<ol>
-<li>回收文件页：通过fsync将buffer和cache写入到磁盘来释放这一部分内存</li>
-<li><p>回收匿名页：通过swap来释放匿名页内存</p>
-<p>Linux 提供了一个 /proc/sys/vm/swappiness 选项，用来调整使用 Swap 的积极程度。范围是 0-100，数值越大，越积极使用 Swap，也就是更倾向于回收匿名页；数值越小，越消极使用 Swap，也就是更倾向于回收文件页。</p>
-<p>注意swappiness只是一个趋势。</p>
-</li>
-</ol>
-<h3 id="案例排查"><a href="#案例排查" class="headerlink" title="案例排查"></a>案例排查</h3><p>首先确认swap开启,通过free确认，如果没开启可用下面方法开启</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment"># 创建Swap文件</span></span><br><span class="line">$ fallocate -l 8G /mnt/swapfile</span><br><span class="line"><span class="comment"># 修改权限只有根用户可以访问</span></span><br><span class="line">$ chmod 600 /mnt/swapfile</span><br><span class="line"><span class="comment"># 配置Swap文件</span></span><br><span class="line">$ mkswap /mnt/swapfile</span><br><span class="line"><span class="comment"># 开启Swap</span></span><br><span class="line">$ swapon /mnt/swapfile</span><br></pre></td></tr></table></figure>
-<p>测试方案：用命令dd</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 写入空设备，实际上只有磁盘的读请求</span></span><br><span class="line">$ dd <span class="keyword">if</span>=/dev/sda1 of=/dev/null bs=1G count=2048</span><br></pre></td></tr></table></figure>
-<p>这时候我们用sar -r命令观察，我们发现kbmemfree值越来越少，%memused越来越大，且kbbuffers越来越大，因为dd直接和磁盘交互，符合预期。</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 间隔1秒输出一组数据</span></span><br><span class="line"><span class="comment"># -r表示显示内存使用情况，-S表示显示Swap使用情况</span></span><br><span class="line">$ sar -r -S 1</span><br><span class="line">04:39:56    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty</span><br><span class="line">04:39:57      6249676   6839824   1919632     23.50    740512     67316   1691736     10.22    815156    841868         4</span><br><span class="line"></span><br><span class="line">04:39:56    kbswpfree kbswpused  %swpused  kbswpcad   %swpcad</span><br><span class="line">04:39:57      8388604         0      0.00         0      0.00</span><br><span class="line"></span><br><span class="line">04:39:57    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty</span><br><span class="line">04:39:58      6184472   6807064   1984836     24.30    772768     67380   1691736     10.22    847932    874224        20</span><br><span class="line"></span><br><span class="line">04:39:57    kbswpfree kbswpused  %swpused  kbswpcad   %swpcad</span><br><span class="line">04:39:58      8388604         0      0.00         0      0.00</span><br><span class="line"></span><br><span class="line">…</span><br><span class="line"></span><br><span class="line">04:44:06    kbmemfree   kbavail kbmemused  %memused kbbuffers  kbcached  kbcommit   %commit  kbactive   kbinact   kbdirty</span><br><span class="line">04:44:07       152780   6525716   8016528     98.13   6530440     51316   1691736     10.22    867124   6869332         0</span><br><span class="line"></span><br><span class="line">04:44:06    kbswpfree kbswpused  %swpused  kbswpcad   %swpcad</span><br><span class="line">04:44:07      8384508      4096      0.05        52      1.27</span><br></pre></td></tr></table></figure>
-<ul>
-<li>刚开始，剩余内存（kbmemfree）不断减少，而缓冲区（kbbuffers）则不断增大，由此可知，剩余内存不断分配给了缓冲区。</li>
-<li>一段时间后，剩余内存已经很小，而缓冲区占用了大部分内存。这时候，Swap 的使用开始逐渐增大，缓冲区和剩余内存则只在小范围内波动。</li>
-</ul>
-<p>为什么缓冲区只在小范围内波动？由哪些进程导致，这时候我们用cachetop进行进一步排查发现是dd导致的，他的READ_HIT只有50%命中率且Miss的page已经到了41022页，可见也符合我们猜测的预期。</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ cachetop 5</span><br><span class="line">12:28:28 Buffers MB: 6349 / Cached MB: 87 / Sort: HITS / Order: ascending</span><br><span class="line">PID      UID      CMD              HITS     MISSES   DIRTIES  READ_HIT%  WRITE_HIT%</span><br><span class="line">   18280 root     python                 22        0        0     100.0%       0.0%</span><br><span class="line">   18279 root     dd                  41088    41022        0      50.0%      50.0%</span><br></pre></td></tr></table></figure>
-<p>  为什么Swap开始升高了？不是应该释放buffer么？我们查看/proc/zoneinfo返现，内存小于low,内存就开始执行回收才做恢复到high附近，周而复始。</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment"># -d 表示高亮变化的字段</span></span><br><span class="line"><span class="comment"># -A 表示仅显示Normal行以及之后的15行输出</span></span><br><span class="line">$ watch -d grep -A 15 <span class="string">'Normal'</span> /proc/zoneinfo</span><br><span class="line">Node 0, zone   Normal</span><br><span class="line">  pages free     21328</span><br><span class="line">        min      14896</span><br><span class="line">        low      18620</span><br><span class="line">        high     22344</span><br><span class="line">        spanned  1835008</span><br><span class="line">        present  1835008</span><br><span class="line">        managed  1796710</span><br><span class="line">        protection: (0, 0, 0, 0, 0)</span><br><span class="line">      nr_free_pages 21328</span><br><span class="line">      nr_zone_inactive_anon 79776</span><br><span class="line">      nr_zone_active_anon 206854</span><br><span class="line">      nr_zone_inactive_file 918561</span><br><span class="line">      nr_zone_active_file 496695</span><br><span class="line">      nr_zone_unevictable 2251</span><br><span class="line">      nr_zone_write_pending 0</span><br></pre></td></tr></table></figure>
-<p>我们发现有时候释放的是未知页即直接内存有时候是文件页即buffer，这是由于我们swappiness配置导致的</p>
-<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cat /proc/sys/vm/swappiness</span><br><span class="line">60</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2518,7 +2499,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">223</span>
+                    <span class="site-state-item-count">224</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

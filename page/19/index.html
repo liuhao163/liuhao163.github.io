@@ -345,6 +345,193 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Unsafe-java7之后的CAS/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/Unsafe-java7之后的CAS/" class="post-title-link" itemprop="url">Unsafe-java7之后的CAS</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-11 16:40:28" itemprop="dateCreated datePublished" datetime="2019-03-11T16:40:28Z">2019-03-11</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/源码/" itemprop="url" rel="index"><span itemprop="name">源码</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="Unsafe"><a href="#Unsafe" class="headerlink" title="Unsafe"></a>Unsafe</h1><p>java7之后在并发中大量使用Unsafe来保证并发状态，字段修改的唯一性</p>
+<h2 id="代码例子"><a href="#代码例子" class="headerlink" title="代码例子"></a>代码例子</h2><p>例如在AbstractQueuedSynchronizer中的CAS中</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//创建unsafe对象</span></span><br><span class="line"><span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Unsafe unsafe = Unsafe.getUnsafe();</span><br><span class="line"></span><br><span class="line"><span class="comment">//计算字段的偏移量</span></span><br><span class="line">stateOffset = unsafe.objectFieldOffset</span><br><span class="line">            (AbstractQueuedSynchronizer.class.getDeclaredField(<span class="string">"state"</span>));</span><br><span class="line"></span><br><span class="line"><span class="comment">//CAS修改方法，第二个至是计算出的偏移量，第3个值是原有值，第4个参数是修改之后的值，success-true,faild-false</span></span><br><span class="line">unsafe.compareAndSwapObject(<span class="keyword">this</span>, tailOffset, expect, update);</span><br></pre></td></tr></table></figure>
+<h2 id="阻塞线程park和unpark"><a href="#阻塞线程park和unpark" class="headerlink" title="阻塞线程park和unpark"></a>阻塞线程park和unpark</h2><p>park和unpark与object.wait() object.notify一样都是可以阻塞和唤醒线程但是俩这有如下区别：</p>
+<ol>
+<li>面向的主体不同，LockSupport的park, unpark面向的是线程，而Object.wait, nofify面向的是对象</li>
+<li>底层实现机制不同，可以看到Object的wait, notify方法也是native方法，Unsafe的park和unpark方法也是native方法，底层实现不同，Object.notify不能唤醒Unsafe park的线程。</li>
+</ol>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA-Nio/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2092,204 +2279,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/定时器的并发处理/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/定时器的并发处理/" class="post-title-link" itemprop="url">支持并发的定时器+数据归档解决查询效率</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-03-06 00:03:46" itemprop="dateCreated datePublished" datetime="2019-03-06T00:03:46Z">2019-03-06</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/经验积累/" itemprop="url" rel="index"><span itemprop="name">经验积累</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/经验积累/工具/" itemprop="url" rel="index"><span itemprop="name">工具</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="项目背景"><a href="#项目背景" class="headerlink" title="项目背景"></a>项目背景</h2><p>客户的数据量徒增，每天1QWPV，1个月1张表的话大约这一个客户有30亿数据，页面上一些接口的响应变慢。</p>
-<p>原因是：后端数据存在了ES中，ES特点是模糊查询很开，但是但是如果用到了一些叫复杂的聚合函数需要进行索引扫描，所以效率了堪忧。</p>
-<h2 id="优化方案"><a href="#优化方案" class="headerlink" title="优化方案"></a>优化方案</h2><ul>
-<li>每天，用定时器将客户网站数据归档，目前是采用mysql保存。</li>
-<li>前端查询采用缓存数据+当天数据的方式呈现给客户，当日的数据很小所以可以满足性能上的要求。</li>
-<li>考虑到将来会有很多客户，可能一个定时器执行效率慢，所以定时器要支持水平扩展。</li>
-</ul>
-<h2 id="具体执行"><a href="#具体执行" class="headerlink" title="具体执行"></a>具体执行</h2><ol>
-<li>将数据库中所有的网站ID放到redis的zset中，为什么用zset？有序-支持分页，排重；</li>
-<li>利用setNx做锁， 从zset取出一条数据锁住：setNx的key是：prefix:statslock:id:yyyyMMdd, ttl：1天；<ul>
-<li>因为采用的是RedisTemplate不支持setNx和expire排异常轻快无法解锁，所以锁是按天锁住数据</li>
-</ul>
-</li>
-<li>ES查询昨天的数据，归档</li>
-<li>前端查询ES当钱数据+归档数据返回，测试从10sec请求变为了600ms</li>
-</ol>
-<p>示例代码如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">doWafDataArchiveByDate</span><span class="params">(LocalDateTime localDateTime)</span> </span>&#123;</span><br><span class="line">    String dateFormater = localDateTime.format(YYYYMMDD);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//分页</span></span><br><span class="line">    Long total = statsRedis.domainSize();</span><br><span class="line">    Long pageNo = (total - <span class="number">1L</span>) / ZSET_PAGE_SIZE + <span class="number">1</span>;</span><br><span class="line">    Long curPage = <span class="number">1L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">do</span> &#123;</span><br><span class="line">        <span class="comment">//从redis获取数据</span></span><br><span class="line">        Long startIdx = (curPage - <span class="number">1L</span>) * ZSET_PAGE_SIZE;</span><br><span class="line">        Long endIdx = startIdx + ZSET_PAGE_SIZE - <span class="number">1L</span>;</span><br><span class="line">        Set&lt;String&gt; set = statsRedis.queryRange(startIdx, endIdx);</span><br><span class="line"></span><br><span class="line">        curPage++;</span><br><span class="line">        <span class="keyword">for</span> (String domainUuid : set) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="comment">//锁1天</span></span><br><span class="line">                <span class="keyword">if</span> (taskLock.lock(domainUuid, dateFormater)) &#123;</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        <span class="comment">//do logic</span></span><br><span class="line">                    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                        e.printStackTrace();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">                taskLock.unlock(domainUuid,dateFormater);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">while</span> (curPage &lt;= pageNo);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="遗留的坑以及方案"><a href="#遗留的坑以及方案" class="headerlink" title="遗留的坑以及方案"></a>遗留的坑以及方案</h2><p>待补充</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2336,7 +2325,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">223</span>
+                    <span class="site-state-item-count">224</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

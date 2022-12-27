@@ -345,6 +345,226 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JVM虚拟机执行引擎/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/JVM虚拟机执行引擎/" class="post-title-link" itemprop="url">JVM虚拟机执行引擎</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-11-12 16:57:31" itemprop="dateCreated datePublished" datetime="2019-11-12T16:57:31Z">2019-11-12</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/" itemprop="url" rel="index"><span itemprop="name">jvm</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>java的执行引擎是虚拟机自己提供的，所以更加灵活可以支持应将不支持的指令集。（对硬件指令集的封装 :P）</p>
+<h2 id="栈帧"><a href="#栈帧" class="headerlink" title="栈帧"></a>栈帧</h2><p>  jvm执行方法调用的数据结构，一个方法从开始执行到结束执行是一次入栈出栈的过程。<br>  在便宜Class文件时候局部变量表占用内存的大小和栈帧深度都已经决定好了。<br>  一个方法执行调用链会很长，只有当前的线程中调用栈栈顶的栈帧才能被执行，该栈帧被称为当前栈帧（Current Frame）对应的方法是当前方法(Current Method),栈帧结构如图：</p>
+<p><img src="/JVM虚拟机执行引擎/framestack.png" alt="栈帧结构]">  </p>
+<h3 id="局部变量表"><a href="#局部变量表" class="headerlink" title="局部变量表"></a>局部变量表</h3><p>  总共有byte、short、int、short、boolean、float、refrence、returnAddress  8种。</p>
+<p>  在编译期就在方法的Code属性max_locals就决定了大小。局部变量表的大小单位是Slot,虚拟机规定者byte、short、int、boolean、refrence、returnAddress 数据类型可以用32位或者更小的空间存储，即4byte。如果是64位系统采用8byte但是需要用数据补齐等方式让其看起来是32位的。<br>  long、double则采用64位空间存储即8byte，注意这里虽然是用俩个32位空间存储但是因为是局部变量，但是是建立在线程的栈上没有共享问题是线程安全的。<br>  refrence要遵循俩个协议</p>
+<ol>
+<li>能找到堆中对象的数据起始位置</li>
+<li><p>能找到方法去中Class类的位置</p>
+<p>参数值到参数变量列表的转换，如果不是static方法，局部变量表第0位给隐藏变量“this”，参数分别占第1~n位。剩下的会分配给方法内生命的局部变量。局部变量的slot可以重用。</p>
+<p>导致的一个“坑”是假如当前的变量后面不需要了，如果后面没有对变量的声明，修改局部变量，在方法执行期间gc是不会回收该局部变量，所以有一些比较耗内存的变量在用完了后，会“a=null”，加速gc的回收</p>
+<p>局部变量不赋值是不能使的，因为没有向static变量有个准备阶段赋0值</p>
+</li>
+</ol>
+<h3 id="操作栈"><a href="#操作栈" class="headerlink" title="操作栈"></a>操作栈</h3><p>  后入先出，保存栈帧运行时候的数据，比如运算操作，方法调用等，实际上方法的执行就是操作栈不同的入栈/出栈。最大值在方法的属性Code规定的max_stack中在编译时候操作栈的深度就规定好了。栈元素的数据类型必须与自己吗指令序列严格匹配。</p>
+<h3 id="动态链接"><a href="#动态链接" class="headerlink" title="动态链接"></a>动态链接</h3><p>  栈帧都包含一个指向运行时常量池中，该栈帧所对应的方法的引用，用于在运行时将一些符号应用初始化成直接引用的操作。</p>
+<h3 id="接口返回地址"><a href="#接口返回地址" class="headerlink" title="接口返回地址"></a>接口返回地址</h3><ol>
+<li>Nomal Method Invocation Completion。即正常的方法</li>
+<li>Abrupt Method Invocation Completion。即出现异常的返回</li>
+</ol>
+<p>无论何种返回都会退回到上层调用者的位置，正常返回有可能将返回值给调用者，调用者会将返回值压入自己的操作栈中。异常返回无返回值。</p>
+<p>方法的推出等同于当前的栈帧出栈，同时把返回值压入调用者的操纵栈，修改PC指向方法调用的后面一条指令</p>
+<h2 id="方法调用"><a href="#方法调用" class="headerlink" title="方法调用"></a>方法调用</h2><p>方法调用有5个指令</p>
+<p>invokestatic:静态方法<br>invokespecial：构造方法，私有方法，父类方法<br>invokevirtual：调用所有的虚方法<br>invokeinterface：调用接口方法，会在运行时制定一个接口的实现类<br>invokedynmatic：运行时动态解析所应用的方法–这是用户设计的应到方法决定的</p>
+<h3 id="解析调用"><a href="#解析调用" class="headerlink" title="解析调用"></a>解析调用</h3><p>只在编译期就能决定，且不会在运行时修改的方法，这里指invokestatic、invokespecial指令调用的方法，还有final的方法。</p>
+<h3 id="分派"><a href="#分派" class="headerlink" title="分派"></a>分派</h3><p>由于java面向对象特性中的多态，导致编译器无法决定使用哪个版本需在运行期指定方法版本的方法。</p>
+<p>类A a=new B()。B是A的子类或者接口实现类，那么A是静态类型，B是真实类型。即父类、接口是静态类型，实现类、子类是真实类型。</p>
+<h4 id="静态分派"><a href="#静态分派" class="headerlink" title="静态分派"></a>静态分派</h4><p>如果方法的版本取决于类的静态类型，我们称为静态分派。主要场景用于重载见下面的方法。发生在编译阶段，因为在编译时候只能确认静态版本，但是在实际调用中我们只能通过真是的类型去推断选择一个合理版本</p>
+<h4 id="动态分派"><a href="#动态分派" class="headerlink" title="动态分派"></a>动态分派</h4><p>如果确认方法的版本去介于类的动态类型，我们称为动态分派。主要场景用于重写。原理是当我们在方法中声明一个对象时候，会把对象的实际数据（引用）压入操作栈，当需要调用方法时候，取出来的是实际数据调用的就是实际数据的方法版本。发生在运行期。</p>
+<h4 id="单分派和多分派"><a href="#单分派和多分派" class="headerlink" title="单分派和多分派"></a>单分派和多分派</h4><p>当一个方法有俩个宗树的静态、动态分派时候就是多分派。</p>
+<p>jvm实现动态分派的方法</p>
+<p>由于动态分派需要在class元数据中分析查找方法，为了提高性能，jvm在方法区简历了vtable(虚方法表)，当调用指令invokeinterface时候会直接通过vtable的索引查找需要的方法版本</p>
+<h3 id="vtable–virtual-interface"><a href="#vtable–virtual-interface" class="headerlink" title="vtable–virtual interface"></a>vtable–virtual interface</h3><p>虚方法表，由于动态分派非常频繁，jvm为了提高性能，在方法区为类创建了虚方法表，虚方法表保存的是类方法的真实地址，如果遇到没重写父类的方法地址就是父类的地址。一般在类加载的链接阶段，当类初始化0值完成方法表也初始化完成</p>
+<h3 id="动态类型语言支持"><a href="#动态类型语言支持" class="headerlink" title="动态类型语言支持"></a>动态类型语言支持</h3><p>动态类型语言主要是通过java.lang.invoke包支持。他和反射的区别是，发射时模拟类的创建和调用过程，而invoke模拟的是操作码</p>
+<h3 id="基于栈的字节码解释执行引擎"><a href="#基于栈的字节码解释执行引擎" class="headerlink" title="基于栈的字节码解释执行引擎"></a>基于栈的字节码解释执行引擎</h3><p>java的执行引擎是基于操作栈的，解释执行。与其相对的还有编译执行如图：</p>
+<p><img src="/public/JVM虚拟机执行引擎/编译原理.png" alt="编译原理.png"></p>
+<p>java的解释器和解释执行在jvm中，抽象语法树之前的步骤都独立于jvm虚拟机，所以java是半独立解释性语言。</p>
+<h3 id="基于栈或者基于寄存器"><a href="#基于栈或者基于寄存器" class="headerlink" title="基于栈或者基于寄存器"></a>基于栈或者基于寄存器</h3><ul>
+<li>基于寄存器的优缺点：优点：直接操作寄存器，不直接操作内存，CPU执行性能高性能高。缺点：由于直接在寄存器操作依赖硬件移植性差</li>
+<li>基于栈的优缺点：优点：移植性好，通过操作栈不直接操作寄存器，代码更为紧凑，简单。缺点：效率比基于寄存器低</li>
+</ul>
+<h3 id="解释执行过程"><a href="#解释执行过程" class="headerlink" title="解释执行过程"></a>解释执行过程</h3><p>将数据先push到操作栈中在pop到局部变量表，在从局部变量表load数据计算然后push到操作栈中。</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/java类加载机制/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -2311,214 +2531,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Redis-基本原理/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/Redis-基本原理/" class="post-title-link" itemprop="url">Redis-基本原理</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-10-09 20:35:33" itemprop="dateCreated datePublished" datetime="2019-10-09T20:35:33Z">2019-10-09</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/redis/" itemprop="url" rel="index"><span itemprop="name">redis</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>  redis是单线程的，IO模型采用多路复用</p>
-<h2 id="redis的线程模型"><a href="#redis的线程模型" class="headerlink" title="redis的线程模型"></a>redis的线程模型</h2><p>  redis的io是单线程多路复用。</p>
-<p>  为客户端关键字关联一个请求队列和响应队列，用于处理请求和响应。</p>
-<p>  定时任务采用最小堆的方案，俩个定时任务的间隔时间就是select(timeout)的timeout</p>
-<h2 id="redis的备份"><a href="#redis的备份" class="headerlink" title="redis的备份"></a>redis的备份</h2><p>快照用于全量备份，AOF是命令重放用于增量备份</p>
-<h3 id="快照的备份原理CoW"><a href="#快照的备份原理CoW" class="headerlink" title="快照的备份原理CoW"></a>快照的备份原理CoW</h3><p>由于redis的快照备份需要用到磁盘IO是没有NIO的，为了不影响业务的正常请求，redis的磁盘备份采用了系统的COW。方法如下</p>
-<ol>
-<li>父进程调用glibc，fork出一个子进程，这时候子进程和父进程会同时返回。父进程pid大于0,子进程pid等于0，如果小于0说明没有资源，由于是fork出的子进程，俩者共享代码段和数据段</li>
-<li>父进程依然处理正常请求，子进程处理快照的持久化</li>
-<li>对于写的请求，会用到系统的cow。父进程在写的时候会将数据页复制一份，在复制的这份里进行修改，子进程对应的数据页不做变更，在fork出来的那一刻就固定下来了</li>
-</ol>
-<p>注意，随着父进程写请求的增多，内存会持续增长，不过也不会超过原数据段的2倍。</p>
-<h3 id="AOF"><a href="#AOF" class="headerlink" title="AOF"></a>AOF</h3><p>  随着日积月累，AOF的体积会逐渐增大，一旦重放会导致redis长期无法对外提供服务</p>
-<p>  瘦身：bgrewriteaof，</p>
-<ol>
-<li>开辟一个新的进程遍历内存的数据，转换成一些列的指令，写到新的aof文件中</li>
-<li>新增的aof指令追加的这个文件中</li>
-<li><p>替换原文件完成瘦身</p>
-<p>fsync，redis写aof文件是些到一个内核的内存中，通过调用fsync刷到磁盘中，如果这段时间服务器宕机会丢失数据。redis采用glibc的fsync(int fd)方法每隔一段时间刷盘一次。（每次命令都刷盘会降低吞吐）</p>
-</li>
-</ol>
-<h3 id="运维"><a href="#运维" class="headerlink" title="运维"></a>运维</h3><p>  由于aof的fsync和快照的大块写文件都影响性能，建议持久化放在从库中做，为了防止磁盘分区还建议有多个从库。</p>
-<h2 id="pipeline和事物"><a href="#pipeline和事物" class="headerlink" title="pipeline和事物"></a>pipeline和事物</h2><p>  pipeline简称管道，为了减少网络的开销，piplline可以一次提交多条指令给redis一起执行，本质上是client的行为。</p>
-<p>  事物：redis支持事物，但是无法解决事物的原子性，只能保证事物的隔离性。redis事物的隔离性是通过管道来实现的</p>
-<p>  为了节省性能，redis的事物往往配合pipeline一起使用。</p>
-<p>  事物命令<br>  multi、exec、discard</p>
-<h2 id="pubsub"><a href="#pubsub" class="headerlink" title="pubsub"></a>pubsub</h2><p>  redis自身的消息队列，缺点很明显:消息不能持久化，发送的消息只能被当时在线的消费者消费，如果消费者宕机是无法消费消息的。这个特性可以做服务发现。后续5.0提供了stream来取代它</p>
-<p>  支持模式订阅，message订阅</p>
-<h2 id="对象的压缩"><a href="#对象的压缩" class="headerlink" title="对象的压缩"></a>对象的压缩</h2><p>如果小于4G可以采用32位进行编译，内存会少一半</p>
-<h3 id="zipList"><a href="#zipList" class="headerlink" title="zipList"></a>zipList</h3><p>压缩列表，redis在zset、hash、intset这些数据结构存储数据时候在一定阈值下回采用ziplist来存储。</p>
-<p>ziplist实际上是数组的一个变种，有点是：元素长度不固定节省空间，内存地址连续对缓存友好。</p>
-<p>zset：元素个数不超过128，k/v长度不超过64</p>
-<p>hash、list：元素个数不超过512，k/v长度不超过64</p>
-<p>set：不超过512，数据是intset时候，会进行升级，随着元素的增大会从uint16–&gt;uint32–&gt;unint64</p>
-<h2 id="内存管理"><a href="#内存管理" class="headerlink" title="内存管理"></a>内存管理</h2><p>  redis是以页为单位回收内存的，如果该数据页有一个key,也不会被回收。但是可以被重复使用，这点和mysql很类似</p>
-<p>  redis的内存管理采用第三方库默认是jemallloc</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2565,7 +2577,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">223</span>
+                    <span class="site-state-item-count">224</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>

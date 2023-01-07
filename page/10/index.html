@@ -345,6 +345,1066 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Spring源码-带着问题学习/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/Spring源码-带着问题学习/" class="post-title-link" itemprop="url">Spring源码-带着问题学习</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-12-01 01:01:34" itemprop="dateCreated datePublished" datetime="2019-12-01T01:01:34Z">2019-12-01</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/" itemprop="url" rel="index"><span itemprop="name">spring</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/源码/" itemprop="url" rel="index"><span itemprop="name">源码</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>spring可以说是java有史以来最为庞大，应用最为广泛的框架，在看源码之前应该先立足于某一点在逐步发散到面。本文主要是整理观看spring源码前/中遇到的问题，以便于读代码更有针对性</p>
+<h2 id="spring的IOC和AOP"><a href="#spring的IOC和AOP" class="headerlink" title="spring的IOC和AOP"></a>spring的IOC和AOP</h2><p>问题：</p>
+<ol>
+<li>Spring容器中的Bean的生命周期是什么？</li>
+<li>对应的PostProcessor什么时候执行？有什么作用</li>
+<li>BeanDefinition的架构以及spring的设计思想</li>
+<li>BeanFactory和ApplicationContext的关系是什么？他们的作用是什么？</li>
+<li>ApplicationContext的构造函数都做了什么？<ol>
+<li>scan/register做了什么事？</li>
+<li>refresh做了什么事？</li>
+<li>refresh的详细的流程，对照着bean的生命周期看</li>
+</ol>
+</li>
+<li>AnnotationConfigUtils.registerAnnotationConfigProcssors做什么用的？</li>
+<li>Spring的自动装配策略是什么（byType–&gt;Primary–&gt;Propity–&gt;ByName）具体见<a href="https://www.jb51.net/article/157767.htm" target="_blank" rel="noopener">临时链接</a></li>
+<li>ClassPathBeanDefinitionScanner、AnnotatedBeanDefinitionReader的作用 <a href="/Spring源码-类扫描器-ClassPathBeanDefinitionScanner">Spring源码-类扫描器-ClassPathBeanDefinitionScanner</a></li>
+<li>为什么@Component、@Repository、@Controller、@Service以及JavaEE6的@ManagedBean和@Named注解这些注解能注册到容器中<a href="/Spring源码-实现自定义注解">Spring源码-实现自定义注解</a></li>
+<li>Spring如何实现自定义注解，它是怎么实现的(CommponentScan，inculudFilter)</li>
+<li>Resource到BeanDefiniton的过程相关的问题，从resource–&gt;SimpleMetadataReader–&gt;BeanDefinition（since 2020-01-28）<ol>
+<li>SimpleMetadataReader的作用是什么？</li>
+<li>需要用到的spring-io中的ResourceLoader需要明确是做什么用的</li>
+<li>SimpleMetadataReader构造方法中用到了spring-asm是做什么用的</li>
+<li>Lookup注解干什么用的</li>
+</ol>
+</li>
+</ol>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/RoketMq源码学习-八-延迟队列/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/RoketMq源码学习-八-延迟队列/" class="post-title-link" itemprop="url"> RoketMq源码学习-八-延迟队列</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-11-30 17:49:11" itemprop="dateCreated datePublished" datetime="2019-11-30T17:49:11Z">2019-11-30</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/" itemprop="url" rel="index"><span itemprop="name">消息队列</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/" itemprop="url" rel="index"><span itemprop="name">rocketmq</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/消息队列/rocketmq/源码学习/" itemprop="url" rel="index"><span itemprop="name">源码学习</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>在业务中我们发送定时消息等会用到，延迟队列，rocketmq内置了该功能，帮我实现这种延迟队列。实现很简单</p>
+<h2 id="实现方式、原理"><a href="#实现方式、原理" class="headerlink" title="实现方式、原理"></a>实现方式、原理</h2><ol>
+<li>生成者发送消息时候为消息设置setDelayTimeLevel，mq不能自己指定延时时间而只能采用系统设置好的level</li>
+<li>broker在putmessage时候会将message的real-topic备份，然后将message放到SCHEDULE_TOPIC_XXXX这个topic中，根据delayLevel制定不同的queueId。</li>
+<li>ScheduleMessageService会启动timer定期扫描各个delayLevel的Queue，已经到执行时间的message在将SCHEDULE_TOPIC_XXXX的message移到real-topic中。</li>
+</ol>
+<p>缺点：由于是一个timer在扫描SCHEDULE_TOPIC_XXXX下所有queue的消息，如果消息积压过多于可能造成消息的发送延迟。可以考虑每个level用一个线程取扫描（不过也要考虑线程切换的成本导致频繁切换反而降低性能）</p>
+<h2 id="关键代码"><a href="#关键代码" class="headerlink" title="关键代码"></a>关键代码</h2><h3 id="producer"><a href="#producer" class="headerlink" title="producer"></a>producer</h3><p>producer发送消息，设置level</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">setDelayTimeLevel</span><span class="params">(<span class="keyword">int</span> level)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">this</span>.putProperty(MessageConst.PROPERTY_DELAY_TIME_LEVEL, String.valueOf(level));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="broker"><a href="#broker" class="headerlink" title="broker"></a>broker</h3><h4 id="broker处理putMessage"><a href="#broker处理putMessage" class="headerlink" title="broker处理putMessage"></a>broker处理putMessage</h4><ol>
+<li>CommitLog.putMessage保存信息会将真实的topic的备份放到指定队列</li>
+<li>DefaultMessageStore的ReputMessage在写CounmeQueue的时候会计算DeliverTime并且写入到tagCode中</li>
+</ol>
+<p>见代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> PutMessageResult <span class="title">putMessage</span><span class="params">(<span class="keyword">final</span> MessageExtBrokerInner msg)</span> </span>&#123;</span><br><span class="line">    ......</span><br><span class="line">    <span class="comment">//消息不是事物类型</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">int</span> tranType = MessageSysFlag.getTransactionValue(msg.getSysFlag());</span><br><span class="line">    <span class="keyword">if</span> (tranType == MessageSysFlag.TRANSACTION_NOT_TYPE</span><br><span class="line">            || tranType == MessageSysFlag.TRANSACTION_COMMIT_TYPE) &#123;</span><br><span class="line">        <span class="comment">// Delay Delivery Message</span></span><br><span class="line">        <span class="keyword">if</span> (msg.getDelayTimeLevel() &gt; <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">if</span> (msg.getDelayTimeLevel() &gt; <span class="keyword">this</span>.defaultMessageStore.getScheduleMessageService().getMaxDelayLevel()) &#123;</span><br><span class="line">                msg.setDelayTimeLevel(<span class="keyword">this</span>.defaultMessageStore.getScheduleMessageService().getMaxDelayLevel());</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">//延时消息--将消息投递到</span></span><br><span class="line">            topic = ScheduleMessageService.SCHEDULE_TOPIC;</span><br><span class="line">            queueId = ScheduleMessageService.delayLevel2QueueId(msg.getDelayTimeLevel());</span><br><span class="line"></span><br><span class="line">            <span class="comment">// Backup real topic, queueId 将消息设置成topic</span></span><br><span class="line">            MessageAccessor.putProperty(msg, MessageConst.PROPERTY_REAL_TOPIC, msg.getTopic());</span><br><span class="line">            MessageAccessor.putProperty(msg, MessageConst.PROPERTY_REAL_QUEUE_ID, String.valueOf(msg.getQueueId()));</span><br><span class="line">            msg.setPropertiesString(MessageDecoder.messageProperties2String(msg.getProperties()));</span><br><span class="line"></span><br><span class="line">            msg.setTopic(topic);</span><br><span class="line">            msg.setQueueId(queueId);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    ......</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//在ConsumeQueue存储消息信息时候会将tagCode设置为发送的日期</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">doReput</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    ......</span><br><span class="line">    <span class="comment">// 生成重放消息重放调度请求，-1-失败，0-到文件尾，1-正常</span></span><br><span class="line">    DispatchRequest dispatchRequest =</span><br><span class="line">            DefaultMessageStore.<span class="keyword">this</span>.commitLog.checkMessageAndReturnSize(result.getByteBuffer(), <span class="keyword">false</span>, <span class="keyword">false</span>);</span><br><span class="line">    ......</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> DispatchRequest <span class="title">checkMessageAndReturnSize</span><span class="params">(java.nio.ByteBuffer byteBuffer, <span class="keyword">final</span> <span class="keyword">boolean</span> checkCRC,</span></span></span><br><span class="line"><span class="function"><span class="params">                                                 <span class="keyword">final</span> <span class="keyword">boolean</span> readBody)</span> </span>&#123;</span><br><span class="line">            ......</span><br><span class="line">            <span class="comment">// Timing message processing 延时消息将tagsCode设置为时间戳，</span></span><br><span class="line">            &#123;</span><br><span class="line">                String t = propertiesMap.get(MessageConst.PROPERTY_DELAY_TIME_LEVEL);</span><br><span class="line">                <span class="keyword">if</span> (ScheduleMessageService.SCHEDULE_TOPIC.equals(topic) &amp;&amp; t != <span class="keyword">null</span>) &#123;</span><br><span class="line">                    <span class="keyword">int</span> delayLevel = Integer.parseInt(t);</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">if</span> (delayLevel &gt; <span class="keyword">this</span>.defaultMessageStore.getScheduleMessageService().getMaxDelayLevel()) &#123;</span><br><span class="line">                        delayLevel = <span class="keyword">this</span>.defaultMessageStore.getScheduleMessageService().getMaxDelayLevel();</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                    <span class="comment">//计算DeliverTimestamp</span></span><br><span class="line">                    <span class="keyword">if</span> (delayLevel &gt; <span class="number">0</span>) &#123;</span><br><span class="line">                        tagsCode = <span class="keyword">this</span>.defaultMessageStore.getScheduleMessageService().computeDeliverTimestamp(delayLevel,</span><br><span class="line">                                storeTimestamp);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">            ......</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<h4 id="ScheduleMessageService"><a href="#ScheduleMessageService" class="headerlink" title="ScheduleMessageService"></a>ScheduleMessageService</h4><p>  level的个数的设置由MessageStoreConfig的messageDelayLevel决定。rocketmq只能按照这个设置来决定消息的延迟时间。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">messageDelayLevel = <span class="string">"1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h"</span>;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>初始化：BrokerController在initialize()时候初始化DefaultMessageStore，DefaultMessageStore会初始化ScheduleMessageService，ScheduleMessageService负责定时任务的check和调度。</li>
+<li>load加载配置：BrokerController在initialize()会调用DefaultMessageStore的load，在该方法中会调用ScheduleMessageService的load,关键代码如下</li>
+<li><p>启动：在BrokerController.start后，随着DefaultMessageStore的start而启动。</p>
+<p>加载配置的过程</p>
+</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">//DefaultMessageStore的关键代码</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">load</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    ......</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">null</span> != scheduleMessageService) &#123;</span><br><span class="line">        result = result &amp;&amp; <span class="keyword">this</span>.scheduleMessageService.load();</span><br><span class="line">    &#125;</span><br><span class="line">    ......</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//ScheduleMessageService的代码</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">load</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">boolean</span> result = <span class="keyword">super</span>.load();</span><br><span class="line">    <span class="comment">//初始化配置的DelayLevel</span></span><br><span class="line">    result = result &amp;&amp; <span class="keyword">this</span>.parseDelayLevel();</span><br><span class="line">    <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">parseDelayLevel</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    HashMap&lt;String, Long&gt; timeUnitTable = <span class="keyword">new</span> HashMap&lt;String, Long&gt;();</span><br><span class="line">    timeUnitTable.put(<span class="string">"s"</span>, <span class="number">1000L</span>);</span><br><span class="line">    timeUnitTable.put(<span class="string">"m"</span>, <span class="number">1000L</span> * <span class="number">60</span>);</span><br><span class="line">    timeUnitTable.put(<span class="string">"h"</span>, <span class="number">1000L</span> * <span class="number">60</span> * <span class="number">60</span>);</span><br><span class="line">    timeUnitTable.put(<span class="string">"d"</span>, <span class="number">1000L</span> * <span class="number">60</span> * <span class="number">60</span> * <span class="number">24</span>);</span><br><span class="line"></span><br><span class="line">    String levelString = <span class="keyword">this</span>.defaultMessageStore.getMessageStoreConfig().getMessageDelayLevel();</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        String[] levelArray = levelString.split(<span class="string">" "</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; levelArray.length; i++) &#123;</span><br><span class="line">            String value = levelArray[i];</span><br><span class="line">            <span class="comment">//1h--&gt;ch=h,tu=1000L * 60 * 60</span></span><br><span class="line">            String ch = value.substring(value.length() - <span class="number">1</span>);</span><br><span class="line">            Long tu = timeUnitTable.get(ch);</span><br><span class="line"></span><br><span class="line">            <span class="comment">//初始化maxDelayLevel</span></span><br><span class="line">            <span class="keyword">int</span> level = i + <span class="number">1</span>;</span><br><span class="line">            <span class="keyword">if</span> (level &gt; <span class="keyword">this</span>.maxDelayLevel) &#123;</span><br><span class="line">                <span class="keyword">this</span>.maxDelayLevel = level;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="comment">//1h--&gt;1</span></span><br><span class="line">            <span class="keyword">long</span> num = Long.parseLong(value.substring(<span class="number">0</span>, value.length() - <span class="number">1</span>));</span><br><span class="line">            <span class="keyword">long</span> delayTimeMillis = tu * num;</span><br><span class="line">            <span class="comment">//put levelIndex,1*1000L * 60 * 60</span></span><br><span class="line">            <span class="keyword">this</span>.delayLevelTable.put(level, delayTimeMillis);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        log.error(<span class="string">"parseDelayLevel exception"</span>, e);</span><br><span class="line">        log.info(<span class="string">"levelString String = &#123;&#125;"</span>, levelString);</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>start</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">start</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">//遍历delayLevelTable，找到每个level的offset,然后异步的启动DeliverDelayedMessageTimerTask去检查</span></span><br><span class="line">    <span class="keyword">for</span> (Map.Entry&lt;Integer, Long&gt; entry : <span class="keyword">this</span>.delayLevelTable.entrySet()) &#123;</span><br><span class="line">        Integer level = entry.getKey();</span><br><span class="line">        Long timeDelay = entry.getValue();</span><br><span class="line">        Long offset = <span class="keyword">this</span>.offsetTable.get(level);</span><br><span class="line">        <span class="keyword">if</span> (<span class="keyword">null</span> == offset) &#123;</span><br><span class="line">            offset = <span class="number">0L</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (timeDelay != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="comment">//关键代码，每个level和offset会创建一个DeliverDelayedMessageTimerTask，第一次FIRST_DELAY_TIME（1s后执行）</span></span><br><span class="line">            <span class="keyword">this</span>.timer.schedule(<span class="keyword">new</span> DeliverDelayedMessageTimerTask(level, offset), FIRST_DELAY_TIME);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">this</span>.timer.scheduleAtFixedRate(<span class="keyword">new</span> TimerTask() &#123;</span><br><span class="line"></span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">run</span><span class="params">()</span> </span>&#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                ScheduleMessageService.<span class="keyword">this</span>.persist();</span><br><span class="line">            &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">                log.error(<span class="string">"scheduleAtFixedRate flush exception"</span>, e);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;, <span class="number">10000</span>, <span class="keyword">this</span>.defaultMessageStore.getMessageStoreConfig().getFlushDelayOffsetInterval());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>DeliverDelayedMessageTimerTask没有采用for/while循环这种来保证扫描delayQueue的实时性，而是每次根据处理Messagge的结果在启动一</li>
+<li>DeliverDelayedMessageTimerTask来控制频次、和保证实时性。在DeliverDelayedMessageTimerTask的run方法中调用executeOnTimeup这个是主要逻辑</li>
+<li>由于延期消息是队列，所以相同粒度的延期信息一定是按照顺序写入到队列中的。所以如果当前消息没到发布时间，后面所有消息就都没到发布时间。具体见下面代码</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">executeOnTimeup</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">//根据delayLevel找到制定的consumerQueue</span></span><br><span class="line">    ConsumeQueue cq =</span><br><span class="line">        ScheduleMessageService.<span class="keyword">this</span>.defaultMessageStore.findConsumeQueue(SCHEDULE_TOPIC,</span><br><span class="line">            delayLevel2QueueId(delayLevel));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">long</span> failScheduleOffset = offset;</span><br><span class="line">    <span class="keyword">if</span> (cq != <span class="keyword">null</span>) &#123;</span><br><span class="line">        <span class="comment">//步骤1，在consumerQueue中根据偏移量找到这条消息的索引信息</span></span><br><span class="line">        SelectMappedBufferResult bufferCQ = cq.getIndexBuffer(<span class="keyword">this</span>.offset);</span><br><span class="line">        <span class="keyword">if</span> (bufferCQ != <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">try</span> &#123;</span><br><span class="line">                <span class="keyword">long</span> nextOffset = offset;</span><br><span class="line">                <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">                <span class="comment">//获取cqExtUnit</span></span><br><span class="line">                ConsumeQueueExt.CqExtUnit cqExtUnit = <span class="keyword">new</span> ConsumeQueueExt.CqExtUnit();</span><br><span class="line">                <span class="keyword">for</span> (; i &lt; bufferCQ.getSize(); i += ConsumeQueue.CQ_STORE_UNIT_SIZE) &#123;</span><br><span class="line">                    <span class="keyword">long</span> offsetPy = bufferCQ.getByteBuffer().getLong();</span><br><span class="line">                    <span class="keyword">int</span> sizePy = bufferCQ.getByteBuffer().getInt();</span><br><span class="line">                    <span class="comment">//tagsCode-在conumeQueue持久化时候已经变味了DeliverTimestamp</span></span><br><span class="line">                    <span class="keyword">long</span> tagsCode = bufferCQ.getByteBuffer().getLong();</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">if</span> (cq.isExtAddr(tagsCode)) &#123;</span><br><span class="line">                        <span class="keyword">if</span> (cq.getExt(tagsCode, cqExtUnit)) &#123;</span><br><span class="line">                            tagsCode = cqExtUnit.getTagsCode();</span><br><span class="line">                        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                            <span class="comment">//can't find ext content.So re compute tags code.</span></span><br><span class="line">                            log.error(<span class="string">"[BUG] can't find consume queue extend file content!addr=&#123;&#125;, offsetPy=&#123;&#125;, sizePy=&#123;&#125;"</span>,</span><br><span class="line">                                tagsCode, offsetPy, sizePy);</span><br><span class="line">                            <span class="keyword">long</span> msgStoreTime = defaultMessageStore.getCommitLog().pickupStoreTimestamp(offsetPy, sizePy);</span><br><span class="line">                            tagsCode = computeDeliverTimestamp(delayLevel, msgStoreTime);</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line"></span><br><span class="line">                    <span class="comment">//步骤2，计算过期时间</span></span><br><span class="line">                    <span class="keyword">long</span> now = System.currentTimeMillis();</span><br><span class="line">                    <span class="comment">//修正deliverTimestamp,如果deliverTimestamp&gt;now+delayMills说明过期了</span></span><br><span class="line">                    <span class="keyword">long</span> deliverTimestamp = <span class="keyword">this</span>.correctDeliverTimestamp(now, tagsCode);</span><br><span class="line"></span><br><span class="line">                    nextOffset = offset + (i / ConsumeQueue.CQ_STORE_UNIT_SIZE);</span><br><span class="line"></span><br><span class="line">                    <span class="keyword">long</span> countdown = deliverTimestamp - now;</span><br><span class="line">                    <span class="keyword">if</span> (countdown &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">                        <span class="comment">//到期了开始投递消息</span></span><br><span class="line">                        MessageExt msgExt =</span><br><span class="line">                            ScheduleMessageService.<span class="keyword">this</span>.defaultMessageStore.lookMessageByOffset(</span><br><span class="line">                                offsetPy, sizePy);</span><br><span class="line"></span><br><span class="line">                        <span class="keyword">if</span> (msgExt != <span class="keyword">null</span>) &#123;</span><br><span class="line">                            <span class="keyword">try</span> &#123;</span><br><span class="line">                                <span class="comment">//修改realTopic，发送消息</span></span><br><span class="line">                                MessageExtBrokerInner msgInner = <span class="keyword">this</span>.messageTimeup(msgExt);</span><br><span class="line">                                PutMessageResult putMessageResult =</span><br><span class="line">                                    ScheduleMessageService.<span class="keyword">this</span>.defaultMessageStore</span><br><span class="line">                                        .putMessage(msgInner);</span><br><span class="line"></span><br><span class="line">                                <span class="comment">//发送成功后，继续处理下一条消息</span></span><br><span class="line">                                <span class="keyword">if</span> (putMessageResult != <span class="keyword">null</span></span><br><span class="line">                                    &amp;&amp; putMessageResult.getPutMessageStatus() == PutMessageStatus.PUT_OK) &#123;</span><br><span class="line">                                    <span class="keyword">continue</span>;</span><br><span class="line">                                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                                    <span class="comment">//发送失败，10sec后在开始下一轮扫描</span></span><br><span class="line">                                    <span class="comment">// <span class="doctag">XXX:</span> warn and notify me</span></span><br><span class="line">                                    log.error(</span><br><span class="line">                                        <span class="string">"ScheduleMessageService, a message time up, but reput it failed, topic: &#123;&#125; msgId &#123;&#125;"</span>,</span><br><span class="line">                                        msgExt.getTopic(), msgExt.getMsgId());</span><br><span class="line">                                    ScheduleMessageService.<span class="keyword">this</span>.timer.schedule(</span><br><span class="line">                                        <span class="keyword">new</span> DeliverDelayedMessageTimerTask(<span class="keyword">this</span>.delayLevel,</span><br><span class="line">                                            nextOffset), DELAY_FOR_A_PERIOD);</span><br><span class="line">                                    ScheduleMessageService.<span class="keyword">this</span>.updateOffset(<span class="keyword">this</span>.delayLevel,</span><br><span class="line">                                        nextOffset);</span><br><span class="line">                                    <span class="keyword">return</span>;</span><br><span class="line">                                &#125;</span><br><span class="line">                            &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">                                <span class="comment">/*</span></span><br><span class="line"><span class="comment">                                 * <span class="doctag">XXX:</span> warn and notify me</span></span><br><span class="line"><span class="comment">                                 */</span></span><br><span class="line">                                log.error(</span><br><span class="line">                                    <span class="string">"ScheduleMessageService, messageTimeup execute error, drop it. msgExt="</span></span><br><span class="line">                                        + msgExt + <span class="string">", nextOffset="</span> + nextOffset + <span class="string">",offsetPy="</span></span><br><span class="line">                                        + offsetPy + <span class="string">",sizePy="</span> + sizePy, e);</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        <span class="comment">//消息没到期，创建Task扫描一次该消息，延期countdown防止无谓的计算</span></span><br><span class="line">                        ScheduleMessageService.<span class="keyword">this</span>.timer.schedule(</span><br><span class="line">                            <span class="keyword">new</span> DeliverDelayedMessageTimerTask(<span class="keyword">this</span>.delayLevel, nextOffset),</span><br><span class="line">                            countdown);</span><br><span class="line">                        ScheduleMessageService.<span class="keyword">this</span>.updateOffset(<span class="keyword">this</span>.delayLevel, nextOffset);</span><br><span class="line">                        <span class="keyword">return</span>;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="comment">// end of for</span></span><br><span class="line"></span><br><span class="line">                <span class="comment">//队列所有消息都扫描结束后，100L后开启下一轮扫描</span></span><br><span class="line">                <span class="comment">//由于延期消息是队列，所以相同粒度的延期信息一定是按照顺序写入到队列中的。所以如果当前消息没到发布时间，后面所有消息就都没到发布时间。具体见下面代码</span></span><br><span class="line">                nextOffset = offset + (i / ConsumeQueue.CQ_STORE_UNIT_SIZE);</span><br><span class="line">                ScheduleMessageService.<span class="keyword">this</span>.timer.schedule(<span class="keyword">new</span> DeliverDelayedMessageTimerTask(</span><br><span class="line">                    <span class="keyword">this</span>.delayLevel, nextOffset), DELAY_FOR_A_WHILE);</span><br><span class="line">                ScheduleMessageService.<span class="keyword">this</span>.updateOffset(<span class="keyword">this</span>.delayLevel, nextOffset);</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line"></span><br><span class="line">                bufferCQ.release();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="comment">// end of if (bufferCQ != null)</span></span><br><span class="line">        <span class="keyword">else</span> &#123;</span><br><span class="line"></span><br><span class="line">            <span class="keyword">long</span> cqMinOffset = cq.getMinOffsetInQueue();</span><br><span class="line">            <span class="keyword">if</span> (offset &lt; cqMinOffset) &#123;</span><br><span class="line">                failScheduleOffset = cqMinOffset;</span><br><span class="line">                log.error(<span class="string">"schedule CQ offset invalid. offset="</span> + offset + <span class="string">", cqMinOffset="</span></span><br><span class="line">                    + cqMinOffset + <span class="string">", queueId="</span> + cq.getQueueId());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="comment">// end of if (cq != null)</span></span><br><span class="line"></span><br><span class="line">    ScheduleMessageService.<span class="keyword">this</span>.timer.schedule(<span class="keyword">new</span> DeliverDelayedMessageTimerTask(<span class="keyword">this</span>.delayLevel,</span><br><span class="line">        failScheduleOffset), DELAY_FOR_A_WHILE);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA内存模型与线程/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/JAVA内存模型与线程/" class="post-title-link" itemprop="url">JAVA内存模型与线程</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-11-18 16:04:54" itemprop="dateCreated datePublished" datetime="2019-11-18T16:04:54Z">2019-11-18</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/" itemprop="url" rel="index"><span itemprop="name">jvm</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>  是对之前java并发的一个补充。：P</p>
+<p>  java的操作都是将数据从主内存加载到工作内存去做操作，为了保证线程的安全归定了几个原子性操作。</p>
+<h2 id="java的几个原子性操作"><a href="#java的几个原子性操作" class="headerlink" title="java的几个原子性操作"></a>java的几个原子性操作</h2><ul>
+<li>read：主内存，将数据从主内存传输到工作内存，以便load使用</li>
+<li>load：工作内存，将read的变量副本放入到工作内存中</li>
+<li>assign：工作内存，赋值操作。将执行引擎（jvm）中的值赋值给变量。</li>
+<li>use：工作内存，把工作内存中的值传递给执行引擎。</li>
+<li>store：工作内存，将数据传输到主内存中，以便write操作使用</li>
+<li>write：主内存，将数据写入到主内存中。</li>
+<li>lock：主内存，将变量标识为线程独占</li>
+<li>unlock：主内存，释放锁标记，标识变量变为共享状态。</li>
+</ul>
+<p>几个规定</p>
+<ul>
+<li>read和load，store和write成对出现，并且先后顺序不能改变</li>
+<li>assign必须在load之后，且assign之后必须写会主内存，且加载到内存的变量必须assign</li>
+<li>use、store之前必须assign，load</li>
+<li>lock操作后工作内存会被清空</li>
+<li>unlock必须在lock之后，且unlock必须等待变量别写会主内存。</li>
+</ul>
+<h2 id="保证线程安全的3个要点"><a href="#保证线程安全的3个要点" class="headerlink" title="保证线程安全的3个要点"></a>保证线程安全的3个要点</h2><ul>
+<li>原子性：8个原子操作</li>
+<li>可见性：voltile、final、synchrozied可以保证</li>
+<li>顺序性：voltile、synchrozied</li>
+</ul>
+<h2 id="线程实现"><a href="#线程实现" class="headerlink" title="线程实现"></a>线程实现</h2><p>1:1模型：使用内核线程，实现简单，但是无法支持高并发因为内核态和用户态消耗大，并且由于是1：1无法支持高并发。<br>1:N：使用用户线程，可支持高并发，但是调度等实现难度大。<br>N:M：用户线程用于并发，内核线程用于调度。综合上面俩种优缺点。</p>
+<h2 id="线程状态"><a href="#线程状态" class="headerlink" title="线程状态"></a>线程状态</h2><p>new:new一个线程<br>run:执行start<br>block:synchronized<br>wait:没有参数的wait<br>time_waiting:有参数的wait和sleep</p>
+<h2 id="jvm的锁优化"><a href="#jvm的锁优化" class="headerlink" title="jvm的锁优化"></a>jvm的锁优化</h2><p>由于锁需要从用户态转到内核态作为控制，所以采用如下几种优化方案。</p>
+<ul>
+<li>锁消除：通过逃逸分析发现没有变量逃逸的情况，会去掉锁。</li>
+<li>锁粗化：如果多一个对象反复加锁、解锁会考虑合并</li>
+<li>偏向锁：如果当前线程获取锁，复制markword,markword修改锁标记位，以及获取锁线程的线程ID；</li>
+<li>轻量级锁：如果遇到竞争，复制markword，markword修改锁标记位，以及锁的lockrecord地址。</li>
+</ul>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JVM的编译优化-后期/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/JVM的编译优化-后期/" class="post-title-link" itemprop="url">JVM的编译优化-后期</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-11-17 10:45:28" itemprop="dateCreated datePublished" datetime="2019-11-17T10:45:28Z">2019-11-17</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/" itemprop="url" rel="index"><span itemprop="name">jvm</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>  JIT(java in time complier)，即为了提高热点代码效率将代码编译成本地代码。</p>
+<h2 id="解释器与编译器"><a href="#解释器与编译器" class="headerlink" title="解释器与编译器"></a>解释器与编译器</h2><p>  HotSpot采用的是解释器与编译器共存。</p>
+<p>  解释器可以发挥编译优势，省去编译成本地代码的时间，直接运行；编译器把反复执行的代码编译成本地代码提高执行效率。同时如果编译器的优化比较激进发现编译后的结果不成立可以通过解释器退回到之前状态。</p>
+<p>  解释器和编译器这种搭配方式称为混合模式。可以通过-Xint来控制</p>
+<h2 id="俩个编译器ClientComplier和ServerComplier"><a href="#俩个编译器ClientComplier和ServerComplier" class="headerlink" title="俩个编译器ClientComplier和ServerComplier"></a>俩个编译器ClientComplier和ServerComplier</h2><p>ClientComplier注重编译速度，ServerComplier注重编译的质量。HotSpot在JDK1.7时代默认采用分层编译</p>
+<ul>
+<li>C0：解释执行</li>
+<li>C1：将字节码编译成本地代码，简单的优化。</li>
+<li>C2：会启用一些耗时优化。</li>
+</ul>
+<h2 id="出发条件"><a href="#出发条件" class="headerlink" title="出发条件"></a>出发条件</h2><p>HotSpot采用基于计数器的方式。</p>
+<ul>
+<li>方法的重复调用<ul>
+<li>条件：重复一定次数（方法调用计数器控制）</li>
+<li>方式：调用次数+1.触发阈值后发送编译请求。编译完成后替换方法地址</li>
+<li>半衰周期：当一段时间没到阈值会，方法调用计数器会衰减一半</li>
+<li>默认值：client:1500,server:10000</li>
+</ul>
+</li>
+<li>循环体的调用：OSR(on stack replacement)栈上替换，发生在运行时的方法栈<ul>
+<li>条件：重复一定次数（回边计数器）</li>
+<li>方式：以方法为单位如果，每一次循环回边计数器都+1，如果回边计数器和方法调用计数器超过一定数值后发送编译请求。（这时候重新调整计数器以便继续循环）编译完成后替换方法地址</li>
+</ul>
+</li>
+</ul>
+<h2 id="编译过程"><a href="#编译过程" class="headerlink" title="编译过程"></a>编译过程</h2><p>后台编译</p>
+<p><img src="/JVM的编译优化-后期/clientcomiler.png" alt="client-compile"></p>
+<p>具体的HIR LIR我也没太看明白以后看编译原理在不上:P</p>
+<h2 id="编译优化的技术"><a href="#编译优化的技术" class="headerlink" title="编译优化的技术"></a>编译优化的技术</h2><p>编译代码比解释代码优化，一方面是没有虚拟接解释代码的消耗，一方面是所有的代码优化措施都集中在JIT上。</p>
+<h3 id="优化技术概览"><a href="#优化技术概览" class="headerlink" title="优化技术概览"></a>优化技术概览</h3><p><img src="/JVM的编译优化-后期/jit优化技术.png" alt="jit优化技术"><br><img src="/JVM的编译优化-后期/jit优化技术2.png" alt="jit优化技术"></p>
+<h3 id="公共子表达式优化"><a href="#公共子表达式优化" class="headerlink" title="公共子表达式优化"></a>公共子表达式优化</h3><p>比如程序有俩个b<em>c和c</em>b，javac不会进行优化，java则会优化成E=b*c,然后代码使用E</p>
+<h3 id="异常消除"><a href="#异常消除" class="headerlink" title="异常消除"></a>异常消除</h3><p>NullPointer，ArrayIndexOutOfBounds等异常信息，在运行时如果不优化每次判断都会带来开销，所以jit会对齐进行优化，消除这些隐式的判断。而且会根据Profile收集到的信息进行“智能”优化。比如一个对象经常为空的情况就不回采用try catch的优化。</p>
+<h3 id="方法内联"><a href="#方法内联" class="headerlink" title="方法内联"></a>方法内联</h3><p>由于JAVA是面向对象的，很对方法是虚方法，为了优化就采用CHA，如果是虚方法会去查询有几个版本如果只有一个版本会进行内联，如果继承关系发生改变，比如动态代码，这时候要退回解释执行。如果发现多个版本还会采用Inline Cache来尝试内联</p>
+<h3 id="逃逸分析"><a href="#逃逸分析" class="headerlink" title="逃逸分析"></a>逃逸分析</h3><p>栈上分配、同步消除、标量替换</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JVM的编译优化-前期/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/JVM的编译优化-前期/" class="post-title-link" itemprop="url">JVM的编译优化-前期</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-11-15 15:46:02" itemprop="dateCreated datePublished" datetime="2019-11-15T15:46:02Z">2019-11-15</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/" itemprop="url" rel="index"><span itemprop="name">jvm</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>JAVA是将类文件编译后生成操作码交给解释器执行，所以是解释性语言。</p>
+<h2 id="面向栈的指令集和面向寄存器的指令集"><a href="#面向栈的指令集和面向寄存器的指令集" class="headerlink" title="面向栈的指令集和面向寄存器的指令集"></a>面向栈的指令集和面向寄存器的指令集</h2><p>  java是通过操作码将数据压入/弹出到操作栈中进行操作，所以是面向栈的，而还有一种流派是直接生成本地代码调用寄存器的指令，<br>  俩者的区别。</p>
+<ul>
+<li>面向栈：便于移植，代码简单，由于不依赖寄存器，支持寄存器不支持的功能。由于执行指令多所以性能差</li>
+<li>面向寄存器：不便于移植，功能依赖于CPU等硬件。性能好</li>
+</ul>
+<h2 id="javac编译的过程"><a href="#javac编译的过程" class="headerlink" title="javac编译的过程"></a>javac编译的过程</h2><p><img src="/JVM的编译优化/javac编译过程.png" alt="编译过程"></p>
+<p>源码如下</p>
+<p><img src="/JVM的编译优化/javac编译过程的主题代码.png" alt="编译过程"></p>
+<h3 id="解析文件和添加符号表"><a href="#解析文件和添加符号表" class="headerlink" title="解析文件和添加符号表"></a>解析文件和添加符号表</h3><ul>
+<li>词法、语法分析：通过词法分析器和语法分析器生成抽象语法树</li>
+<li>输入到符号表：将语法树种的在javac源码就是enterTree过程，符号表是一个kv的数据结构，用于收集符号以及变量，在语义校验阶段用于校验语法和产生中间代码，目标代码生成阶段是分配符号内存的依据</li>
+</ul>
+<h3 id="注解处理器处理注解"><a href="#注解处理器处理注解" class="headerlink" title="注解处理器处理注解"></a>注解处理器处理注解</h3><p>JDK1.5之后支持了注解，实际上是一个个的语法插件，会对语法树进行读取、修改，如果对语法树进行修改，需要重新解析文件和添加符号表，称为Round。也就是图上的回环</p>
+<h3 id="语义分析与字节码生成"><a href="#语义分析与字节码生成" class="headerlink" title="语义分析与字节码生成"></a>语义分析与字节码生成</h3><ul>
+<li>标注检查：检查变量是否已经声明，类型与赋值类型是否匹配。</li>
+<li>数据及控制流分析：进一步对语法和语义做检查。注意局部变量设置为final的语义检查是在编译器的，因为局部变量没有该final的常量标志位，所以在编译后是否声明称final没有区别。</li>
+<li>解语法糖：泛型、自动装箱、拆箱等都需要在编译阶段还原。</li>
+<li>字节码生成：<ul>
+<li>实例构造器init方法和类构造器clinit方法添加到语法树，将调用父类的实例构造器等方法收敛到这俩个方法中</li>
+<li>优化操作：将String的添加等操作改为StringBuffer.append</li>
+</ul>
+</li>
+</ul>
+<h2 id="JAVA语法糖详解"><a href="#JAVA语法糖详解" class="headerlink" title="JAVA语法糖详解"></a>JAVA语法糖详解</h2><h3 id="泛型和类型擦除"><a href="#泛型和类型擦除" class="headerlink" title="泛型和类型擦除"></a>泛型和类型擦除</h3>
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JVM虚拟机执行引擎/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1500,1037 +2560,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JAVA虚拟机的内存管理/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/JAVA虚拟机的内存管理/" class="post-title-link" itemprop="url">JAVA虚拟机的内存管理</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-10-15 20:27:32" itemprop="dateCreated datePublished" datetime="2019-10-15T20:27:32Z">2019-10-15</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/jvm/" itemprop="url" rel="index"><span itemprop="name">jvm</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>Java与C++之间有一堵由内存动态分配和垃圾收集技术所围成的“高墙”，墙外面的人想进去，墙里面的人却想出来。</p>
-<h2 id="运行时数据区域"><a href="#运行时数据区域" class="headerlink" title="运行时数据区域"></a>运行时数据区域</h2><p>见图：</p>
-<p><img src="/JAVA虚拟机的内存管理/jvm运行时数据区.png" alt="avator"></p>
-<h3 id="程序计数器"><a href="#程序计数器" class="headerlink" title="程序计数器"></a>程序计数器</h3><p>  一块较小的内存空间，当前线程执行字节码的行号计数器，字节码解释器通过修改它来让程序知道分支、跳转、异常处理等逻辑下一条指令去哪里执行。<br>  在多线程环境中，由于当前线程在某一时刻，只会执行线程的一条指令，线程切换之后要恢复到之前程序执行的点。所以程序计数器线程独立的。<br>  如果线程执行的是JAVA方法，该值记录的是虚拟机字节码指令地址。如果是native方法该值是undifined，该区域是jvm中唯一没规定oom的区域</p>
-<h3 id="Java虚拟机栈"><a href="#Java虚拟机栈" class="headerlink" title="Java虚拟机栈"></a>Java虚拟机栈</h3><p>  也是线程独有的，生命周期和线程绑定在一起。描述的是JVM的内存模型：每个方法在执行时候会生成一个Stack Frame。存储方法的局部变量表、操作数栈、动态链接、方法出口等。<br>  每一个方法从执行开始到执行完毕都是Stack Frame的一个入栈到出栈的操作。<br>  局部变量表存放：java的几本类型，对象引用、returnAddress等。局部变量表的内存空间在编译时候就确定好了，当进入一个方法中，局部变量表在Stack Frame的大小是确定的不会改变。<br>  如果线程请求的虚拟机栈超过最大深度会报StackOverFlowError异常，虚拟机栈可以动态扩展但是没申请到内存会报OutOfMemoryError异常。（这里是只没打到深度但是内存不足了）</p>
-<h3 id="本地方法栈"><a href="#本地方法栈" class="headerlink" title="本地方法栈"></a>本地方法栈</h3><p>  基本上和JAVA虚拟机栈类似这里是指调用的是native方法。会抛出的异常如上。</p>
-<h3 id="JAVA堆"><a href="#JAVA堆" class="headerlink" title="JAVA堆"></a>JAVA堆</h3><p>  存放对象最大的一块区域，可以是不连续的内存空间。具体针对gc方式可以分为young old metaspace等。后期还有g1回收期，这里暂时不做讨论，所有线程共享。如果内存不足会报OutOfMemoryError异常</p>
-<h3 id="方法区"><a href="#方法区" class="headerlink" title="方法区"></a>方法区</h3><p>  我们常说的PermSpace或者MetaSpace。用于存储Java虚拟机的类信息、静态变量、常量、即时编译的代码等。为了和堆区分开也叫（Non heap）。JVM规范对方法去限制很宽松除了内存可以不连续外，还可以不实现gc，方法区的gc主要取决于常量的回收和类的卸载。</p>
-<h3 id="直接内存"><a href="#直接内存" class="headerlink" title="直接内存"></a>直接内存</h3><p>  在jdk1.4之后Java引入了Nio,可以直接通过native函数分配堆外内存 通过DirectByteBuffer进行读取/写入，也会引起OutOfMemoryError</p>
-<h3 id="运行时的常量池"><a href="#运行时的常量池" class="headerlink" title="运行时的常量池"></a>运行时的常量池</h3><p>  方法区的一部分，类在编译时产生的常量在加载Class时候会存储在方法区的常量池中，常量池是动态的的比如String的inter()方法会在运行时动态的加入常量池，所以也有可能出现OutOfMemoryError异常</p>
-<p>  补充一点：<br>  String s=”liuhao” 是一个常量是编译时候就决定好的，所以java汇总<br>  String s1=”liu”+”hao” 俩个常量相加会进入常量池儿常量池只有一个拷贝，所以s==s1<br>  String s=new String(“liuhao”) 不是常量所以不能放在常量池。<br>  String s1=s1.intern() 将s1的值写入到常量池中,扩充了常量池</p>
-<h2 id="Object"><a href="#Object" class="headerlink" title="Object"></a>Object</h2><h3 id="HotSpot的Object的创建"><a href="#HotSpot的Object的创建" class="headerlink" title="HotSpot的Object的创建"></a>HotSpot的Object的创建</h3><p>对象创建的步骤</p>
-<ol>
-<li>类装载：去常量池中查找Class的符号引用，检查类是否已经被加载、解析、初始化过;</li>
-<li>分配内存,依据内存是否完整有俩种分配方式<ol>
-<li>指针碰撞：Bump the Pointer，规整的内存空间，Serial,ParNew这种垃圾回收机制会整理内存。将已分配、未分配用一个指针分隔开，分配时候讲指针挪动一个对象的size个位置。</li>
-<li>空闲列表: Free List，不规整的内存空间,CMS垃圾回收机制不需要整理内存。维护一个空闲列表，分配时候找到一个空闲的内存空间进行分配。</li>
-<li>指针碰撞的线程安全：<ol>
-<li>TLAB：每个内存开辟一个独有的小的内存空间默认是Eden区1%，对象会先在TLAB上创建，这样就保证了原子性。虚拟机内部会维护一个refill_waste值，如果对象需要的空间小于TLAB的剩余空间，同时对象的size大于refill_waste，会在堆中创建，如果小于refill_waste则会新申请一个TLAB进行创建。用参数-XX:+UseTLAB开启，默认是开启的</li>
-<li>CAS+失败重试，保证分配空间的原子性。</li>
-</ol>
-</li>
-</ol>
-</li>
-<li>初始化对象，将对象里的属性初始化成零值</li>
-<li>设置对象头：元数据信息、Hash值、GC分带年龄等</li>
-<li>对象从虚拟机的角度来看已经创建完成，java代码还需要对对象进行init的设置。</li>
-</ol>
-<h3 id="对象的内存布局"><a href="#对象的内存布局" class="headerlink" title="对象的内存布局"></a>对象的内存布局</h3><p>  分为对象头（Header）、实例数据（Instance Data）、对齐填充（Padding）</p>
-<h4 id="对象头"><a href="#对象头" class="headerlink" title="对象头"></a>对象头</h4><ul>
-<li>MarkWord：HashCode、GC年代分龄、锁标记位、线程持有的锁、偏向的线程ID、偏向时间戳。长度32bit or 64bit。<ul>
-<li>32bit:HashCode（25bit）、GC年代分龄(4bit)、锁标记位(2bit)、unused(1bit)</li>
-<li>64bit:unused(25bit)、HashCode（31bit）、GC年代分龄(4bit)、锁标记位(2bit)、unused(1bit)、block（1bit）</li>
-</ul>
-</li>
-<li>类型指针：类元素的指针告诉虚拟机它是哪个类的实例。如果是数组还需要保存数组的长度</li>
-</ul>
-<h4 id="实例数据"><a href="#实例数据" class="headerlink" title="实例数据"></a>实例数据</h4><p>保存对象的真实数据，分配策略是相同宽度的对象会分配在一起，满足这个前提条件下，父类的字段会放在子类之前。</p>
-<h4 id="对象填充"><a href="#对象填充" class="headerlink" title="对象填充"></a>对象填充</h4><p>用于对齐对象用，因为要求对象必须是8字节的整数倍，如果不是需要这部分进行填充。</p>
-<h3 id="对象访问定位"><a href="#对象访问定位" class="headerlink" title="对象访问定位"></a>对象访问定位</h3><p>  创建对象之后java通过栈上的refrences数据来操作对象实例，JVM没有规定如何具体访问对象有俩种访问方式，通过句柄方式和直接指针方式</p>
-<p>  句柄方式:jvm在堆上开辟一块空间作为句柄池，refrence保存的是句柄地址，句柄来负责访问对象一部分指向堆中对象的实例地址，一部分指向方法区的类实例地址。<br>  好处：refrence保存的是稳定的句柄地址，当对象被移动时候refrence不需要改变。（例如gc时候移动对象）<br><img src="/JAVA虚拟机的内存管理/通过句柄访问对象.png" alt="avator"></p>
-<p>  直接对象指针：refrence保存的是实例数据的指针。HotSpot采用这种方式<br>  好处：速度快。少一次句柄查找的操作。由于创建对象频繁这一步性能的节省效果很客观。<br><img src="/JAVA虚拟机的内存管理/通过直接指针方式访问对象.png" alt="avator"></p>
-<h2 id="OutOfMemory"><a href="#OutOfMemory" class="headerlink" title="OutOfMemory"></a>OutOfMemory</h2><p>todo</p>
-<h3 id="java堆溢出"><a href="#java堆溢出" class="headerlink" title="java堆溢出"></a>java堆溢出</h3><p>执行如下程序</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * -Xms20m -Xmx20m -XX:+HeapDumpOnOutOfMemoryError</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: liuhaoeric</span></span><br><span class="line"><span class="comment"> * Create time: 2019/10/17</span></span><br><span class="line"><span class="comment"> * Description:</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">HeapOOM</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">OOMObject</span> </span>&#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        List&lt;OOMObject&gt; list = <span class="keyword">new</span> ArrayList&lt;OOMObject&gt;();</span><br><span class="line">        <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">            list.add(<span class="keyword">new</span> OOMObject());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">会出现异常信息</span><br><span class="line">Exception in thread <span class="string">"main"</span> java.lang.OutOfMemoryError: Java heap space</span><br><span class="line"> at java.util.Arrays.copyOf(Arrays.java:<span class="number">3210</span>)</span><br><span class="line"> at java.util.Arrays.copyOf(Arrays.java:<span class="number">3181</span>)</span><br><span class="line"> at java.util.ArrayList.grow(ArrayList.java:<span class="number">265</span>)</span><br><span class="line"> at java.util.ArrayList.ensureExplicitCapacity(ArrayList.java:<span class="number">239</span>)</span><br><span class="line"> at java.util.ArrayList.ensureCapacityInternal(ArrayList.java:<span class="number">231</span>)</span><br><span class="line"> at java.util.ArrayList.add(ArrayList.java:<span class="number">462</span>)</span><br><span class="line"> at com.ericliu.practice.toy.jvm.oom.HeapOOM.main(HeapOOM.java:<span class="number">19</span>)</span><br></pre></td></tr></table></figure>
-<p>其中Java heap space的表示是堆溢出，可以通过HeapDumpOnOutOfMemoryError导出的文件通过MAT查看（eclipse的插件）</p>
-<h3 id="java方法栈和本地方法栈溢出溢出"><a href="#java方法栈和本地方法栈溢出溢出" class="headerlink" title="java方法栈和本地方法栈溢出溢出"></a>java方法栈和本地方法栈溢出溢出</h3><p>会出现StackOverFlowError或者StackOutOfMemeoryError。执行下面代码</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * -Xss160k</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: liuhaoeric</span></span><br><span class="line"><span class="comment"> * Create time: 2019/10/17</span></span><br><span class="line"><span class="comment"> * Description:</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">JavaVMStackSOF</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> stackLength = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">stackLeak</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        stackLength++;</span><br><span class="line">        stackLeak();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Throwable </span>&#123;</span><br><span class="line">        JavaVMStackSOF oom = <span class="keyword">new</span> JavaVMStackSOF();</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">            oom.stackLeak();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">            System.out.println(<span class="string">"stack length："</span> + oom.stackLength);</span><br><span class="line">            <span class="keyword">throw</span> e;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">会出现异常信息</span><br><span class="line">Exception in thread <span class="string">"main"</span> java.lang.StackOverflowError</span><br><span class="line"> at com.ericliu.practice.toy.jvm.oom.JavaVMStackSOF.stackLeak(JavaVMStackSOF.java:<span class="number">13</span>)</span><br><span class="line">......</span><br></pre></td></tr></table></figure>
-<p>单线程的情况会出现StackOverflowError，通过不断创建线程可能会耗尽内存导致Stack的OOM,这种情况可以通过减少线程或者增大堆内存，或者减少每个线程的内存。</p>
-<p>多线程会出现如下异常</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Exception in thread<span class="string">"main"</span>java.lang.OutOfMemoryError：unable to create <span class="keyword">new</span> <span class="keyword">native</span> thread</span><br></pre></td></tr></table></figure>
-<h3 id="方法区和常量池溢出"><a href="#方法区和常量池溢出" class="headerlink" title="方法区和常量池溢出"></a>方法区和常量池溢出</h3><p>1.6执行如下代码，因为1.7采用了MetaSpace所以失效了</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * -XX:PermSize=10M -XX:MaxPermSize=10M</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@Author</span>: liuhaoeric</span></span><br><span class="line"><span class="comment"> * Create time: 2019/10/17</span></span><br><span class="line"><span class="comment"> * Description:</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RuntimeConstantPoolOOM</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        <span class="comment">//使用List保持着常量池引用，避免Full GC回收常量池行为</span></span><br><span class="line">        List&lt;String&gt; list = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">        <span class="comment">// 10MB的PermSize在integer范围内足够产生OOM了</span></span><br><span class="line">        <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">            list.add(String.valueOf(i++).intern());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>出现PermGen Space</p>
-<h3 id="本机直接内存溢出"><a href="#本机直接内存溢出" class="headerlink" title="本机直接内存溢出"></a>本机直接内存溢出</h3><p>可以通过DirectMemory容量可通过-XX：MaxDirectMemorySize指定，如果不指定，则默认与Java堆最大值（-Xmx指定）一样。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * VM Args：-Xmx20M -XX:MaxDirectMemorySize=10M</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DirectMemoryOOM</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">int</span> MB = <span class="number">1024</span> * <span class="number">1024</span>;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">        Field unsafeField = Unsafe.class.getDeclaredFields()[<span class="number">0</span>];</span><br><span class="line"></span><br><span class="line">        unsafeField.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">        Unsafe unsafe = (Unsafe) unsafeField.get(<span class="keyword">null</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">while</span> (<span class="keyword">true</span>) &#123;</span><br><span class="line">            unsafe.allocateMemory(MB);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">异常：</span><br><span class="line">Exception in thread<span class="string">"main"</span>java.lang.OutOfMemoryError</span><br><span class="line"> at sun.misc.Unsafe.allocateMemory（Native Method）</span><br><span class="line"> at org.fenixsoft.oom.DMOOM.main（DMOOM.java：<span class="number">20</span>）</span><br></pre></td></tr></table></figure>
-<p>特征是dump的文件很小。如果发现dump的文件很小同时用了nio可以考虑是这方面的原因。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Redis-源码理解/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/Redis-源码理解/" class="post-title-link" itemprop="url">Redis-源码理解</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-10-11 14:27:15" itemprop="dateCreated datePublished" datetime="2019-10-11T14:27:15Z">2019-10-11</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/redis/" itemprop="url" rel="index"><span itemprop="name">redis</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="RedisObject"><a href="#RedisObject" class="headerlink" title="RedisObject"></a>RedisObject</h2><p>  所有的Redis对象都有如下的头信息</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ReidsObject</span>&#123;</span></span><br><span class="line">    int4 type; <span class="comment">//类型 4bit</span></span><br><span class="line">    int4 encoding; <span class="comment">//编码方式 4bit</span></span><br><span class="line">    int24 lru; <span class="comment">//lru时间戳 24bit</span></span><br><span class="line">    int32 refcount; <span class="comment">//引用计数如果为0回收 4byte</span></span><br><span class="line">    <span class="keyword">void</span> *ptr; <span class="comment">//指针 8byte</span></span><br><span class="line">&#125;robj</span><br></pre></td></tr></table></figure>
-<p>  每一中RedisObject的数据类型对应一个type,但是根据情况可能对应多个encoding</p>
-<h2 id="字符串的原理"><a href="#字符串的原理" class="headerlink" title="字符串的原理"></a>字符串的原理</h2><p>  Redis的字符串叫SDS格式如下</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">SDS</span>&lt;T&gt;&#123;</span></span><br><span class="line">    T capacity; <span class="comment">//容量 1byte</span></span><br><span class="line">    T len; <span class="comment">//实际长度 1byte</span></span><br><span class="line">    byte flags; <span class="comment">//特殊标志位 1byte</span></span><br><span class="line">    byte[] content; <span class="comment">//数组长度</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>  redis的字符串支持修改，为了减少修改的成本会预先申请capacity个长度的byte数组，当数组写入字符串的时候根据len定位。好处如下：</p>
-<ul>
-<li>当发生追加等操作时候不需要申请新的数组，copy原数组</li>
-<li>获取字符串长度时候只需要访问len变量即可，不需要遍历数组</li>
-<li><p>len和capacity使用泛型T可以针对长度将变量设置为byte short。对对象用到了极致</p>
-<p>redis的字符串在小于44字节的时候encoding是embstr,大于44字节的encoding是raw。如果字符串是embstr，分配内存往往RedisObject和SDS是紧挨着的；如果是raw内存是不连续的；为什么是44个字节，原理如下：</p>
-</li>
-<li>为什么是44个字节<ul>
-<li>SDS除content最少占用ReidsObject占16byte+SDS的3byte(假设这时候content为空)=19byte</li>
-<li>由于redis的内存管理工具分配方式是8/16/32/64，由于头文件占据了19空间，所以至少分配32字节。当content+redisObj需要分配64字节,那么content最多存储45字节，减去最后的空字符NULL，剩余44字节。</li>
-</ul>
-</li>
-<li>超过这个阈值Redis会认为对象是个大字符串适合用raw去存</li>
-</ul>
-<h2 id="dict"><a href="#dict" class="headerlink" title="dict"></a>dict</h2><p>  Redis的hash结构，所有的key-value是一个全局的dict，以及设置了expire的key-value，另外zset的value–score的对应关系也是通过字典结构。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">RedisDb</span>&#123;</span></span><br><span class="line">dict* dict;</span><br><span class="line">dict* expires;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">zset</span>&#123;</span></span><br><span class="line">    dict *dict   <span class="comment">// value=&gt;score</span></span><br><span class="line">    zskiplist *zsl</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>  dict采用的rehash策略是渐进式的rehash,防止hash过大rehash影响主流程。采用的hash算法是siphash</p>
-<p>  扩容：当元素等于dict数组长度时候会扩容，扩容为原来的2倍，如果遇到bgsave尽量不会去扩容，但是如果当元素打到dict数组的5倍会进行强制扩容<br>  缩容：当元素低于dict数组长度10%会缩容。缩容不会考虑bgsave。</p>
-<h2 id="ziplist"><a href="#ziplist" class="headerlink" title="ziplist"></a>ziplist</h2><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">ziplist</span>&lt;T&gt;&#123;</span></span><br><span class="line">int32  zlbytes; <span class="comment">//压缩表占用自己数</span></span><br><span class="line">int32  zltail_offset; <span class="comment">//最后一位偏移量用于到这遍历</span></span><br><span class="line">int16 length; <span class="comment">//长度</span></span><br><span class="line">T[] entries; <span class="comment">//元素列表</span></span><br><span class="line">int8 zlend;  <span class="comment">//压缩列表的结束标记，值：0xFF</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">srtuct entry&#123;</span><br><span class="line">    <span class="keyword">int</span>&lt;var&gt; prevlen; <span class="comment">//前一个长度</span></span><br><span class="line">    <span class="keyword">int</span>&lt;var&gt; encoding; <span class="comment">//元素类型编码 小于254时候一个字节，大于254时候5个字节第一个自己是254（0xFE）</span></span><br><span class="line">    optional byte[] contennt</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="intset"><a href="#intset" class="headerlink" title="intset"></a>intset</h2><p>当集合set是整数且个数较小时候会考虑使用intset</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">intset</span>&lt;T&gt;&#123;</span></span><br><span class="line">    int32 encoding;</span><br><span class="line">    int32 length;</span><br><span class="line">    <span class="keyword">int</span>&lt;T&gt; content;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="quicklist"><a href="#quicklist" class="headerlink" title="quicklist"></a>quicklist</h2><p>list采用这种数据结构是ziplist和linkedlist的整合，将linkedlist按照ziplist分段，时内存更紧凑，每一段在用链表链接起来。</p>
-<h2 id="skiplist"><a href="#skiplist" class="headerlink" title="skiplist"></a>skiplist</h2><p> zset采用这种方式，优点：快速定位.它的层数是2的64次方。<br> zset的rank的排名是通过zslforward的span对象计算出来的每次插入的时候都会维护这个值，表示当前层到这个节点跳过了多少节点</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Redis-Key的过期策略/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/Redis-Key的过期策略/" class="post-title-link" itemprop="url">Redis-Key的过期策略</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-10-11 12:38:44" itemprop="dateCreated datePublished" datetime="2019-10-11T12:38:44Z">2019-10-11</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/redis/" itemprop="url" rel="index"><span itemprop="name">redis</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="key的过期策略"><a href="#key的过期策略" class="headerlink" title="key的过期策略"></a>key的过期策略</h2><h2 id="主动过期"><a href="#主动过期" class="headerlink" title="主动过期"></a>主动过期</h2><p>  为key设置expire。由于redis是单线程的如果对于过期的key扫描的过多会影响服务的卡顿，所以redis提供了惰性过期和主动扫描过期俩种方案。</p>
-<p>  扫描机制，redis会把设置过期时间的key放在内存中，key的扫描过期机制如下：</p>
-<ol>
-<li>为了防止频繁扫描，redis每秒扫描10次过期的key，明且每次扫描建个是25ms</li>
-<li>每次扫描随机取20个key</li>
-<li>判断20个key是否过期，并且回收过期key</li>
-<li><p>如果过期的key占1/4会重复回收</p>
-<p>如果这段时间有大量的key过期，势必会增加扫描频次，同时由于redis的内存管理对数据页的回收，会导致CPU飙升，服务卡顿。</p>
-<p>注意：salve没有扫描机制，master过期后会生成一条del的命令给slave执行（如果这时候宕机可能造成数据不一致）。</p>
-</li>
-</ol>
-<h2 id="LRU"><a href="#LRU" class="headerlink" title="LRU"></a>LRU</h2><p>  redis本质是内存数据库当内存占用满后，根据maxmemory-policy配置，会有如下几种策略</p>
-<ul>
-<li>noeviction：默认策略，直接拒绝写服务（del后会执行），不会丢失数据</li>
-<li>volatile-lru：对设置expire的key进行淘汰。策略是lru</li>
-<li>volatile-ttl：对设置expire的key进行淘汰。策略是ttl</li>
-<li>volatile-random：对设置expire的key进行淘汰。策略是随机</li>
-<li>allkeys-lru：对所有的key进行淘汰。策略是lru</li>
-<li><p>allkeys-random：对所有的key进行淘汰。策略是随机</p>
-<p>redis为了节省内存采用了近似lru算法的淘汰机制，是一种懒惰淘汰机制，即当写入操作发现内存已经超过了maxmemory时候，根据maxmemory-policy去allkeys和设置了过期时间的keys中随机取5个key淘汰掉最旧的key。</p>
-</li>
-</ul>
-<h2 id="异步线程"><a href="#异步线程" class="headerlink" title="异步线程"></a>异步线程</h2><h3 id="懒惰删除"><a href="#懒惰删除" class="headerlink" title="懒惰删除"></a>懒惰删除</h3><p>redis如果删除一个key正好这个key是大key，会阻碍业务的执行。redis4.0增加了unlink命令可以将key放到异步队列中由异步线程去消费。</p>
-<h3 id="AOF的异步刷盘"><a href="#AOF的异步刷盘" class="headerlink" title="AOF的异步刷盘"></a>AOF的异步刷盘</h3><p>由于AOF需要调用sync，会影响业务。所以AOF的刷盘也会放到一个异步队列和线程中。为了保证效率是独立的一个线程处理</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Redis-运维/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/Redis-运维/" class="post-title-link" itemprop="url">redis-运维</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-10-10 20:12:48" itemprop="dateCreated datePublished" datetime="2019-10-10T20:12:48Z">2019-10-10</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/redis/" itemprop="url" rel="index"><span itemprop="name">redis</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="Redis的监控命令和几个重点指标"><a href="#Redis的监控命令和几个重点指标" class="headerlink" title="Redis的监控命令和几个重点指标"></a>Redis的监控命令和几个重点指标</h2><p>info &lt; seciton &gt;命令</p>
-<h3 id="查看qps"><a href="#查看qps" class="headerlink" title="查看qps"></a>查看qps</h3><p>  查看redis的qps【info stats】，instantaneous_ops_per_sec 这是qps<br>  查看具体的key redis-cli monitor</p>
-<h3 id="查看客户端"><a href="#查看客户端" class="headerlink" title="查看客户端"></a>查看客户端</h3><p>info clients</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># Clients</span><br><span class="line">connected_clients:<span class="number">1</span></span><br><span class="line">client_longest_output_list:<span class="number">0</span></span><br><span class="line">client_biggest_input_buf:<span class="number">0</span></span><br><span class="line">blocked_clients:<span class="number">0</span></span><br></pre></td></tr></table></figure>
-<p>拒绝连接数如果过多应该开打链接<br>info stats</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rejected_connections:<span class="number">0</span></span><br></pre></td></tr></table></figure>
-<h3 id="查看内存"><a href="#查看内存" class="headerlink" title="查看内存"></a>查看内存</h3><p>info memory</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">used_memory_human:<span class="number">796.36</span>K <span class="comment">//使用</span></span><br><span class="line">used_memory_rss_human:<span class="number">1.26</span>M <span class="comment">//top的数值</span></span><br><span class="line">used_memory_peak_human:<span class="number">877.38</span>K <span class="comment">//峰值</span></span><br><span class="line">total_system_memory_human:<span class="number">251.67</span>G</span><br></pre></td></tr></table></figure>
-<h3 id="复制挤压缓冲器"><a href="#复制挤压缓冲器" class="headerlink" title="复制挤压缓冲器"></a>复制挤压缓冲器</h3><p>info replication</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">role:master</span><br><span class="line">connected_slaves:<span class="number">0</span></span><br><span class="line">master_repl_offset:<span class="number">0</span></span><br><span class="line">repl_backlog_active:<span class="number">0</span></span><br><span class="line">repl_backlog_size:<span class="number">1048576</span> <span class="comment">//挤压缓冲区大小</span></span><br><span class="line">repl_backlog_first_byte_offset:<span class="number">0</span></span><br><span class="line">repl_backlog_histlen:<span class="number">0</span></span><br></pre></td></tr></table></figure>
-<p>info stats</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sync_full:<span class="number">0</span></span><br><span class="line">sync_partial_ok:<span class="number">0</span></span><br><span class="line">sync_partial_err:<span class="number">0</span> <span class="comment">//半同步失败次数如果过多需要增大挤压缓冲区大小</span></span><br></pre></td></tr></table></figure>
-<h2 id="安全相关"><a href="#安全相关" class="headerlink" title="安全相关"></a>安全相关</h2><p>指令安全：禁止危险命令</p>
-<p>端口安全：不要暴露到公网，同时设置bindIp或者密码，注意设置密码从库也需要密码才能复制</p>
-<p>脚本安全：禁止客户输入lua脚本</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Redis-集群/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/Redis-集群/" class="post-title-link" itemprop="url">Redis-集群</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-10-10 13:32:41" itemprop="dateCreated datePublished" datetime="2019-10-10T13:32:41Z">2019-10-10</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/redis/" itemprop="url" rel="index"><span itemprop="name">redis</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>Redis的集群遵循的是CAP理论中的AP，因为Redis是出现网络分区的时候，主依然提供写服务，从会采用多中方式追赶主</p>
-<h2 id="主从复制和从从复制"><a href="#主从复制和从从复制" class="headerlink" title="主从复制和从从复制"></a>主从复制和从从复制</h2><p>  Redis的主从复制、从从复制是异步复制，从从复制是为了减少主的压力</p>
-<h3 id="增量复制"><a href="#增量复制" class="headerlink" title="增量复制"></a>增量复制</h3><p>Redis主会将涉及到数据修改的命令写入到Buffer中，然后异步传给从库，从库执行命令并且返回偏移量给主，保证俩边的数据一致，buffer采用环状结构，如果buffer满了会覆盖原来的数据。如果出现还没有执行就被覆盖的情况会触发快照复制</p>
-<h3 id="快照复制"><a href="#快照复制" class="headerlink" title="快照复制"></a>快照复制</h3><p>  快照复制很耗时。过程如下</p>
-<ul>
-<li>主先bgsave将快照写入到磁盘。</li>
-<li>同步快照给从</li>
-<li>从在接收完快照后，先持久化，在Load快照</li>
-<li><p>从库开始执行这段时间的增量操作。</p>
-<p>如果这段时间buffer又被覆盖了，则继续快照复制，如此恶性循环，所以要选择一个合适的复制buffer</p>
-<p>快照复制前会持久化，如果这时候正好需要aof的fsync，则会推迟fsync，影响主的业务。</p>
-<p>新加入的从库都需要先执行一遍快照复制。</p>
-<p>Redis3.0针对这种情况采用了无盘复制的思路，遍历内存不持久化，直接传递给从库，从库如上面的过程先持久化在load，避免了主库的磁盘IO操作</p>
-</li>
-</ul>
-<h3 id="wait命令"><a href="#wait命令" class="headerlink" title="wait命令"></a>wait命令</h3><p>可以将异步复制改为同步复制，由AP变为CP</p>
-<h2 id="redis-sentinel-哨兵机制"><a href="#redis-sentinel-哨兵机制" class="headerlink" title="redis-sentinel 哨兵机制"></a>redis-sentinel 哨兵机制</h2><p>  redis在3.0提供sentinel服务，进行节点的healthCheck。</p>
-<p>  客户端通过连接sentinel获取当前的master信息，客户端连接Master。</p>
-<p>  如果发现master挂了，哨兵会选举新的Master,同时集群中其他的slave会和新的master开始主从同步任务。当原来的master恢复会变为slave。</p>
-<p>  注意：实际上senintel的主从切换是客户端做的。</p>
-<h2 id="数据切片"><a href="#数据切片" class="headerlink" title="数据切片"></a>数据切片</h2><h3 id="Codis"><a href="#Codis" class="headerlink" title="Codis"></a>Codis</h3><p>  codis-proxy:做请求代理<br>  codis-server:服务存储</p>
-<p>  将数据分成1024个slot,数据写入时候proxy会对key做crc32求hash，然后根据槽取模。槽的映射关系会交给zookeeper和etcd这种第三方组件来维护。</p>
-<p>  槽的迁移，当发现请求的key正在迁移时候会强制key进行迁移之后在去新的槽去请求。</p>
-<p>  支持自动平衡。</p>
-<p>  缺点：因为不是官方的方案，所以支持新的特性比较困难，且不支持事物等命令。</p>
-<h3 id="Cluster"><a href="#Cluster" class="headerlink" title="Cluster"></a>Cluster</h3><p>  redis官方集群方案。</p>
-<p>  将数据分为16384个slot，每个节点都保留一份slot的配置信息，并且客户端链接时候会获取一份Slot信息，这部分信息持久化到redis-cluster中。</p>
-<p>  slot的跳转：当客户端发现请求的数据已经迁移后客户端会收到MOVED &lt; newSlotNum &gt; &lt; ip:port &gt;可以更新客户端的配置，然后去新的server去获取。</p>
-<p>  slot的迁移：迁移是以slot为单位进行迁移，当访问到迁移的key时候流程如下：</p>
-<ul>
-<li>想srcNodeAddr请求，如果key在srcNodeAddr进行操作</li>
-<li>如果不在srcNodeAddr，返回-ASKING tragetNodeAddr</li>
-<li>向tragetNodeAddr发送不带参数的ASKING节点</li>
-<li><p>返回OK，去tragetNodeAddr getKey （目的是ASKING之后告诉tragetNodeAddr下一条指令不能不处理，因为在迁移中理论上tartNode不负责这个key）</p>
-<p>redis的key如果是大Key，因为迁移指令是阻塞，会影响到服务。</p>
-<p>redis的集群管理是通过Gossip协议的。当一个节点发现另一个节点失联（PFail），它会广播给集群，然后当集群中其他节点收到的该节点失联事件过半数（PFail Count）时候，就标记该节点下线。</p>
-<p>另外，redis-cluster的槽位迁移、节点切换都是在客户端做的。</p>
-</li>
-</ul>
-<h2 id="分布式锁的不安全性"><a href="#分布式锁的不安全性" class="headerlink" title="分布式锁的不安全性"></a>分布式锁的不安全性</h2><p>由于主节点宕机客户端无感知，所以当客户端从主节点获取锁后，未同步到从节点这时候发生宕机。锁数据未同步成功发生了主从切换，锁是失效的，如果业务不容忍可以采用redlock机制。</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2577,7 +2606,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">224</span>
+                    <span class="site-state-item-count">229</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2946,7 +2975,7 @@
 
     <footer id="footer" class="footer">
       <div class="footer-inner">
-        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2022</span>
+        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2023</span>
   <span class="with-love" id="animate">
     <i class="fa fa-user"></i>
   </span>

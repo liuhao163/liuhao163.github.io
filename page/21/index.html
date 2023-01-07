@@ -345,6 +345,1138 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/如何最快的复制一张表/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/如何最快的复制一张表/" class="post-title-link" itemprop="url">如何最快的复制一张表</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-01 23:47:09" itemprop="dateCreated datePublished" datetime="2019-03-01T23:47:09Z">2019-03-01</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql运维/" itemprop="url" rel="index"><span itemprop="name">Mysql运维</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="如何快速的复制一张表"><a href="#如何快速的复制一张表" class="headerlink" title="如何快速的复制一张表"></a>如何快速的复制一张表</h1><p>我们往往会采用insert … select。但是这种做法会对原表加锁。所以更稳妥的办法是将表导出到临时文件中。本文章会讨论如何快速的赋值一张表。测试数据如下</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> db1;</span><br><span class="line"><span class="keyword">use</span> db1;</span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> t(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>, a <span class="built_in">int</span>, b <span class="built_in">int</span>, <span class="keyword">index</span>(a))<span class="keyword">engine</span>=<span class="keyword">innodb</span>;</span><br><span class="line">delimiter ;;</span><br><span class="line">  <span class="keyword">create</span> <span class="keyword">procedure</span> idata()</span><br><span class="line">  <span class="keyword">begin</span></span><br><span class="line">    <span class="keyword">declare</span> i <span class="built_in">int</span>;</span><br><span class="line">    <span class="keyword">set</span> i=<span class="number">1</span>;</span><br><span class="line">    while(i&lt;=1000)do</span><br><span class="line">      <span class="keyword">insert</span> <span class="keyword">into</span> t <span class="keyword">values</span>(i,i,i);</span><br><span class="line">      <span class="keyword">set</span> i=i+<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">end</span> <span class="keyword">while</span>;</span><br><span class="line">  <span class="keyword">end</span>;;</span><br><span class="line">delimiter ;</span><br><span class="line"><span class="keyword">call</span> idata();</span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">database</span> db2;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> db2.t <span class="keyword">like</span> db1.t</span><br></pre></td></tr></table></figure>
+<h1 id="mysqldump方法"><a href="#mysqldump方法" class="headerlink" title="mysqldump方法"></a>mysqldump方法</h1><p>例如命令</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysqldump -h$host -P$port -u$user <span class="comment">--add-locks=0 --no-create-info --single-transaction  --set-gtid-purged=OFF db1 t --where="a&gt;900" --result-file=/client_tmp/t.sql</span></span><br></pre></td></tr></table></figure>
+<p>参数说明：</p>
+<ol>
+<li>single-transaction 不对表db1 t 加锁， START TRANSACTION WITH CONSISTENT SNAPSHOT的方法；</li>
+<li>add-locks 输出的文件不增加”LOCK TABLES t WRITE”</li>
+<li>no-create-info 不需要导出表结构</li>
+<li>set-gtid-purged 不需要gtid的信息</li>
+<li>result-file 生成文件的位置，注意是客户机的位置</li>
+</ol>
+<p>这时候t.sql就是一条insert语句，我们在新表上执行t.sql就可以导入数据了，导入语句如下</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql -h127.0.0.1 -P13000  -uroot db2 -e "source /client_tmp/t.sql"</span><br></pre></td></tr></table></figure>
+<p>注：source并不是Mysql的命令，真正的语句还是Insert</p>
+<h1 id="导出CSV文件"><a href="#导出CSV文件" class="headerlink" title="导出CSV文件"></a>导出CSV文件</h1><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> db1.t <span class="keyword">where</span> a&gt;<span class="number">900</span> <span class="keyword">into</span> <span class="keyword">outfile</span> <span class="string">'/server_tmp/t.csv'</span>;</span><br></pre></td></tr></table></figure>
+<p>这条语句注意如下：</p>
+<ol>
+<li>受参数secure-file-priv控制<ol>
+<li>如果是NULL，说明 outfile被进制</li>
+<li>设置为empty，可写到任意地方，一般不建议这么设置这是不安全的</li>
+<li>设置为目录，说明outfile只能到指定的目录</li>
+</ol>
+</li>
+<li>t.csv没有覆盖功能，所以要保证目标目录下的t.csv不存在否则会报错</li>
+<li>原则是一条数据行对应文本一行，但是如果数据行有换行符能会跟上“\”这个转义字符这样字段之间、数据行之间可能会分开</li>
+</ol>
+<p>导入命令如下：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">load</span> <span class="keyword">data</span> <span class="keyword">infile</span> <span class="string">'/server_tmp/t.csv'</span> <span class="keyword">into</span> <span class="keyword">table</span> db2.t;</span><br></pre></td></tr></table></figure>
+<p>执行流程如下：</p>
+<ol>
+<li>打开文件，”\t”区分字段，“\n”区分数据</li>
+<li>校验csv文件的字段和新表字段是否一致，不一致会报错</li>
+<li>循环写入到新表知道写入完成</li>
+<li>如果binlog_format是statement<ol>
+<li>主库完成后，将csv文件内容直接写到binlog中</li>
+<li>binlog写入load data local infile ‘/tmp/SQL_LOAD_MB-1-0’ INTO TABLE <code>db2</code>.<code>t</code>。</li>
+<li>这个binlog传到备库</li>
+<li>备库apply接到这个binlog<ol>
+<li>现将csv内容写入到SQL_LOAD_MB-1-0中</li>
+<li>执行loaddate导入数据</li>
+</ol>
+</li>
+</ol>
+</li>
+</ol>
+<p>如图：<br><img src="./loaddata.jpg" alt="avtor"></p>
+<p>注意：loaddata有俩种方式</p>
+<ul>
+<li>加local，读取的是服务器文件，受参数secure-file-priv控制</li>
+<li>不加local，读取的是客户端文件，不收参数secure-file-priv控制</li>
+</ul>
+<p>还有csv里不包含表结构，所以可以用下面的语句导出表结构和csv数据文件</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysqldump -h$host -P$port -u$user <span class="comment">---single-transaction  --set-gtid-purged=OFF db1 t --where="a&gt;900" --tab=$secure_file_priv</span></span><br></pre></td></tr></table></figure>
+<h1 id="物理copy法"><a href="#物理copy法" class="headerlink" title="物理copy法"></a>物理copy法</h1><p>优点：速度最快，适合大表的导入<br>缺点：只能在服务器copy表文件；并且没法导入部分数据；且双方都得是innodb表</p>
+<p>流程如下</p>
+<ol>
+<li>执行create table r like t;</li>
+<li>执行alter table r discard tablespace，这时候r.ibd会被删掉</li>
+<li>执行flush table t for export，这时候db1会生成t.cfg文件</li>
+<li>在db1目录下执行cp t.cfg r.cfg;cp t.ibd r.ibd</li>
+<li>执行unlock tables，这时候t.cfg会被删除</li>
+<li>执行alter table r import tablespace,将这个r.ibd作为表空间，由于是步骤4cp过来的所以就有了表数据</li>
+</ol>
+<p>如图<br><img src="./物理copy法.jpg" alt="avtor"></p>
+<p>注意：</p>
+<ul>
+<li>在步骤3 flush 表之后，表是被lock的</li>
+<li>执行import tablespace时候为了让表空间id和数据文件一直会刷新所有的数据页，import会有一定执行空间但是比逻辑导入会快很多。</li>
+<li>一定要注意权限问题（尤其是执行步骤4时候要确认好是否对.ibd有读写权限）</li>
+</ul>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/insert-语句的加锁/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/insert-语句的加锁/" class="post-title-link" itemprop="url">insert 语句的加锁</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-03-01 22:56:52" itemprop="dateCreated datePublished" datetime="2019-03-01T22:56:52Z">2019-03-01</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="insert…select为什么要对目标表加锁"><a href="#insert…select为什么要对目标表加锁" class="headerlink" title="insert…select为什么要对目标表加锁"></a>insert…select为什么要对目标表加锁</h1><p>测试语句如下，注：隔离模式是RR，binlog_format=statement</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> <span class="string">`t`</span> (</span><br><span class="line">  <span class="string">`id`</span> <span class="built_in">int</span>(<span class="number">11</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span> AUTO_INCREMENT,</span><br><span class="line">  <span class="string">`c`</span> <span class="built_in">int</span>(<span class="number">11</span>) <span class="keyword">DEFAULT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`d`</span> <span class="built_in">int</span>(<span class="number">11</span>) <span class="keyword">DEFAULT</span> <span class="literal">NULL</span>,</span><br><span class="line">  PRIMARY <span class="keyword">KEY</span> (<span class="string">`id`</span>),</span><br><span class="line">  <span class="keyword">UNIQUE</span> <span class="keyword">KEY</span> <span class="string">`c`</span> (<span class="string">`c`</span>)</span><br><span class="line">) <span class="keyword">ENGINE</span>=<span class="keyword">InnoDB</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t <span class="keyword">values</span>(<span class="literal">null</span>, <span class="number">1</span>,<span class="number">1</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t <span class="keyword">values</span>(<span class="literal">null</span>, <span class="number">2</span>,<span class="number">2</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t <span class="keyword">values</span>(<span class="literal">null</span>, <span class="number">3</span>,<span class="number">3</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t <span class="keyword">values</span>(<span class="literal">null</span>, <span class="number">4</span>,<span class="number">4</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> t2 <span class="keyword">like</span> t</span><br></pre></td></tr></table></figure>
+<p>执行如下的语句：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t2(c,d) <span class="keyword">select</span> c,d <span class="keyword">from</span> t;</span><br></pre></td></tr></table></figure>
+<p>这条语句是给表t所有的字段和间隙加锁，原因是考虑到数据的一致性例如下面的情况:</p>
+<p><img src="./img1.png" alt="avator"></p>
+<p>SessionA和SessionB同时执行，SessionB会给索引c的(-supernum,-1]加上nextkey-lock，原因是如果没有这个锁，很可能主库上B先执行，A后执行，但是binlog上回是A先执行，B后执行，导致从库会出现-1的值，造成主备不一致</p>
+<p>当然了，目标表的锁其实是给涉及到的字段加锁，详见前面的加锁原理</p>
+<p>见下面俩种情况：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t2(c,d) <span class="keyword">select</span> c+<span class="number">1</span>,d <span class="keyword">from</span> t <span class="keyword">order</span> <span class="keyword">by</span> c <span class="keyword">desc</span> <span class="keyword">limit</span> <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+<p>这条语句实际上会对表t中的索引c(3,4]和(4,supernum)加锁。扫描行数只有2行</p>
+<p>但是下面的语句就不是很好了,把表t最大值+1插入会原表</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t(c,d) <span class="keyword">select</span> c+<span class="number">1</span>,d <span class="keyword">from</span> t <span class="keyword">order</span> <span class="keyword">by</span> c <span class="keyword">desc</span> <span class="keyword">limit</span> <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+<p>原因是：</p>
+<ul>
+<li>在一张表中操作，mysql为了select时候读到insert的值，需要将select的结果导入到临时表中</li>
+<li>临时表是memory类型的表，因为有limit 1，需要将表里的数据都导入到临时表中，排序取第一条</li>
+<li>所以需要全表扫描，并且对全表所有的行加锁。</li>
+</ul>
+<p>优化的方法是：采用临时表来解决语句如下</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">temporary</span> <span class="keyword">table</span> temp_t(c <span class="built_in">int</span>,d <span class="built_in">int</span>) <span class="keyword">engine</span>=<span class="keyword">memory</span>;</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> temp_t  (<span class="keyword">select</span> c+<span class="number">1</span>, d <span class="keyword">from</span> t <span class="keyword">force</span> <span class="keyword">index</span>(c) <span class="keyword">order</span> <span class="keyword">by</span> c <span class="keyword">desc</span> <span class="keyword">limit</span> <span class="number">1</span>);</span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t <span class="keyword">select</span> * <span class="keyword">from</span> temp_t;</span><br><span class="line"><span class="keyword">drop</span> <span class="keyword">table</span> temp_t;</span><br></pre></td></tr></table></figure>
+<h1 id="insert违反唯一约束加锁"><a href="#insert违反唯一约束加锁" class="headerlink" title="insert违反唯一约束加锁"></a>insert违反唯一约束加锁</h1><p>见下图：<br><img src="./insert_block.png" alt="avator"></p>
+<p>SessionA在第2次插入时候违反了唯一约束，这时候SessionB的语句并没有因为SessionA的insert失败开始执行反而是block住。原因是SessionA在后滚之前为冲突的索引(5,10]加了nextkey-lock读锁。</p>
+<p>在并发情况下也会引起死锁，如图：<br><img src="./insert_dead_lock.png" alt="avator"></p>
+<p>原因是：</p>
+<ol>
+<li>SessaionA为记录加行锁c=5。（唯一索引等值查询是行锁）</li>
+<li>T2时刻SessionB和SessionC都对c=5加了读锁。（违反唯一约束）这时候都是等待状态</li>
+<li>T3时刻SessionArollback，<ol>
+<li>SessionB和SessionCD的读锁生效；</li>
+<li>SessionB和SessionC要继续执行插入操作，这时候要对数据加写锁，这时候需要等待对方释放读锁，循环等待发生死锁。</li>
+</ol>
+</li>
+</ol>
+<p>见图:<br><img src="./insert_dead_lock2.jpg" alt="avator"><br>解决方法</p>
+<ol>
+<li>事务中唯一约束冲突后要尽快提交或者回滚，防止并发写循环等待；</li>
+<li>采用insert into…duplicate key update的方式，因为这时候会加一个nextkey-lock写锁是互斥的。这样sessionB和sessionC不会循环等待。</li>
+</ol>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/自增主键相关-AUTO-INCREMENT/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/自增主键相关-AUTO-INCREMENT/" class="post-title-link" itemprop="url">自增主键相关-AUTO_INCREMENT</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-28 10:16:53" itemprop="dateCreated datePublished" datetime="2019-02-28T10:16:53Z">2019-02-28</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="自增主键的原理"><a href="#自增主键的原理" class="headerlink" title="自增主键的原理"></a>自增主键的原理</h1><p>首先创建测试表</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> <span class="string">`t`</span> (</span><br><span class="line">  <span class="string">`id`</span> <span class="built_in">int</span>(<span class="number">11</span>) <span class="keyword">NOT</span> <span class="literal">NULL</span> AUTO_INCREMENT,</span><br><span class="line">  <span class="string">`c`</span> <span class="built_in">int</span>(<span class="number">11</span>) <span class="keyword">DEFAULT</span> <span class="literal">NULL</span>,</span><br><span class="line">  <span class="string">`d`</span> <span class="built_in">int</span>(<span class="number">11</span>) <span class="keyword">DEFAULT</span> <span class="literal">NULL</span>,</span><br><span class="line">  PRIMARY <span class="keyword">KEY</span> (<span class="string">`id`</span>),</span><br><span class="line">  <span class="keyword">UNIQUE</span> <span class="keyword">KEY</span> <span class="string">`c`</span> (<span class="string">`c`</span>)</span><br><span class="line">) <span class="keyword">ENGINE</span>=<span class="keyword">InnoDB</span>;</span><br></pre></td></tr></table></figure>
+<p>我们MySql的主键往往设置成auto_incrment</p>
+<ul>
+<li>原理是什么呢？</li>
+<li>为什么会有不连续的情况？</li>
+</ul>
+<h2 id="自增字值保存在哪里"><a href="#自增字值保存在哪里" class="headerlink" title="自增字值保存在哪里"></a>自增字值保存在哪里</h2><p>不同的表引擎对于auto_incrment处理是不同的</p>
+<ul>
+<li>MyIsam表是保存在数据结构中</li>
+<li>Innodb表是保存在内存中的<ul>
+<li>5.7以及之前的版本是保存在内存中，每次数据库启动时候会查找表的max(id)，然后+1。如果这时候有auto_incrment=11,id=10,如果这条id=10的数据被删除后从起mysql，Auto_incrment的值又变成10</li>
+<li>在Mysql 8.0中auto_incrment的值保存在redolog中，依靠redolog来恢复</li>
+</ul>
+</li>
+</ul>
+<h2 id="自增值的修改方式"><a href="#自增值的修改方式" class="headerlink" title="自增值的修改方式"></a>自增值的修改方式</h2><p>如果一个值被设置为auto_incrment，当一条插入语句时候</p>
+<ol>
+<li>如果这个值是null或者0，会把当前的auto_incrment值设置进去</li>
+<li>如果手动设置了值，就是用设置的值</li>
+</ol>
+<p>这时候auto_incrment的变化如下，插入值是X，auto_incrment的值是Y，</p>
+<ol>
+<li>如果X &lt; Y，自增值不变</li>
+<li>如果X &ge; Y，自增值变为新的自增值，计算方法是：当前的auto_incrment_offset+auto_incrment_increment知道比X大。</li>
+</ol>
+<h2 id="自增值的修改时机来看为什么自增值不连续"><a href="#自增值的修改时机来看为什么自增值不连续" class="headerlink" title="自增值的修改时机来看为什么自增值不连续"></a>自增值的修改时机来看为什么自增值不连续</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1</span></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t <span class="keyword">values</span>(<span class="literal">null</span>, <span class="number">1</span>, <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2</span></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t <span class="keyword">values</span>(<span class="literal">null</span>, <span class="number">1</span>, <span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+<p>主要看第2条语句的执行流程</p>
+<ol>
+<li>Innodb调用引擎写入一条数据(null, 1, 1)</li>
+<li>因为id是null所以获取当前的auto_incrment，现在是2</li>
+<li>改变auto_incrment，变为3</li>
+<li>这时候插入（2,1,1）;</li>
+<li>所以C冲突插入失败</li>
+<li>语句结束</li>
+</ol>
+<p>可以看到这时候auto_incrment是没有变回2。原因是，因为有可能这时候并发写入，如果回滚了后续的写入都会报主键冲突，同理事物的回滚也类似。</p>
+<h1 id="自增锁的优化"><a href="#自增锁的优化" class="headerlink" title="自增锁的优化"></a>自增锁的优化</h1><p>为了增加并发能力，Mysql为自增字段加锁不是一个事务锁，每次申请完了都会释放。但是在Mysql5.1之前不是这样的。</p>
+<p>在5.1.22版本中增加了一个新策略inoodb_autoinc_lock_mode,默认值是1</p>
+<ul>
+<li>0，类似之前的设计直到每个语句执行结束才会释放</li>
+<li>1，普通的insert会立刻释放，select。。。。insert ，load等批量操作需要等语句执行完</li>
+<li>2，都会立刻释放</li>
+</ul>
+<p>推荐设置成2，同事binlog格式设置成row，既能保证并发度，又能保证主备数据不一致。原理是</p>
+<p>当binlog的格式是statement时候，select。。。。insert 在并发阶段很可能造成主从数据不一致。比如下图：</p>
+<p><img src="./批量并发.png" alt="avator"></p>
+<ul>
+<li>很可能涉及sessionB的binlog拿到从库执行由于id都是null，是没法保证执行顺序的造成主备不一致。</li>
+</ul>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/我们是否还需要用Memory引擎的表/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/我们是否还需要用Memory引擎的表/" class="post-title-link" itemprop="url">我们是否还需要用Memory引擎的表</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-27 19:42:42" itemprop="dateCreated datePublished" datetime="2019-02-27T19:42:42Z">2019-02-27</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="Memory引擎表的特点"><a href="#Memory引擎表的特点" class="headerlink" title="Memory引擎表的特点"></a>Memory引擎表的特点</h1><ul>
+<li>Memory表是堆组织表，对应的Iondb是索引组织表。</li>
+<li>Memory索引顺序是按照写入顺序，Innodb是按照主键顺序</li>
+<li>Memory的索引存放规则决定这他所有索引是一样的没有主键概念</li>
+<li>Memory的索引和数据是分开存放的，在主键ID索引里，存的是每个数据的位置，且顺序是按照hash顺序。Innodb是按照B+树存放的</li>
+<li>Memory不支持blog和Text字段，所有行数的长度都相同。（要充分的利用内存嘛~）</li>
+<li>Memory数据出现空洞时候可以任意位置插入数据，Innodb为了保证索引顺序只能在后面递增插入数据</li>
+<li>Memory数据位置发生改变需要改所有的索引，而Innodb只需要改主键位置，</li>
+</ul>
+<h1 id="不推荐用Mermory在生产环境的原因"><a href="#不推荐用Mermory在生产环境的原因" class="headerlink" title="不推荐用Mermory在生产环境的原因"></a>不推荐用Mermory在生产环境的原因</h1><ol>
+<li>锁粒度不够：不支持行锁，性能会很差，往往不如Innodb</li>
+<li>由于Mysql重启后会删除Memory表数据，数据持久性会有问题<ol>
+<li>尤其是双M架构，当备库重启后，会同步binlog给主库把表清空</li>
+</ol>
+</li>
+</ol>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Mysq何时会用到内部临时表/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/Mysq何时会用到内部临时表/" class="post-title-link" itemprop="url">Mysq何时会用到内部临时表</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2019-02-27 13:13:03" itemprop="dateCreated datePublished" datetime="2019-02-27T13:13:03Z">2019-02-27</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h1 id="Mysql何时会使用内部临时表"><a href="#Mysql何时会使用内部临时表" class="headerlink" title="Mysql何时会使用内部临时表"></a>Mysql何时会使用内部临时表</h1><p>Mysql除了我们显式的创建临时表外，在某些情况下会用到内部临时表，在开始之前可以先用下面脚本创建一个测试库</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> t1(<span class="keyword">id</span> <span class="built_in">int</span> primary <span class="keyword">key</span>, a <span class="built_in">int</span>, b <span class="built_in">int</span>, <span class="keyword">index</span>(a));</span><br><span class="line">delimiter ;;</span><br><span class="line"><span class="keyword">create</span> <span class="keyword">procedure</span> idata()</span><br><span class="line"><span class="keyword">begin</span></span><br><span class="line">  <span class="keyword">declare</span> i <span class="built_in">int</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">set</span> i=<span class="number">1</span>;</span><br><span class="line">  while(i&lt;=1000)do</span><br><span class="line">    <span class="keyword">insert</span> <span class="keyword">into</span> t1 <span class="keyword">values</span>(i, i, i);</span><br><span class="line">    <span class="keyword">set</span> i=i+<span class="number">1</span>;</span><br><span class="line">  <span class="keyword">end</span> <span class="keyword">while</span>;</span><br><span class="line"><span class="keyword">end</span>;;</span><br><span class="line">delimiter ;</span><br><span class="line"><span class="keyword">call</span> idata();</span><br></pre></td></tr></table></figure>
+<h2 id="Union"><a href="#Union" class="headerlink" title="Union"></a>Union</h2><p>如下面的语句，取俩条语句结果的并集</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(<span class="keyword">select</span> <span class="number">1000</span> <span class="keyword">as</span> f) <span class="keyword">union</span> (<span class="keyword">select</span> <span class="keyword">id</span> <span class="keyword">from</span> t1 <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">id</span> <span class="keyword">desc</span> <span class="keyword">limit</span> <span class="number">2</span>);</span><br></pre></td></tr></table></figure>
+<p>执行计划如下：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----+--------------+------------+------------+-------+---------------+---------+---------+------+------+----------+-----------------+</span></span><br><span class="line">| id | select_type  | table      | partitions | type  | possible_keys | key     | key_len | ref  | rows | filtered | Extra           |</span><br><span class="line">+<span class="comment">----+--------------+------------+------------+-------+---------------+---------+---------+------+------+----------+-----------------+</span></span><br><span class="line">|  1 | PRIMARY      | NULL       | NULL       | NULL  | NULL          | NULL    | NULL    | NULL | NULL |     NULL | No tables used  |</span><br><span class="line">|  2 | UNION        | t1         | NULL       | index | NULL          | PRIMARY | 4       | NULL |    2 |   100.00 | Using index     |</span><br><span class="line">| NULL | UNION RESULT | &lt;union1,2&gt; | NULL       | ALL   | NULL          | NULL    | NULL    | NULL | NULL |     NULL | Using temporary |</span><br><span class="line">+<span class="comment">----+--------------+------------+------------+-------+---------------+---------+---------+------+------+----------+-----------------+</span></span><br></pre></td></tr></table></figure>
+<p>最后的Extra字段Using temporary表示使用了临时表</p>
+<p>该语句流程如下：</p>
+<ol>
+<li>创建一个内存临时表，只有一个字段是f，f是主键;</li>
+<li>将第一条查询语句结果插入到临时表中</li>
+<li>执行第2个子查询<ol>
+<li>将符合条件的插入到临时表中，如果是union取并集，违反唯一约束写入失败；</li>
+<li>继续插入直到不符合规则</li>
+</ol>
+</li>
+<li>返回结果，删除临时表</li>
+<li>注:如果是union all因为没有计算并集的需求也就没有唯一约束就不用临时表了</li>
+</ol>
+<h2 id="GROUP-BY"><a href="#GROUP-BY" class="headerlink" title="GROUP BY"></a>GROUP BY</h2><p>例如下面的语句</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">id</span>%<span class="number">10</span> <span class="keyword">as</span> m, <span class="keyword">count</span>(*) <span class="keyword">as</span> c <span class="keyword">from</span> t1 <span class="keyword">group</span> <span class="keyword">by</span> m;</span><br></pre></td></tr></table></figure>
+<p>执行计划如下：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+----------------------------------------------+</span></span><br><span class="line">| id | select_type | table | partitions | type  | possible_keys | key  | key_len | ref  | rows | filtered | Extra                                        |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+----------------------------------------------+</span></span><br><span class="line">|  1 | SIMPLE      | t1    | NULL       | index | PRIMARY,a     | a    | 5       | NULL | 1000 |   100.00 | Using index; Using temporary; Using filesort |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+----------------------------------------------+</span></span><br></pre></td></tr></table></figure>
+<p>通过Extra字段可以看到3个信息</p>
+<ul>
+<li>Using index 因为需要遍历索引树，这里没选PRIMARY原因是因为a索引够用（只取count），并且相对PK更小</li>
+<li>Using temporary 用了临时表</li>
+<li>Using filesort 排序</li>
+</ul>
+<p>流程如下：</p>
+<ol>
+<li>创建内存临时表，创建俩个字段（m,c），且m为主键</li>
+<li>将id%10，然后得到m，写入到临时表<ol>
+<li>如果m不存在，insert m,1</li>
+<li>如果m存在，update c字段+1；</li>
+</ol>
+</li>
+<li>然后临时表通过filesort排序，内存临时表rowid排序，见前面的文章</li>
+<li>返回结果，移除临时表。</li>
+</ol>
+<p>上面提到里都是创建一个内存临时表，这是由参数tmp_table_size值控制的默认是16M，如果超过这个值就采用磁盘临时表了</p>
+<h3 id="group-by优化方案"><a href="#group-by优化方案" class="headerlink" title="group by优化方案"></a>group by优化方案</h3><p>临时表会消耗内存，甚至是磁盘。所以在生产环境上我们哟啊尽量避免这种内部临时表的产生，针对上面说的group by有如下几点优化建议</p>
+<h4 id="通过索引"><a href="#通过索引" class="headerlink" title="通过索引"></a>通过索引</h4><p>上面的例子，我们可以创建一个id%10的字段,然后根据这个字段group by</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">alter</span> <span class="keyword">table</span> t1 <span class="keyword">add</span> <span class="keyword">column</span> z <span class="built_in">int</span> <span class="keyword">generated</span> <span class="keyword">always</span> <span class="keyword">as</span>(<span class="keyword">id</span> % <span class="number">100</span>), <span class="keyword">add</span> <span class="keyword">index</span>(z);</span><br><span class="line"></span><br><span class="line"><span class="keyword">select</span> z, <span class="keyword">count</span>(*) <span class="keyword">as</span> c <span class="keyword">from</span> t1 <span class="keyword">group</span> <span class="keyword">by</span> z;</span><br><span class="line"></span><br><span class="line">执行计划会告诉这你这条语句走的是索引z</span><br></pre></td></tr></table></figure>
+<h4 id="直接排序"><a href="#直接排序" class="headerlink" title="直接排序"></a>直接排序</h4><p>原理是，因为mysql会默认走临时表，但是我们可以通过SQL_BIG_RESULT来提示mysql这个结果集很大，让mysql直接选择磁盘临时表，mysql发现这个临时表是b+tree结构，不如数组方式排序效率高，就不会采用临时表而是至用filesortset了</p>
+<p>sql语句如下</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="keyword">SQL_BIG_RESULT</span> <span class="keyword">id</span>%<span class="number">100</span> <span class="keyword">as</span> m, <span class="keyword">count</span>(*) <span class="keyword">as</span> c <span class="keyword">from</span> t1 <span class="keyword">group</span> <span class="keyword">by</span> m;</span><br></pre></td></tr></table></figure>
+<p>执行计划如下</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+-----------------------------+</span></span><br><span class="line">| id | select_type | table | partitions | type  | possible_keys | key  | key_len | ref  | rows | filtered | Extra                       |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+-----------------------------+</span></span><br><span class="line">|  1 | SIMPLE      | t1    | NULL       | index | PRIMARY,a     | a    | 5       | NULL | 1000 |   100.00 | Using index; Using filesort |</span><br><span class="line">+<span class="comment">----+-------------+-------+------------+-------+---------------+------+---------+------+------+----------+-----------------------------+</span></span><br></pre></td></tr></table></figure>
+<p>语句执行流程是：</p>
+<ol>
+<li>初始化sort_buffer，去顶放入整形字段m</li>
+<li>扫秒表t1索引树a,将id%100值放入sort_buffer中</li>
+<li>在sort_buffer对m排序</li>
+<li>返回数组</li>
+</ol>
+<h1 id="总结mysql何时会用临时表呢"><a href="#总结mysql何时会用临时表呢" class="headerlink" title="总结mysql何时会用临时表呢"></a>总结mysql何时会用临时表呢</h1><ol>
+<li>如果mysql一边读数据，一边直接获取结果不需要额外的内存保存结果，否则会需要额外内存；</li>
+<li>join_buffer是无序数据，sort_buffer是有序数组，临时表是二维表结构</li>
+<li>如果执行逻辑需要二维表特性，就优先使用临时表，比如:Union需要唯一约束，groupby需要额外保存计数</li>
+</ol>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Mysql临时表/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1409,1086 +2541,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql的锁/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/mysql/mysql的锁/" class="post-title-link" itemprop="url">mysql的锁-全局锁、表锁、行锁、间隙锁</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-07 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-07T00:00:00Z">2019-02-07</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="mysql的锁"><a href="#mysql的锁" class="headerlink" title="mysql的锁"></a>mysql的锁</h1><h2 id="全局锁（FTWRL）"><a href="#全局锁（FTWRL）" class="headerlink" title="全局锁（FTWRL）"></a>全局锁（FTWRL）</h2><p>Mysql提供的针对数据库级别的对数据加读锁的功能:Flush tables with read lock。之后针对这个数据库的增删改、DDL、事物提交语句都会被堵塞住。他主要的用途是用于数据库全库的逻辑备份。</p>
-<ul>
-<li>优点：<ul>
-<li>全局锁是数据库级别的，所有表引擎都支持，在数据的导出对库实例加锁，保持导出数据逻辑的一致性。</li>
-<li>和设置数据库只读（set global readonly=true）相比，全局锁在当前链接异常或者中断的情况下可以自动释放，而设置数据库只读不能。</li>
-</ul>
-</li>
-<li>缺点：导出操作如果对数据库加锁，数据库的变更操作会被lock住，解决方案：对于Innodb引擎，可以用mysql自带的mysqldump工具使用参数–single-transaction.</li>
-</ul>
-<h2 id="表级锁"><a href="#表级锁" class="headerlink" title="表级锁"></a>表级锁</h2><p>mysql的表级锁分俩种，一种是表锁，一种是元数据锁（meta data lock MDL）</p>
-<h3 id="表锁"><a href="#表锁" class="headerlink" title="表锁"></a>表锁</h3><p>预发是 lock tables … read/write。可以用unlock主动释放锁。也可以在链接中断时候自动释放。<br>表锁对于自己和其他线程读写操作的限制如下：如果对一个表进行read/write锁。其他线程在写or读/写时都会堵塞；同时本线程也只能读or读写该表，其他表无法访问。</p>
-<h3 id="元数据锁（MDL）"><a href="#元数据锁（MDL）" class="headerlink" title="元数据锁（MDL）"></a>元数据锁（MDL）</h3><p>该锁不用显示的使用，在访问表的时候会自动加上，他用来保证访问数据时候数据表结构的稳定性，他有如下特点：</p>
-<ul>
-<li>对一个表的数据CRUD时候，加MDL读锁；当修改表结构时候，加MDL写锁</li>
-<li>读锁是不互斥的，因为这些操作不会该表结构，所以可以多个线程同时对表做CRUD；</li>
-<li>读写锁之间，写锁之间是互斥的，也就是说当对表进行CRUD时候，为了保证返回数据的稳定性，DDL操作是堵塞的。</li>
-</ul>
-<p>由于上面MDL的读写锁机制，就会有下面这种情况，修改一个访问量很高的小表，会导致整个库挂掉：<br>比如:</p>
-<ol>
-<li>大量的select语句，加了MDL读锁，这时候是不会堵塞的;</li>
-<li>这时候有一条alter表的语句需要执行，加了MDL写锁，开始block。</li>
-<li>由于select量很大，alter会一直堵塞，这时候后续的select也会堵塞，很块连接池就被用完了。</li>
-</ol>
-<p>解决方法：<br>MariaDB 已经合并了 AliSQL的方法</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tbl_name <span class="keyword">NOWAIT</span> <span class="keyword">add</span> <span class="keyword">column</span> ...</span><br><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tbl_name <span class="keyword">WAIT</span> N <span class="keyword">add</span> <span class="keyword">column</span> ...</span><br></pre></td></tr></table></figure>
-<h2 id="行锁"><a href="#行锁" class="headerlink" title="行锁"></a>行锁</h2><p>为了加强数据库的并发度引入的锁的机制，他有如下几个特点：</p>
-<ul>
-<li>行锁是由mysql的表引擎决定，Innodb支持行锁，MyISM不支持行锁。</li>
-<li>Innodb的行锁是两阶段锁：即数据需要锁的时候对数据涉及到的行加锁；在事务结束后才释放行锁；</li>
-</ul>
-<h3 id="如何减少行锁的锁冲突"><a href="#如何减少行锁的锁冲突" class="headerlink" title="如何减少行锁的锁冲突"></a>如何减少行锁的锁冲突</h3><p>为了减少锁的冲突，我们在事务中要把会引起锁冲突的语句往后放。因为事务是原子性的所以，在一个事务中，要么都成功要么都失败，所以我们在一个事务中根据业务需求可以把一些没有锁冲突的操作或者语句放在事务的前面先只是，可能会造成锁冲突的语句放在后面，减少锁冲突加大并发。</p>
-<h3 id="死锁和死锁检测"><a href="#死锁和死锁检测" class="headerlink" title="死锁和死锁检测"></a>死锁和死锁检测</h3><ul>
-<li>出现原因：循环的资源等待。举个例子：俩个事务，事务1:用户uid=1点赞,事务2：用户uid=1取消赞。如下：这时候在并发时候可能会造成死锁当事务1、事务2都执行完第一条语句时候，这时候事务1等待事务2执行完第二条语句释放，这时候事务2执行完第二条语句等待事务一释放</li>
-</ul>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#事务1 点赞</span></span><br><span class="line"><span class="keyword">BEGIN</span> <span class="keyword">TRANSACTION</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> reply <span class="keyword">SET</span> like_ammount=like_ammount+<span class="number">1</span> <span class="keyword">WHERE</span> reply_id=<span class="number">1</span> ;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> user_sum <span class="keyword">SET</span> like_sum=like_sum+<span class="number">1</span> <span class="keyword">WHERE</span> uid=<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">COMMIT</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">#事务2取消赞</span></span><br><span class="line"><span class="keyword">BEGIN</span> <span class="keyword">TRANSACTION</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> user_sum <span class="keyword">SET</span> like_sum=like_sum<span class="number">-1</span> <span class="keyword">WHERE</span> uid=<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">UPDATE</span> reply <span class="keyword">SET</span> like_ammount=like_ammount<span class="number">-1</span> <span class="keyword">WHERE</span> reply_id=<span class="number">1</span> ;</span><br><span class="line"></span><br><span class="line"><span class="keyword">COMMIT</span>;</span><br></pre></td></tr></table></figure>
-<ul>
-<li>解决方法<ul>
-<li>等待锁超时，用innodb_lock_wait_timeout来设置；（默认50s）</li>
-<li>用死锁检查的方式innodb_deadlock_detect设置为on，表示开启，一旦发生死锁回滚死锁链条中的某个事务让其他事务可以进行；</li>
-</ul>
-</li>
-</ul>
-<h3 id="死锁检查真的很美好么？"><a href="#死锁检查真的很美好么？" class="headerlink" title="死锁检查真的很美好么？"></a>死锁检查真的很美好么？</h3><p>死锁检查是一个O(n*n)的时间复杂度的操作，因为每一个被堵塞的线程都会检查是否是自己导致了死锁。导致会有大量的线程做无谓的死锁检查，最终现象是CPU很高，但是并发度很低。</p>
-<p>解决方案：</p>
-<ul>
-<li>粗暴的做法：如果确定没有死锁情况，关掉死锁检查。</li>
-<li>控制并发度：客户端自己控制，最多只有N个线程同时进行修改，但是不排除一个库有多个客户端（比如多连接池）</li>
-<li>中间件开发：如果发现请求数据一样的，进行排队减少冲突。（成本高）</li>
-</ul>
-<h2 id="间隙锁-gap-lock-与幻读"><a href="#间隙锁-gap-lock-与幻读" class="headerlink" title="间隙锁(gap lock) 与幻读"></a>间隙锁(gap lock) 与幻读</h2><p>什么是幻读？为什么会出现幻读？幻读有什么危害？</p>
-<ul>
-<li>事物在RR隔离级别下；</li>
-<li>一个事物中，俩次查询涉及的条件相同，后面的语句出现了之前查询没有存在的数据。（注意：出现了新增的数据）；</li>
-<li>为什么出现幻读：RR隔离级别下，当数据发生改变，采用当前读的原则</li>
-<li>幻读的危害：破坏了业务的语意；违反了数据的一致性</li>
-</ul>
-<p>为什么需要间隙锁？当数据库的隔离级别是RR的情况下，由于Mysql的行锁在为数据上锁的时候需要数据在表中，也就是说对于新插入的数据mysql是无法上锁的。这样就会出现幻读的情况。innodb为了解决幻读引入了间隙锁。</p>
-<h2 id="innodb是如何加间隙锁的"><a href="#innodb是如何加间隙锁的" class="headerlink" title="innodb是如何加间隙锁的"></a>innodb是如何加间隙锁的</h2><ol>
-<li>当一个涉及到为数据加锁的语句执行时候，会为涉及到的数据加行锁，同时为整个表的数据之间加间隙锁（gap lock）,这个行锁+间隙锁也叫next-key-lock。</li>
-<li>间隙锁是个左开，右闭的空间。比如一张表有如下数据  </li>
-<li>间隙锁只会锁插入语句，其他的操作是不互斥的。</li>
-</ol>
-<p>具体例子说明</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">#表t(id, c(有索引))有数据（1，3），（1，5），（1，7），有如下3个事物，是不冲突的 t1 ,t2锁不冲突， t3会被间隙锁block</span></span><br><span class="line"><span class="comment">#间隙锁是(-∞,3],(3,5],(5,7],(7,supernum]</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#t1</span></span><br><span class="line">begion transaction;</span><br><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span>  t <span class="keyword">where</span> c=<span class="number">5</span> <span class="keyword">for</span> <span class="keyword">update</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">#t2</span></span><br><span class="line">begion transaction;</span><br><span class="line"><span class="keyword">update</span> t <span class="keyword">set</span> c=<span class="number">1</span> <span class="keyword">where</span> c=<span class="number">5</span> <span class="keyword">for</span> <span class="keyword">share</span> <span class="keyword">mode</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">#t3</span></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> t <span class="keyword">values</span>(<span class="number">3</span>,<span class="number">4</span>);</span><br></pre></td></tr></table></figure>
-<h3 id="间隙锁的缺点"><a href="#间隙锁的缺点" class="headerlink" title="间隙锁的缺点"></a>间隙锁的缺点</h3><p>间隙锁也并不是万能的在某些情况下会造成死锁比如，下面的情况：</p>
-<ol>
-<li>判断断C=5是否存在；</li>
-<li>不存在就insert,存在就update；</li>
-<li>图中在并发的情况下，且c=5不存在，行锁无效，触发间隙锁，这时候事物2的insert需要等待事物1commit之后释放间隙锁。</li>
-<li>但是事物1，因为也insert导致了，不能释放锁就触发了死锁。</li>
-</ol>
-<table>
-<thead>
-<tr>
-<th>事物1</th>
-<th>事物2</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>begin transaction;</td>
-<td>begin transaction;</td>
-</tr>
-<tr>
-<td>select * from t where c=5 for update ;</td>
-<td>select * from t where c=5  for share update;</td>
-</tr>
-<tr>
-<td>select * from t where c=5 for update ;</td>
-<td>select * from t where c=5  for share update;</td>
-</tr>
-<tr>
-<td>-</td>
-<td>insert into t values(5,5);</td>
-</tr>
-<tr>
-<td>insert into t values(5,5);（dead lock）</td>
-<td>-</td>
-</tr>
-</tbody>
-</table>
-<p>这种方式的解决方案，在满足业务的前提下，将事物的隔离级别改为RC，并且将binlog置为row。</p>
-<h3 id="innodb对于数据加锁的原则"><a href="#innodb对于数据加锁的原则" class="headerlink" title="innodb对于数据加锁的原则"></a>innodb对于数据加锁的原则</h3><p>Q:锁是加在数据上还是加载索引中？<br>A:锁是加载索引中。（因为Mysql的数据是在磁盘中的，而索引是在内存中切有序的。所以按照mysql的能用内存用内存的原则是锁索引的）</p>
-<ol>
-<li>加锁的基本单位是next key lock；</li>
-<li>查找到访问的对象会加锁；</li>
-<li>对于查询等值唯一索引的数据加锁，会退化成行锁；</li>
-<li>对于查询等值非唯一索引的数据加锁，当向右扫描到第一个不符合索引的数据时候，会退化成间隙锁；</li>
-<li>注意：对于范围查找唯一索引，会访问到不满足条件的第一个值位置；</li>
-</ol>
-<p>所以准确的说，innodb在对数据加锁不是简单的为涉及到的数据加行锁，而是对要访问的数据加一个nextKeyLock，然后innodb在根据如上条件判断哪些数据加行锁，哪些数据不是行锁是间隙锁；（确定是查询范围锁的数据是x锁，中间不存在的数据间隙锁）</p>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/其他/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/mysql/其他/" class="post-title-link" itemprop="url">其他</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-07 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-07T00:00:00Z">2019-02-07</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="其他"><a href="#其他" class="headerlink" title="其他"></a>其他</h1><p>查询长事物的语句</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> information_schema.innodb_trx <span class="keyword">where</span> TIME_TO_SEC(<span class="keyword">timediff</span>(<span class="keyword">now</span>(),trx_started))&gt;<span class="number">60</span></span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql的数据页更新/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/mysql/mysql的数据页更新/" class="post-title-link" itemprop="url">mysql更新数据的原理和流程-草稿</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-06 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-06T00:00:00Z">2019-02-06</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="mysql更新数据的原理和流程-草稿"><a href="#mysql更新数据的原理和流程-草稿" class="headerlink" title="mysql更新数据的原理和流程-草稿"></a>mysql更新数据的原理和流程-草稿</h1><p>本文介绍mysql更新数据的原理和流程</p>
-<h2 id="为什么mysql更新的效率很高？"><a href="#为什么mysql更新的效率很高？" class="headerlink" title="为什么mysql更新的效率很高？"></a>为什么mysql更新的效率很高？</h2><ol>
-<li>WAL机制：即更新内存中数据页，同时写redolog+binglog然后返回。后台慢慢将数据页刷到磁盘中。（随机写改为顺序写）</li>
-<li>mysql的chagenbuffer。</li>
-</ol>
-<h2 id="为什么mysql偶尔会抖一下"><a href="#为什么mysql偶尔会抖一下" class="headerlink" title="为什么mysql偶尔会抖一下"></a>为什么mysql偶尔会抖一下</h2><p>刷新脏页<br>什么叫脏页？<br>什么时候触发脏页的flush。</p>
-<ol>
-<li>redolog写满；（尽量避免，因为这时候所有更新都被block主）</li>
-<li>内存不足：需要加载新的数据页但是内存不够，将数据页淘汰，如果是脏页，就flush到磁盘；（至于为什么不直接淘汰，下次读的时候从redologmerge是出于性能考虑，每次加载的都是干净的数据页）</li>
-<li>正常的时候，定时刷新</li>
-<li>正常关闭mysql时候</li>
-</ol>
-<p>2是抖一下的原因<br>buf1fpool数据页三种状态（未使用，使用了但是干净页，使用了但是脏页）。<br>当数据页没在内存中时候，申请一个页面，如果没有未使用页面就需要淘汰页面，俩种情况，如果淘汰的页面过多，会影响性能</p>
-<ol>
-<li>干净页直接淘汰</li>
-<li><p>脏页flush，淘汰</p>
-<p>fio -filename=$filename -direct=1 -iodepth 1 -thread -rw=randrw -ioengine=psync -bs=16k -size=500M -numjobs=10 -runtime=10 -group_reporting -name=mytest</p>
-</li>
-</ol>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/如何判断mysql的主从出现问题/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/mysql/如何判断mysql的主从出现问题/" class="post-title-link" itemprop="url">如何判断MySql的主从出现问题</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-06 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-06T00:00:00Z">2019-02-06</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql高可用架构/" itemprop="url" rel="index"><span itemprop="name">Mysql高可用架构</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="如何判断MySql的主从出现问题"><a href="#如何判断MySql的主从出现问题" class="headerlink" title="如何判断MySql的主从出现问题"></a>如何判断MySql的主从出现问题</h1><p>本章主要介绍如何对MySql主从进行健康检查</p>
-<h2 id="SELECT-1"><a href="#SELECT-1" class="headerlink" title="SELECT 1"></a>SELECT 1</h2><p>定期在数据库上执行“SELECT 1”,缺点是指能判断MySql的进程是否存在，不能判断实际的使用情况，因为Mysql的并发度往往受参数innodb_thread_concurrency影响：</p>
-<blockquote>
-<p>innodb_thread_concurrency代表数据库的并发度，即同一时间有多少线程并发执行任务；默认是0即无限制，但是为了防止CPU被打满我们往往设置64~1·28中的一个值；<br>注意一下俩点：</p>
-<ul>
-<li>innodb_thread_concurrency和最大连接数不一样，最大连接数只是保持了链接状态，并没有多消耗CPU资源；</li>
-<li>当链接进入sleep状态的时候，innodb_thread_concurrency参数会减一，即释放一个并发度；</li>
-</ul>
-</blockquote>
-<h2 id="查表"><a href="#查表" class="headerlink" title="查表"></a>查表</h2><p>我们可以在mysql中创建一个表比如讲heal_check，定期执行下面的语句：</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; select * from mysql.health_check;</span><br></pre></td></tr></table></figure>
-<p>但是依然有个缺点，我们不能检查出MySql写的能力。</p>
-<h2 id="定期执行修改的方式"><a href="#定期执行修改的方式" class="headerlink" title="定期执行修改的方式"></a>定期执行修改的方式</h2><figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; update mysql.health_check set t_modified=now();</span><br></pre></td></tr></table></figure>
-<p>缺点从库无法判断,我们可以修改下我们的语句用如下的方式定期轮训</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; CREATE TABLE `health_check` (</span><br><span class="line">  `id` int(11) NOT NULL,</span><br><span class="line">  `t_modified` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,</span><br><span class="line">  PRIMARY KEY (`id`)</span><br><span class="line">) ENGINE=InnoDB;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 检测命令 */</span></span><br><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> mysql.health_check(<span class="keyword">id</span>, t_modified) <span class="keyword">values</span> (@@server_id, <span class="keyword">now</span>()) <span class="keyword">on</span> <span class="keyword">duplicate</span> <span class="keyword">key</span> <span class="keyword">update</span> t_modified=<span class="keyword">now</span>();</span><br></pre></td></tr></table></figure>
-<p>缺点，只能被动的轮询无法及时发现问题。</p>
-<h2 id="内部统计–performance-schema库"><a href="#内部统计–performance-schema库" class="headerlink" title="内部统计–performance_schema库"></a>内部统计–performance_schema库</h2><p>我们可以利用performance_schema，注意如果打开会因为检测导致性能下降10%左右。</p>
-<p>我们执行语句可以看到如下内容</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> * <span class="keyword">from</span> performance_schema.file_summary_by_event_name <span class="keyword">where</span> event_name=<span class="string">'wait/io/file/innodb/innodb_log_file'</span>\G</span><br><span class="line"></span><br><span class="line">*************************** <span class="number">1.</span> <span class="keyword">row</span> ***************************</span><br><span class="line">               EVENT_NAME: <span class="keyword">wait</span>/io/<span class="keyword">file</span>/<span class="keyword">innodb</span>/innodb_log_file</span><br><span class="line">               COUNT_STAR: <span class="number">107</span>  <span class="comment">#IO总次数</span></span><br><span class="line">           SUM_TIMER_WAIT: <span class="number">101355337720</span> <span class="comment">#单位皮秒</span></span><br><span class="line">           MIN_TIMER_WAIT: <span class="number">498680</span></span><br><span class="line">           AVG_TIMER_WAIT: <span class="number">947245845</span></span><br><span class="line">           MAX_TIMER_WAIT: <span class="number">81456567920</span></span><br><span class="line">               COUNT_READ: <span class="number">7</span> <span class="comment">#读</span></span><br><span class="line">           SUM_TIMER_READ: <span class="number">1321141640</span></span><br><span class="line">           MIN_TIMER_READ: <span class="number">498680</span></span><br><span class="line">           AVG_TIMER_READ: <span class="number">188734455</span></span><br><span class="line">           MAX_TIMER_READ: <span class="number">790074740</span></span><br><span class="line"> SUM_NUMBER_OF_BYTES_READ: <span class="number">70144</span> <span class="comment">#字节</span></span><br><span class="line">              COUNT_WRITE: <span class="number">47</span> <span class="comment">#写</span></span><br><span class="line">          SUM_TIMER_WRITE: <span class="number">874801200</span></span><br><span class="line">          MIN_TIMER_WRITE: <span class="number">12836460</span></span><br><span class="line">          AVG_TIMER_WRITE: <span class="number">18612685</span></span><br><span class="line">          MAX_TIMER_WRITE: <span class="number">33429760</span></span><br><span class="line">SUM_NUMBER_OF_BYTES_WRITE: <span class="number">40960</span></span><br><span class="line">               COUNT_MISC: <span class="number">53</span> <span class="comment">#fsync次数--其他</span></span><br><span class="line">           SUM_TIMER_MISC: <span class="number">99159394880</span></span><br><span class="line">           MIN_TIMER_MISC: <span class="number">891800</span></span><br><span class="line">           AVG_TIMER_MISC: <span class="number">1870931790</span></span><br><span class="line">           MAX_TIMER_MISC: <span class="number">81456567920</span></span><br></pre></td></tr></table></figure>
-<p>为了节省性能，我们可以只打开我们需要的统计项，执行如下命令，打开redolog和binlog的统计项</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; update setup_instruments set ENABLED='YES', Timed='YES' where name like '%wait/io/file/innodb/innodb_log_file%';</span><br></pre></td></tr></table></figure>
-<p>检测性能方式如下，比如监控binlog和redolog超过200ms时，即监控MAX_TIMER_WAIT值</p>
-<figure class="highlight"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; select event_name,MAX_TIMER_WAIT  FROM performance_schema.file_summary_by_event_name where event_name in ('wait/io/file/innodb/innodb_log_file','wait/io/file/sql/binlog') and MAX_TIMER_WAIT&gt;200*1000000000;</span><br><span class="line"></span><br><span class="line"><span class="comment">#获取异常信息时候可以清空表，继续累计</span></span><br><span class="line">mysql&gt; truncate table performance_schema.file_summary_by_event_name;</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/mysql/mysql的排序/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/mysql/mysql的排序/" class="post-title-link" itemprop="url">mysql的排序</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2019-02-05 00:00:00" itemprop="dateCreated datePublished" datetime="2019-02-05T00:00:00Z">2019-02-05</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/" itemprop="url" rel="index"><span itemprop="name">Mysql</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Mysql/Mysql基础/" itemprop="url" rel="index"><span itemprop="name">Mysql基础</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h1 id="mysql排序-order-by的原理"><a href="#mysql排序-order-by的原理" class="headerlink" title="mysql排序 order by的原理"></a>mysql排序 order by的原理</h1><h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>下面的语句用按照姓名排序，我们看下执行计划，Extra有一段‘Using filesort’，说明Mysql用的用到了排序</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">explain</span> <span class="keyword">select</span> city,<span class="keyword">name</span>,age <span class="keyword">from</span> t <span class="keyword">where</span> city=<span class="string">'杭州'</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">name</span> <span class="keyword">limit</span> <span class="number">1000</span>  ;</span><br><span class="line"></span><br><span class="line"><span class="comment">#执行计划</span></span><br><span class="line">1 SIMPLE t NULL ref city city 66 const 1 100.00 Using index condition; Using filesort</span><br></pre></td></tr></table></figure>
-<h2 id="排序的过程"><a href="#排序的过程" class="headerlink" title="排序的过程"></a>排序的过程</h2><p>mysql在排序操作中会用到sort_buffer和临时文件，sort_buffer的大小由sort_buffer_size参数决定</p>
-<ul>
-<li>sort_buffer:是Mysql为排序操作开辟的一块内存空间，会将需要查询的字段以及排序字段放在内存空间中，进行排序操作。</li>
-<li>临时文件：如果字段太多sort_buffer容量不够了会借用到临时文件进行存储，会将需要排序的文件分成N份，同时排序排序完成后在进行合并。</li>
-</ul>
-<h3 id="全字段排序"><a href="#全字段排序" class="headerlink" title="全字段排序"></a>全字段排序</h3><p>全字段排序需要的流程</p>
-<ol>
-<li>初始化sort_buffer,确定要放进去的字段</li>
-<li>根据索引等条件取出满足条件的主键ID</li>
-<li>回表查询出需要显示的字段，将需要的字段放到sort_buffer中，如果用到临时文件，加载到临时文件中</li>
-<li>内存中排序</li>
-<li>返回结果</li>
-</ol>
-<h3 id="rowid排序"><a href="#rowid排序" class="headerlink" title="rowid排序"></a>rowid排序</h3><p>如果Mysql判断单行占用的空间很大，会采用rowid方式进行排序,可以用如下方式进行设置。受max_length_for_sort_data指标来控制</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SET</span> max_length_for_sort_data = <span class="number">16</span>;</span><br></pre></td></tr></table></figure>
-<ol>
-<li>初始化sort_buffer,确定排序字段和主键ID</li>
-<li>根据索引等条件取出满足条件的主键ID</li>
-<li>将需要排序和主键ID放到sort_buffer中，如果用到临时文件，加载到临时文件中</li>
-<li>内存中排序，得到排好序的排序字段值–主键ID</li>
-<li>回表查询数据</li>
-<li>返回结果</li>
-</ol>
-<h3 id="全字段排序-vs-rowid-排序"><a href="#全字段排序-vs-rowid-排序" class="headerlink" title="全字段排序 vs rowid 排序"></a>全字段排序 vs rowid 排序</h3><p>rowid比全字段排序多了一次回表操作，理论上来说mysql能用内存尽量用内存，减少磁盘操作，所以理论上来说rowid排序性能会低于全字段排序</p>
-<h3 id="如何优化排序"><a href="#如何优化排序" class="headerlink" title="如何优化排序"></a>如何优化排序</h3><p>使用索引：因为索引本身是有序的，合理利用索引，这样排序就可以用索引避免使用临时文件和sort_buffer进行排序。如例子中的语句可以创建（city,name）的索引，可以用执行计划看出来。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#创建索引（city,name）注意顺序</span></span><br><span class="line"><span class="keyword">explain</span> <span class="keyword">select</span> city,<span class="keyword">name</span>,age <span class="keyword">from</span> t <span class="keyword">where</span> city=<span class="string">'杭州'</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">name</span> <span class="keyword">limit</span> <span class="number">1000</span>  ;</span><br><span class="line"></span><br><span class="line"><span class="comment">#执行计划</span></span><br><span class="line">1 SIMPLE t NULL ref idx idx 66 const 1 100.00 Using index condition</span><br></pre></td></tr></table></figure>
-<h3 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h3><p>判断排序语句是否用了临时文件，是那种排序方式的语句</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 打开 optimizer_trace，只对本线程有效 */</span></span><br><span class="line"><span class="keyword">SET</span> optimizer_trace=<span class="string">'enabled=on'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* @a 保存 Innodb_rows_read 的初始值 */</span></span><br><span class="line"><span class="keyword">select</span> VARIABLE_VALUE <span class="keyword">into</span> @a <span class="keyword">from</span>  performance_schema.session_status <span class="keyword">where</span> variable_name = <span class="string">'Innodb_rows_read'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 执行语句 */</span></span><br><span class="line"><span class="keyword">select</span> city, <span class="keyword">name</span>,age <span class="keyword">from</span> t <span class="keyword">where</span> city=<span class="string">'杭州'</span> <span class="keyword">order</span> <span class="keyword">by</span> <span class="keyword">name</span> <span class="keyword">limit</span> <span class="number">1000</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 查看 OPTIMIZER_TRACE 输出 */</span></span><br><span class="line"><span class="keyword">SELECT</span> * <span class="keyword">FROM</span> <span class="string">`information_schema`</span>.<span class="string">`OPTIMIZER_TRACE`</span>\G</span><br><span class="line"></span><br><span class="line"><span class="comment">/* @b 保存 Innodb_rows_read 的当前值 */</span></span><br><span class="line"><span class="keyword">select</span> VARIABLE_VALUE <span class="keyword">into</span> @b <span class="keyword">from</span> performance_schema.session_status <span class="keyword">where</span> variable_name = <span class="string">'Innodb_rows_read'</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 计算 Innodb_rows_read 差值 */</span></span><br><span class="line"><span class="keyword">select</span> @b-@a;</span><br></pre></td></tr></table></figure>
-<p>如何判断排序类型</p>
-<ol>
-<li>SELECT * FROM <code>information_schema</code>.<code>OPTIMIZER_TRACE</code>\G，之后的json对象看filesort_summary段<ol>
-<li>sort_mode是sort_key, rowid是全字段排序</li>
-<li>sort_mode是sort_key, packed_additional_fields采用全字段排序</li>
-</ol>
-</li>
-</ol>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">            "filesort_summary": &#123;</span><br><span class="line">              "rows": 1001, <span class="comment">#取的字段</span></span><br><span class="line">              "examined_rows": 110501, <span class="comment">#扫描行数</span></span><br><span class="line">              "number_of_tmp_files": 0, <span class="comment">#历史文件个数</span></span><br><span class="line">              "sort_buffer_size": 17024,</span><br><span class="line">              "sort_mode": "&lt;sort_key, rowid&gt;"</span><br><span class="line">            &#125;</span><br><span class="line"><span class="comment">#如果是rowid排序实际扫描行数是examined_rows+rows（因为回了一次表）</span></span><br></pre></td></tr></table></figure>
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2535,7 +2587,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">224</span>
+                    <span class="site-state-item-count">229</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2904,7 +2956,7 @@
 
     <footer id="footer" class="footer">
       <div class="footer-inner">
-        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2022</span>
+        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2023</span>
   <span class="with-love" id="animate">
     <i class="fa fa-user"></i>
   </span>

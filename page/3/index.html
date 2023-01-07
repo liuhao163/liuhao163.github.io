@@ -345,6 +345,1072 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Spring事务-事务传播级别/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/Spring事务-事务传播级别/" class="post-title-link" itemprop="url">Spring事务-事务传播级别</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2021-06-22 20:30:37" itemprop="dateCreated datePublished" datetime="2021-06-22T20:30:37Z">2021-06-22</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/" itemprop="url" rel="index"><span itemprop="name">spring</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/事务/" itemprop="url" rel="index"><span itemprop="name">事务</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>  事务是逻辑处理原子性的保证手段，通过使用事务控制，可以极大的避免出现逻辑处理失败导致的脏数据等问题。<br>  事务最重要的两个特性，是事务的传播级别和数据隔离级别。传播级别定义的是事务的控制范围，事务隔离级别定义的是事务在数据库读写方面的控制范围。</p>
+<p>  在spring中我们对事务的定义主要是通过注解@Transactional,控制传播级别的就是参数propagation是一个Propagation的枚举有如下的值</p>
+<h2 id="REQUIRED（PROPAGATION-REQUIRED）"><a href="#REQUIRED（PROPAGATION-REQUIRED）" class="headerlink" title="REQUIRED（PROPAGATION_REQUIRED）"></a>REQUIRED（PROPAGATION_REQUIRED）</h2><p>默认的spring事务传播级别，使用该级别的特点是，如果上下文中已经存在事务，那么就加入到事务中执行，如果当前上下文中不存在事务，则新建事务执行。所以这个级别通常能满足处理大多数的业务场景。</p>
+<p>即，当前的事务如果没有运行在@Transactional注解的方法中，新建一个事务，如果运行在一个@Transactional注解的方法中则加入当前事务，一旦出现异常，会连调用者的事务一起回滚。</p>
+<h2 id="SUPPORTS（PROPAGATION-SUPPORTS）"><a href="#SUPPORTS（PROPAGATION-SUPPORTS）" class="headerlink" title="SUPPORTS（PROPAGATION_SUPPORTS）"></a>SUPPORTS（PROPAGATION_SUPPORTS）</h2><p>从字面意思就知道，supports，支持，该传播级别的特点是，如果上下文存在事务，则支持事务加入事务，如果没有事务，则使用非事务的方式执行。所以说，并非所有的包在transactionTemplate.execute中的代码都会有事务支持。这个通常是用来处理那些并非原子性的非核心业务逻辑操作。应用场景较少。</p>
+<p>即，当前的事务如果没有运行在@Transactional注解的方法中，则没有事务，如果运行在一个@Transactional注解的方法中则加入当前事务，一旦出现异常，会连调用者的事务一起回滚。</p>
+<h2 id="MANDATORY（PROPAGATION-MANDATORY）"><a href="#MANDATORY（PROPAGATION-MANDATORY）" class="headerlink" title="MANDATORY（PROPAGATION_MANDATORY）"></a>MANDATORY（PROPAGATION_MANDATORY）</h2><p>该级别的事务要求上下文中必须要存在事务，否则就会抛出异常！配置该方式的传播级别是有效的控制上下文调用代码遗漏添加事务控制的保证手段。比如一段代码不能单独被调用执行，但是一旦被调用，就必须有事务包含的情况，就可以使用这个传播级别。</p>
+<p>即，当前的方法必须运行在有@Transactional注解的方法种，否则会抛出异常，和NEVER相反。</p>
+<h2 id="REQUIRES-NEW（PROPAGATION-REQUIRES-NEW）"><a href="#REQUIRES-NEW（PROPAGATION-REQUIRES-NEW）" class="headerlink" title="REQUIRES_NEW（PROPAGATION_REQUIRES_NEW）"></a>REQUIRES_NEW（PROPAGATION_REQUIRES_NEW）</h2><p>从字面即可知道，new，每次都要一个新事务，该传播级别的特点是，每次都会新建一个事务，并且同时将上下文中的事务挂起，执行当前新建事务完成以后，上下文事务恢复再执行。</p>
+<p>即，当前的方法单独运行会以事务方式运行，在@Transactional注解的方法中运行，运行到该方法时候回将当前事务挂起，新建一个事务运行，一旦出现异常，只会回滚该方法的事务，不会回滚调用者的事务。</p>
+<p>这是一个很有用的传播级别，举一个应用场景：现在有一个发送100个红包的操作，在发送之前，要做一些系统的初始化、验证、数据记录操作，然后发送100封红包，然后再记录发送日志，发送日志要求100%的准确，如果日志不准确，那么整个父事务逻辑需要回滚。<br>怎么处理整个业务需求呢？就是通过这个PROPAGATION_REQUIRES_NEW 级别的事务传播控制就可以完成。发送红包的子事务不会直接影响到父事务的提交和回滚。</p>
+<h2 id="NOT-SUPPORTED（PROPAGATION-NOT-SUPPORTED）"><a href="#NOT-SUPPORTED（PROPAGATION-NOT-SUPPORTED）" class="headerlink" title="NOT_SUPPORTED（PROPAGATION_NOT_SUPPORTED）"></a>NOT_SUPPORTED（PROPAGATION_NOT_SUPPORTED）</h2><p>这个也可以从字面得知，not supported ，不支持，当前级别的特点就是上下文中存在事务，则挂起事务，执行当前逻辑，结束后恢复上下文的事务。</p>
+<p>即，当前方法单独运行不会以事务方法运行，如果运行在在@Transactional注解的方法中，运行到该方法时候会将当前事务挂起，以非事务的方式执行该方法在恢复事务</p>
+<p>这个级别有什么好处？可以帮助你将事务极可能的缩小。我们知道一个事务越大，它存在的风险也就越多。所以在处理事务的过程中，要保证尽可能的缩小范围。比如一段代码，是每次逻辑操作都必须调用的，比如循环1000次的某个非核心业务逻辑操作。这样的代码如果包在事务中，势必造成事务太大，导致出现一些难以考虑周全的异常情况。所以这个事务这个级别的传播级别就派上用场了。用当前级别的事务模板抱起来就可以了。</p>
+<h2 id="NEVER（PROPAGATION-NEVER）"><a href="#NEVER（PROPAGATION-NEVER）" class="headerlink" title="NEVER（PROPAGATION_NEVER）"></a>NEVER（PROPAGATION_NEVER）</h2><p>该事务更严格，上面一个事务传播级别只是不支持而已，有事务就挂起，而PROPAGATION_NEVER传播级别要求上下文中不能存在事务，一旦有事务，就抛出runtime异常，强制停止执行！这个级别上辈子跟事务有仇。</p>
+<p>即，该方法不能运行在注解@Transactional的方法中，和MANDATORY相反</p>
+<h2 id="NESTED（PROPAGATION-NESTED）"><a href="#NESTED（PROPAGATION-NESTED）" class="headerlink" title="NESTED（PROPAGATION_NESTED）"></a>NESTED（PROPAGATION_NESTED）</h2><p>字面也可知道，nested，嵌套级别事务。该传播级别特征是，如果上下文中存在事务，则嵌套事务执行，如果不存在事务，则新建事务。</p>
+<p>即：和REQUIRED（PROPAGATION_REQUIRED）类似，很少见</p>
+<h2 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h2><p>测试代码见：<a href="https://gitee.com/liuhao163/test-transational" target="_blank" rel="noopener">https://gitee.com/liuhao163/test-transational</a></p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/重构-为什么要重构以及代码中的坏味道/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/重构-为什么要重构以及代码中的坏味道/" class="post-title-link" itemprop="url">重构-为什么要重构以及代码中的坏味道</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2021-06-02 22:30:23" itemprop="dateCreated datePublished" datetime="2021-06-02T22:30:23Z">2021-06-02</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/重构/" itemprop="url" rel="index"><span itemprop="name">重构</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="重构指什么"><a href="#重构指什么" class="headerlink" title="重构指什么"></a>重构指什么</h2><p>  这里的 <strong>重构行为</strong> 是指在不改变软件功能的前提下，通过一些 <strong>重构手段</strong> 调整代码结构使其更易维护、代码更加健壮，并且能有效降低项目的学习成本。</p>
+<p>  为何重构</p>
+<ul>
+<li>改进软件设计</li>
+<li>使软件更易读</li>
+<li>帮助解决一些诡异的BUG</li>
+<li>提高变成速度</li>
+</ul>
+<h2 id="重构的时机很重要"><a href="#重构的时机很重要" class="headerlink" title="重构的时机很重要"></a>重构的时机很重要</h2><p>  我们何时重构呢？一般来说，我们很难说找到一个比较长的周期什么事都不做，只重构。那么重构应该就穿插在我们日常工作中。</p>
+<ul>
+<li>预备性重构：添加新的功能之前做技术设计，发现这部分代码设计的不够合理我们可以在这时候进行该功能的重构</li>
+<li>帮助理解的重构：当我读不懂这段代码的时候，我就要考虑进行重构，或者说的极限点，当我觉得这部分代码需要些注释才能解释明白的时候我可以考虑进行重构</li>
+<li>捡垃圾式的重构：在读代码时候发现这段代码逻辑相同，或者结构迂回有问题</li>
+<li>有计划的重构和见机行事的重构：在写新功能时候顺手就把不合理的代码改掉</li>
+<li>长期重构：一些比较大的架构需要调整的视乎</li>
+<li><p>review时候重构</p>
+<p>另外重构尽量在程序员之间内部闭环少让产品、项目经理参与他们可能出于成本考虑阻碍重构，另外重新比重构划算时候就重写吧</p>
+</li>
+</ul>
+<h2 id="重构的挑战是什么"><a href="#重构的挑战是什么" class="headerlink" title="重构的挑战是什么"></a>重构的挑战是什么</h2><ul>
+<li>延缓新功能开发：如果一块代码被封装隔离起来了，即便写的很糟只要你不用理解它你就可以不重构它</li>
+<li>代码所有权：一旦接口发布出去了就不好在重构了，否则需要做大量兼容工作</li>
+<li>分支：主干发布，分支开发这种会导致，merge地狱出现</li>
+<li>测试：重构要提前想好测试方案，减少出现BUG的几率</li>
+<li>遗留代码：祖传代码没人敢动，还是提前准备充足测试方案</li>
+<li>数据库的重构：做好版本管理，将改动合并到代码库中便于回滚</li>
+</ul>
+<h2 id="代码有哪些坏味道"><a href="#代码有哪些坏味道" class="headerlink" title="代码有哪些坏味道"></a>代码有哪些坏味道</h2><p>  在我们工程的代码中出现如下的情况，会使我们的代码产生坏的味道入股不管，这些坏味道很快就会让我们的工程腐败，所以我们可以考虑对这些地方进行进行重构。</p>
+<h3 id="神秘命名"><a href="#神秘命名" class="headerlink" title="神秘命名"></a>神秘命名</h3><p>  当我们发现我们对方法或者函数命名不够准确，很难理解这时候我们应该考虑架构是否合理，代码结构是否应该调整。</p>
+<p>  解决方法：</p>
+<ol>
+<li>改变函数声明</li>
+<li>字段改名</li>
+<li>变量改名</li>
+</ol>
+<h3 id="重复代码"><a href="#重复代码" class="headerlink" title="重复代码"></a>重复代码</h3><p>  在一个地方看到相同的代码结构，导致后期维护需要维护多个副本</p>
+<p>  解决方法：</p>
+<ol>
+<li>提炼函数</li>
+<li>如果只是相似而不是相同，我们可以先 <strong>移动语句</strong> 重组代码顺序</li>
+<li>如果重复代码在不同的子类中，我们可以用 <strong>函数上移</strong> 将代码放到父类中</li>
+</ol>
+<h3 id="过长函数"><a href="#过长函数" class="headerlink" title="过长函数"></a>过长函数</h3><p>  过长的函数会导致代码很难理解</p>
+<p>  解决方法：</p>
+<ol>
+<li>提炼函数，拆分成多个小函数</li>
+<li>以查询取代临时变量，减少难以理解的临时变量</li>
+<li>引入参数对象、保持参数完整性，减少过长的参数列表</li>
+<li>如果还有_太多参数和临时变量，我们可以以 <strong>以命令取代函数</strong> 将这个长的函数封装成一个命令类，构造函数是参数</li>
+<li>对于循环 <strong>拆分循环</strong> ,对于条件表达式可以 <strong>分解条件表达式</strong>，或者以 <strong>多态处理</strong></li>
+</ol>
+<h3 id="过长参数列表"><a href="#过长参数列表" class="headerlink" title="过长参数列表"></a>过长参数列表</h3><p>  危害同上</p>
+<p>  解决方法：</p>
+<ol>
+<li>假设参数列表中的一个参数，是通过另一个参数求解出来的，我们可以用 <strong>已查询取代参数</strong> 来去掉这个参数</li>
+<li>保持参数完整性</li>
+<li>已入参数对象</li>
+<li>移除标记参数</li>
+<li>如果多个函数引用相同的参数列表，可以 <strong>函数组合成类</strong></li>
+</ol>
+<h3 id="全局数据"><a href="#全局数据" class="headerlink" title="全局数据"></a>全局数据</h3><p>  如果没有对数据的修改封装，很可能会造成系统BUG</p>
+<p>  解决方案</p>
+<ol>
+<li>少用，如果必须要用缩短其作用域（包级别调用）</li>
+<li>封装变量</li>
+</ol>
+<h3 id="可变数据"><a href="#可变数据" class="headerlink" title="可变数据"></a>可变数据</h3><p>  对数据的修改很可能会导致BUG，同上</p>
+<p>  解决方案</p>
+<ol>
+<li>封装变量</li>
+<li>拆分变量</li>
+<li>移动语句，提炼函数</li>
+<li>将查询函数和修改函数分离</li>
+<li>移除设值函数</li>
+<li>如果可变数据能在其他地方计算出来，我们可以 <strong>查询取代派生变量</strong> 即：字段只没有变，每次返回的都是计算过程</li>
+<li>函数组合成类、函数组合成变换、引用对象改为值对象</li>
+</ol>
+<h3 id="发散式变化"><a href="#发散式变化" class="headerlink" title="发散式变化"></a>发散式变化</h3><p>  某个模块因为不同的原因在不同的地方发生变化，最终导致这个模块无法维护，这个其实违反了地耦合的原则，一个类应该指关心自己的上下文。</p>
+<p>  解决方案</p>
+<ol>
+<li>先用拆分阶段将两者拆分、然后用搬移函数将处理逻辑分开。</li>
+<li>如果函数内部混合了俩类处理逻辑、先提炼函数讲起拆分，如果是以类的方式定义的可以用提炼类来做拆分</li>
+</ol>
+<h3 id="霰弹式修改"><a href="#霰弹式修改" class="headerlink" title="霰弹式修改"></a>霰弹式修改</h3><p>  如果每次修改一个地方，都需要在很多其他类中做修改，这个其实违反了高内聚的原则。</p>
+<p>  解决方案</p>
+<ol>
+<li>搬移函数或者搬移字段把要修改的代码放在同一个模块</li>
+<li>如果有很多函数都在操作想死的数据，可以使用 <strong>函数组合</strong></li>
+<li>如果优先函数是功能转换或者数据填充，可以使用 <strong>函数组合成变换</strong></li>
+<li>如果一些函数输出可以组合后提供给一段专门使用这些计算结果的逻辑，可以使用 <strong>拆分阶段</strong></li>
+<li>一个常用策略是 <strong>内联函数</strong> 或者是 <strong>内连类</strong> 将不该分散的逻辑拽到一起。</li>
+</ol>
+<h3 id="依恋情节"><a href="#依恋情节" class="headerlink" title="依恋情节"></a>依恋情节</h3><p>todo</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/记一次安装opencv和gocv踩过的坑/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/记一次安装opencv和gocv踩过的坑/" class="post-title-link" itemprop="url">记一次安装opencv和gocv踩过的坑</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-12-07 22:24:49" itemprop="dateCreated datePublished" datetime="2020-12-07T22:24:49Z">2020-12-07</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/经验积累/" itemprop="url" rel="index"><span itemprop="name">经验积累</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/经验积累/项目积累/" itemprop="url" rel="index"><span itemprop="name">项目积累</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>  最近负责一个项目将人脸算法工程，和人脸后端工程集成到一个arm架构的小型盒子中。我主要负责后端工程这部分，语言栈是golang,通过gocv调用opencv【ffmpeg】拉取rtsp视频流到本地抽帧进行人脸的比对。</p>
+<p>  这其中涉及到gocv+opencv，由于盒子的的架构比较特殊切公司出于安全原因无法连接外网，大部分依赖只能通过源码编译，我踩了不少的坑特此记录</p>
+<h2 id="如何安装ffmpeg"><a href="#如何安装ffmpeg" class="headerlink" title="如何安装ffmpeg"></a>如何安装ffmpeg</h2><p>  所以我马上手动编译ffmpeg，一般我们都可以用yum安装，但是这里不能联网只能源码安装</p>
+<figure class="highlight sh"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> ffmpeg</span><br><span class="line">./configure --<span class="built_in">enable</span>-shared --<span class="built_in">enable</span>-swscale --<span class="built_in">enable</span>-gpl --<span class="built_in">enable</span>-nonfree --<span class="built_in">enable</span>-pic --prefix=/usr/<span class="built_in">local</span>/ffmpeg --<span class="built_in">enable</span>-version3 --<span class="built_in">enable</span>-postproc --<span class="built_in">enable</span>-pthreads --<span class="built_in">enable</span>-avisynth</span><br><span class="line"></span><br><span class="line">make</span><br><span class="line">make install</span><br></pre></td></tr></table></figure>
+<h2 id="如何编译opencv"><a href="#如何编译opencv" class="headerlink" title="如何编译opencv"></a>如何编译opencv</h2><p>  下载opencv，注意版本，当前gocv的依赖库制定的是opencv4.5.0</p>
+<p>  注意安装opencv需要cmake3</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> opencv-<span class="variable">$&#123;OPENCV_VERSION&#125;</span> <span class="comment">#这里进入opencv目录</span></span><br><span class="line">mkdir build</span><br><span class="line"><span class="built_in">cd</span> build</span><br><span class="line">cmake3 -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/<span class="built_in">local</span> -DOPENCV_EXTRA_MODULES_PATH=../../opencv_contrib-<span class="variable">$&#123;OPENCV_VERSION&#125;</span>/modules -DOPENCV_GENERATE_PKGCONFIG=ON -DWITH_FFMPEG=on ..</span><br><span class="line">make -j <span class="variable">$proc</span></span><br><span class="line">make install</span><br></pre></td></tr></table></figure>
+<ul>
+<li>CMAKE_INSTALL_PREFIX 安装目录</li>
+<li>OPENCV_EXTRA_MODULES_PATH 制定的一些插件目录这里用不到</li>
+<li>OPENCV_GENERATE_PKGCONFIG 编译golang的程序时候gocv检查依赖是通过pkg-config所以要安装，会生成<em>.pc文件，之后我们可以将</em>.pc文件放到pkg-config，后面会讲到如何放</li>
+<li>WITH_FFMPEG 处理视频流的解码要依赖</li>
+</ul>
+<h2 id="安装opencv-执行cmake3时候解决FFMPEG-NO"><a href="#安装opencv-执行cmake3时候解决FFMPEG-NO" class="headerlink" title="安装opencv,执行cmake3时候解决FFMPEG NO"></a>安装opencv,执行cmake3时候解决FFMPEG NO</h2><p>  我在编译opencv4.5.0，执行cmake时候发现ffmpeg总是no，导致程序启动时候无法顺利拉流下来提示Error read file :xxxx这是由于安装opencv时候check依赖ffmpeg失败导致的。原来opencv检查ffpmeg是通过pkg-config的，所以</p>
+<p>  解决方案：我们需要将刚才编译的ffmpeg下的*.pc都拷贝到pkg-config指定的目录中</p>
+<h2 id="指定pkg-config"><a href="#指定pkg-config" class="headerlink" title="指定pkg-config"></a>指定pkg-config</h2><p>  我们在编译golang程序时候有可能会失败，指找不到opencv库，有可能是pkg-config加载失败导致的解决方案</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">export</span> PKG_CONFIG_PATH=&lt;存放*.pc的目录，一般是xxx/pkgconfig&gt;:<span class="variable">$PKG_CONFIG_PATH</span></span><br><span class="line">pkg-config --cflags  -- opencv4  <span class="comment">#测试opencv4</span></span><br></pre></td></tr></table></figure>
+<h2 id="加载动态链接库"><a href="#加载动态链接库" class="headerlink" title="加载动态链接库"></a>加载动态链接库</h2><p>如果想让系统找到opencv库文件需要这么做</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> /etc/ld.so.conf.d</span><br><span class="line">touch OpenCV.conf</span><br><span class="line"><span class="built_in">echo</span> &lt;libopenxxx.so所在的补录，这里一般是/usr/<span class="built_in">local</span>/lib &gt; OpenCV.conf</span><br><span class="line">ldconfig</span><br></pre></td></tr></table></figure>
+<h2 id="编译golang程序"><a href="#编译golang程序" class="headerlink" title="编译golang程序"></a>编译golang程序</h2><p>  以为没法连外网所以把源码和依赖拷贝到盒子中</p>
+<p>  下载依赖</p>
+<ul>
+<li>go mod tidy</li>
+<li><p>go mod vendor</p>
+<p>编译</p>
+</li>
+<li><p>go build -mod vendor</p>
+</li>
+</ul>
+<p>至此，基本上坑都踩过了，特此记录。</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Spring源码-工具-EmbeddedValueResolverAware/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/Spring源码-工具-EmbeddedValueResolverAware/" class="post-title-link" itemprop="url">Spring源码-工具-EmbeddedValueResolverAware</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-10-15 14:46:56" itemprop="dateCreated datePublished" datetime="2020-10-15T14:46:56Z">2020-10-15</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/" itemprop="url" rel="index"><span itemprop="name">spring</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/工具/" itemprop="url" rel="index"><span itemprop="name">工具</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <p>todo</p>
+<p>读取配置文件的配置用</p>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/SpringMvc源码-RequestMappingHandlerAdapter/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Liu hao">
+      <meta itemprop="description" content="励志当好厨子的程序员">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="liuhao163.github.io">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                
+                <a href="/SpringMvc源码-RequestMappingHandlerAdapter/" class="post-title-link" itemprop="url">SpringMvc源码-RequestMappingHandlerAdapter</a>
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">Posted on</span>
+              
+
+              
+                
+              
+
+              <time title="Created: 2020-10-13 20:44:13" itemprop="dateCreated datePublished" datetime="2020-10-13T20:44:13Z">2020-10-13</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">Edited on</span>
+                
+                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">In</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/" itemprop="url" rel="index"><span itemprop="name">java</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/" itemprop="url" rel="index"><span itemprop="name">spring</span></a></span>
+
+                
+                
+                  , 
+                
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/java/spring/mvc/" itemprop="url" rel="index"><span itemprop="name">mvc</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h2 id="HandlerAdapter接口的说明"><a href="#HandlerAdapter接口的说明" class="headerlink" title="HandlerAdapter接口的说明"></a>HandlerAdapter接口的说明</h2><p>  在SprintMVC中，HandlerAdapter组件是一个handler适配器类，它通过handle方法调用request对应的controller方法来处理请求【HandlerMethod】</p>
+  <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"> <span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Use the given handler to handle this request.</span></span><br><span class="line"><span class="comment"> * The workflow that is required may vary widely.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> request current HTTP request</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> response current HTTP response</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> handler handler to use. This object must have previously been passed</span></span><br><span class="line"><span class="comment"> * to the &#123;<span class="doctag">@code</span> supports&#125; method of this interface, which must have 实际上是 HandlerMethod</span></span><br><span class="line"><span class="comment"> * returned &#123;<span class="doctag">@code</span> true&#125;.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@throws</span> Exception in case of errors</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> a ModelAndView object with the name of the view and the required</span></span><br><span class="line"><span class="comment"> * model data, or &#123;<span class="doctag">@code</span> null&#125; if the request has been handled directly</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"> <span class="comment">//</span></span><br><span class="line"> <span class="meta">@Nullable</span></span><br><span class="line"><span class="function">ModelAndView <span class="title">handle</span><span class="params">(HttpServletRequest request, HttpServletResponse response, Object handler)</span> <span class="keyword">throws</span> Exception</span>;</span><br></pre></td></tr></table></figure>
+<h2 id="如何获取HandlerAdapter"><a href="#如何获取HandlerAdapter" class="headerlink" title="如何获取HandlerAdapter"></a>如何获取HandlerAdapter</h2><p>见DispatcherServlet.getHandlerAdapter</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> HandlerAdapter <span class="title">getHandlerAdapter</span><span class="params">(Object handler)</span> <span class="keyword">throws</span> ServletException </span>&#123;</span><br><span class="line">	<span class="comment">//遍历DipatcherServlet.properties里org.springframework.web.servlet.HandlerAdapter的配置，调用handlerAdpater.supports看那个符合条件</span></span><br><span class="line">	<span class="comment">//Springboot中，会执行RequestMappingHandler.supports--&gt;AbstractHandlerMethodAdapter.supports 即handler是HandlerMetod</span></span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.handlerAdapters != <span class="keyword">null</span>) &#123;</span><br><span class="line">		<span class="keyword">for</span> (HandlerAdapter adapter : <span class="keyword">this</span>.handlerAdapters) &#123;</span><br><span class="line">			<span class="keyword">if</span> (adapter.supports(handler)) &#123; </span><br><span class="line">				<span class="keyword">return</span> adapter;</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">throw</span> <span class="keyword">new</span> ServletException(<span class="string">"No adapter for handler ["</span> + handler +</span><br><span class="line">			<span class="string">"]: The DispatcherServlet configuration needs to include a HandlerAdapter that supports this handler"</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="handle方法的执行"><a href="#handle方法的执行" class="headerlink" title="handle方法的执行"></a>handle方法的执行</h2><p>  调用路径是AbstractHandlerMethodAdapter.handle()–&gt;AbstractHandlerMethodAdapter.handleInternal()–&gt;RequestMappingHandlerAdapter.handleInternal。</p>
+<p>  见RequestMappingHandlerAdapter.handleInternal</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> ModelAndView <span class="title">handleInternal</span><span class="params">(HttpServletRequest request,</span></span></span><br><span class="line"><span class="function"><span class="params">		HttpServletResponse response, HandlerMethod handlerMethod)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line"></span><br><span class="line">	ModelAndView mav;</span><br><span class="line">	<span class="comment">//校验requestMethod和requireSession</span></span><br><span class="line">	checkRequest(request);</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Execute invokeHandlerMethod in synchronized block if required.</span></span><br><span class="line">	<span class="comment">// session线程不安全，如果想用户多次请求都访问同一个session需要加一个全局锁。。性能极差很少见</span></span><br><span class="line">	<span class="keyword">if</span> (<span class="keyword">this</span>.synchronizeOnSession) &#123;</span><br><span class="line">		HttpSession session = request.getSession(<span class="keyword">false</span>);</span><br><span class="line">		<span class="keyword">if</span> (session != <span class="keyword">null</span>) &#123;</span><br><span class="line">			Object mutex = WebUtils.getSessionMutex(session);</span><br><span class="line">			<span class="keyword">synchronized</span> (mutex) &#123;</span><br><span class="line">				mav = invokeHandlerMethod(request, response, handlerMethod);</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span> &#123;</span><br><span class="line">			<span class="comment">// No HttpSession available -&gt; no mutex necessary</span></span><br><span class="line">			mav = invokeHandlerMethod(request, response, handlerMethod);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="comment">// No synchronization on session demanded at all...</span></span><br><span class="line">		<span class="comment">// 关键方法，代理方法执行handlerMethod,返回modelAndView</span></span><br><span class="line">		mav = invokeHandlerMethod(request, response, handlerMethod);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (!response.containsHeader(HEADER_CACHE_CONTROL)) &#123;</span><br><span class="line">		<span class="keyword">if</span> (getSessionAttributesHandler(handlerMethod).hasSessionAttributes()) &#123;</span><br><span class="line">			applyCacheSeconds(response, <span class="keyword">this</span>.cacheSecondsForSessionAttributeHandlers);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span> &#123;</span><br><span class="line">			prepareResponse(response);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> mav;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h3 id="controller方法的执行原理，代理模式和反射的应用：invokeHandlerMethod"><a href="#controller方法的执行原理，代理模式和反射的应用：invokeHandlerMethod" class="headerlink" title="controller方法的执行原理，代理模式和反射的应用：invokeHandlerMethod"></a>controller方法的执行原理，代理模式和反射的应用：invokeHandlerMethod</h3><p>最终的执行实际上是利用了java的反射包，以及代理模式，关键代码见：invokeHandlerMethod</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Invoke the &#123;<span class="doctag">@link</span> RequestMapping&#125; handler method preparing a &#123;<span class="doctag">@link</span> ModelAndView&#125;</span></span><br><span class="line"><span class="comment"> * if view resolution is required.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@since</span> 4.2</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@see</span> #createInvocableHandlerMethod(HandlerMethod)</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> ModelAndView <span class="title">invokeHandlerMethod</span><span class="params">(HttpServletRequest request,</span></span></span><br><span class="line"><span class="function"><span class="params">		HttpServletResponse response, HandlerMethod handlerMethod)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	<span class="comment">//HttpServletRequest 的封装</span></span><br><span class="line">	ServletWebRequest webRequest = <span class="keyword">new</span> ServletWebRequest(request, response);</span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">		<span class="comment">//用来处理request中的参数映射，WebDataBinderFactory里的值见：afterPropertiesSet</span></span><br><span class="line">		WebDataBinderFactory binderFactory = getDataBinderFactory(handlerMethod);</span><br><span class="line">		<span class="comment">//用来创建初始化model</span></span><br><span class="line">		ModelFactory modelFactory = getModelFactory(handlerMethod, binderFactory);</span><br><span class="line">		<span class="comment">//根据handlerMethod实例化一个ServletInvocableHandlerMethod来处理请求</span></span><br><span class="line">		ServletInvocableHandlerMethod invocableMethod = createInvocableHandlerMethod(handlerMethod);</span><br><span class="line">		<span class="comment">//设置argumentResolvers处理request的参数 argumentResolvers里的值见afterPropertiesSet</span></span><br><span class="line">		<span class="keyword">if</span> (<span class="keyword">this</span>.argumentResolvers != <span class="keyword">null</span>) &#123;</span><br><span class="line">			invocableMethod.setHandlerMethodArgumentResolvers(<span class="keyword">this</span>.argumentResolvers);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="comment">//设置argumentResolvers处理response的参数 returnValueHandlers里的值见afterPropertiesSet</span></span><br><span class="line">		<span class="comment">// 可自定义 TODO 比如想给所有的ResponseBody返回值封装成&#123;code:0,msg:1,data:null&#125;</span></span><br><span class="line">		<span class="keyword">if</span> (<span class="keyword">this</span>.returnValueHandlers != <span class="keyword">null</span>) &#123;</span><br><span class="line">			invocableMethod.setHandlerMethodReturnValueHandlers(<span class="keyword">this</span>.returnValueHandlers);</span><br><span class="line">		&#125;</span><br><span class="line">		invocableMethod.setDataBinderFactory(binderFactory);</span><br><span class="line">		invocableMethod.setParameterNameDiscoverer(<span class="keyword">this</span>.parameterNameDiscoverer);</span><br><span class="line"></span><br><span class="line">		<span class="comment">//modelAndView的上下文对象</span></span><br><span class="line">		ModelAndViewContainer mavContainer = <span class="keyword">new</span> ModelAndViewContainer();</span><br><span class="line">		mavContainer.addAllAttributes(RequestContextUtils.getInputFlashMap(request));</span><br><span class="line">		<span class="comment">//初始化Model对象，同时将sessionAtrributes值和ModelAtrributes的值都合并在一起放在Model中</span></span><br><span class="line">		modelFactory.initModel(webRequest, mavContainer, invocableMethod);</span><br><span class="line">		mavContainer.setIgnoreDefaultModelOnRedirect(<span class="keyword">this</span>.ignoreDefaultModelOnRedirect);</span><br><span class="line"></span><br><span class="line">		<span class="comment">//todo 未读</span></span><br><span class="line">		AsyncWebRequest asyncWebRequest = WebAsyncUtils.createAsyncWebRequest(request, response);</span><br><span class="line">		asyncWebRequest.setTimeout(<span class="keyword">this</span>.asyncRequestTimeout);</span><br><span class="line"></span><br><span class="line">		WebAsyncManager asyncManager = WebAsyncUtils.getAsyncManager(request);</span><br><span class="line">		asyncManager.setTaskExecutor(<span class="keyword">this</span>.taskExecutor);</span><br><span class="line">		asyncManager.setAsyncWebRequest(asyncWebRequest);</span><br><span class="line">		asyncManager.registerCallableInterceptors(<span class="keyword">this</span>.callableInterceptors);</span><br><span class="line">		asyncManager.registerDeferredResultInterceptors(<span class="keyword">this</span>.deferredResultInterceptors);</span><br><span class="line"></span><br><span class="line">		<span class="keyword">if</span> (asyncManager.hasConcurrentResult()) &#123;</span><br><span class="line">			Object result = asyncManager.getConcurrentResult();</span><br><span class="line">			mavContainer = (ModelAndViewContainer) asyncManager.getConcurrentResultContext()[<span class="number">0</span>];</span><br><span class="line">			asyncManager.clearConcurrentResult();</span><br><span class="line">			LogFormatUtils.traceDebug(logger, traceOn -&gt; &#123;</span><br><span class="line">				String formatted = LogFormatUtils.formatValue(result, !traceOn);</span><br><span class="line">				<span class="keyword">return</span> <span class="string">"Resume with async result ["</span> + formatted + <span class="string">"]"</span>;</span><br><span class="line">			&#125;);</span><br><span class="line">			invocableMethod = invocableMethod.wrapConcurrentResult(result);</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">//关键代码，通过handlerMethod的代理方法，执行Controller的方法，将结果存储到mavContainer</span></span><br><span class="line">		invocableMethod.invokeAndHandle(webRequest, mavContainer);</span><br><span class="line">		<span class="keyword">if</span> (asyncManager.isConcurrentHandlingStarted()) &#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">		&#125;</span><br><span class="line"></span><br><span class="line">		<span class="comment">//获取ModelAndView</span></span><br><span class="line">		<span class="keyword">return</span> getModelAndView(mavContainer, modelFactory, webRequest);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">finally</span> &#123;</span><br><span class="line">		webRequest.requestCompleted();</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>invocableMethod.invokeAndHandle(webRequest, mavContainer);</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">invokeAndHandle</span><span class="params">(ServletWebRequest webRequest, ModelAndViewContainer mavContainer,</span></span></span><br><span class="line"><span class="function"><span class="params">		Object... providedArgs)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//关键代码，通过java的反射机制doInvoke执行handlerMethod对应的controller方法</span></span><br><span class="line">	Object returnValue = invokeForRequest(webRequest, mavContainer, providedArgs);</span><br><span class="line">	setResponseStatus(webRequest);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> (returnValue == <span class="keyword">null</span>) &#123;</span><br><span class="line">		<span class="keyword">if</span> (isRequestNotModified(webRequest) || getResponseStatus() != <span class="keyword">null</span> || mavContainer.isRequestHandled()) &#123;</span><br><span class="line">			disableContentCachingIfNecessary(webRequest);</span><br><span class="line">			mavContainer.setRequestHandled(<span class="keyword">true</span>);</span><br><span class="line">			<span class="keyword">return</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> <span class="keyword">if</span> (StringUtils.hasText(getResponseStatusReason())) &#123;</span><br><span class="line">		mavContainer.setRequestHandled(<span class="keyword">true</span>);</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	mavContainer.setRequestHandled(<span class="keyword">false</span>);</span><br><span class="line">	Assert.state(<span class="keyword">this</span>.returnValueHandlers != <span class="keyword">null</span>, <span class="string">"No return value handlers"</span>);</span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">		<span class="comment">//调用returnValueHandlers 将返回值写到response中（webRequest.getNativeResponse)里</span></span><br><span class="line">		<span class="comment">// 由于现在开发采用前后端分离，RestApi往往会用到RequestResponseBodyMethodProcessor，可以看这个类，返回值和controller方法有@ResponseBody</span></span><br><span class="line">		<span class="keyword">this</span>.returnValueHandlers.handleReturnValue(</span><br><span class="line">				returnValue, getReturnValueType(returnValue), mavContainer, webRequest);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">catch</span> (Exception ex) &#123;</span><br><span class="line">		<span class="keyword">if</span> (logger.isTraceEnabled()) &#123;</span><br><span class="line">			logger.trace(formatErrorForReturnValue(returnValue), ex);</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">throw</span> ex;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>invokeForRequest方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Nullable</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Object <span class="title">invokeForRequest</span><span class="params">(NativeWebRequest request, @Nullable ModelAndViewContainer mavContainer,</span></span></span><br><span class="line"><span class="function"><span class="params">		Object... providedArgs)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	<span class="comment">//从request里获取controller执行方法的参数，request里的值变为方法里设置的参数</span></span><br><span class="line">	Object[] args = getMethodArgumentValues(request, mavContainer, providedArgs);</span><br><span class="line">	<span class="keyword">if</span> (logger.isTraceEnabled()) &#123;</span><br><span class="line">		logger.trace(<span class="string">"Arguments: "</span> + Arrays.toString(args));</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//通过java的反射机制，执行controller里的方法，方法参数getMethodArgumentValues获取</span></span><br><span class="line">	<span class="keyword">return</span> doInvoke(args);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">protected</span> Object <span class="title">doInvoke</span><span class="params">(Object... args)</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">	ReflectionUtils.makeAccessible(getBridgedMethod());</span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">		<span class="comment">//todo 通过反射执行方法 书签</span></span><br><span class="line">		<span class="comment">//调用java反射包的invoke 代理执行HandlerMethod里econtroller对应的方法</span></span><br><span class="line">		<span class="comment">// getBridgedMethod= 如果没有意外等于controller被执行的方法</span></span><br><span class="line">		<span class="comment">// getBean()=Controller对象</span></span><br><span class="line">		<span class="comment">// args=request通过argumentResolver得到的方法参数对象</span></span><br><span class="line">		<span class="keyword">return</span> getBridgedMethod().invoke(getBean(), args);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">catch</span> (IllegalArgumentException ex) &#123;</span><br><span class="line">		assertTargetBean(getBridgedMethod(), getBean(), args);</span><br><span class="line">		String text = (ex.getMessage() != <span class="keyword">null</span> ? ex.getMessage() : <span class="string">"Illegal argument"</span>);</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(formatInvokeError(text, args), ex);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">catch</span> (InvocationTargetException ex) &#123;</span><br><span class="line">		<span class="comment">// Unwrap for HandlerExceptionResolvers ...</span></span><br><span class="line">		Throwable targetException = ex.getTargetException();</span><br><span class="line">		<span class="keyword">if</span> (targetException <span class="keyword">instanceof</span> RuntimeException) &#123;</span><br><span class="line">			<span class="keyword">throw</span> (RuntimeException) targetException;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span> <span class="keyword">if</span> (targetException <span class="keyword">instanceof</span> Error) &#123;</span><br><span class="line">			<span class="keyword">throw</span> (Error) targetException;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span> <span class="keyword">if</span> (targetException <span class="keyword">instanceof</span> Exception) &#123;</span><br><span class="line">			<span class="keyword">throw</span> (Exception) targetException;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span> &#123;</span><br><span class="line">			<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(formatInvokeError(<span class="string">"Invocation failure"</span>, args), targetException);</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+          
+        
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/SpringMvc源码-RequestMappingHandlerMapping/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1331,960 +2397,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/领域驱动设计-柔性设计/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/领域驱动设计-柔性设计/" class="post-title-link" itemprop="url">领域驱动设计-柔性设计</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2020-07-26 19:19:28" itemprop="dateCreated datePublished" datetime="2020-07-26T19:19:28Z">2020-07-26</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/读后感/" itemprop="url" rel="index"><span itemprop="name">读后感</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/读后感/领域驱动设计/" itemprop="url" rel="index"><span itemprop="name">领域驱动设计</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>软件的最终目的是为客户服务，但是首先要服务于研发人员，一个设计的好的模型一定是是健壮，且易于扩展的。我们称这种设计为柔性设计.</p>
-<blockquote>
-<p>首先、程序员看到接口就应该明白接口是做什么用的，没有任何的副作用。其次、设计涉及的模型要健壮，利于扩展增加功能，而不能每次修改就面临推倒重来</p>
-</blockquote>
-<h2 id="要求"><a href="#要求" class="headerlink" title="要求"></a>要求</h2><ul>
-<li>INTENTION-REVEALING INTERFACES：接口、Entity、方法命名清晰无歧义，且符合整个模型的通用术语。避免调用者去深究实现含义。</li>
-<li>SIDE-EFFECT-FREE FUNCTION：引起Entity状态改变的（需改操作）逻辑抽象出来放到ValueObject中去【service】中。否则调用方法后开发人员无法预知这个Entity的状态变化。</li>
-<li>ASSERTION：要通过断言告知调用者所有的关键分支，如果java等不支持断言需要提供完备的unit test。</li>
-<li>CONCEPTUALCONTOUR：确定模型的底层轮廓，尽量避免底层轮廓的修改（如果底层轮廓经常修改，说明模型不够健壮）</li>
-<li>STANDALONE CLASS：减少Entity之间的耦合。【剔除无关的属性和功能】</li>
-<li>CLOSER FOR OPERTATION：闭合操作，加强整个系统的内聚。【一个模型只做自己相关的事情】</li>
-</ul>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/领域驱动设计-初探-一/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/领域驱动设计-初探-一/" class="post-title-link" itemprop="url">领域驱动设计-初探(一)</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2020-07-13 12:52:58" itemprop="dateCreated datePublished" datetime="2020-07-13T12:52:58Z">2020-07-13</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/读后感/" itemprop="url" rel="index"><span itemprop="name">读后感</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/读后感/领域驱动设计/" itemprop="url" rel="index"><span itemprop="name">领域驱动设计</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><ul>
-<li>DDD是什么？为了解决什么问题？</li>
-<li>什么叫领域转件相当于我们什么角色？</li>
-</ul>
-<h2 id="DDD"><a href="#DDD" class="headerlink" title="DDD"></a>DDD</h2><p>  DDD是领域驱动设计(Domain-Driven-Design)，了解它首先我们要了解什么是领域模型呢。</p>
-<p>  我们在现实中遇到了一个问题，需要RD开发一个系统来解决它，这时候就需要将这个问题映射成一个抽象的模型，这个模型作为代码和现实的纽带被叫做领域模型。</p>
-<p>  我们的领域专家和研发工程师对领域模型不断的探讨，精简，逐渐的使其越来越抽象通用，逐步的使我们的系统更完善，功能更强大。</p>
-<p>  上述突出以下几点：</p>
-<ol>
-<li>领域模型是现实和程序的纽带，他反应了一个具体的显示问题。</li>
-<li>它需要被领域专家和研发讨论，所以应该有统一的双方都能理解的术语。</li>
-<li>它不是一成不变的，在做加法的同时也需要在讨论中逐渐做减法。</li>
-<li>它不单单是一个简单的数据集合，他还描述了领域模型间不同的关系。</li>
-<li>它需要不断的演进。</li>
-</ol>
-<h2 id="统一术语"><a href="#统一术语" class="headerlink" title="统一术语"></a>统一术语</h2><p>  在领域模型中我们需要统一术语我们称他们为通用语言，他能减少领域专家和我们的研发的沟通成本，避免翻译带来的语义混淆。</p>
-<p>  两者是通过术语来沟通的：领域专家的模型—-&gt;术语&lt;––研发的系统。</p>
-<p>  对术语的要求：</p>
-<ol>
-<li>对于通用语言来说：模型和代码必须统一，比如模型定义了Goods,那么代码中要有相应的类Goods</li>
-<li>通用语言需要讨论：我们在技术讨论中应该尽量用简短的通用语言来描述</li>
-<li>要有不断完善的文档简短的文档来维护我们的通用语：<ol>
-<li>我们可以通过简短类图+类图备注进行描述，并且文档应该作为代码和模型的叩痛补充；</li>
-<li>在模型演进中通过通用语言的完善来更迭文档；</li>
-</ol>
-</li>
-</ol>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/JPA-Mongodb的Example查询不出数据的问题/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/JPA-Mongodb的Example查询不出数据的问题/" class="post-title-link" itemprop="url">JPA+Mongodb的Example查询不出数据的问题</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2020-07-08 10:18:18" itemprop="dateCreated datePublished" datetime="2020-07-08T10:18:18Z">2020-07-08</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/经验积累/" itemprop="url" rel="index"><span itemprop="name">经验积累</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/经验积累/项目积累/" itemprop="url" rel="index"><span itemprop="name">项目积累</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h2 id="现象"><a href="#现象" class="headerlink" title="现象"></a>现象</h2><p>一次查询中发现一个诡异的问题，用jpa写入到mongodb的数据无法查询出来。</p>
-<h2 id="原因分析"><a href="#原因分析" class="headerlink" title="原因分析"></a>原因分析</h2><p>  查询采用了SpringCloudData的JPA+Mongodb的Example动态拼接查询条件，具体代码如下：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">  <span class="function"><span class="keyword">public</span> PageDTO&lt;EmployeeInfoDTO&gt; <span class="title">findByCondition</span><span class="params">(String name, String number, Integer pageNumber, Integer pageSize)</span> </span>&#123;</span><br><span class="line">EmployeeInfoDO query=<span class="keyword">new</span> EmployeeInfoDO();</span><br><span class="line"><span class="comment">//......动态设置query权限</span></span><br><span class="line">      Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.Direction.DESC, <span class="string">"gmtCreate"</span>);</span><br><span class="line">      Page&lt;EmployeeInfoDO&gt; ret = employeeInfoRepo.findAll(Example.of(query, ExampleMatcher.matchingAll()), pageable);</span><br><span class="line"><span class="comment">//......</span></span><br><span class="line"><span class="keyword">return</span> pageDTO;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
-<p> 但是这里有个坑，即：jpa的mongodb为了方便将document还原成java对象，会在写入的时候设置一个字段”_class”，而Example在查询时候回将<strong>EmployeeInfoDO 的classname</strong>作为查询条件，而我们写入DB的时候在注入MappingMongoConverter已经忽略调了_class字段，所以当然就查不到数据了。</p>
-<p>  MappingMongoConverter</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Bean</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> MappingMongoConverter <span class="title">mappingMongoConverter</span><span class="params">(MongoDbFactory factory, MongoMappingContext context, BeanFactory beanFactory)</span> </span>&#123;</span><br><span class="line">    DbRefResolver dbRefResolver = <span class="keyword">new</span> DefaultDbRefResolver(factory);</span><br><span class="line"></span><br><span class="line">    MappingMongoConverter mappingConverter = <span class="keyword">new</span> MappingMongoConverter(dbRefResolver, context);</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        mappingConverter.setCustomConversions(beanFactory.getBean(CustomConversions.class));</span><br><span class="line">    &#125; <span class="keyword">catch</span> (NoSuchBeanDefinitionException ignore) &#123;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Don't save _class to mongo</span></span><br><span class="line">    mappingConverter.setTypeMapper(<span class="keyword">new</span> DefaultMongoTypeMapper(<span class="keyword">null</span>));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> mappingConverter;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>设置有效的ExampleMatcher忽略”_class”</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> ExampleMatcher EXAMPLE_MATCHER_IGNORE_CLASS = ExampleMatcher.matchingAll().withIgnorePaths(<span class="string">"_class"</span>);</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Go语言-painc和recover技巧/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/Go语言-painc和recover技巧/" class="post-title-link" itemprop="url">Go语言-painc和recover技巧</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2020-07-06 13:29:53" itemprop="dateCreated datePublished" datetime="2020-07-06T13:29:53Z">2020-07-06</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/golang/" itemprop="url" rel="index"><span itemprop="name">golang</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/golang/编程技巧/" itemprop="url" rel="index"><span itemprop="name">编程技巧</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>Java程序为了防止意外退出，在处理异常时候有try-catch，golang我们则会想到recover函数来处理painc。</p>
-<h2 id="recover的使用"><a href="#recover的使用" class="headerlink" title="recover的使用"></a>recover的使用</h2><p>recover()是go的内置函数，只能放在defer中，recover的返回值是painc中的对象。常见的用法如下：</p>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">process</span><span class="params">(i <span class="keyword">int</span>)</span></span>&#123;</span><br><span class="line">    <span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">        <span class="keyword">if</span> r := <span class="built_in">recover</span>(); r != <span class="literal">nil</span> &#123;</span><br><span class="line">            fmt.Printf(<span class="string">"捕获到的错误：%s\n"</span>, r)</span><br><span class="line">        &#125;</span><br><span class="line">	&#125;()</span><br><span class="line"></span><br><span class="line">	painc(<span class="string">"退出"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h2 id="注意事项"><a href="#注意事项" class="headerlink" title="注意事项"></a>注意事项</h2><ol>
-<li>recover一定要在defer中，且不能直接调用 比如 <strong>defer recover</strong> 。</li>
-<li>如果循环体中出现了painc，因为recover在defer中，则循环会被break，并且recover会在跳出循环后执行。见下面代码</li>
-</ol>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//我们希望的是遇到偶数painc之后recover捕获error，还能继续执行但是循环已经被跳出了</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Recovery</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ &#123;</span><br><span class="line">        <span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">            <span class="keyword">if</span> r := <span class="built_in">recover</span>(); r != <span class="literal">nil</span> &#123;</span><br><span class="line">                fmt.Printf(<span class="string">"捕获到的错误：%s\n"</span>, r)</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;()</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> i%<span class="number">2</span> == <span class="number">0</span> &#123;</span><br><span class="line">            <span class="built_in">panic</span>(fmt.Sprintf(<span class="string">"偶数退出：%v"</span>,i))</span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            fmt.Println(i)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//正确做法</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">Recovery</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">for</span> i := <span class="number">0</span>; i &lt; <span class="number">10</span>; i++ &#123;</span><br><span class="line">        process(i)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">process</span><span class="params">(i <span class="keyword">int</span>)</span></span>&#123;</span><br><span class="line">    <span class="keyword">defer</span> <span class="function"><span class="keyword">func</span><span class="params">()</span></span> &#123;</span><br><span class="line">        <span class="keyword">if</span> r := <span class="built_in">recover</span>(); r != <span class="literal">nil</span> &#123;</span><br><span class="line">            fmt.Printf(<span class="string">"捕获到的错误：%s\n"</span>, r)</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> i%<span class="number">2</span> == <span class="number">0</span> &#123;</span><br><span class="line">        <span class="built_in">panic</span>(fmt.Sprintf(<span class="string">"偶数退出：%v"</span>,i))</span><br><span class="line">    &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">        fmt.Println(i)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="https://liuhao163.github.io/Go语言-技巧set类实现/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Liu hao">
-      <meta itemprop="description" content="励志当好厨子的程序员">
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="liuhao163.github.io">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                
-                <a href="/Go语言-技巧set类实现/" class="post-title-link" itemprop="url">Go语言-技巧set类实现</a>
-              
-            
-          </h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-
-            
-            
-            
-
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">Posted on</span>
-              
-
-              
-                
-              
-
-              <time title="Created: 2020-07-01 20:41:10" itemprop="dateCreated datePublished" datetime="2020-07-01T20:41:10Z">2020-07-01</time>
-            
-
-            
-              
-
-              
-                
-                <span class="post-meta-divider">|</span>
-                
-
-                <span class="post-meta-item-icon">
-                  <i class="fa fa-calendar-check-o"></i>
-                </span>
-                
-                  <span class="post-meta-item-text">Edited on</span>
-                
-                <time title="Modified: 2022-09-21 15:03:02" itemprop="dateModified" datetime="2022-09-21T15:03:02Z">2022-09-21</time>
-              
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">In</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/golang/" itemprop="url" rel="index"><span itemprop="name">golang</span></a></span>
-
-                
-                
-                  , 
-                
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/golang/编程技巧/" itemprop="url" rel="index"><span itemprop="name">编程技巧</span></a></span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <p>利用slice和map实现了个非线程安全的LinkedSet，map的value是元素的index。也支持排序。代码如下：</p>
-<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> collections</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">"encoding/json"</span></span><br><span class="line">	<span class="string">"fmt"</span></span><br><span class="line">	<span class="string">"sort"</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment">// Set LinkedHashSet 支持数组排序</span></span><br><span class="line"><span class="keyword">type</span> Set <span class="keyword">struct</span> &#123;</span><br><span class="line">	m       <span class="keyword">map</span>[<span class="keyword">interface</span>&#123;&#125;]<span class="keyword">int</span>         <span class="comment">//元素和索引映射</span></span><br><span class="line">	list    []<span class="keyword">interface</span>&#123;&#125;               <span class="comment">//元素数组</span></span><br><span class="line">	compare <span class="function"><span class="keyword">func</span><span class="params">(i, j <span class="keyword">interface</span>&#123;&#125;)</span> <span class="title">bool</span> //排序函数</span></span><br><span class="line"><span class="function">&#125;</span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function">// <span class="title">NewSet</span> 构造方法</span></span><br><span class="line"><span class="function"><span class="title">func</span> <span class="title">NewSet</span><span class="params">()</span> *<span class="title">Set</span></span> &#123;</span><br><span class="line">	s := <span class="built_in">new</span>(Set)</span><br><span class="line">	s.initEle()</span><br><span class="line">	<span class="keyword">return</span> s</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// initEle 初始化数组元素</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(set *Set)</span> <span class="title">initEle</span><span class="params">()</span></span> &#123;</span><br><span class="line">	set.m = <span class="built_in">make</span>(<span class="keyword">map</span>[<span class="keyword">interface</span>&#123;&#125;]<span class="keyword">int</span>)</span><br><span class="line">	set.list = <span class="built_in">make</span>([]<span class="keyword">interface</span>&#123;&#125;, <span class="number">0</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// SortAble 设置排序依据</span></span><br><span class="line"><span class="comment">// compare--用于排序</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(set *Set)</span> <span class="title">SortAble</span><span class="params">(compare <span class="keyword">func</span>(i, j <span class="keyword">interface</span>&#123;&#125;)</span> <span class="title">bool</span>) *<span class="title">Set</span></span> &#123;</span><br><span class="line">	set.compare = compare</span><br><span class="line">	<span class="keyword">return</span> set</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Add 添加元素</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(set *Set)</span> <span class="title">Add</span><span class="params">(keys ...<span class="keyword">interface</span>&#123;&#125;)</span> *<span class="title">Set</span></span> &#123;</span><br><span class="line">	<span class="comment">//set.Lock()</span></span><br><span class="line">	<span class="comment">//defer set.Unlock()</span></span><br><span class="line">	<span class="keyword">for</span> _, key := <span class="keyword">range</span> keys &#123;</span><br><span class="line">		<span class="keyword">if</span> _, ok := set.m[key]; !ok &#123;</span><br><span class="line">			set.list = <span class="built_in">append</span>(set.list, key)</span><br><span class="line">			set.m[key] = <span class="built_in">len</span>(set.list) - <span class="number">1</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> set</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Delete 删除元素</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(set *Set)</span> <span class="title">Delete</span><span class="params">(keys ...<span class="keyword">interface</span>&#123;&#125;)</span></span> &#123;</span><br><span class="line">	<span class="comment">//set.Lock()</span></span><br><span class="line">	<span class="comment">//defer set.Unlock()</span></span><br><span class="line">	<span class="keyword">for</span> _, key := <span class="keyword">range</span> keys &#123;</span><br><span class="line">		<span class="keyword">if</span> v, ok := set.m[key]; !ok &#123;</span><br><span class="line">			<span class="keyword">if</span> <span class="built_in">len</span>(set.list)<span class="number">-1</span> &lt; v &#123;</span><br><span class="line">				set.list = <span class="built_in">append</span>(set.list[<span class="number">0</span>:v], set.list[v+<span class="number">1</span>:]...)</span><br><span class="line">			&#125;</span><br><span class="line">			<span class="built_in">delete</span>(set.m, key)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Get 获取元素</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(set *Set)</span> <span class="title">Get</span><span class="params">(key <span class="keyword">interface</span>&#123;&#125;)</span> <span class="title">interface</span></span>&#123;&#125; &#123;</span><br><span class="line">	<span class="comment">//set.RLock()</span></span><br><span class="line">	<span class="comment">//defer set.RUnlock()</span></span><br><span class="line">	<span class="keyword">if</span> v, ok := set.m[key]; ok &#123;</span><br><span class="line">		<span class="keyword">return</span> set.list[v]</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">nil</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Contains 获取元素</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(set *Set)</span> <span class="title">Contains</span><span class="params">(key <span class="keyword">interface</span>&#123;&#125;)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">	<span class="comment">//set.RLock()</span></span><br><span class="line">	<span class="comment">//defer set.RUnlock()</span></span><br><span class="line">	_, ok := set.m[key]</span><br><span class="line">	<span class="keyword">return</span> ok</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// IndexOf 获取元素下标</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(set *Set)</span> <span class="title">IndexOf</span><span class="params">(key <span class="keyword">interface</span>&#123;&#125;)</span> <span class="title">int</span></span> &#123;</span><br><span class="line">	<span class="comment">//set.RLock()</span></span><br><span class="line">	<span class="comment">//defer set.RUnlock()</span></span><br><span class="line">	<span class="keyword">if</span> i, ok := set.m[key]; ok &#123;</span><br><span class="line">		<span class="keyword">return</span> i</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">-1</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Any 多个元素有人一个true 则为true</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(set *Set)</span> <span class="title">Any</span><span class="params">(cond <span class="keyword">func</span>(key <span class="keyword">interface</span>&#123;&#125;)</span> <span class="title">bool</span>) <span class="title">bool</span></span> &#123;</span><br><span class="line">	<span class="comment">//set.RLock()</span></span><br><span class="line">	<span class="comment">//defer set.RUnlock()</span></span><br><span class="line">	<span class="keyword">for</span> _, key := <span class="keyword">range</span> set.list &#123;</span><br><span class="line">		<span class="keyword">if</span> cond(key) &#123;</span><br><span class="line">			<span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Diff 查看俩个set不同的元素，返回新的set</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(set *Set)</span> <span class="title">Diff</span><span class="params">(dest *Set)</span> *<span class="title">Set</span></span> &#123;</span><br><span class="line">	result := NewSet()</span><br><span class="line">	set.Foreach(<span class="function"><span class="keyword">func</span><span class="params">(ele <span class="keyword">interface</span>&#123;&#125;)</span></span> &#123;</span><br><span class="line">		<span class="keyword">if</span> dest == <span class="literal">nil</span> || dest.Size() == <span class="number">0</span> || !dest.Contains(ele) &#123;</span><br><span class="line">			result.Add(ele)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;)</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> dest != <span class="literal">nil</span> &amp;&amp; dest.Size() &gt; <span class="number">0</span> &#123;</span><br><span class="line">		dest.Foreach(<span class="function"><span class="keyword">func</span><span class="params">(ele <span class="keyword">interface</span>&#123;&#125;)</span></span> &#123;</span><br><span class="line">			<span class="keyword">if</span> !set.Contains(ele) &#123;</span><br><span class="line">				result.Add(ele)</span><br><span class="line">			&#125;</span><br><span class="line">		&#125;)</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> result</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Difference 取s和dest差集，返回新的set</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(set *Set)</span> <span class="title">Difference</span><span class="params">(dest *Set)</span> *<span class="title">Set</span></span> &#123;</span><br><span class="line">	result := NewSet()</span><br><span class="line">	set.Foreach(<span class="function"><span class="keyword">func</span><span class="params">(ele <span class="keyword">interface</span>&#123;&#125;)</span></span> &#123;</span><br><span class="line">		<span class="keyword">if</span> dest == <span class="literal">nil</span> || dest.Size() == <span class="number">0</span> || !dest.Contains(ele) &#123;</span><br><span class="line">			result.Add(ele)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;)</span><br><span class="line">	<span class="keyword">return</span> result</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Union 取交集，返回新的set</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(set *Set)</span> <span class="title">Union</span><span class="params">(dest *Set)</span> *<span class="title">Set</span></span> &#123;</span><br><span class="line">	result := NewSet()</span><br><span class="line">	set.Foreach(<span class="function"><span class="keyword">func</span><span class="params">(ele <span class="keyword">interface</span>&#123;&#125;)</span></span> &#123;</span><br><span class="line">		<span class="keyword">if</span> dest != <span class="literal">nil</span> &amp;&amp; dest.Size() &gt; <span class="number">0</span> &amp;&amp; dest.Contains(ele) &#123;</span><br><span class="line">			result.Add(ele)</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;)</span><br><span class="line">	<span class="keyword">return</span> result</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Size  返回set的size</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(set *Set)</span> <span class="title">Size</span><span class="params">()</span> <span class="title">int</span></span> &#123;</span><br><span class="line">	<span class="comment">//set.RLock()</span></span><br><span class="line">	<span class="comment">//defer set.RUnlock()</span></span><br><span class="line">	<span class="keyword">return</span> <span class="built_in">len</span>(set.list)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Elements 返回element列表</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(set *Set)</span> <span class="title">Elements</span><span class="params">()</span> []<span class="title">interface</span></span>&#123;&#125; &#123;</span><br><span class="line">	<span class="comment">//set.RLock()</span></span><br><span class="line">	<span class="comment">//defer set.RUnlock()</span></span><br><span class="line">	<span class="keyword">return</span> set.list</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// SetIterateFunc 遍历的handler</span></span><br><span class="line"><span class="keyword">type</span> SetIterateFunc <span class="function"><span class="keyword">func</span><span class="params">(<span class="keyword">interface</span>&#123;&#125;)</span></span></span><br><span class="line"><span class="function"></span></span><br><span class="line"><span class="function">// <span class="title">Foreach</span> 遍历</span></span><br><span class="line"><span class="function"><span class="title">func</span> <span class="params">(set *Set)</span> <span class="title">Foreach</span><span class="params">(foreach SetIterateFunc)</span></span> &#123;</span><br><span class="line">	<span class="comment">//set.RLock()</span></span><br><span class="line">	<span class="comment">//defer set.RUnlock()</span></span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">len</span>(set.list) == <span class="number">0</span> &#123;</span><br><span class="line">		<span class="keyword">return</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">for</span> _, item := <span class="keyword">range</span> set.list &#123;</span><br><span class="line">		foreach(item)</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// Sort 排序</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(set *Set)</span> <span class="title">Sort</span><span class="params">()</span></span> &#123;</span><br><span class="line">	<span class="comment">//set.Lock()</span></span><br><span class="line">	<span class="comment">//defer set.Unlock()</span></span><br><span class="line">	sort.Sort(set)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(set *Set)</span> <span class="title">Swap</span><span class="params">(i, j <span class="keyword">int</span>)</span></span> &#123;</span><br><span class="line">	set.list[i], set.list[j] = set.list[j], set.list[i]</span><br><span class="line">	set.m[set.list[i]] = i</span><br><span class="line">	set.m[set.list[j]] = j</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(set *Set)</span> <span class="title">Len</span><span class="params">()</span> <span class="title">int</span></span> &#123; <span class="keyword">return</span> <span class="built_in">len</span>(set.list) &#125;</span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(set *Set)</span> <span class="title">Less</span><span class="params">(i, j <span class="keyword">int</span>)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">	<span class="keyword">if</span> set.compare == <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">false</span></span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> set.compare(set.list[i], set.list[j])</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// SetIsEmpty 判断set是否为空</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">SetIsEmpty</span><span class="params">(set *Set)</span> <span class="title">bool</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> set == <span class="literal">nil</span> || set.Size() == <span class="number">0</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// MarshalJSON 实现json.Marshaler接口</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(set *Set)</span> <span class="title">MarshalJSON</span><span class="params">()</span> <span class="params">([]<span class="keyword">byte</span>, error)</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> json.Marshal(set.list)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// UnmarshalJSON 实现json.Unmarshaler接口</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(set *Set)</span> <span class="title">UnmarshalJSON</span><span class="params">(b []<span class="keyword">byte</span>)</span> <span class="title">error</span></span> &#123;</span><br><span class="line">	set.initEle()</span><br><span class="line">	<span class="keyword">var</span> ele []<span class="keyword">interface</span>&#123;&#125;</span><br><span class="line">	err := json.Unmarshal(b, &amp;ele)</span><br><span class="line">	<span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">		<span class="keyword">return</span> err</span><br><span class="line">	&#125;</span><br><span class="line">	set.Add(ele...)</span><br><span class="line">	<span class="keyword">return</span> err</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//////////////////////////////////////////</span></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="params">(set Set)</span> <span class="title">String</span><span class="params">()</span> <span class="title">string</span></span> &#123;</span><br><span class="line">	<span class="keyword">return</span> fmt.Sprintf(<span class="string">"%v"</span>, set.list)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>排序方法的使用方法</p>
-<figure class="highlight golang"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">s:=set.NewSet().Add(....).AddOrderBy(OrderByHandlerFunc(i,j <span class="keyword">interface</span>&#123;&#125;)<span class="keyword">bool</span>&#123;</span><br><span class="line">	<span class="comment">//排序逻辑</span></span><br><span class="line">	<span class="keyword">return</span> <span class="literal">true</span></span><br><span class="line">&#125;)</span><br><span class="line">sort(s)</span><br></pre></td></tr></table></figure>
-
-          
-        
-      
-    </div>
-
-    
-
-    
-    
-    
-
-    
-
-    
-      
-    
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -2331,7 +2443,7 @@
                 
                   <a href="/archives/">
                 
-                    <span class="site-state-item-count">224</span>
+                    <span class="site-state-item-count">229</span>
                     <span class="site-state-item-name">posts</span>
                   </a>
                 </div>
@@ -2700,7 +2812,7 @@
 
     <footer id="footer" class="footer">
       <div class="footer-inner">
-        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2022</span>
+        <div class="copyright">&copy; 2018 – <span itemprop="copyrightYear">2023</span>
   <span class="with-love" id="animate">
     <i class="fa fa-user"></i>
   </span>
